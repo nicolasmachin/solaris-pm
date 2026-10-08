@@ -80,7 +80,7 @@ Cargas proyectadas:
 ${cargas}
 
 Balance anual (ya calculado, usá estos números):
-- Consumo anual actual: ${b.consumoAnualActualKwh > 0 ? `${fmtNum(b.consumoAnualActualKwh)} kWh` : "sin historial representativo"}
+- Consumo anual actual: ${b.consumoAnualActualKwh > 0 ? `${fmtNum(b.consumoAnualActualKwh)} kWh` : "cuenta nueva, sin consumo registrado"}
 - Incremento: ${fmtNum(b.incrementoMensualKwh)} kWh/mes = ${fmtNum(b.incrementoAnualKwh)} kWh/año
 - Consumo anual proyectado: ${fmtNum(b.consumoAnualProyectadoKwh)} kWh
 - Generación anual estimada: ${fmtNum(b.generacionAnualKwh)} kWh (${fmtNum(b.productividadKwhKw)} kWh por kW instalado)

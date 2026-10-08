@@ -183,7 +183,7 @@ export function JustificacionFormModal({
               label="Consumo último año (kWh)"
               value={datos.consumoAnualActualKwh}
               onChange={(v) => set("consumoAnualActualKwh", v)}
-              placeholder="de la factura"
+              placeholder="vacío si es cuenta nueva"
             />
           </div>
         </Seccion>

@@ -27,6 +27,13 @@ export const LATEST_RELEASE: Release = {
   date: "8 de octubre de 2026",
   sections: [
     {
+      title: "El inversor entra en la plantilla de materiales",
+      items: [
+        "La plantilla Base trae el inversor Growatt de 6 kW, en cero como el resto. Si la obra lleva otro, se cambia con ⇄.",
+        "Inversores, medidores, dongles y el Shine pasan al rubro Inversor y monitoreo, con dos grupos: Inversores (mono y trifásicos juntos) y Monitoreo y medición.",
+      ],
+    },
+    {
       title: "Arreglos",
       items: [
         "El teléfono del cliente ya no exige el formato de celular uruguayo: se puede cargar un número de Argentina u otro país, un fijo, o escribirlo con +, espacios, guiones o paréntesis.",

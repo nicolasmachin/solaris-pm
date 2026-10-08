@@ -291,7 +291,7 @@ cantidades en cero.
 3. Se completan las cantidades. La casilla en cero aparece con borde de aviso.
 4. Lo que depende de la obra se resuelve con **⇄ (cambiar variante)** junto al
    nombre: ofrece los demás ítems activos de **la misma subcategoría**
-   (diferencial 2P ⇄ 4P, caño 1" ⇄ 1¼", medidor SPM ⇄ TPM). El renglón toma el
+   (diferencial 2P ⇄ 4P, caño 1" ⇄ 1¼", medidor SPM ⇄ TPM, inversor 6 kW ⇄ 10 kW trifásico). El renglón toma el
    precio, la moneda, el IVA y el proveedor del ítem nuevo.
 5. Mientras haya renglones en cero se ve un recuadro arriba de la lista
    ("N materiales sin cantidad") con **Quitar los que están en cero**, que
@@ -331,9 +331,15 @@ cantidades en cero.
   (idempotente, `--dry-run`; aborta si falta algún ítem, `--skip-missing` para
   local). Sale de las 37 obras con lista en prod al 7-oct-2026: entra lo que
   aparece en la mitad o más, con la variante más usada. Además:
-  - crea la categoría **"Monitoreo y medición"** y mueve ahí medidores, dongles y
-    el Shine (estaban repartidos entre "Inversores Monofasicos" y "Trifasicos",
-    y sin eso el ⇄ no podía pasar de SPM a TPM);
+  - arma el rubro **"Inversor y monitoreo"** con dos subcategorías:
+    **"Inversores"** (mono y tri juntos) y **"Monitoreo y medición"**
+    (medidores, dongles, Shine). Antes todo estaba mezclado en "Inversores
+    Monofasicos" / "Inversores Trifasicos", y como el ⇄ solo ofrece la misma
+    subcategoría, separados por fase no se podía pasar del inversor mono al tri
+    ni del medidor SPM al TPM. Las dos categorías viejas quedan vacías y
+    **desactivadas**. Si ya existe una categoría con el nombre de una
+    subcategoría (en local había una "Inversores" vacía en primer nivel), se la
+    cuelga del rubro en vez de crear otra, porque el nombre es único;
   - mueve la jabalina de "Terminales y conexionado" a "Puesta a tierra";
   - **desactiva** las tres plantillas viejas (no las borra).
 
@@ -359,9 +365,11 @@ lista. No hay guards por rol.
 - **El ⇄ se limita a la misma subcategoría**, que es lo que define "variante".
   Si dos variantes reales están en grupos distintos, la solución es moverlas de
   categoría (como se hizo con los medidores), no abrir el ⇄ a todo el catálogo.
-- **Quedan afuera de "Base"** el inversor (cambia en cada obra) y la estructura
-  que depende del techo (perfiles C/P/H, punta mecha, anclajes, losas): ninguna
-  llega a dos tercios de las obras. Se cargan por sección. Si sirve, más adelante
+- **El inversor entra en "Base"** con el más usado, el Growatt MIN 6000TL-X2
+  (decisión de Nicolás, 8-oct-2026), y se cambia con ⇄ por cualquier otro de
+  "Inversores". **Queda afuera la estructura** que depende del techo (perfiles
+  C/P/H, punta mecha, anclajes, losas): ninguna llega a dos tercios de las
+  obras. Se cargan por sección. Si sirve, más adelante
   se agregan plantillas chicas por tipo de montaje que se suman a la base
   (aplicar plantilla ya agrega solo lo que falta).
 - **Agregar a mano desde el catálogo sigue entrando con cantidad 1**, no 0: quien
@@ -898,6 +906,10 @@ automáticos, IA y generar, `DELETE` para borrar versiones. El panel oculta
 
 ## Casos borde
 
+- **Cuenta nueva, sin consumo histórico**: `consumoAnualActualKwh` es opcional
+  (la factura no lo trae y una cuenta recién contratada no lo tiene). Vacío o 0
+  cuenta como 0: la tabla del PDF (`drawTablaBalance()`) muestra solo "Consumo anual proyectado (cargas previstas × 12)", `textos.ts` usa la
+  frase sin consumo previo y el balance sale solo de las cargas.
 - **Textos heredados**: una versión nueva arranca con `ultimaVersionDatos`,
   textos incluidos, y esos textos tienen los números viejos. El formulario
   muestra un aviso (`textosHeredados`) hasta que se rehacen con automático o IA;

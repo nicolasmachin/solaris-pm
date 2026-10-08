@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.8 — 7 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.9 — 8 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -135,7 +135,10 @@ se completa, de arriba hacia abajo:
 1. **La consulta a UTE.** Si es una microgeneración nueva o una ampliación, la
    potencia pedida (viene cargada de los documentos de UTE o de los inversores
    del proyecto), la que UTE dijo que da (opcional) y el **consumo del último
-   año** de la cuenta, en kWh, sacado de la factura.
+   año** de la cuenta, en kWh, si se conoce. La factura no lo trae, y en una
+   **cuenta nueva** (cliente que recién contrata, obra en construcción) no
+   existe: en ese caso se deja vacío y el consumo del informe sale solo de las
+   cargas proyectadas.
 2. **Por qué el consumo actual no sirve para dimensionar.** Se elige una de
    cuatro situaciones: se suman cargas nuevas, obra en construcción, instalación
    recién habilitada, o mudanza / unificación de cuentas.
@@ -196,12 +199,13 @@ la respuesta al mail de UTE, en el mismo hilo de la consulta.
 
 Los materiales que Voltia usa están en un catálogo único, en **Administración →
 Materiales**, ordenado en dos niveles: los **rubros** (Paneles solares,
-Inversores, Monitoreo y medición, Estructuras, Eléctrica, Consumibles) y,
-adentro de cada uno, **subgrupos**.
+Inversor y monitoreo, Estructuras, Eléctrica, Consumibles) y, adentro de cada
+uno, **subgrupos**.
 
-Monitoreo y medición junta los medidores inteligentes, los dongles y los
-módulos de comunicación del inversor, de todas las marcas, sean monofásicos o
-trifásicos.
+Inversor y monitoreo tiene dos subgrupos: **Inversores**, con los monofásicos y
+los trifásicos de todas las marcas juntos, y **Monitoreo y medición**, con los
+medidores inteligentes, los dongles y los módulos de comunicación del
+inversor.
 
 Eléctrica es el rubro grande —más de la mitad del catálogo— y está abierta en:
 Cables, Canalización (caños, codos, cuplas, bandejas, cámaras), Protecciones
@@ -226,15 +230,15 @@ para instalarla, con su cantidad. Vive en el proyecto, en la pestaña
 **Compras**, y la comparten Ingeniería y Operaciones.
 
 La **plantilla** es el punto de partida de esa lista. Hay **una sola**, la
-plantilla **Base**, con todo lo que va en casi todas las obras: paneles, cable
-solar, conectores, tierra, canalización, protecciones, tableros, terminales,
+plantilla **Base**, con todo lo que va en casi todas las obras: paneles, el
+inversor Growatt de 6 kW, el medidor, cable solar, conectores, tierra, canalización, protecciones, tableros, terminales,
 fijación y sujetadores. **Viene con todas las cantidades en cero**: armar la
 lista es completar números, no sacar y agregar renglones.
 
 **No hay una plantilla por tipo de conexión** (monofásica o trifásica). Lo que
 cambia entre una y otra es casi siempre la misma pieza en otra medida: el
 diferencial de 2 o de 4 polos, el descargador, el medidor, el caño de 1" o de
-1¼". Eso se cambia en el mismo renglón.
+1¼", el inversor. Eso se cambia en el mismo renglón.
 
 Cómo se arma la lista de una obra:
 
@@ -250,9 +254,9 @@ Cómo se arma la lista de una obra:
    subgrupo**. Se puede cambiar mientras el material está **Pendiente**: si ya se
    pidió, no.
 4. Lo que no está en la plantilla se agrega con **+ Agregar** de su sección, que
-   abre el catálogo directo ahí. Quedan afuera de la plantilla, a propósito,
-   **el inversor**, que cambia en cada obra, y **la estructura que depende del
-   techo** (perfiles, tornillos, anclajes, losas).
+   abre el catálogo directo ahí. Queda afuera de la plantilla, a propósito,
+   **la estructura que depende del techo** (perfiles, tornillos, anclajes,
+   losas), porque cambia según el tipo de techo.
 5. Al terminar, arriba de la lista aparece cuántos materiales quedaron en cero.
    Si no van en esta obra, **Quitar los que están en cero** los saca todos juntos.
 
@@ -349,6 +353,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae y en una cuenta nueva no existe. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. |
 | 0.8 | 7 de octubre de 2026 | La lista de materiales se arma desde una sola plantilla, Base, con las cantidades en cero: se agrega cómo se arma la lista paso a paso, el cambio de variante en el mismo renglón, por qué no hay una plantilla por tipo de conexión y que un material en cero no sale para compras. En el catálogo se suma el rubro Monitoreo y medición. |
 | 0.7 | 7 de octubre de 2026 | Nuevo lineamiento: cuando UTE recorta la potencia pedida por el balance anual, Ingeniería contesta con un informe de justificación de potencia. Se agrega la herramienta que arma ese informe en Voltia PM, paso por paso. |
 | 0.6 | 7 de octubre de 2026 | Se agrega el catálogo de materiales por rubro y subgrupo (Eléctrica abierta en Cables, Canalización, Protecciones, Terminales, Tableros, Puesta a tierra y Fijación), con la regla de cargar el ítem en el subgrupo y no en el rubro; y que las plantillas de lista de materiales las configura Ingeniería. |

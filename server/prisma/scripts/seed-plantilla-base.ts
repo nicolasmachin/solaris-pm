@@ -15,14 +15,18 @@
 // plantilla con lo que siempre va, todo en cantidad cero.
 //
 // El contenido sale de las 37 obras con lista en prod: entra lo que aparece en
-// la mitad o más, con la variante más usada. Quedan afuera el inversor (cambia
-// en cada obra) y la estructura que depende del techo (perfiles, punta mecha,
+// la mitad o más, con la variante más usada. El inversor entra con el más
+// usado (Growatt MIN 6000, pedido por Nicolás el 8-oct) y se cambia con ⇄.
+// Queda afuera la estructura que depende del techo (perfiles, punta mecha,
 // anclajes, losas), que se carga por sección.
 //
 // Además ordena dos cosas del catálogo que la plantilla necesita:
-//   - Medidores, dongles y Shine pasan a "Monitoreo y medición": estaban
-//     repartidos entre "Inversores Monofasicos" y "Trifasicos", y el cambio de
-//     variante solo ofrece ítems del mismo grupo (SPM mono ⇄ TPM tri).
+//   - Rubro "Inversor y monitoreo" con dos subgrupos: "Inversores" (mono y tri
+//     juntos) y "Monitoreo y medición" (medidores, dongles, Shine). Antes todo
+//     estaba mezclado en "Inversores Monofasicos" / "Inversores Trifasicos", y
+//     el ⇄ solo ofrece ítems del mismo subgrupo: separados por fase no se podía
+//     pasar del inversor mono al tri, ni del medidor SPM al TPM. Las dos
+//     categorías viejas quedan vacías y se desactivan.
 //   - La jabalina pasa de "Terminales y conexionado" a "Puesta a tierra".
 //
 // Es idempotente: si "Base" ya existe le reemplaza los renglones (la deja como
@@ -41,8 +45,9 @@ const VIEJAS = ["Monofásico (MONO 230)", "Trifásico 230 (TRI 230 SN)", "Trifá
 
 /** Nombres del catálogo de prod; se comparan sin mayúsculas ni espacios. */
 const ITEMS = [
-  // Paneles y monitoreo
+  // Paneles, inversor y monitoreo
   "Paneles Resun 590 W",
+  "GROWATT - MIN 6000TL-X2",
   "Shine WiFi-X",
   "SPM Smart Meter Mono Growatt",
   // Cables
@@ -94,11 +99,14 @@ const ITEMS = [
   "Precintos de seguridad c/bloqueo de llave",
 ];
 
+const RUBRO_INVERSOR = { nombre: "Inversor y monitoreo", descripcion: "Inversores, medidores y comunicación" };
+const SUB_INVERSORES = { nombre: "Inversores", descripcion: "Inversores monofásicos y trifásicos, de todas las marcas" };
 const MONITOREO = {
   nombre: "Monitoreo y medición",
   descripcion: "Medidores inteligentes, dongles y módulos de comunicación del inversor",
   test: (n: string) => n.includes("smart meter") || n.includes("dongle") || n.startsWith("shine"),
 };
+const CATS_INVERSORES_VIEJAS = ["Inversores Monofasicos", "Inversores Trifasicos"];
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 /** Para matchear nombres: el catálogo tiene "Tierra 4 mm" y "Tierra 4mm" según la carga. */
@@ -135,24 +143,45 @@ async function main() {
     if (!SKIP_MISSING) process.exit(1);
   }
 
-  // 2) Categoría "Monitoreo y medición" (rubro de primer nivel).
+  // 2) Rubro "Inversor y monitoreo" › Inversores / Monitoreo y medición.
+  //    Si una categoría con ese nombre ya existe (p. ej. "Inversores" vacía en
+  //    primer nivel, o "Monitoreo y medición" de una corrida anterior) se la
+  //    cuelga del rubro en vez de crear otra: el nombre es único.
+  const catsViejas = await prisma.materialCategory.findMany({ where: { nombre: { in: CATS_INVERSORES_VIEJAS } } });
+  const viejasIds = new Set(catsViejas.map((c) => c.id));
+  const ordenRubro = catsViejas.length ? Math.min(...catsViejas.map((c) => c.orden)) : 1;
+
   const monitoreoItems = catalog.filter((i) => MONITOREO.test(norm(i.nombre)));
-  let monitoreo = await prisma.materialCategory.findUnique({ where: { nombre: MONITOREO.nombre } });
-  const aMoverMonitoreo = monitoreoItems.filter((i) => i.categoryId !== monitoreo?.id);
-  console.log(`\nMonitoreo y medición: ${monitoreo ? "ya existe" : "se crea"}; ${aMoverMonitoreo.length} ítem(s) a mover:`);
-  for (const i of aMoverMonitoreo) console.log(`  - ${i.nombre}  (estaba en ${i.category.nombre})`);
+  const inversorItems = catalog.filter((i) => viejasIds.has(i.categoryId) && !MONITOREO.test(norm(i.nombre)));
+  console.log(`\nRubro "${RUBRO_INVERSOR.nombre}":`);
+  console.log(`  › ${SUB_INVERSORES.nombre}: ${inversorItems.length} ítem(s) desde ${CATS_INVERSORES_VIEJAS.join(" / ")}`);
+  console.log(`  › ${MONITOREO.nombre}: ${monitoreoItems.length} ítem(s)`);
+  for (const i of monitoreoItems) console.log(`      - ${i.nombre}  (estaba en ${i.category.nombre})`);
+  console.log(`  Se desactivan si quedan vacías: ${CATS_INVERSORES_VIEJAS.join(", ")}`);
+
   if (!DRY) {
-    if (!monitoreo) {
-      const inversores = await prisma.materialCategory.findFirst({ where: { nombre: "Inversores" } });
-      monitoreo = await prisma.materialCategory.create({
-        data: { nombre: MONITOREO.nombre, descripcion: MONITOREO.descripcion, orden: inversores?.orden ?? 1 },
+    const rubro =
+      (await prisma.materialCategory.findUnique({ where: { nombre: RUBRO_INVERSOR.nombre } })) ??
+      (await prisma.materialCategory.create({
+        data: { nombre: RUBRO_INVERSOR.nombre, descripcion: RUBRO_INVERSOR.descripcion, orden: ordenRubro },
+      }));
+    async function sub(def: { nombre: string; descripcion: string }, orden: number) {
+      const ex = await prisma.materialCategory.findUnique({ where: { nombre: def.nombre } });
+      if (ex) {
+        return prisma.materialCategory.update({ where: { id: ex.id }, data: { parentId: rubro.id, activa: true, orden } });
+      }
+      return prisma.materialCategory.create({
+        data: { nombre: def.nombre, descripcion: def.descripcion, parentId: rubro.id, orden },
       });
     }
-    if (aMoverMonitoreo.length > 0) {
-      await prisma.materialItem.updateMany({
-        where: { id: { in: aMoverMonitoreo.map((i) => i.id) } },
-        data: { categoryId: monitoreo.id },
-      });
+    const subInv = await sub(SUB_INVERSORES, 0);
+    const subMon = await sub(MONITOREO, 1);
+    await prisma.materialItem.updateMany({ where: { id: { in: inversorItems.map((i) => i.id) } }, data: { categoryId: subInv.id } });
+    await prisma.materialItem.updateMany({ where: { id: { in: monitoreoItems.map((i) => i.id) } }, data: { categoryId: subMon.id } });
+    for (const c of catsViejas) {
+      const quedan = await prisma.materialItem.count({ where: { categoryId: c.id } });
+      if (quedan === 0) await prisma.materialCategory.update({ where: { id: c.id }, data: { activa: false } });
+      else console.log(`⚠ "${c.nombre}" conserva ${quedan} ítem(s) inactivo(s): queda activa.`);
     }
   }
 

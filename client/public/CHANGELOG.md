@@ -4,10 +4,16 @@
 
 ### 8 de octubre de 2026
 
+#### El inversor entra en la plantilla de materiales
+
+- La plantilla **Base** ahora trae el **inversor Growatt de 6 kW**, en cero como el resto. Si la obra lleva otro, se cambia con **⇄**.
+- En el catálogo, inversores, medidores, dongles y el Shine pasan a un rubro nuevo, **Inversor y monitoreo**, con dos grupos: **Inversores** (monofásicos y trifásicos juntos, para poder pasar de uno a otro con ⇄) y **Monitoreo y medición**.
+
 #### Arreglos
 
 - En los generadores con inversor **Huawei** ahora se guarda también **cuánto se exportó a UTE cada día**, no solo lo generado. Antes ese dato estaba únicamente por mes. Los meses anteriores, desde julio, también se completan.
 - El **teléfono del cliente** ya no exige el formato de celular uruguayo (09 y 7 números). Ahora se puede cargar un número de **Argentina** u otro país, un fijo, o escribirlo con **+**, espacios, guiones o paréntesis, en el proyecto, en la ficha del cliente y al pasar un lead a proyecto.
+- En la **justificación de potencia ante UTE**, el consumo del último año ya no parece obligatorio: en una **cuenta nueva** se deja vacío y el informe se arma solo con las cargas que se vienen.
 
 ## v11.9
 
@@ -40,7 +46,7 @@
 - La lista ahora se ve **por secciones** (Cables, Canalización, Protecciones…), cada una con su **+ Agregar**, que abre el catálogo directo en esa sección.
 - Los materiales en cero se ven resaltados, y arriba de la lista aparece cuántos faltan completar, con un botón para **quitar los que quedaron en cero** (los que no van en esa obra).
 - Mientras un material está en cero **no sale en el PDF ni en el consolidado de compras**. Al exportar, avisa cuántos quedan afuera.
-- En el catálogo, los **medidores, dongles y el Shine** pasan a un grupo propio, **Monitoreo y medición**, y la **jabalina** pasa a **Puesta a tierra**.
+- La **jabalina** pasa a **Puesta a tierra** en el catálogo.
 
 ### 5 de octubre de 2026
 

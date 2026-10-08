@@ -254,10 +254,18 @@ function drawTablaBalance(doc: PDFKit.PDFDocument, f: Fonts, b: Balance): void {
     { titulo: "", ancho: w * 0.7, align: "left" },
     { titulo: "", ancho: w * 0.3, align: "right" },
   ];
+  // Cuenta nueva (sin consumo cargado): "actual + incremento" no se entiende sin
+  // una base, así que el consumo proyectado sale directo de las cargas.
+  const filasConsumo: [string, string, boolean][] =
+    b.consumoAnualActualKwh > 0
+      ? [
+          ["Consumo anual actual de la cuenta", `${fmtNum(b.consumoAnualActualKwh)} kWh`, false],
+          ["Incremento anual estimado (nuevas cargas × 12)", `${fmtNum(b.incrementoAnualKwh)} kWh`, false],
+          ["Consumo anual proyectado", `${fmtNum(b.consumoAnualProyectadoKwh)} kWh`, true],
+        ]
+      : [["Consumo anual proyectado (cargas previstas × 12)", `${fmtNum(b.consumoAnualProyectadoKwh)} kWh`, true]];
   const filas: [string, string, boolean][] = [
-    ["Consumo anual actual de la cuenta", b.consumoAnualActualKwh > 0 ? `${fmtNum(b.consumoAnualActualKwh)} kWh` : "Sin historial representativo", false],
-    ["Incremento anual estimado (nuevas cargas × 12)", `${fmtNum(b.incrementoAnualKwh)} kWh`, false],
-    ["Consumo anual proyectado", `${fmtNum(b.consumoAnualProyectadoKwh)} kWh`, true],
+    ...filasConsumo,
     ["Potencia de generación solicitada", `${fmtNum(b.potenciaSolicitadaKw, 2)} kW`, false],
     [`Generación anual estimada (${fmtNum(b.productividadKwhKw)} kWh por kW instalado)`, `${fmtNum(b.generacionAnualKwh)} kWh`, true],
   ];
