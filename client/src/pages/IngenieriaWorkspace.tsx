@@ -14,6 +14,7 @@ import {
   Lightbulb,
   Mic,
   Package,
+  Scale,
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -31,6 +32,7 @@ import { PreIngenieriaToolPanel } from "../components/ingenieria/preing/PreIngen
 import { VisitasReadOnlyPanel } from "../components/ingenieria/visitas/VisitasReadOnlyPanel";
 import { EFPToolPanel } from "../components/ingenieria/efp/EFPToolPanel";
 import { GabineteToolPanel } from "../components/ingenieria/gabinete/GabineteToolPanel";
+import { JustificacionToolPanel } from "../components/ingenieria/justificacion/JustificacionToolPanel";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function formatShortDate(iso: string): string {
@@ -44,6 +46,7 @@ function iconFor(key: string): LucideIcon {
   if (key === "triangulos") return Calculator;
   if (key === "materiales") return Package;
   if (key === "preing") return ClipboardList;
+  if (key === "justif-potencia") return Scale;
   if (key === "visitas") return Mic;
   if (key === "efp") return BookOpen;
   if (key === "gabinete") return Box;
@@ -156,6 +159,7 @@ export function IngenieriaWorkspace() {
                   {h.key === "materiales" && <MaterialesToolPanel projectId={id} />}
                   {h.key === "triangulos" && <TriangulosToolPanel projectId={id} />}
                   {h.key === "preing" && <PreIngenieriaToolPanel projectId={id} />}
+                  {h.key === "justif-potencia" && <JustificacionToolPanel projectId={id} />}
                   {h.key === "visitas" && <VisitasReadOnlyPanel projectId={id} />}
                   {h.key === "efp" && <EFPToolPanel projectId={id} />}
                   {h.key === "gabinete" && <GabineteToolPanel projectId={id} />}

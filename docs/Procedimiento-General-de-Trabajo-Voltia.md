@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Borrador en revisión — 1 de octubre de 2026
+**Voltia · Uruguay** · Borrador en revisión — 7 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -348,7 +348,9 @@ grandes rasgos son cuatro pasos:
 Los hitos uno por uno están en el Manual de trabajo de Tramitación UTE.
 
 La consulta la presenta Ventas en el onboarding; desde ahí, el
-trámite lo sigue Tramitación. **Cuando UTE habilita**, Tramitación marca el
+trámite lo sigue Tramitación. Si UTE contesta la consulta con menos potencia
+que la pedida, la respuesta la da **Ingeniería**, que es quien puede justificar
+con números el consumo que va a tener el cliente. **Cuando UTE habilita**, Tramitación marca el
 trámite como finalizado y Voltia PM le avisa solo a Experiencia Solar, que tiene
 de 24 a 48 horas para decirle al cliente que ya puede encender.
 

@@ -513,110 +513,111 @@ enum ProposalStatus {
 // ─── Modelos existentes ───────────────────────────────────────────────────────
 
 model User {
-  id                             String                      @id @default(cuid())
+  id                             String                         @id @default(cuid())
   /// Puede ser null: los Generadores del portal muchas veces no tienen mail y
   /// entran con `username`. Todo usuario tiene email O username (o los dos).
-  email                          String?                     @unique
+  email                          String?                        @unique
   /// Alias corto de ingreso, alternativo al mail. Los internos usan su nombre
   /// ("nicolas"); los Generadores sin mail, su cédula o un alias generado.
   /// Siempre en minúsculas: el login no distingue mayúsculas.
-  username                       String?                     @unique
+  username                       String?                        @unique
   password                       String
   name                           String
   phone                          String?
   jobTitle                       String?
   roleId                         String
-  role                           Role                        @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  role                           Role                           @relation(fields: [roleId], references: [id], onDelete: Restrict)
   tenantId                       String?
-  avatarUrl                      String?                     @map("avatar_url")
+  avatarUrl                      String?                        @map("avatar_url")
   notificationPreferences        UserNotificationPreference?
-  createdProjects                Project[]                   @relation("ProjectCreatedBy")
-  projectsSalesperson            Project[]                   @relation("ProjectSalesperson")
+  createdProjects                Project[]                      @relation("ProjectCreatedBy")
+  projectsSalesperson            Project[]                      @relation("ProjectSalesperson")
   assignedSubstages              Substage[]
-  assignedStages                 Stage[]                     @relation("StageResponsibleUser")
-  completedChecklistItems        ChecklistItem[]             @relation("ChecklistCompletedBy")
-  obraChecklistCompletions       ProjectChecklistItem[]      @relation("ObraChecklistCompletedBy")
+  assignedStages                 Stage[]                        @relation("StageResponsibleUser")
+  completedChecklistItems        ChecklistItem[]                @relation("ChecklistCompletedBy")
+  obraChecklistCompletions       ProjectChecklistItem[]         @relation("ObraChecklistCompletedBy")
   assignedTasks                  Task[]
   taskAssignments                TaskAssignee[]
-  uploadedFiles                  FileAttachment[]            @relation("FileUploadedBy")
+  uploadedFiles                  FileAttachment[]               @relation("FileUploadedBy")
   auditLogs                      AuditLog[]
   notifications                  Notification[]
   comments                       Comment[]
-  settings                       Setting[]                   @relation("SettingUser")
-  settingsUpdated                Setting[]                   @relation("SettingUpdatedBy")
-  salesLeadsAssigned             SalesLead[]                 @relation("LeadAssignedTo")
-  salesLeadsCreated              SalesLead[]                 @relation("LeadCreatedBy")
+  settings                       Setting[]                      @relation("SettingUser")
+  settingsUpdated                Setting[]                      @relation("SettingUpdatedBy")
+  salesLeadsAssigned             SalesLead[]                    @relation("LeadAssignedTo")
+  salesLeadsCreated              SalesLead[]                    @relation("LeadCreatedBy")
   salesActivities                SalesActivity[]
-  proposals                      ProposalGeneration[]        @relation("ProposalGeneratedBy")
-  goals                          Goal[]                      @relation("GoalCreatedBy")
-  financeMovementsCreated        FinanceMovement[]           @relation("FinanceMovCreadoPor")
-  financeMovementsApproved       FinanceMovement[]           @relation("FinanceMovAprobadoPor")
+  proposals                      ProposalGeneration[]           @relation("ProposalGeneratedBy")
+  goals                          Goal[]                         @relation("GoalCreatedBy")
+  financeMovementsCreated        FinanceMovement[]              @relation("FinanceMovCreadoPor")
+  financeMovementsApproved       FinanceMovement[]              @relation("FinanceMovAprobadoPor")
   financeApprovalHistory         FinanceApprovalHistory[]
-  paymentsCreated                Payment[]                   @relation("PaymentCreatedBy")
-  installationSchedulesConfirmed InstallationSchedule[]      @relation("InstallationConfirmedBy")
-  reconciliationsCreated         AccountReconciliation[]     @relation("ReconciliationCreatedBy")
+  paymentsCreated                Payment[]                      @relation("PaymentCreatedBy")
+  installationSchedulesConfirmed InstallationSchedule[]         @relation("InstallationConfirmedBy")
+  reconciliationsCreated         AccountReconciliation[]        @relation("ReconciliationCreatedBy")
   aiQueries                      AIQuery[]
   aiRateLimit                    AIRateLimit?
-  clientProjects                 Project[]                   @relation("ProjectClient")
-  projectClients                 ProjectClient[]             @relation("ProjectClientUser")
-  recorridoChecksCompletados     RecorridoCheck[]            @relation("RecorridoCheckCompletadoPor")
-  projectClientsCreated          ProjectClient[]             @relation("ProjectClientCreatedBy")
-  technicalVisitsCreated         TechnicalVisit[]            @relation("TechnicalVisitCreator")
-  visitInputsCreated             VisitInput[]                @relation("VisitInputCreator")
-  visitReportsGenerated          VisitReport[]               @relation("VisitReportGenerator")
-  efpVersionsCreated             EFPVersion[]                @relation("EFPVersionCreator")
-  efpAttachmentsUploaded         EFPAttachment[]             @relation("EFPAttachmentUploader")
-  projectMaterialsAdded          ProjectMaterial[]           @relation("ProjectMaterialAddedBy")
-  projectMaterialsEdited         ProjectMaterial[]           @relation("ProjectMaterialLastEditedBy")
-  uteDocumentsGenerated          UteDocumentGeneration[]     @relation("UteDocsGeneratedBy")
-  informesCreados                Informe[]                   @relation("InformesCreados")
-  informesRecibidos              InformeDestinatario[]       @relation("InformesRecibidos")
+  clientProjects                 Project[]                      @relation("ProjectClient")
+  projectClients                 ProjectClient[]                @relation("ProjectClientUser")
+  recorridoChecksCompletados     RecorridoCheck[]               @relation("RecorridoCheckCompletadoPor")
+  projectClientsCreated          ProjectClient[]                @relation("ProjectClientCreatedBy")
+  technicalVisitsCreated         TechnicalVisit[]               @relation("TechnicalVisitCreator")
+  visitInputsCreated             VisitInput[]                   @relation("VisitInputCreator")
+  visitReportsGenerated          VisitReport[]                  @relation("VisitReportGenerator")
+  efpVersionsCreated             EFPVersion[]                   @relation("EFPVersionCreator")
+  justificacionesPotencia        JustificacionPotenciaVersion[] @relation("JustificacionPotenciaCreator")
+  efpAttachmentsUploaded         EFPAttachment[]                @relation("EFPAttachmentUploader")
+  projectMaterialsAdded          ProjectMaterial[]              @relation("ProjectMaterialAddedBy")
+  projectMaterialsEdited         ProjectMaterial[]              @relation("ProjectMaterialLastEditedBy")
+  uteDocumentsGenerated          UteDocumentGeneration[]        @relation("UteDocsGeneratedBy")
+  informesCreados                Informe[]                      @relation("InformesCreados")
+  informesRecibidos              InformeDestinatario[]          @relation("InformesRecibidos")
   smtpConfig                     UserSmtpConfig?
-  emailsSent                     EmailLog[]                  @relation("EmailSentBy")
-  proposalV2DraftsCreated        ProposalV2Draft[]           @relation("ProposalV2DraftCreatedBy")
-  proposalV2DraftsUpdated        ProposalV2Draft[]           @relation("ProposalV2DraftUpdatedBy")
-  proposalV2VersionsPublished    ProposalV2Version[]         @relation("ProposalV2VersionPublishedBy")
-  proposalV2VersionsDiscarded    ProposalV2Version[]         @relation("ProposalV2VersionDiscardedBy")
-  contractDraftsCreated          ContractDraft[]             @relation("ContractDraftCreatedBy")
-  contractDraftsUpdated          ContractDraft[]             @relation("ContractDraftUpdatedBy")
-  contractVersionsPublished      ContractVersion[]           @relation("ContractVersionPublishedBy")
-  proformaDraftsCreated          ProformaDraft[]             @relation("ProformaDraftCreatedBy")
-  proformaDraftsUpdated          ProformaDraft[]             @relation("ProformaDraftUpdatedBy")
-  proformaVersionsPublished      ProformaVersion[]           @relation("ProformaVersionPublishedBy")
-  proposalDefaultsUpdated        ProposalDefaults[]          @relation("ProposalDefaultsUpdatedBy")
-  clientInteractions             ClientInteraction[]         @relation("ClientInteractionAuthor")
-  clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
-  commissions                    Commission[]                @relation("CommissionAsesor")
-  commissionsCreated             Commission[]                @relation("CommissionCreatedBy")
-  installerPayments              InstallerPayment[]          @relation("InstallerPaymentInstaller")
-  agendaEventosCreados           AgendaEvento[]              @relation("AgendaEventoCreatedBy")
-  installerPaymentsCreated       InstallerPayment[]          @relation("InstallerPaymentCreatedBy")
-  traspasosComoModal             Traspaso[]                  @relation("TraspasoModalUsuario")
-  traspasosConfirmados           Traspaso[]                  @relation("TraspasoConfirmadoPor")
-  traspasosRecibidos             TraspasoDestinatario[]      @relation("TraspasoDestinatarioUsuario")
-  tarifaUteVersionsCreadas       TarifaUteVersion[]          @relation("TarifaUteVersionCreadaPor")
-  reporteFvConfigsActualizadas   ReporteFvConfig[]           @relation("ReporteFvConfigActualizadaPor")
-  reporteFvLecturasEditadas      ReporteFvLectura[]          @relation("ReporteFvLecturaEditadaPor")
-  reporteFvIngestasLanzadas      ReporteFvIngesta[]          @relation("ReporteFvIngestaLanzadaPor")
-  reporteFvEmisionesGeneradas    ReporteFvEmision[]          @relation("ReporteFvEmisionGeneradaPor")
-  reporteFvEnviosRealizados      ReporteFvEnvio[]            @relation("ReporteFvEnvioEnviadoPor")
-  growattPlantsVinculadas        GrowattPlant[]              @relation("GrowattPlantVinculadaPor")
-  huaweiPlantsVinculadas         HuaweiPlant[]               @relation("HuaweiPlantVinculadaPor")
-  huaweiPlantsSilenciadas        HuaweiPlant[]               @relation("HuaweiPlantMonitoreoSilenciadaPor")
-  growattPlantsSilenciadas       GrowattPlant[]              @relation("GrowattPlantMonitoreoSilenciadaPor")
-  fvMonitorCorridasLanzadas      FvMonitorCorrida[]          @relation("FvMonitorCorridaLanzadaPor")
-  fvIncidenciasRevisadas         FvIncidencia[]              @relation("FvIncidenciaRevisadaPor")
-  projectVideosSubidos           ProjectVideo[]              @relation("ProjectVideoUploadedBy")
-  projectVideosBorrados          ProjectVideo[]              @relation("ProjectVideoDeletedBy")
+  emailsSent                     EmailLog[]                     @relation("EmailSentBy")
+  proposalV2DraftsCreated        ProposalV2Draft[]              @relation("ProposalV2DraftCreatedBy")
+  proposalV2DraftsUpdated        ProposalV2Draft[]              @relation("ProposalV2DraftUpdatedBy")
+  proposalV2VersionsPublished    ProposalV2Version[]            @relation("ProposalV2VersionPublishedBy")
+  proposalV2VersionsDiscarded    ProposalV2Version[]            @relation("ProposalV2VersionDiscardedBy")
+  contractDraftsCreated          ContractDraft[]                @relation("ContractDraftCreatedBy")
+  contractDraftsUpdated          ContractDraft[]                @relation("ContractDraftUpdatedBy")
+  contractVersionsPublished      ContractVersion[]              @relation("ContractVersionPublishedBy")
+  proformaDraftsCreated          ProformaDraft[]                @relation("ProformaDraftCreatedBy")
+  proformaDraftsUpdated          ProformaDraft[]                @relation("ProformaDraftUpdatedBy")
+  proformaVersionsPublished      ProformaVersion[]              @relation("ProformaVersionPublishedBy")
+  proposalDefaultsUpdated        ProposalDefaults[]             @relation("ProposalDefaultsUpdatedBy")
+  clientInteractions             ClientInteraction[]            @relation("ClientInteractionAuthor")
+  clientInteractionsDeleted      ClientInteraction[]            @relation("ClientInteractionDeletedBy")
+  commissions                    Commission[]                   @relation("CommissionAsesor")
+  commissionsCreated             Commission[]                   @relation("CommissionCreatedBy")
+  installerPayments              InstallerPayment[]             @relation("InstallerPaymentInstaller")
+  agendaEventosCreados           AgendaEvento[]                 @relation("AgendaEventoCreatedBy")
+  installerPaymentsCreated       InstallerPayment[]             @relation("InstallerPaymentCreatedBy")
+  traspasosComoModal             Traspaso[]                     @relation("TraspasoModalUsuario")
+  traspasosConfirmados           Traspaso[]                     @relation("TraspasoConfirmadoPor")
+  traspasosRecibidos             TraspasoDestinatario[]         @relation("TraspasoDestinatarioUsuario")
+  tarifaUteVersionsCreadas       TarifaUteVersion[]             @relation("TarifaUteVersionCreadaPor")
+  reporteFvConfigsActualizadas   ReporteFvConfig[]              @relation("ReporteFvConfigActualizadaPor")
+  reporteFvLecturasEditadas      ReporteFvLectura[]             @relation("ReporteFvLecturaEditadaPor")
+  reporteFvIngestasLanzadas      ReporteFvIngesta[]             @relation("ReporteFvIngestaLanzadaPor")
+  reporteFvEmisionesGeneradas    ReporteFvEmision[]             @relation("ReporteFvEmisionGeneradaPor")
+  reporteFvEnviosRealizados      ReporteFvEnvio[]               @relation("ReporteFvEnvioEnviadoPor")
+  growattPlantsVinculadas        GrowattPlant[]                 @relation("GrowattPlantVinculadaPor")
+  huaweiPlantsVinculadas         HuaweiPlant[]                  @relation("HuaweiPlantVinculadaPor")
+  huaweiPlantsSilenciadas        HuaweiPlant[]                  @relation("HuaweiPlantMonitoreoSilenciadaPor")
+  growattPlantsSilenciadas       GrowattPlant[]                 @relation("GrowattPlantMonitoreoSilenciadaPor")
+  fvMonitorCorridasLanzadas      FvMonitorCorrida[]             @relation("FvMonitorCorridaLanzadaPor")
+  fvIncidenciasRevisadas         FvIncidencia[]                 @relation("FvIncidenciaRevisadaPor")
+  projectVideosSubidos           ProjectVideo[]                 @relation("ProjectVideoUploadedBy")
+  projectVideosBorrados          ProjectVideo[]                 @relation("ProjectVideoDeletedBy")
   mcpAuthCodes                   McpAuthCode[]
   mcpRefreshTokens               McpRefreshToken[]
-  capacitacionVideosCargados     CapacitacionVideo[]         @relation("CapacitacionVideoCreatedBy")
-  capacitacionDocumentosSubidos  CapacitacionDocumento[]     @relation("CapacitacionDocumentoUploadedBy")
+  capacitacionVideosCargados     CapacitacionVideo[]            @relation("CapacitacionVideoCreatedBy")
+  capacitacionDocumentosSubidos  CapacitacionDocumento[]        @relation("CapacitacionDocumentoUploadedBy")
   capacitacionVistas             CapacitacionVista[]
-  passwordTemporary              Boolean                     @default(false)
-  deletedAt                      DateTime?                   @db.Timestamptz(6)
-  createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
-  updatedAt                      DateTime                    @updatedAt @db.Timestamptz(6)
+  passwordTemporary              Boolean                        @default(false)
+  deletedAt                      DateTime?                      @db.Timestamptz(6)
+  createdAt                      DateTime                       @default(now()) @db.Timestamptz(6)
+  updatedAt                      DateTime                       @updatedAt @db.Timestamptz(6)
 
   @@index([deletedAt])
   @@index([tenantId])
@@ -624,45 +625,45 @@ model User {
 }
 
 model Project {
-  id                              String                      @id @default(cuid())
-  code                            String                      @unique
+  id                              String                         @id @default(cuid())
+  code                            String                         @unique
   tenantId                        String?
   clientName                      String
-  capacityKwp                     Decimal                     @db.Decimal(10, 2)
+  capacityKwp                     Decimal                        @db.Decimal(10, 2)
   // Cuántas "obras" vale el proyecto para la métrica ponderada. Default 1;
   // sólo ADMIN lo sube a mano desde la ficha (ej. una obra grande = 5).
-  pesoObra                        Int                         @default(1)
+  pesoObra                        Int                            @default(1)
   locationCity                    String
   locationProvince                String
   status                          ProjectStatus
-  startDate                       DateTime                    @db.Date
-  saleDate                        DateTime?                   @db.Date
-  plannedEndDate                  DateTime?                   @db.Date
-  actualEndDate                   DateTime?                   @db.Date
-  budgetUsd                       Decimal?                    @db.Decimal(14, 2)
-  executedUsd                     Decimal                     @db.Decimal(14, 2)
-  estimatedMwhYear                Decimal?                    @db.Decimal(10, 2)
-  co2TonsAvoided                  Decimal?                    @db.Decimal(10, 2)
-  actualOnboardingEnd             DateTime?                   @db.Date
-  actualEngineeringEnd            DateTime?                   @db.Date
-  actualUteStart                  DateTime?                   @db.Date
-  actualUteEnd                    DateTime?                   @db.Date
+  startDate                       DateTime                       @db.Date
+  saleDate                        DateTime?                      @db.Date
+  plannedEndDate                  DateTime?                      @db.Date
+  actualEndDate                   DateTime?                      @db.Date
+  budgetUsd                       Decimal?                       @db.Decimal(14, 2)
+  executedUsd                     Decimal                        @db.Decimal(14, 2)
+  estimatedMwhYear                Decimal?                       @db.Decimal(10, 2)
+  co2TonsAvoided                  Decimal?                       @db.Decimal(10, 2)
+  actualOnboardingEnd             DateTime?                      @db.Date
+  actualEngineeringEnd            DateTime?                      @db.Date
+  actualUteStart                  DateTime?                      @db.Date
+  actualUteEnd                    DateTime?                      @db.Date
   modalidadPago                   ModalidadPago?
   /// Qué se acordó, cuando la modalidad es OTRO. Es lo que hace que el caso
   /// particular quede explicado y no solo marcado como "otro".
   modalidadPagoNota               String?
-  firstDateScheduledAt            DateTime?                   @db.Timestamptz(6)
+  firstDateScheduledAt            DateTime?                      @db.Timestamptz(6)
   clientEmail                     String?
   clientPhone                     String?
   clientAddress                   String?
   uteCodigoPS                     String?
   uteCodigoAS                     String?
   createdById                     String
-  createdBy                       User                        @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy                       User                           @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   salespersonId                   String?
-  salesperson                     User?                       @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
+  salesperson                     User?                          @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
   clientUserId                    String?
-  clientUser                      User?                       @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: SetNull)
+  clientUser                      User?                          @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: SetNull)
   stages                          Stage[]
   substages                       Substage[]
   checklistItems                  ChecklistItem[]
@@ -672,9 +673,9 @@ model Project {
   auditLogs                       AuditLog[]
   notifications                   Notification[]
   comments                        Comment[]
-  settings                        Setting[]                   @relation("SettingProject")
-  convertedLeads                  SalesLead[]                 @relation("LeadConvertedTo")
-  proposals                       ProposalGeneration[]        @relation("ProposalProject")
+  settings                        Setting[]                      @relation("SettingProject")
+  convertedLeads                  SalesLead[]                    @relation("LeadConvertedTo")
+  proposals                       ProposalGeneration[]           @relation("ProposalProject")
   solarSystems                    SolarSystem[]
   financeMovements                FinanceMovement[]
   projectMaterials                ProjectMaterial[]
@@ -688,6 +689,7 @@ model Project {
   unifilarVersions                UnifilarVersion[]
   cabinetDesigns                  CabinetDesign[]
   preIngenieriaVersions           PreIngenieriaVersion[]
+  justificacionPotenciaVersions   JustificacionPotenciaVersion[]
   contractDraft                   ContractDraft?
   contractVersions                ContractVersion[]
   proformaDraft                   ProformaDraft?
@@ -696,8 +698,8 @@ model Project {
   engineeringFinalProject         EngineeringFinalProject?
   uteDocumentConfigs              UteDocumentConfig[]
   uteDocumentGenerations          UteDocumentGeneration[]
-  informes                        Informe[]                   @relation("InformesDeProyecto")
-  emailLogs                       EmailLog[]                  @relation("EmailLogProject")
+  informes                        Informe[]                      @relation("InformesDeProyecto")
+  emailLogs                       EmailLog[]                     @relation("EmailLogProject")
   clientInteractions              ClientInteraction[]
   recorridoChecks                 RecorridoCheck[]
   traspasos                       Traspaso[]
@@ -709,7 +711,7 @@ model Project {
   growattPlant                    GrowattPlant?
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
-  agendaEventos                   AgendaEvento[]              @relation("AgendaEventoProject")
+  agendaEventos                   AgendaEvento[]                 @relation("AgendaEventoProject")
   projectVideos                   ProjectVideo[]
   installerPayment                InstallerPayment?
   seguroGranizoPoliza             SeguroGranizoPoliza?
@@ -719,8 +721,8 @@ model Project {
   // a POST_HABILITACION (T7). E3-A = compromiso comercial (año 0-2); E3-B = vida
   // útil extendida (año 2-25). Es un flag interno para reportes, no cambia la etapa.
   postHabilitacionSubFase         PostHabilitacionSubFase?
-  postHabilitacionInicioEn        DateTime?                   @db.Timestamptz(6)
-  postHabilitacionFechaAproximada Boolean                     @default(false)
+  postHabilitacionInicioEn        DateTime?                      @db.Timestamptz(6)
+  postHabilitacionFechaAproximada Boolean                        @default(false)
   // Etapa fijada a mano para la vista (dashboard/lista). "Empujón hacia
   // adelante": la etapa mostrada es la MÁS AVANZADA entre la derivada de las
   // sub-tareas y esta. Permite avanzar aunque quede un ítem pendiente. Se setea
@@ -728,11 +730,11 @@ model Project {
   stageOverride                   StageType?
   // Equipo de obra tercerizado vs propio. Condiciona sub-tareas del pipeline
   // (ej. logística de envío en Compras). Spec v3, C13.
-  equipoTercerizado               Boolean                     @default(false)
+  equipoTercerizado               Boolean                        @default(false)
   // Regla de Oro del aviso post-habilitación (§8.2): se setea cuando CX registra
   // el aviso al cliente de que ya puede encender. Mientras esté null y
   // postHabilitacionInicioEn tenga valor, el cron alerta a las 24/48hs.
-  avisoHabilitacionEn             DateTime?                   @db.Timestamptz(6)
+  avisoHabilitacionEn             DateTime?                      @db.Timestamptz(6)
   // Override manual del recorrido E1/E2/E3 en Experiencia Solar (útil para
   // clientes importados sin pipeline). Si está seteado, pisa el derivado.
   recorridoManual                 String?
@@ -741,30 +743,30 @@ model Project {
   // posterior a esta fecha, así que no lo silencia para siempre. Es global (lo
   // apaga cualquiera y se apaga para todos), igual que el resto de las señales
   // del recorrido; quién lo hizo queda en el log de auditoría.
-  novedadVistaEn                  DateTime?                   @db.Timestamptz(6)
+  novedadVistaEn                  DateTime?                      @db.Timestamptz(6)
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
   // UTE. Independiente de clientName (nombre del proyecto). Puede coincidir
   // pero la extracción de cédula sólo toca este campo, nunca clientName.
-  nombreCliente                   String                      @default("")
-  ciCliente                       String                      @default("")
-  calle                           String                      @default("")
-  numCalle                        String                      @default("")
-  personaFisica                   Boolean                     @default(true)
-  empresa                         Boolean                     @default(false)
+  nombreCliente                   String                         @default("")
+  ciCliente                       String                         @default("")
+  calle                           String                         @default("")
+  numCalle                        String                         @default("")
+  personaFisica                   Boolean                        @default(true)
+  empresa                         Boolean                        @default(false)
   // Rutas relativas dentro de STORAGE_PATH/projects/{id}/ute-docs/
   cedulaPath                      String?
   facturaUtePath                  String?
   // Generador "liviano" cargado por CSV en Experiencia Solar: existe como cliente
   // pero sin pipeline/obra. Se excluye de la lista de Proyectos (solo vive en
   // Experiencia Solar) hasta que, si alguna vez, se lo convierta en proyecto real.
-  importedFromCsv                 Boolean                     @default(false)
+  importedFromCsv                 Boolean                        @default(false)
   // Omitido de métricas y SLA: proyectos viejos/de seguimiento sin todo cargado
   // que distorsionan los indicadores. Sigue existiendo y visible en el resto de
   // la app (p. ej. seguimiento de trámite UTE); solo NO cuenta en el panel de
   // Tiempos & SLA ni en las métricas. Reversible desde el panel.
-  excludedFromMetrics             Boolean                     @default(false)
+  excludedFromMetrics             Boolean                        @default(false)
   // Ampliación de una instalación ya existente. "Es una ampliación" se deriva de
   // que este campo tenga valor: no hay un enum aparte que pueda quedar
   // desincronizado con el vínculo. El árbol es PLANO — una ampliación de una
@@ -774,19 +776,19 @@ model Project {
   // SetNull y no Cascade: borrar la obra original no puede arrastrar la
   // ampliación, que tiene su propia plata, sus materiales y su trámite UTE.
   parentProjectId                 String?
-  parentProject                   Project?                    @relation("ProjectAmpliacion", fields: [parentProjectId], references: [id], onDelete: SetNull)
-  ampliaciones                    Project[]                   @relation("ProjectAmpliacion")
+  parentProject                   Project?                       @relation("ProjectAmpliacion", fields: [parentProjectId], references: [id], onDelete: SetNull)
+  ampliaciones                    Project[]                      @relation("ProjectAmpliacion")
   // Facturación al cliente. No todos los clientes "llevan factura" (algunos exigen
   // factura fiscal y otros no). Una sola factura por proyecto: el estado de emisión
   // vive en el propio proyecto. El check y la nota se editan al crear/editar el
   // proyecto; "marcar emitida" es una acción del módulo Finanzas.
-  llevaFactura                    Boolean                     @default(false)
+  llevaFactura                    Boolean                        @default(false)
   facturaNota                     String?
-  facturaEmitida                  Boolean                     @default(false)
-  facturaEmitidaEn                DateTime?                   @db.Timestamptz(6)
-  deletedAt                       DateTime?                   @db.Timestamptz(6)
-  createdAt                       DateTime                    @default(now()) @db.Timestamptz(6)
-  updatedAt                       DateTime                    @updatedAt @db.Timestamptz(6)
+  facturaEmitida                  Boolean                        @default(false)
+  facturaEmitidaEn                DateTime?                      @db.Timestamptz(6)
+  deletedAt                       DateTime?                      @db.Timestamptz(6)
+  createdAt                       DateTime                       @default(now()) @db.Timestamptz(6)
+  updatedAt                       DateTime                       @updatedAt @db.Timestamptz(6)
 
   @@index([status])
   @@index([importedFromCsv])
@@ -1570,6 +1572,7 @@ enum FileAttachmentTipo {
   MINUTA_RELEVAMIENTO
   REPORTE_FOTOVOLTAICO
   GABINETE
+  JUSTIFICACION_POTENCIA
   OTRO
 }
 
@@ -2976,6 +2979,31 @@ model UnifilarVersion {
   @@unique([projectId, suministro, versionNumber])
   @@index([projectId])
   @@map("unifilar_versions")
+}
+
+// Informe técnico "Justificación de aumento de consumo eléctrico" que se le
+// manda a UTE cuando el balance anual de la cuenta no da para la potencia de
+// generación pedida. 1:N inmutable por proyecto, como Pre-Ingeniería. Los datos
+// del formulario (cliente, cargas proyectadas, textos) van enteros en `datos`
+// —validados con Zod en `justificacionPotencia/schema.ts`— para poder volver a
+// renderizar el PDF de cualquier versión.
+model JustificacionPotenciaVersion {
+  id                   String   @id @default(cuid())
+  projectId            String
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNumber        Int
+  datos                Json
+  // Denormalizado de `datos` para listar sin parsear el JSON.
+  potenciaSolicitadaKw Decimal  @db.Decimal(10, 2)
+  // Si los textos del informe se redactaron con IA (aunque después se editen).
+  textosConIa          Boolean  @default(false)
+  createdById          String
+  createdBy            User     @relation("JustificacionPotenciaCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt            DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId])
+  @@map("justificacion_potencia_versions")
 }
 
 // Versiones del documento "Resumen Técnico" (Pre-Ingeniería). Mismo patrón que
@@ -5189,7 +5217,6 @@ model PlanGranizoVersion {
   @@map("plan_granizo_versions")
 }
 
-
 // ─── Gabinetes metálicos (Ingeniería) ─────────────────────────────────────────
 //
 // Herramienta para diseñar el gabinete que se manda a fabricar: se cargan las
@@ -5208,14 +5235,14 @@ model CabinetDesign {
   nombre String
 
   // Medidas exteriores, en centímetros (la lámina aclara que son exteriores).
-  anchoCm        Float
-  altoCm         Float
-  profundidadCm  Float
+  anchoCm       Float
+  altoCm        Float
+  profundidadCm Float
 
   // Construcción
-  fondoAbierto    Boolean @default(true)
-  pestanaAmure    Boolean @default(true)
-  pestanaAnchoCm  Float   @default(3)
+  fondoAbierto   Boolean @default(true)
+  pestanaAmure   Boolean @default(true)
+  pestanaAnchoCm Float   @default(3)
   // ── Medidas de taller ──
   //
   // Todas tienen default y ninguna es nullable, a propósito: el dibujo no puede
@@ -5238,10 +5265,10 @@ model CabinetDesign {
   // Encuentro tapa / cuerpo. El cuerpo lleva un reborde plegado hacia adentro
   // en el frente, y la tapa su propio reborde perimetral que monta sobre él.
   // Sin estas cuatro medidas el taller no sabe cómo asienta la tapa.
-  rebordeTapaCm    Float @default(2)
-  rebordeFrenteCm  Float @default(2)
-  solapeTapaCm     Float @default(1)
-  holguraTapaMm    Float @default(2)
+  rebordeTapaCm   Float @default(2)
+  rebordeFrenteCm Float @default(2)
+  solapeTapaCm    Float @default(1)
+  holguraTapaMm   Float @default(2)
 
   // Chapa y terminación
   material  String @default("Chapa galvanizada en caliente")
@@ -5277,8 +5304,8 @@ model CabinetDesignVersion {
   versionNumber Int
   // Congela todos los campos del diseño al momento de emitir, para que la
   // lámina vieja siga siendo reproducible aunque el diseño cambie.
-  snapshot Json
-  label    String?
+  snapshot      Json
+  label         String?
 
   // PDF emitido (FileAttachment del proyecto, toolSource "gabinete").
   fileAttachmentId String?

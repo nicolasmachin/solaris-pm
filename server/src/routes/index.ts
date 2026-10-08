@@ -20,6 +20,7 @@ import { registerMcpRoutes } from "./mcp/index.js";
 import { registerPortalRoutes } from "./portal.routes.js";
 import { registerProformaRoutes } from "./proforma.routes.js";
 import { registerPreIngenieriaRoutes } from "./preingenieria.routes.js";
+import { registerJustificacionPotenciaRoutes } from "./justificacion-potencia.routes.js";
 import { registerProposalsV2DefaultsRoutes } from "./proposals-v2-defaults.routes.js";
 import { registerProposalsV2DraftsVersionsRoutes } from "./proposals-v2-drafts-versions.routes.js";
 import { registerProposalsV2PreviewRoutes } from "./proposals-v2-preview.routes.js";
@@ -52,6 +53,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerUnifilarRoutes, { prefix: "/api" });
   await app.register(registerIngenieriaRoutes, { prefix: "/api" });
   await app.register(registerPreIngenieriaRoutes, { prefix: "/api" });
+  await app.register(registerJustificacionPotenciaRoutes, { prefix: "/api" });
   await app.register(registerConsolidadorRoutes, { prefix: "/api" });
   await app.register(registerMaterialTemplatesRoutes, { prefix: "/api" });
   await app.register(registerVisitasRoutes, { prefix: "/api" });

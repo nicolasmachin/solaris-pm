@@ -24,6 +24,7 @@ export const AI_FEATURES = {
   minuta: "Lectura de minutas",
   ute_extract: "Lectura de cédulas y facturas UTE",
   novedades_mail: "Mail de novedades",
+  justificacion_potencia: "Justificación de potencia ante UTE",
 } as const;
 
 export type AIFeature = keyof typeof AI_FEATURES;

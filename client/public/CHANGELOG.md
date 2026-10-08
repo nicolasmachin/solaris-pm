@@ -4,6 +4,14 @@
 
 ### 7 de octubre de 2026
 
+#### Justificación de potencia ante UTE
+
+- Nueva herramienta en **Ingeniería**, al lado de Pre-ingeniería, para cuando UTE contesta la consulta con **menos potencia que la pedida** porque el consumo del último año no alcanza.
+- Se cargan el consumo del último año y las **cargas que se vienen**: hay sugerencias listas para sumar con un toque (auto eléctrico, piscina, climatización, cabañas, oficinas, taller, riego y más) con valores típicos que se ajustan, cargas libres y **cuentas UTE que se unifican**.
+- El **balance anual** se calcula mientras se completa: avisa si la potencia pedida da y, si no, hasta cuántos kW justifica el consumo proyectado.
+- Los textos del informe se completan solos con el estilo de los informes que ya se mandaban a UTE, o se pueden **redactar con IA**; siempre se pueden corregir a mano.
+- Sale un **PDF con el logo de Voltia y la línea de firma**, que queda en los Documentos del proyecto para firmarlo y contestar el mail de UTE. Cada informe queda como versión y las anteriores se pueden volver a ver.
+
 #### El catálogo de materiales se ordena en subgrupos
 
 - **Eléctrica** tenía adentro 175 de los 307 ítems del catálogo: cables, caños, codos, bandejas, térmicas, diferenciales, tableros, terminales y jabalinas, todo junto. Por eso buscar un cable obligaba a recorrer el rubro entero.

@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.6 — 7 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.7 — 7 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -40,6 +40,30 @@ que no se puede cambiar en obra —lo que exige UTE y la seguridad— **se marca
 como tal** en los documentos, para que el capataz sepa qué consultar antes de
 tocarlo.
 
+### Cuando UTE recorta la potencia pedida
+
+Antes de abrir el caso, UTE mira **el balance anual de la cuenta**: lo que la
+planta va a generar en un año no puede ser más que lo que la cuenta consume en
+un año. Si el consumo del último año no alcanza, contesta la consulta con una
+potencia menor ("el balance del último año da para 4,7 kW, ¿abrimos el caso por
+esa potencia?").
+
+Cuando el cliente **va a consumir más de lo que consumió hasta ahora** —se muda,
+suma un auto eléctrico, una piscina climatizada, cabañas, oficinas, o la obra
+todavía está en construcción—, en lugar de aceptar la potencia menor Ingeniería
+puede contestarle a UTE con un **informe de justificación de potencia** que
+proyecta el consumo que viene. Si el consumo no va a cambiar, lo que corresponde
+es aceptar la potencia que da el balance. Con ese informe UTE abrió casos por la potencia
+pedida (por ejemplo, 25 kW donde el balance daba 17).
+
+El informe se arma con **criterio conservador**: cargas que el cliente
+efectivamente va a tener, con valores razonables, nunca inflados. Lo firma el
+ingeniero responsable. Si aun proyectando el consumo la potencia pedida no da,
+el informe lo dice y justifica la potencia que sí da.
+
+La **potencia contratada** es otro límite, distinto: no entra en este informe y
+se resuelve aparte, pidiendo el aumento de potencia del suministro.
+
 ### Proyectos con más de un suministro
 
 Cuando la venta lleva más de un inversor, **cada inversor es un suministro**:
@@ -68,8 +92,8 @@ que necesita lo trae la visita de venta (el resumen de la visita, las fotos y
 los videos, que al ganar el lead pasan al proyecto).
 
 - **El módulo de Ingeniería de Voltia PM**: el constructor del unifilar, el
-  diseño de los gabinetes metálicos y el de los triángulos de aluminio para las
-  estructuras.
+  diseño de los gabinetes metálicos, el de los triángulos de aluminio para las
+  estructuras y el informe de justificación de potencia ante UTE.
 - **Una habilidad de Claude** (un asistente de inteligencia artificial) que ya
   tiene el paso a paso de cómo se hace la ingeniería y, sobre todo, los
   criterios definidos por Voltia. Al hacer el análisis entrega: las memorias
@@ -92,6 +116,81 @@ los videos, que al ganar el lead pasan al proyecto).
 
 > Estas herramientas cambian seguido: por eso el detalle está acá y no en el PGT.
 
+
+### La justificación de potencia ante UTE
+
+**Para qué sirve.** Arma el informe que se le manda a UTE cuando contesta la
+consulta con menos potencia que la pedida (ver el lineamiento *Cuando UTE
+recorta la potencia pedida*). Sale un PDF con el logo de Voltia, listo para
+firmar y adjuntar en la respuesta al mail de UTE.
+
+**Dónde está.** En Voltia PM, en **Ingeniería** → el proyecto → la tarjeta
+**Justificación de potencia ante UTE**, al lado de Pre-ingeniería. No es un paso
+de la etapa: en los proyectos donde UTE aprueba la potencia pedida no se usa ni
+hay que marcar nada.
+
+**Cómo se usa.** Se toca **Armar informe** (o **Nueva versión** si ya hay uno) y
+se completa, de arriba hacia abajo:
+
+1. **La consulta a UTE.** Si es una microgeneración nueva o una ampliación, la
+   potencia pedida (viene cargada de los documentos de UTE o de los inversores
+   del proyecto), la que UTE dijo que da (opcional) y el **consumo del último
+   año** de la cuenta, en kWh, sacado de la factura.
+2. **Por qué el consumo actual no sirve para dimensionar.** Se elige una de
+   cuatro situaciones: se suman cargas nuevas, obra en construcción, instalación
+   recién habilitada, o mudanza / unificación de cuentas.
+3. **Cargas proyectadas.** Hay una lista de sugerencias (climatización, auto
+   eléctrico, bomba de calor de piscina, bomba de la piscina, agua caliente,
+   cocina eléctrica, calefacción, unidades nuevas como cabañas, ampliación de
+   oficinas, taller, riego, iluminación exterior, lavandería, seguridad,
+   electrodomésticos). Al tocar una se suma con valores típicos, que se ajustan
+   al caso. Cada carga se estima **desglosada** —potencia en kW × horas por día ×
+   días por mes × cantidad— o con un **total mensual** cuando no se puede
+   desglosar (por ejemplo, "más oficinas y más personal: 500 kWh por mes").
+   **Otra carga** suma una fila libre, y **Cuenta UTE que se unifica** suma una
+   cuenta que se da de baja y cuyo consumo pasa a esta (se carga el número de
+   cuenta, su potencia contratada y su consumo mensual). No se puede generar el
+   informe con una carga en cero.
+4. **Balance anual de energía.** Se calcula solo, mientras se completa: el
+   consumo del último año más el de las cargas nuevas (por doce meses), contra lo
+   que genera la planta en un año. La generación se estima en **1.450 kWh por
+   cada kW instalado**, valor que se puede cambiar en cada informe. Un recuadro
+   verde dice que da el balance; uno amarillo dice que no da y **hasta cuántos kW
+   justifica** el consumo proyectado.
+5. **Datos del encabezado.** Cliente, cédula o RUT, cuenta UTE, ubicación e
+   ingeniero responsable, precargados del proyecto y editables.
+6. **Textos del informe.** Objeto, Antecedentes, Justificación y Conclusión.
+   **Completar con texto automático** los arma con las frases de los informes
+   que Voltia ya mandó y los números del balance. **Redactar con IA** los
+   reescribe adaptados al caso, con los mismos números. Los dos se pueden
+   corregir a mano. Lo que quede vacío se completa solo con el texto automático.
+
+Al tocar **Generar informe PDF** queda la versión guardada y el PDF en los
+**Documentos del proyecto**. Con **Ver** se abre el PDF de cualquier versión y se
+descarga.
+
+**El informe trae**, en este orden: los datos del cliente y la cuenta, el objeto,
+los antecedentes, la lista de lo que va a aumentar el consumo, una tabla con
+cada carga y su consumo mensual, el balance anual, la justificación, la
+conclusión y la **línea de firma** del ingeniero.
+
+**Después.** El PDF se **firma digitalmente** fuera de Voltia PM y se adjunta en
+la respuesta al mail de UTE, en el mismo hilo de la consulta.
+
+**A tener en cuenta.**
+
+- Cada vez que se genera, se crea una **versión nueva** (v1, v2…) que arranca
+  con los datos de la anterior, **textos incluidos**. Esos textos traen los
+  números de la versión anterior: si se cambiaron cargas, consumos o la
+  potencia, hay que volver a completarlos o corregirlos (Voltia PM lo avisa con
+  un recuadro amarillo). En los Documentos del proyecto queda solo **la
+  última**. Las anteriores se siguen pudiendo ver desde la tarjeta.
+- Si se borra la última versión, el informe sale de los Documentos del proyecto
+  aunque queden versiones anteriores: para que vuelva a estar, se genera una
+  versión nueva.
+- La herramienta trabaja con la **cuenta principal** del proyecto. En una obra
+  con más de un suministro, para el segundo se corrigen a mano la cuenta y los
+  datos del encabezado.
 
 ### El catálogo de materiales, por rubro y subgrupo
 
@@ -208,6 +307,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.7 | 7 de octubre de 2026 | Nuevo lineamiento: cuando UTE recorta la potencia pedida por el balance anual, Ingeniería contesta con un informe de justificación de potencia. Se agrega la herramienta que arma ese informe en Voltia PM, paso por paso. |
 | 0.6 | 7 de octubre de 2026 | Se agrega el catálogo de materiales por rubro y subgrupo (Eléctrica abierta en Cables, Canalización, Protecciones, Terminales, Tableros, Puesta a tierra y Fijación), con la regla de cargar el ítem en el subgrupo y no en el rubro; y que las plantillas de lista de materiales las configura Ingeniería. |
 | 0.5 | 5 de octubre de 2026 | Nuevo lineamiento: en obra, el criterio del instalador le gana al del proyectista; lo que cambió en obra se pasa a los planos finales. |
 | 0.4 | 5 de octubre de 2026 | Se agrega, entre las herramientas, la lectura de los documentos de la obra desde el chat de Claude: qué puede leer, qué no, y cómo se le pide. |

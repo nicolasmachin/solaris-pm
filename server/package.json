@@ -22,6 +22,7 @@
     "test:fv-monitor": "node --import tsx --test src/services/reportesFv/monitor/diagnostico.test.ts",
     "test:fv-exportacion": "node --import tsx --test src/services/reportesFv/monitor/exportacion.test.ts",
     "test:fv-matching": "node --import tsx --test scripts/reportes-fv/lib/matching.test.ts",
+    "test:justificacion-potencia": "node --import tsx --test src/services/justificacionPotencia/calculo.test.ts",
     "test:proposal": "node --import tsx --test src/services/proposal/calculator.test.ts",
     "test:costeo": "node --import tsx --test src/services/proposal/calculator-costos.test.ts",
     "test:inversores": "node --import tsx --test src/services/proposal/calculator-inversores.test.ts",

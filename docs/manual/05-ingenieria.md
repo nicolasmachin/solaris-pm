@@ -1,8 +1,8 @@
 # 05 · Ingeniería
 
 > **Capítulo parcial.** Están documentados el **consolidador de materiales**, el
-> **catálogo de materiales**, la **foto de referencia del material** y el
-> **diseñador de gabinetes**. El resto de las herramientas existe y está en
+> **catálogo de materiales**, la **foto de referencia del material**, el
+> **diseñador de gabinetes** y la **justificación de potencia ante UTE**. El resto de las herramientas existe y está en
 > producción; falta escribirlas.
 
 El workspace de ingeniería y sus herramientas: unifilar, materiales, pre-ingeniería, visitas y proyecto final.
@@ -667,3 +667,132 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 - **Rejillas de ventilación y entradas de prensacables**: los gabinetes en obra a
   veces las llevan, pero no se piden al fabricante (se agregan después), así que
   no hay campo ni dibujo. Si alguna vez se pidieran, van como campos nuevos.
+
+---
+
+# Justificación de potencia ante UTE
+
+## Para qué existe
+
+Antes de abrir el caso de microgeneración, UTE compara la generación anual de la
+planta pedida contra el consumo del último año de la cuenta (**balance anual**).
+Si no da, contesta la consulta con una potencia menor. Cuando el cliente va a
+consumir más (mudanza, unificación de cuentas, obra en construcción, cargas
+nuevas), Voltia contesta con un informe técnico que proyecta el consumo futuro.
+Hasta ahora esos informes se armaban a mano en Word (ESTILO, Soler, Filippa,
+García Rodríguez, Coviteja, Rodrigo Álvarez); esta herramienta los genera desde
+el proyecto.
+
+La potencia contratada es otro límite y **no entra** en el cálculo: se resuelve
+con el aumento de potencia (capítulo 07, Suministro individual).
+
+## Cómo se usa
+
+Tarjeta **Justificación de potencia ante UTE** en el workspace de Ingeniería
+(`/ingenieria/proyecto/:id`), clave `justif-potencia`. No hay subetapa en el
+pipeline (decisión del 7/10/2026: se usa solo cuando UTE recorta, y una subetapa
+obligatoria obligaba a marcar "No aplica" en casi todos los proyectos).
+
+El formulario (`JustificacionFormModal`) tiene seis bloques: la consulta (tipo,
+potencia pedida, la que dio UTE, consumo del último año), el motivo de
+antecedentes, las cargas proyectadas (sugerencias de `catalogo.ts` → `CARGAS_SUGERIDAS`,
+carga libre o cuenta que se unifica), el balance en vivo, el encabezado y los
+cuatro textos. "Generar informe PDF" crea la versión. El detalle de uso para el
+equipo está en el Manual de trabajo de Ingeniería.
+
+## Cómo funciona
+
+- **Modelo** `JustificacionPotenciaVersion` (`justificacion_potencia_versions`):
+  1:N inmutable por proyecto, `@@unique([projectId, versionNumber])`. Todo el
+  formulario va en `datos` (JSON) validado con Zod en
+  `services/justificacionPotencia/schema.ts` → `datosSchema`; `potenciaSolicitadaKw`
+  está denormalizado para listar. `textosConIa` lo manda el cliente (dice si los
+  textos salieron de la IA, aunque después se editen).
+- **Cálculo** puro en `justificacionPotencia/calculo.ts` → `calcularBalance()`:
+  cada carga en kWh/mes (`kwhMesDeCarga()`: desglose = kW × h/día × días/mes ×
+  cantidad, cantidad vacía = 1; directo y unificación = `kwhMes`), incremento
+  anual = mensual × 12, consumo proyectado = actual + incremento,
+  generación = kW pedidos × `productividadKwhKw` (default 1.450),
+  `potenciaJustificadaKw` = consumo / productividad **redondeado hacia abajo** a
+  centésimas, `cumpleBalance` = generación ≤ consumo. El formulario tiene una
+  copia del cálculo (`catalogo.ts` → `balance()`) solo para mostrar en vivo; el
+  que vale es el del servidor.
+- **Textos** en `justificacionPotencia/textos.ts`: `textosAutomaticos()` arma
+  Objeto, Antecedentes (frase según `motivoAntecedente`), Justificación y
+  Conclusión con las frases de los informes manuales. `textosFinales()` usa lo
+  escrito a mano y completa los vacíos con el automático: un informe se puede
+  generar con los cuatro textos vacíos.
+- **IA** opcional en `justificacionPotencia/ia.ts` → `redactarTextosConIa()`:
+  tool_use forzado, salida validada con Zod, modelo `JUSTIFICACION_POTENCIA_MODEL`
+  (default `claude-sonnet-4-5-20250929`). Se le pasan los números ya calculados y
+  el texto automático como base, con la orden de no inventar datos. El uso queda
+  en `ai_usage` con la feature `justificacion_potencia`. No pasa por el rate
+  limit del asistente (igual que el EFP).
+- **PDF** con PDFKit en `justificacionPotencia/pdf.ts` →
+  `generateJustificacionPotenciaPdf()`: Roboto, logo embebido de
+  `reportesFv/pdf/logo.ts`, secciones numeradas, tabla de cargas, tabla de
+  balance, línea de firma (sin imagen: se firma digitalmente afuera) y pie con
+  número de página.
+- **Rutas** en `routes/justificacion-potencia.routes.ts`:
+  `GET /projects/:projectId/justificacion-potencia` (contexto para precargar,
+  versiones y los `datos` de la última), `POST …/textos-automaticos`,
+  `POST …/redactar-ia`, `POST /projects/:projectId/justificacion-potencia`
+  (crea versión + PDF), `GET /justificacion-potencia/:id/pdf` (regenera el PDF de
+  cualquier versión desde `datos`; `?download=1` para descargar) y
+  `DELETE /justificacion-potencia/:id`.
+- **Precarga** (`buildContexto()`): cliente y ubicación del suministro principal
+  vía `datosSuministro()`; cuenta, técnico (`ti`, `ciTi`) y potencia (`potImg`)
+  de `UteDocumentConfig`; si `potImg` está vacío, suma de inversores de
+  `SolarSystem` y, si no hay, `capacityKwp`.
+- **Documentos**: el PDF de la última versión se guarda como `FileAttachment`
+  con `tipo = JUSTIFICACION_POTENCIA`, `toolSource = "justif-potencia"`,
+  `toolVersion` = número de versión y `toolEntityId` = id de la versión. Al
+  generar una versión nueva el anterior se soft-deletea y se borra el archivo
+  (mismo criterio que Pre-ingeniería). La etiqueta "Ingeniería · Justificación
+  de potencia UTE vN" está en `buildToolSourceLabel()` (`ingenieria.routes.ts`)
+  y en el mapeo de `/projects/:projectId/documents` (`api.routes.ts`): hay que
+  mantener las dos.
+- **Auditoría**: `AuditEntityType.file`, acciones `file_uploaded` al generar y
+  `deleted` al borrar.
+
+## Permisos
+
+Todo bajo `Module.INGENIERIA`: `VIEW` para ver y bajar PDFs, `EDIT` para textos
+automáticos, IA y generar, `DELETE` para borrar versiones. El panel oculta
+"Armar informe" y el tacho según `usePermission`.
+
+## Reglas y decisiones
+
+- **El criterio es solo el balance anual.** Lo pidió Gerencia (Manual de
+  Gerencia, 7/10/2026). La potencia contratada no se calcula ni se menciona.
+- **1.450 kWh por kW por año** es el default; se edita por informe y queda
+  guardado en la versión.
+- **Firma: línea, no imagen.** Se descartó estampar una imagen de firma: el
+  informe se firma digitalmente después, fuera de Voltia PM.
+- **Sin subetapa en el pipeline** (ver "Cómo se usa").
+- **Una carga en 0 kWh/mes no se puede generar** (validación del formulario):
+  en un informe a UTE parece un descuido.
+- **Número en los campos**: "1.600" es 1600 (punto de miles seguido de tres
+  dígitos), "2,5" y "2.5" son 2,5 (`parseNum()` en el formulario).
+
+## Casos borde
+
+- **Textos heredados**: una versión nueva arranca con `ultimaVersionDatos`,
+  textos incluidos, y esos textos tienen los números viejos. El formulario
+  muestra un aviso (`textosHeredados`) hasta que se rehacen con automático o IA;
+  si se generan igual, el PDF sale con los números viejos en el texto (las
+  tablas siempre se recalculan).
+
+- **Borrar la última versión** deja el proyecto sin el informe en Documentos
+  aunque haya versiones anteriores: no se "promueve" la anterior. Se genera una
+  versión nueva.
+- **Proyectos con varios suministros**: la precarga es del suministro principal;
+  para otro suministro se corrigen a mano la cuenta y el encabezado.
+- **Fecha del informe** = fecha de creación de la versión (hora de Montevideo);
+  regenerar el PDF de una versión vieja conserva su fecha.
+- **Sin `ANTHROPIC_API_KEY`** el botón de IA devuelve el error
+  `ANTHROPIC_NOT_CONFIGURED`; el texto automático y el PDF funcionan igual.
+- Si un `datos` guardado dejara de validar contra el schema (por un cambio
+  futuro del schema), la lista lo muestra sin balance y su PDF devuelve 400:
+  al cambiar `datosSchema` hay que mantenerlo compatible con lo guardado.
+
