@@ -23,6 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.1",
+  date: "9 de octubre de 2026",
+  sections: [
+    {
+      title: "Los proyectos archivados salen del listado",
+      items: [
+        "En Proyectos, los archivados ya no aparecen en el listado: archivar pasa a ser sacarlo de la vista.",
+        "Para verlos o recuperarlos está el botón Archivados (N), al lado de los filtros.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_0: Release = {
   version: "12.0",
   date: "8 de octubre de 2026",
   sections: [
@@ -470,6 +484,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.0",
+    shortDate: "8 oct",
+    highlights: RELEASE_12_0.sections.map((sec) => sec.title),
+  },
   {
     version: "11.9",
     shortDate: "7 oct",

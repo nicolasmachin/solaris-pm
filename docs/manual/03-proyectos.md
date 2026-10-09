@@ -300,6 +300,34 @@ configuró en las etapas vigentes se conserva.
 
 ---
 
+## La lista de proyectos: archivados fuera de la vista
+
+### Para qué existe
+
+Archivar un proyecto es sacarlo de la vista (el caso típico: el cliente no
+siguió con la obra). Hasta el 9-oct-2026 el filtro de estado de `/projects`
+traía **Archivados** prendido por defecto, así que el proyecto archivado seguía
+apareciendo, con su plazo vencido en rojo.
+
+### Cómo funciona
+
+- `DEFAULT_STATUSES` en `pages/Projects.tsx` es Prospectos, Activos y Pausados
+  (sin Completados ni Archivados).
+- El filtro se guarda por usuario en `localStorage` (`projects-page-filter`).
+  La versión 3 de ese guardado (`PAGE_FILTER_VERSION`) **saca ARCHIVED una sola
+  vez** de los filtros ya guardados en `loadPageFilter()`: sin eso, todo el que
+  hubiera entrado antes los seguía viendo. Si después alguien marca
+  "Archivados" a mano, se respeta.
+- Botón **Archivados (N)**: pone el filtro de estado en solo `ARCHIVED`. Con ese
+  filtro el botón pasa a **Volver a los activos**, que restaura
+  `DEFAULT_STATUSES`. Restaurar un proyecto es el mismo ícono de la fila
+  (`patchProject` con `status: ACTIVE`).
+- Es solo de esta pantalla: el resto ya excluía archivados en el backend (panel
+  de operaciones, cobros, agenda, conector MCP) o los ofrece a propósito en
+  selectores (movimientos de Finanzas, eventos).
+
+---
+
 ## Qué tiene que cubrir este capítulo
 
 - Estructura Proyecto → Etapa → Subetapa → Checklist

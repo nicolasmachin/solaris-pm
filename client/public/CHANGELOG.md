@@ -1,5 +1,14 @@
 # Novedades
 
+## v12.1
+
+### 9 de octubre de 2026
+
+#### Los proyectos archivados salen del listado
+
+- En **Proyectos**, los archivados (por ejemplo, un cliente que no siguió con la obra) **ya no aparecen en el listado**. Archivar pasa a ser sacarlo de la vista.
+- Para verlos o recuperarlos está el botón **Archivados (N)**, al lado de los filtros: muestra solo esos, y desde ahí se restauran. **Volver a los activos** deja el listado como estaba.
+
 ## v12.0
 
 ### 8 de octubre de 2026

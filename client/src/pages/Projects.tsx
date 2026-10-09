@@ -57,9 +57,11 @@ const STATUS_OPTIONS: Array<{ value: ProjectStatus; label: string }> = [
   { value: "ARCHIVED", label: "Archivados" },
 ];
 
-// Por defecto se muestran todos los estados EXCEPTO completados — los
-// proyectos completados rara vez interesan en el día a día.
-const DEFAULT_STATUSES: ProjectStatus[] = ["PROSPECT", "ACTIVE", "PAUSED", "ARCHIVED"];
+// Por defecto se muestran todos los estados EXCEPTO completados y archivados:
+// los completados rara vez interesan en el día a día, y archivar es justamente
+// sacar un proyecto de la vista (el cliente no avanzó). Los archivados se ven
+// con el botón "Archivados (N)", que es también desde donde se restauran.
+const DEFAULT_STATUSES: ProjectStatus[] = ["PROSPECT", "ACTIVE", "PAUSED"];
 
 const STAGE_OPTIONS: Array<{ value: StageFilter; label: string }> = [
   { value: "all", label: "Todas las etapas" },
@@ -72,7 +74,9 @@ const VALID_STAGE_FILTERS = new Set<string>(["all", ...FILTERABLE_STAGES]);
 const PAGE_FILTER_KEY = "projects-page-filter";
 // v2: el orden por defecto pasó a "Venta, más vieja primero" (para planificar
 // qué obra agendar primero) y se eliminó la columna/orden "Inicio".
-const PAGE_FILTER_VERSION = 2;
+// v3: los archivados dejaron de mostrarse por defecto; se sacan una vez del
+// filtro guardado, que hasta v2 los traía prendidos.
+const PAGE_FILTER_VERSION = 3;
 interface PagePersistedFilter {
   version?: number;
   // Antes era single value; ahora multi-select como array.
@@ -92,11 +96,14 @@ function loadPageFilter(): PagePersistedFilter | null {
     const parsed = JSON.parse(raw) as PagePersistedFilter;
     // Migración a v2: forzamos el nuevo orden por defecto una sola vez,
     // respetando los filtros de estado/etapa que el usuario haya guardado.
-    if ((parsed.version ?? 1) < PAGE_FILTER_VERSION) {
+    if ((parsed.version ?? 1) < 2) {
       parsed.sortKey = "saleDate";
       parsed.sortDirection = "asc";
-      parsed.version = PAGE_FILTER_VERSION;
     }
+    if ((parsed.version ?? 1) < 3) {
+      parsed.statusFilters = (parsed.statusFilters ?? []).filter((s) => s !== "ARCHIVED");
+    }
+    parsed.version = PAGE_FILTER_VERSION;
     // El sortKey "dates" (columna Inicio) fue eliminado: coerción defensiva.
     if ((parsed.sortKey as string) === "dates") parsed.sortKey = "saleDate";
     // La columna "Instalación" (installationDate) fue reemplazada por "Asesor".
@@ -333,6 +340,9 @@ export function Projects() {
   });
 
   const projects = data ?? [];
+  const archivedCount = useMemo(() => projects.filter((p) => p.status === "ARCHIVED").length, [projects]);
+  // "Solo archivados" = el filtro de estado tiene únicamente ARCHIVED.
+  const viewingArchived = statusFilters.size === 1 && statusFilters.has("ARCHIVED");
 
   const filteredProjects = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -459,6 +469,24 @@ export function Projects() {
           >
             Solo vencidos
           </button>
+          {viewingArchived ? (
+            <button
+              type="button"
+              onClick={() => setStatusFilters(new Set(DEFAULT_STATUSES))}
+              className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card-hover)] focus:outline-none"
+            >
+              ← Volver a los activos
+            </button>
+          ) : archivedCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setStatusFilters(new Set<ProjectStatus>(["ARCHIVED"]))}
+              className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-card-hover)] focus:outline-none"
+              title="Ver los proyectos archivados para consultarlos o restaurarlos"
+            >
+              Archivados ({archivedCount})
+            </button>
+          ) : null}
           <Button onClick={() => setShowNewProject(true)}>Nuevo proyecto</Button>
         </div>
       </div>
