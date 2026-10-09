@@ -175,3 +175,70 @@ export const MODALIDAD_LABEL: Record<ModalidadPago, string> = {
   [ModalidadPago.FINANCIACION_BANCARIA]: "Financiación bancaria",
   [ModalidadPago.OTRO]: "Otro",
 };
+
+/** Algo que falta definir del proyecto antes de dar por cerrado el Onboarding. */
+export type DefinicionPendiente = {
+  codigo: "MODALIDAD_PAGO" | "PLAN_PAGOS" | "PROFORMA" | "NOTA_MODALIDAD";
+  mensaje: string;
+};
+
+/**
+ * Si el cliente ya pagó todo lo presupuestado, el plan "se cumplió": sus cuotas
+ * pasaron a cobradas y no queda ningún previsto. Eso también es un plan.
+ */
+async function cobrosCubrenPresupuesto(projectId: string): Promise<boolean> {
+  const proyecto = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { budgetUsd: true },
+  });
+  const presupuesto = Number(proyecto?.budgetUsd ?? 0);
+  if (presupuesto <= 0) return false;
+  const cobrado = await prisma.financeMovement.aggregate({
+    where: {
+      projectId,
+      tipoMovimiento: TipoMovimiento.INGRESO,
+      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+      status: FinanceMovementStatus.PAGADO,
+      moneda: "USD",
+      deletedAt: null,
+    },
+    _sum: { monto: true },
+  });
+  return Number(cobrado._sum.monto ?? 0) >= presupuesto * 0.99;
+}
+
+/**
+ * Qué falta definir para que el proyecto salga del Onboarding sabiendo cómo y
+ * cuándo paga el cliente. Vacío = está todo.
+ *
+ * Es la regla dura de Finanzas (oct-2026): ningún proyecto avanza sin modalidad
+ * de pago, y según la modalidad, sin su respaldo —plan de pagos con fechas si
+ * paga directo, proforma si va por el banco, la explicación si es "Otro"—. Los
+ * atajos (completar todo, cerrar la subetapa desde el pipeline) la respetan:
+ * en vez de tildar a ciegas, devuelven qué falta para que la pantalla lo pida.
+ */
+export async function definicionesPendientesOnboarding(
+  projectId: string,
+): Promise<DefinicionPendiente[]> {
+  const proyecto = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { modalidadPago: true },
+  });
+  if (!proyecto?.modalidadPago) {
+    return [{
+      codigo: "MODALIDAD_PAGO",
+      mensaje: "Falta elegir cómo paga el cliente: pago directo, financiación bancaria u otro.",
+    }];
+  }
+  switch (proyecto.modalidadPago) {
+    case ModalidadPago.DIRECTO_50_50:
+      if (await hayPlanDePagos(projectId) || await cobrosCubrenPresupuesto(projectId)) return [];
+      return [{ codigo: "PLAN_PAGOS", mensaje: "Falta crear el plan de pagos, con la fecha de cada cobro." }];
+    case ModalidadPago.FINANCIACION_BANCARIA:
+      if (await hayProforma(projectId)) return [];
+      return [{ codigo: "PROFORMA", mensaje: "Falta generar la proforma para el banco." }];
+    case ModalidadPago.OTRO:
+      if (await hayNotaDeModalidad(projectId)) return [];
+      return [{ codigo: "NOTA_MODALIDAD", mensaje: "Falta explicar qué se acordó con el cliente sobre el pago." }];
+  }
+}

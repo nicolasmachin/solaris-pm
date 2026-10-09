@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.7 — 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.8 — 9 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -222,6 +222,30 @@ criterio y el valor de 1.450 kWh por kW quedan fijados el 7 de octubre de 2026.
 **A qué manuales afecta.** Ingeniería (arma el informe) y Tramitación UTE (sabe
 que esa respuesta la da Ingeniería).
 
+### Lo que se debe y lo que nos deben se controla con documentos reales
+
+**Qué se decidió.** Finanzas tiene que poder decir en todo momento **cuánto le
+debe Voltia a cada proveedor y para qué fecha**, y **cuánto le deben los
+clientes a Voltia y para qué fecha**. Para eso:
+
+- **Las compras de materiales no se proyectan.** La deuda con un proveedor
+  existe desde que llega su factura, con el vencimiento que se haya negociado
+  con ese proveedor.
+- **Ningún proyecto sale del onboarding sin saber cómo y cuándo paga el
+  cliente**: con pago directo, un plan de pagos con fechas; con financiación
+  bancaria, la proforma; en un caso particular, la explicación escrita de lo
+  acordado. Vale también para los proyectos que ya estaban en onboarding.
+
+**Por qué.** Lo proyectado a partir de una lista de materiales no es una deuda:
+no coincide con lo que factura el proveedor ni con su estado de cuenta, y
+ensucia el flujo de fondos. Y un proyecto que avanza sin plan de pagos llega a
+la etapa de cobrar sin que nadie sepa qué cobrar ni cuándo.
+
+**Desde cuándo rige.** 9 de octubre de 2026.
+
+**A qué manuales afecta.** Al PGT y a los manuales de trabajo de Ventas y de
+Finanzas.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -253,6 +277,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.8 | 9 de octubre de 2026 | Se registra que lo que se debe y lo que nos deben se controla con documentos reales: las compras de materiales no se proyectan (la deuda con un proveedor entra con su factura) y ningún proyecto sale del onboarding sin saber cómo y cuándo paga el cliente. |
 | 0.7 | 9 de octubre de 2026 | Se registra que la fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio deja registrado el motivo, lo explica el área que se atrasó y Gerencia lo revisa una vez por mes. Queda en definición si la fecha lleva un margen. |
 | 0.6 | 8 de octubre de 2026 | Se registra que los mantenimientos y las visitas de soporte son trabajo de Operaciones. Se corrige por qué Operaciones es el área más crítica: es el centro de la cadena, no el final, y cada atraso es plata. |
 | 0.5 | 7 de octubre de 2026 | Se registra la decisión de justificar ante UTE la potencia recortada con un informe de proyección de consumo: el criterio es el balance anual y la generación se estima en 1.450 kWh por kW. |

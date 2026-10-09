@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.2 — 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.3 — 9 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -41,6 +41,32 @@ Si la fecha se mueve por algo que dependía de Finanzas, **el atraso lo explica
 Finanzas**. Gerencia revisa una vez por mes cuántas fechas se movieron y por qué
 área.
 
+### Lo que se le debe a un proveedor entra con su factura, no antes
+
+Voltia PM ya **no proyecta las compras de materiales** de cada obra. Antes, al
+armar la lista de materiales de un proyecto se podía cargar una fecha estimada
+de compra, y ese gasto aparecía en **Pendientes** y en el **Flujo de fondos**
+como «Material proyectado». Ya no: lo que Voltia le debe a un proveedor existe
+desde que llega **su factura**, con su fecha de vencimiento. Así, lo que se ve
+como deuda es deuda real, y se puede comparar con el estado de cuenta que manda
+el proveedor.
+
+### Ningún proyecto avanza sin saber cómo y cuándo paga el cliente
+
+El asesor de ventas no puede cerrar el onboarding (la primera etapa del
+proyecto, cuando se confirma la venta) sin dejar definida la **modalidad de
+pago** y lo que esa modalidad pide:
+
+| Modalidad | Lo que tiene que quedar hecho |
+|---|---|
+| **Pago directo** con Voltia | El **plan de pagos**, con la fecha y el monto de cada cobro |
+| **Financiación bancaria** | La **proforma** para el banco |
+| **Otro** (un canje, una condición negociada) | La explicación escrita de qué se acordó |
+
+Para Finanzas esto quiere decir que cada proyecto vendido llega con sus cobros
+previstos y sus fechas, y que en **Cobros** se ve qué se espera cobrar y cuándo.
+La regla vale también para los proyectos que ya estaban en onboarding.
+
 ## 5 · Las herramientas y cómo se usan
 
 *Por escribir.*
@@ -77,5 +103,6 @@ funciona hoy, porque varios cambiaron desde que se armaron.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.3 | 9 de octubre de 2026 | Dos lineamientos nuevos: las compras de materiales ya no se proyectan (la deuda con un proveedor entra con su factura) y ningún proyecto sale del onboarding sin la modalidad de pago y lo que pide. |
 | 0.2 | 9 de octubre de 2026 | Primer lineamiento: las aprobaciones de gastos no frenan una obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Finanzas, el atraso lo explica Finanzas. La lista de Cobros muestra todos los proyectos vendidos, también los ya habilitados: se filtra solo por cómo está el pago. |
 | 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |

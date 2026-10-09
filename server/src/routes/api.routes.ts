@@ -77,6 +77,7 @@ import {
   EVIDENCIA_MODALIDAD_OTRO,
   faltaEvidencia,
   SUBETAPA_MODALIDAD_PAGO,
+  definicionesPendientesOnboarding,
 } from "../services/checklist-evidencias.js";
 import { syncCommissionFromMovement } from "../services/commission/sync-commission-status.js";
 import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
@@ -814,6 +815,18 @@ async function findCommentOrThrow(commentId: string) {
   }
 
   return comment;
+}
+
+/**
+ * Regla dura de Finanzas: el Onboarding no cierra sin saber cómo y cuándo paga el
+ * cliente. Devuelve 409 DEFINICIONES_PENDIENTES con la lista de lo que falta, y la
+ * pantalla abre el modal para completarlo y reintenta.
+ */
+async function assertOnboardingDefinido(projectId: string) {
+  const faltantes = await definicionesPendientesOnboarding(projectId);
+  if (faltantes.length > 0) {
+    throw new AppError(409, "DEFINICIONES_PENDIENTES", faltantes.map((f) => f.mensaje).join(" "), { projectId, faltantes });
+  }
 }
 
 async function getPendingBlockers(stageId: string, modalidadPago?: ModalidadPago | null) {
@@ -2590,6 +2603,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
           });
         }
       } else if (body.status === StageStatus.COMPLETED) {
+        if (stage.name === StageType.ONBOARDING) {
+          await assertOnboardingDefinido(params.projectId);
+        }
         const blockers = await getPendingBlockers(stage.id, stage.project.modalidadPago);
         if (blockers.length > 0) {
           const blockerLabels = blockers.map((item) => item.label);
@@ -2952,6 +2968,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       await authorizeByStageContext(Action.COMPLETE)(request);
     }
 
+    if (
+      (body.status === SubstageStatus.COMPLETED || body.status === SubstageStatus.NO_APLICA) &&
+      body.status !== substage.status &&
+      substage.name === SUBETAPA_MODALIDAD_PAGO
+    ) {
+      await assertOnboardingDefinido(params.projectId);
+    }
+
     // Regla 2: no permitir iniciar/completar subetapa de ejecución si OPERACIONES no está activa
     if (
       body.status &&
@@ -3099,15 +3123,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       );
     }
 
-    // Regla 3: la modalidad de pago se elige o la subetapa no cierra. Sin ella,
-    // el filtro de abajo no exige NINGÚN ítem condicionado —la comparación contra
-    // null nunca da true—, así que la subetapa se daba por completada sin
-    // proforma, sin plan de pagos y sin saber cómo paga el cliente.
-    if (substage.name === SUBETAPA_MODALIDAD_PAGO && !substage.project.modalidadPago) {
-      throw badRequest(
-        "MODALIDAD_PAGO_REQUERIDA",
-        "Antes de completar esta subetapa hay que elegir cómo paga el cliente: financiación bancaria, pago directo u otro.",
-      );
+    // Regla 3: la modalidad de pago se elige —con su respaldo— o la subetapa no
+    // cierra. Sin modalidad, el filtro de abajo no exige NINGÚN ítem condicionado.
+    if (substage.name === SUBETAPA_MODALIDAD_PAGO) {
+      await assertOnboardingDefinido(substage.projectId);
     }
 
     const pendingItems = substage.checklistItems.filter((item) => {
@@ -3190,6 +3209,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
       },
     });
+
+    // Completar todo no puede tildar "Plan de pagos creado" si el plan no existe.
+    if (substages.some((s) => s.name === SUBETAPA_MODALIDAD_PAGO)) {
+      await assertOnboardingDefinido(params.projectId);
+    }
 
     const actualEndDate = todayUtc();
 
@@ -14382,157 +14406,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { agregados: toCreate.length, salteados, plantilla: template.nombre };
     });
 
-    // ─── Materiales: Generación / regeneración de previstos ───────────────────
-
-    async function generatePrevistosForProject(projectId: string, userId: string | undefined, expectedDate: Date) {
-      // Bloque 3: ya NO creamos FinanceMovement PREVISTO. La fecha tentativa se
-      // setea directamente sobre cada ProjectMaterial.expectedDate y los
-      // proyectados se incluyen en el flujo de fondos vía /finance/cashflow.
-      // Solo se actualiza la fecha de los materiales que aún no están ligados
-      // a un movimiento avanzado (COMPROMETIDO+/A_PAGAR/PAGADO) — esos no se
-      // tocan porque ya forman parte del flujo real.
-      const fechaIso = new Date(Date.UTC(expectedDate.getUTCFullYear(), expectedDate.getUTCMonth(), expectedDate.getUTCDate()));
-
-      const materials = await prisma.projectMaterial.findMany({
-        where: { projectId, movementId: null },
-        select: { id: true },
-      });
-
-      if (materials.length > 0) {
-        await prisma.projectMaterial.updateMany({
-          where: { id: { in: materials.map((m) => m.id) } },
-          data: { expectedDate: fechaIso },
-        });
-      }
-
-      if (userId) {
-        await createAuditEntry({
-          entityType: AuditEntityType.project,
-          entityId: projectId,
-          projectId,
-          userId,
-          action: AuditAction.updated,
-          description: `Fecha prevista de materiales actualizada a ${fechaIso.toISOString().slice(0, 10)} (${materials.length} ítem${materials.length === 1 ? "" : "s"})`,
-        });
-      }
-
-      const alreadyExisted = await prisma.projectMaterial.count({
-        where: { projectId, NOT: { movementId: null } },
-      });
-
-      // El shape de la respuesta se preserva: el frontend espera "created" como
-      // cantidad de ítems afectados; "alreadyExisted" como ítems ligados a
-      // movements (que no se modificaron).
-      return { created: materials.length, alreadyExisted };
-    }
-
-    app.post("/projects/:id/materials/generate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
-      const { id } = z.object({ id: z.string() }).parse(request.params);
-      const { expectedDate: expectedDateStr } = z.object({ expectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(request.body);
-      if (!expectedDateStr) return reply.code(400).send({ error: "EXPECTED_DATE_REQUIRED", message: "La fecha esperada es obligatoria" });
-      const user = ensureUser(request);
-      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
-      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-      const expectedDate = parseDateOnly(expectedDateStr);
-      const result = await generatePrevistosForProject(id, user.id, expectedDate);
-      return result;
-    });
-
-    // Preview: cuántos PREVISTO se borrarían y qué movimientos avanzados se preservarían
-    app.get("/projects/:id/materials/regenerate-impact", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
-      const { id } = z.object({ id: z.string() }).parse(request.params);
-      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
-      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-
-      const movements = await prisma.financeMovement.findMany({
-        where: {
-          projectId: id,
-          sourceType: MovementSourceType.PROJECT_MATERIALS,
-          deletedAt: null,
-        },
-        select: { id: true, descripcion: true, status: true, monto: true, moneda: true, fecha: true },
-        orderBy: { fecha: "asc" },
-      });
-
-      const toDelete = movements.filter((m) => m.status === FinanceMovementStatus.PREVISTO);
-      const toPreserve = movements.filter((m) => m.status !== FinanceMovementStatus.PREVISTO);
-
-      return {
-        toDelete: toDelete.length,
-        toPreserve: toPreserve.length,
-        preservedDetails: toPreserve.map((m) => ({
-          id: m.id,
-          descripcion: m.descripcion,
-          status: m.status,
-          monto: Number(m.monto),
-          moneda: m.moneda,
-          fecha: serializeDateOnly(m.fecha),
-        })),
-      };
-    });
-
-    app.post("/projects/:id/materials/regenerate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
-      const { id } = z.object({ id: z.string() }).parse(request.params);
-      const { expectedDate: expectedDateStr } = z.object({ expectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(request.body);
-      if (!expectedDateStr) return reply.code(400).send({ error: "EXPECTED_DATE_REQUIRED", message: "La fecha esperada es obligatoria" });
-      const user = ensureUser(request);
-      if (user.role !== "ADMIN") throw forbidden("Solo un administrador puede regenerar previstos");
-      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
-      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-      const expectedDate = parseDateOnly(expectedDateStr);
-
-      // Sólo los PREVISTO. Los avanzados (COMPROMETIDO, A_PAGAR, PARCIALMENTE_PAGADO, PAGADO)
-      // se preservan: sus ProjectMaterials siguen referenciando esos movimientos y NO se
-      // recalculan en la generación nueva.
-      const movsToDelete = await prisma.financeMovement.findMany({
-        where: {
-          projectId: id,
-          status: FinanceMovementStatus.PREVISTO,
-          sourceType: MovementSourceType.PROJECT_MATERIALS,
-          deletedAt: null,
-        },
-        select: { id: true, descripcion: true, monto: true, moneda: true },
-      });
-      const preservedMovs = await prisma.financeMovement.findMany({
-        where: {
-          projectId: id,
-          status: { in: [
-            FinanceMovementStatus.COMPROMETIDO,
-            FinanceMovementStatus.A_PAGAR,
-            FinanceMovementStatus.PARCIALMENTE_PAGADO,
-            FinanceMovementStatus.PAGADO,
-          ] },
-          sourceType: MovementSourceType.PROJECT_MATERIALS,
-          deletedAt: null,
-        },
-        select: { id: true, descripcion: true, status: true, monto: true, moneda: true },
-      });
-
-      const movIds = movsToDelete.map((m) => m.id);
-      await prisma.$transaction([
-        // Desvincular ProjectMaterials que apuntaban a los previstos a borrar
-        prisma.projectMaterial.updateMany({ where: { projectId: id, movementId: { in: movIds } }, data: { movementId: null } }),
-        // Soft-delete de los movimientos previstos. Los InvoiceItems quedan asociados
-        // (cascada hard) — Prisma no los borra al hacer deletedAt: si querés podés agregar
-        // un cleanup posterior, pero hoy el filtro por deletedAt: null los oculta.
-        prisma.financeMovement.updateMany({ where: { id: { in: movIds } }, data: { deletedAt: new Date() } }),
-      ]);
-      const result = await generatePrevistosForProject(id, user.id, expectedDate);
-      return {
-        ...result,
-        deletedCount: movIds.length,
-        preservedCount: preservedMovs.length,
-        preservedDetails: preservedMovs.map((m) => ({
-          id: m.id,
-          descripcion: m.descripcion,
-          status: m.status,
-          monto: Number(m.monto),
-          moneda: m.moneda,
-        })),
-        regenerated: movIds.length,
-      };
-    });
-
     // ─── Export PDF de lista de materiales ───────────────────────────────────
 
     app.post("/projects/:id/materials/export-pdf", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request, reply) => {
@@ -19523,78 +19396,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    // 2) Materiales proyectados — agrupados por proyecto > categoría.
-    const pms = await prisma.projectMaterial.findMany({
-      where: {
-        quantity: { gt: 0 },
-        expectedDate: { not: null },
-        movementId: null,
-        project: { deletedAt: null },
-      },
-      include: {
-        materialItem: {
-          select: {
-            nombre: true,
-            category: { select: { nombre: true, orden: true } },
-          },
-        },
-        project: { select: { id: true, code: true, clientName: true } },
-      },
-      orderBy: [{ expectedDate: "asc" }, { createdAt: "asc" }],
-    });
-    const groupsMap = new Map<string, ProjectMaterialGroup>();
-    for (const pm of pms) {
-      const fecha = pm.expectedDate as Date;
-      const fechaIso = serializeDateNonNull(fecha);
-      const monto = Number(pm.quantity) * Number(pm.unitPrice);
-      const isOverdue = fecha < now;
-      const catNombre = pm.materialItem.category?.nombre ?? "Otros";
-
-      // Clave: projectId|moneda — proyectos con materiales en USD y UYU
-      // simultáneamente quedan en dos grupos (raro pero correcto).
-      const key = `${pm.project.id}|${pm.moneda}`;
-      let g = groupsMap.get(key);
-      if (!g) {
-        g = {
-          projectId: pm.project.id,
-          clientName: pm.project.clientName,
-          projectCode: pm.project.code,
-          totalAmount: 0,
-          moneda: pm.moneda,
-          earliestDate: fechaIso,
-          overdueCount: 0,
-          categorias: [],
-        };
-        groupsMap.set(key, g);
-      }
-      let cat = g.categorias.find((c) => c.categoria === catNombre);
-      if (!cat) {
-        cat = { categoria: catNombre, totalAmount: 0, items: [] };
-        g.categorias.push(cat);
-      }
-      cat.items.push({
-        id: `material-${pm.id}`,
-        sourceId: pm.id,
-        materialNombre: pm.materialItem.nombre,
-        quantity: Number(pm.quantity),
-        unitPrice: Number(pm.unitPrice),
-        monto,
-        moneda: pm.moneda,
-        fecha: fechaIso,
-        isOverdue,
-      });
-      cat.totalAmount += monto;
-      g.totalAmount += monto;
-      if (isOverdue) g.overdueCount += 1;
-      if (fechaIso < g.earliestDate) g.earliestDate = fechaIso;
-    }
-    const projectMaterialGroups = Array.from(groupsMap.values()).sort((a, b) =>
-      a.earliestDate.localeCompare(b.earliestDate),
-    );
-    // Categorías dentro de cada grupo ordenadas por monto desc (más caro primero).
-    for (const g of projectMaterialGroups) {
-      g.categorias.sort((a, b) => b.totalAmount - a.totalAmount);
-    }
+    // Los materiales de obra ya no se proyectan (oct-2026): la deuda con
+    // proveedores entra solo con la factura. Se devuelve vacío por compatibilidad.
+    const projectMaterialGroups: ProjectMaterialGroup[] = [];
 
     // 3) Deuda a proveedor — fuente canónica: FinanceMovement A_PAGAR /
     // PARCIALMENTE_PAGADO con supplierId y dueDate. Reemplaza a la lectura
@@ -19990,31 +19794,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const fixedCostEvents = buildFixedCostEventsForRange(fixedCosts, paidThisMonthSet, 3, now, lastPaidByFc);
 
-    // 3) Materiales proyectados (ProjectMaterial.expectedDate dentro del horizonte).
-    const pms = await prisma.projectMaterial.findMany({
-      where: {
-        quantity: { gt: 0 },
-        expectedDate: { gte: now, lte: horizon },
-        movementId: null,
-        project: { deletedAt: null },
-      },
-      include: {
-        materialItem: { select: { nombre: true, category: { select: { nombre: true } } } },
-        project: { select: { id: true, code: true, clientName: true } },
-      },
-    });
-    const materialEvents: CashflowEvent[] = pms.map((pm) => ({
-      id: `pm:${pm.id}`,
-      fecha: serializeDateNonNull(pm.expectedDate as Date),
-      descripcion: `${pm.project.clientName} — ${pm.materialItem.nombre}`,
-      tipo: "PROJECT_MATERIAL",
-      monto: Number(pm.quantity) * Number(pm.unitPrice),
-      moneda: pm.moneda,
-      impacto: "NEGATIVO",
-      sourceType: "PROJECT_MATERIAL",
-      sourceId: pm.id,
-    }));
-
     // 4) Deuda a proveedores: A_PAGAR/PARCIALMENTE_PAGADO con supplierId.
     const supplierDebts = await prisma.financeMovement.findMany({
       where: {
@@ -20126,7 +19905,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     // 6) Combinar y ordenar por fecha.
-    const allEvents = [...fixedCostEvents, ...materialEvents, ...supplierDebtEvents, ...cobroEvents].sort(
+    const allEvents = [...fixedCostEvents, ...supplierDebtEvents, ...cobroEvents].sort(
       (a, b) => a.fecha.localeCompare(b.fecha),
     );
 

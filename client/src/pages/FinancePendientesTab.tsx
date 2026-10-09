@@ -259,7 +259,6 @@ export function FinancePendientesTab() {
       >
         <option value="">Todos los tipos</option>
         <option value="FIXED_COST">Costos fijos</option>
-        <option value="PROJECT_MATERIAL">Materiales de obras</option>
         <option value="SUPPLIER_DEBT">Deuda proveedores</option>
         <option value="COMMITTED_EXPENSE">Otros compromisos</option>
         <option value="MANUAL_PENDING">Pendientes manuales</option>
@@ -297,13 +296,12 @@ export function FinancePendientesTab() {
   return (
     <div className="space-y-5">
       <p className="text-sm text-[var(--color-text-secondary)]">
-        Todo lo comprometido a pagar: costos fijos del mes, materiales proyectados de obras,
-        facturas a proveedores y otros compromisos (sueldos, comisiones).
+        Todo lo comprometido a pagar: costos fijos del mes, facturas a proveedores y
+        otros compromisos (sueldos, comisiones).
       </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Metric label="Costos fijos" value={fmtCurrency(totals.FIXED_COST, "UYU")} />
-        <Metric label="Materiales de obras" value={fmtCurrency(totals.PROJECT_MATERIAL, "UYU")} />
         <Metric label="Deuda proveedores" value={fmtCurrency(totals.SUPPLIER_DEBT, "UYU")} />
         <Metric label="Otros compromisos" value={fmtCurrency(totals.COMMITTED_EXPENSE, "UYU")} />
         <Metric label="Pendientes manuales" value={fmtCurrency(totals.MANUAL_PENDING, "UYU")} />

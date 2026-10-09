@@ -238,6 +238,31 @@ entra la plata.
 - El plan admite **una sola cuota**.
 - Si el proyecto no tiene presupuesto, no se puede armar plan (`BUDGET_REQUIRED`).
 - Si no queda saldo pendiente, no hay nada que planificar (`SALDO_PENDIENTE_INVALID`).
+- **El plan es obligatorio para salir del onboarding** si la modalidad es pago
+  directo (ver cap. 03, "El Onboarding no cierra sin saber cómo paga el
+  cliente"). Para esa regla, un proyecto cuyo cobrado en USD ya cubre el 99 % del
+  presupuesto cuenta como "con plan" aunque no le queden previstos.
+
+### Las compras de materiales no se proyectan (desde oct-2026)
+
+Hasta el 9-oct-2026 la lista de materiales del proyecto tenía un botón
+**Generar previstos** que le ponía una fecha de compra a cada `ProjectMaterial`
+(`expectedDate`), y esos renglones aparecían como "Material proyectado" en
+`/finance/pending` (`projectMaterialGroups`) y en `/finance/cashflow` (eventos
+`PROJECT_MATERIAL`). Se sacó todo por decisión de Gerencia: la deuda con un
+proveedor existe desde su factura (`FinanceMovement` A_PAGAR con `dueDate`), no
+desde la lista de materiales.
+
+- Se borraron los endpoints `generate-previsto`, `regenerate-previsto` y
+  `regenerate-impact` y el modal del cliente.
+- `getPendingItemsCore()` devuelve `projectMaterialGroups: []` por
+  compatibilidad; el cashflow ya no consulta `ProjectMaterial`.
+- **Los `expectedDate` que ya estaban cargados quedan en la base**, pero nada
+  los lee. Las rutas que editan o quitan la fecha de un evento
+  `PROJECT_MATERIAL` siguen existiendo y no tienen quién las llame.
+- El **costo previsto de la ficha de costos** del proyecto
+  (`/projects/:id/cost-summary`) **no** se tocó: es la estimación del margen, no
+  plata que sale.
 
 ### Casos borde
 

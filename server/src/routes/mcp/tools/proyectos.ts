@@ -432,7 +432,6 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
           unitPrice: true,
           moneda: true,
           status: true,
-          expectedDate: true,
           materialItem: { select: { nombre: true, unidad: true } },
           supplier: { select: { nombre: true } },
         },
@@ -448,8 +447,7 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
           ? materiales
               .map((m) => {
                 const precio = m.unitPrice ? ` · ${Number(m.unitPrice)} ${m.moneda ?? ""}`.trim() : "";
-                const fecha = m.expectedDate ? ` · llega ${fechaCorta(m.expectedDate)}` : "";
-                return `- ${m.materialItem?.nombre ?? "?"} × ${Number(m.quantity)} — ${m.status}${precio}${fecha}`;
+                return `- ${m.materialItem?.nombre ?? "?"} × ${Number(m.quantity)} — ${m.status}${precio}`;
               })
               .join("\n")
           : null;

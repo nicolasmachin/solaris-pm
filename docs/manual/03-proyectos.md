@@ -100,13 +100,50 @@ Cosas que conviene saber:
 - Un `evidenceKind` desconocido **no bloquea**: si se retira una evidencia del
   catálogo, esos ítems siguen funcionando como ítems normales.
 
-### La subetapa "Modalidad de pago definida" no cierra sin modalidad
+### El Onboarding no cierra sin saber cómo paga el cliente
 
 El filtro de ítems pendientes compara `item.appliesWhenModalidadPago ===
 project.modalidadPago`: con `modalidadPago` en null **ningún ítem condicionado se
 exige**, así que la subetapa se daba por completada sin proforma, sin plan de
-pagos y sin saber cómo paga el cliente. Por eso hay un guard aparte
-(`MODALIDAD_PAGO_REQUERIDA`) antes de ese filtro.
+pagos y sin saber cómo paga el cliente. Y además había dos atajos que no miraban
+el checklist: `PATCH .../substages/:id` con `status` (el que usan el botón de
+completar rápido, el selector de estado y "Mis tareas") y `PATCH
+.../stages/:id/complete-all`, que tildaba "Plan de pagos creado" aunque el plan
+no existiera.
+
+Desde el 9-oct-2026 la regla es una sola, `checklist-evidencias.ts` →
+`definicionesPendientesOnboarding(projectId)`, que devuelve qué falta:
+
+| Modalidad | Exige | Código |
+|---|---|---|
+| (ninguna) | elegir una | `MODALIDAD_PAGO` |
+| `DIRECTO_50_50` | un cobro previsto (`hayPlanDePagos`) **o** cobrado en USD ≥ 99 % del presupuesto | `PLAN_PAGOS` |
+| `FINANCIACION_BANCARIA` | una `ProformaVersion` publicada (no exige el crédito aprobado) | `PROFORMA` |
+| `OTRO` | `modalidadPagoNota` no vacía | `NOTA_MODALIDAD` |
+
+`assertOnboardingDefinido()` (en `api.routes.ts`) la convierte en un **409
+`DEFINICIONES_PENDIENTES`** con `projectId` y `faltantes` en el cuerpo (el
+manejador de errores aplana `details`). Se llama en los cuatro caminos que
+pueden cerrar el Onboarding:
+
+- `PATCH /projects/:p/stages/:s/substages/:id` con `COMPLETED` **o `NO_APLICA`**
+  sobre la subetapa "Modalidad de pago definida";
+- `PATCH /substages/:id/complete` (reemplaza al viejo `MODALIDAD_PAGO_REQUERIDA`);
+- `PATCH .../complete-all` si entre las subetapas abiertas está la de modalidad;
+- `PATCH /projects/:p/stages/:s` con `COMPLETED` si la etapa es `ONBOARDING`.
+
+**ADMIN no está exento** de esta regla, a diferencia del guard de evidencia.
+
+En el cliente, las mutaciones que completan (`StageDrawer`: completar rápido,
+selector de estado, completar todo; `Dashboard`: "Mis tareas") llaman en su
+`onError` a `pedirDefinicionesSiFaltan(err, reintentar)`
+(`store/definicionesPendientes.store.ts`). Si el error es ese, abre
+`DefinicionesPendientesModal` —montado una vez en `AppLayout`, como el aviso de
+traspaso— con la lista de faltantes y el `ModalidadPagoPanel` adentro; "Listo,
+continuar" reintenta la acción y, si todavía falta algo, el modal se reabre.
+
+**Proyectos viejos:** no hay backfill. La regla se aplica a todo proyecto con el
+Onboarding abierto en el momento de cerrarlo; los que ya lo cerraron no se tocan.
 
 `ModalidadPago` tiene tres valores: `FINANCIACION_BANCARIA`, `DIRECTO_50_50` y
 `OTRO` (este último obliga a llenar `modalidadPagoNota`).

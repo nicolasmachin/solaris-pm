@@ -11,6 +11,7 @@ import { ClientesSidebar } from "../../modules/clientes/components/ClientesSideb
 import { SidebarContextual, SIDEBAR_ANCHO } from "./SidebarContextual";
 import { useSidebarColapsado } from "../../hooks/useSidebarColapsado";
 import { TraspasoPopup } from "../traspasos/TraspasoPopup";
+import { DefinicionesPendientesModal } from "../project/DefinicionesPendientesModal";
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -72,6 +73,7 @@ export function AppLayout() {
       <BottomTabBar onMore={() => setMobileNavOpen(true)} />
       <VersionFooter />
       <TraspasoPopup />
+      <DefinicionesPendientesModal />
     </div>
   );
 }

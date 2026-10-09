@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { AlertTriangle, ChevronDown, DollarSign, FileText, LayoutTemplate, Plus, RefreshCw, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ChevronDown, DollarSign, FileText, LayoutTemplate, Plus, Search, X } from 'lucide-react';
 import {
   getProjectMaterials, createProjectMaterial,
-  generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
-  getMaterialCategories, getMaterialItems, getRegenerateImpact, removeZeroProjectMaterials,
+  exportMaterialsPdf,
+  getMaterialCategories, getMaterialItems, removeZeroProjectMaterials,
 } from '../../api/materials.api';
 import { getMaterialTemplates, applyMaterialTemplate } from '../../api/materialTemplates.api';
 import type { MaterialItem, ProjectMaterial } from '../../types/materials.types';
 import { PHASE_TYPE_LABELS } from '../../types/materials.types';
 import { useAuthStore } from '../../store/auth.store';
 import { usePermission } from '../../hooks/usePermission';
-import { todayLocalISO } from '../../utils/date';
 
 import { MaterialPhotoButton } from '../materials/MaterialPhoto';
 import { MaterialsFilters } from './materials/MaterialsFilters';
@@ -51,120 +50,6 @@ function roleLabel(role: string | null | undefined): string {
     FINANZAS: 'Finanzas',
   };
   return map[role] ?? role.charAt(0) + role.slice(1).toLowerCase();
-}
-
-// ─── Modal: Confirmar generación de previstos con fecha ───────────────────────
-
-function GeneratePrevistosModal({
-  isRegenerate, projectId, pendingCount, expectedDate, onDateChange, onCancel, onConfirm, isLoading,
-}: {
-  isRegenerate: boolean;
-  projectId: string;
-  pendingCount: number;
-  expectedDate: string;
-  onDateChange: (d: string) => void;
-  onCancel: () => void;
-  onConfirm: () => void;
-  isLoading: boolean;
-}) {
-  const oneYearFromNow = new Date();
-  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-  const isFarFuture = expectedDate && new Date(expectedDate) > oneYearFromNow;
-  const [showPreserved, setShowPreserved] = useState(false);
-
-  const { data: impact, isLoading: loadingImpact } = useQuery({
-    queryKey: ['regenerate-impact', projectId],
-    queryFn: () => getRegenerateImpact(projectId),
-    enabled: isRegenerate,
-    staleTime: 30_000,
-  });
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="border-b border-[var(--color-border)] px-5 py-4">
-          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-            {isRegenerate ? 'Regenerar previstos' : 'Generar previstos'}
-          </p>
-        </div>
-        <div className="px-5 py-4 space-y-4">
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            {isRegenerate
-              ? 'Se va a regenerar la lista de previstos para este proyecto. Se crean agrupados por categoría (un movimiento por categoría con el detalle de los ítems).'
-              : `Se crearán movimientos previstos en Finanzas, agrupados por categoría, basados en los materiales de esta lista (${pendingCount} ítem${pendingCount !== 1 ? 's' : ''} pendiente${pendingCount !== 1 ? 's' : ''}).`}
-          </p>
-
-          {isRegenerate && (
-            <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-[11px] text-[var(--color-text-secondary)] space-y-1">
-              {loadingImpact ? (
-                <p>Calculando impacto…</p>
-              ) : impact ? (
-                <>
-                  <p>
-                    🗑️ <strong>{impact.toDelete}</strong> movimiento{impact.toDelete !== 1 ? 's' : ''} <em>previsto</em> {impact.toDelete !== 1 ? 'serán eliminados' : 'será eliminado'}.
-                  </p>
-                  <p>
-                    🔒 <strong>{impact.toPreserve}</strong> movimiento{impact.toPreserve !== 1 ? 's' : ''} en estado avanzado (Comprometido / A pagar / Pagado) {impact.toPreserve !== 1 ? 'se conservan' : 'se conserva'} sin tocar.
-                    {impact.toPreserve > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowPreserved(v => !v)}
-                        className="ml-2 underline text-[var(--color-accent)]"
-                      >
-                        {showPreserved ? 'Ocultar detalle' : 'Ver detalle'}
-                      </button>
-                    )}
-                  </p>
-                  {showPreserved && impact.preservedDetails.length > 0 && (
-                    <ul className="mt-1 ml-3 list-disc text-[10px] space-y-0.5">
-                      {impact.preservedDetails.map(d => (
-                        <li key={d.id}>{d.descripcion} — {fmtMoney(d.monto, d.moneda)}</li>
-                      ))}
-                    </ul>
-                  )}
-                </>
-              ) : null}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-              Fecha esperada de compra
-            </label>
-            <input
-              type="date"
-              value={expectedDate}
-              onChange={e => onDateChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            />
-            {isFarFuture && (
-              <p className="text-[11px] text-[var(--color-warning-text)] mt-1">
-                ⚠️ La fecha está a más de un año. ¿Es correcto?
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="border-t border-[var(--color-border)] px-5 py-3 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isLoading}
-            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={!expectedDate || isLoading}
-            className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
-          >
-            {isLoading ? 'Generando...' : (isRegenerate ? 'Regenerar previstos' : 'Generar previstos')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── Modal: Agregar ítem desde catálogo ────────────────────────────────────────
@@ -498,7 +383,7 @@ function CostBreakdown({ projectId, rows, filtersActive }: { projectId: string; 
 
 // ─── Componente principal ──────────────────────────────────────────────────────
 
-export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectId: string; plannedWorkStart?: string | null }) {
+export function EngineeringMaterials({ projectId }: { projectId: string; plannedWorkStart?: string | null }) {
   const qc = useQueryClient();
   const currentUser = useAuthStore(s => s.user);
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -506,14 +391,11 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   const canEditIng = usePermission('INGENIERIA', 'EDIT');
   const canEditOps = usePermission('OPERACIONES', 'EDIT');
   const canEdit = canEditIng || canEditOps || isAdmin;
-  const canGeneratePrevistos = canEditIng || isAdmin;
   const canViewCatalog = usePermission('CONFIGURACION', 'VIEW') || isAdmin;
 
   const [showAdd, setShowAdd] = useState(false);
   const [addCategoryId, setAddCategoryId] = useState<string | null>(null);
   const [showTemplate, setShowTemplate] = useState(false);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [isRegenerateMode, setIsRegenerateMode] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfDropOpen, setPdfDropOpen] = useState(false);
 
@@ -558,60 +440,6 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
     return best;
   }, [materials]);
 
-  // Generación de previstos
-  const hasGenerated = materials.some(m => m.movementId);
-  const allGenerated = materials.length > 0 && materials.every(m => m.movementId);
-  const pendingGeneration = materials.filter(m => !m.movementId).length;
-
-  const todayIso = todayLocalISO();
-  const [expectedDate, setExpectedDate] = useState<string>(plannedWorkStart ?? todayIso);
-
-  const generateMut = useMutation({
-    mutationFn: (d: string) => generateProjectPrevistos(projectId, d),
-    onSuccess: (r) => {
-      if (r.created > 0) toast.success(`${r.created} previsto${r.created !== 1 ? 's' : ''} generado${r.created !== 1 ? 's' : ''} en Finanzas`);
-      else toast(`Ya hay previstos generados (${r.alreadyExisted})`);
-      qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
-    },
-    onError: (err) => toast.error(getApiErr(err) ?? 'Error al generar previstos'),
-  });
-
-  const regenerateMut = useMutation({
-    mutationFn: (d: string) => regenerateProjectPrevistos(projectId, d),
-    onSuccess: (r) => {
-      const parts: string[] = [];
-      parts.push(`${r.created} previsto${r.created !== 1 ? 's' : ''} creado${r.created !== 1 ? 's' : ''}`);
-      if (r.preservedCount > 0) parts.push(`${r.preservedCount} conservado${r.preservedCount !== 1 ? 's' : ''} sin tocar`);
-      toast.success(parts.join(' · '));
-      qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
-      qc.invalidateQueries({ queryKey: ['regenerate-impact', projectId] });
-    },
-    onError: (err) => toast.error(getApiErr(err) ?? 'Error al regenerar'),
-  });
-
-  function openGenerateModal(regenerate: boolean) {
-    if (regenerate && !isAdmin) { toast('Solo un administrador puede regenerar previstos.'); return; }
-    setIsRegenerateMode(regenerate);
-    setExpectedDate(plannedWorkStart ?? todayIso);
-    setShowGenerateModal(true);
-  }
-
-  function handleGenerate() {
-    if (hasGenerated && pendingGeneration === 0) {
-      if (isAdmin) openGenerateModal(true);
-      else toast('Solo un administrador puede regenerar previstos.');
-      return;
-    }
-    openGenerateModal(false);
-  }
-
-  function submitGenerateModal() {
-    if (!expectedDate) { toast.error('Debe especificar la fecha esperada de compra'); return; }
-    setShowGenerateModal(false);
-    if (isRegenerateMode) regenerateMut.mutate(expectedDate);
-    else generateMut.mutate(expectedDate);
-  }
-
   async function handleExportPdf(includePrecios: boolean) {
     setPdfDropOpen(false);
     if (
@@ -650,7 +478,6 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
     window.localStorage.setItem(collapsedKey, String(collapsed));
   }, [collapsed, collapsedKey]);
 
-  const isWorking = generateMut.isPending || regenerateMut.isPending;
 
   return (
     <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] overflow-hidden">
@@ -723,17 +550,6 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
                   </>
                 )}
               </div>
-            )}
-            {canGeneratePrevistos && materials.length > 0 && (
-              <button
-                onClick={handleGenerate}
-                disabled={isWorking}
-                className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
-                title={allGenerated ? 'Regenerar previstos en Finanzas' : 'Generar previstos en Finanzas'}
-              >
-                {hasGenerated && allGenerated ? <RefreshCw className={klass('w-3 h-3', isWorking && 'animate-spin')} /> : <Sparkles className="w-3 h-3" />}
-                {isWorking ? '…' : (allGenerated ? 'Regenerar' : hasGenerated ? `Generar ${pendingGeneration} más` : 'Generar previstos')}
-              </button>
             )}
             {canEdit && (
               <button
@@ -842,18 +658,6 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
         />
       )}
 
-      {showGenerateModal && (
-        <GeneratePrevistosModal
-          isRegenerate={isRegenerateMode}
-          projectId={projectId}
-          pendingCount={isRegenerateMode ? materials.filter(m => m.movementId).length : pendingGeneration}
-          expectedDate={expectedDate}
-          onDateChange={setExpectedDate}
-          onCancel={() => setShowGenerateModal(false)}
-          onConfirm={submitGenerateModal}
-          isLoading={generateMut.isPending || regenerateMut.isPending}
-        />
-      )}
     </section>
   );
 }

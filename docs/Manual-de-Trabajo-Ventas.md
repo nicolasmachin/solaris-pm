@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.6 — 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.7 — 9 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -119,6 +119,15 @@ completada.
 
 Esas casillas **no se pueden tildar a mano**: se marcan solas cuando el documento
 existe. Y si no se elige ninguna de las tres, la subetapa no cierra.
+
+**El onboarding no se cierra sin esto, por ningún camino.** También por los
+atajos: si el asesor marca la subetapa como completa desde la lista de etapas,
+la completa desde «Mis tareas» o usa «Completar todo», y la modalidad no está
+definida o le falta lo que pide (el plan de pagos, la proforma o la
+explicación), Voltia PM no la cierra: abre una ventana que pide eso mismo, y al
+terminar sigue con lo que se estaba haciendo. **La regla vale también para los
+proyectos que ya estaban en onboarding**: al ir a cerrarlo, piden lo que les
+falte.
 
 #### Si paga directo con nosotros
 
@@ -284,6 +293,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |
 | 0.4 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |

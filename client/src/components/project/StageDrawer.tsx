@@ -25,6 +25,7 @@ import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 import { ContractBuilderModal } from "../contract/ContractBuilderModal";
 import { ContractVersionsList } from "../contract/ContractVersionsList";
 import { ModalidadPagoPanel } from "./ModalidadPagoPanel";
+import { pedirDefinicionesSiFaltan } from "../../store/definicionesPendientes.store";
 import { PlanGranizoDocSection } from "../planGranizo/PlanGranizoDocSection";
 import { stageLabel } from "../../constants/stages";
 
@@ -341,6 +342,7 @@ function SubstageRow({
     },
     onError: (err: unknown) => {
       const resp = (err as { response?: { data?: { code?: string; details?: { pendingItems?: { id: string; label: string }[] } } } })?.response?.data;
+      if (pedirDefinicionesSiFaltan(err, () => completeSubstageMutation.mutate())) return;
       if (resp?.code === "CHECKLIST_INCOMPLETE") {
         setChecklistPendingItems(resp.details?.pendingItems ?? []);
       } else {
@@ -755,6 +757,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       invalidate();
     },
     onError: (err: unknown, vars) => {
+      if (pedirDefinicionesSiFaltan(err, () => subStatusMutation.mutate(vars))) return;
       const resp = (err as { response?: { data?: { code?: string; message?: string } } })?.response?.data;
       if (resp?.code === "OPERATIONS_NOT_ACTIVE" && resp.message) {
         setSubstageStatusError({ substageId: vars.substageId, message: resp.message });
@@ -888,7 +891,10 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       toast.success("Todas las subetapas marcadas como completadas");
       invalidate();
     },
-    onError: () => toast.error("Error al completar las subetapas"),
+    onError: (err: unknown) => {
+      if (pedirDefinicionesSiFaltan(err, () => completeAllMutation.mutate())) return;
+      toast.error("Error al completar las subetapas");
+    },
   });
 
   // Upload file

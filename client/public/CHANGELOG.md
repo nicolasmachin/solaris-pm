@@ -4,6 +4,17 @@
 
 ### 9 de octubre de 2026
 
+#### El Onboarding no se cierra sin saber cómo paga el cliente
+
+- Para cerrar el **Onboarding** hay que dejar definida la **modalidad de pago** y lo que pide: con **pago directo**, el plan de pagos con sus fechas; con **financiación bancaria**, la proforma; con **Otro**, la explicación de lo acordado.
+- Los atajos siguen estando (**Completar todo**, marcar la subetapa como completa desde la etapa o desde **Mis tareas**), pero si falta algo se abre una ventana que lo pide ahí mismo. Al terminar, **Listo, continuar** sigue con lo que se estaba haciendo.
+- Vale también para los proyectos que ya estaban en Onboarding.
+
+#### Las compras de materiales ya no se proyectan en Finanzas
+
+- En la lista de materiales del proyecto se saca el botón **Generar previstos**.
+- En **Pendientes** y en **Flujo de fondos** ya no aparecen los «Materiales proyectados». Lo que se le debe a un proveedor entra con su factura.
+
 #### Los proyectos archivados salen del listado
 
 - En **Proyectos**, los archivados (por ejemplo, un cliente que no siguió con la obra) **ya no aparecen en el listado**. Archivar pasa a ser sacarlo de la vista.

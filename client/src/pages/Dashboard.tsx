@@ -11,6 +11,7 @@ import { getUteProcesses, UTE_STAGE_LABEL, UTE_STATUS_LABEL, UTE_ACTIONS_ORDERED
 import { STAGE_AREA } from "../constants/stages";
 import { getCalendarMonth } from "../api/calendar.api";
 import { completeSubstage } from "../api/stages.api";
+import { pedirDefinicionesSiFaltan } from "../store/definicionesPendientes.store";
 import { LATEST_RELEASE, OLDER_RELEASES } from "../data/latestRelease";
 import { VersionHistoryModal } from "../components/layout/VersionFooter";
 import { OperationsPanel } from "../components/dashboard/OperationsPanel";
@@ -505,7 +506,10 @@ function MisTareasCard() {
       qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
       qc.invalidateQueries({ queryKey: ["my-tasks"] });
     },
-    onError: () => toast.error("No se pudo completar"),
+    onError: (err: unknown, vars) => {
+      if (pedirDefinicionesSiFaltan(err, () => completeMut.mutate(vars))) return;
+      toast.error("No se pudo completar");
+    },
   });
 
   return (

@@ -257,10 +257,15 @@ onboarding está completo pasan dos cosas: el proyecto pasa a **Ingeniería** y 
 cliente entra en la **etapa 1 de Experiencia Solar** (E1). Desde ahí, la etapa
 deja de ser de Ventas.
 
+**El onboarding no se cierra sin saber cómo y cuándo paga el cliente.** Si paga
+directo, el asesor deja armado el **plan de pagos** con sus fechas; si va con
+**financiación bancaria**, la **proforma** para el banco; si es un caso
+particular, la explicación escrita de lo que se acordó. Sin eso el proyecto no
+avanza.
+
 **Después del onboarding.** El asesor sigue el cobro, para que no quede en una
-zona gris sin que nadie lo mire: si el cliente paga directo, crea el **plan de
-pagos**; si va con **financiación bancaria**, sigue la proforma y el trámite con
-el banco hasta que salga.
+zona gris sin que nadie lo mire: si va con financiación bancaria, sigue el
+trámite con el banco hasta que salga.
 
 **La comisión.** El asesor cobra una comisión por cada venta que cierra.
 

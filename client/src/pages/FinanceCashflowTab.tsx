@@ -52,7 +52,6 @@ const TYPE_ORDER: CashflowSourceType[] = [
   "CLIENT_COBRO",
   "SUPPLIER_DEBT",
   "FIXED_COST",
-  "PROJECT_MATERIAL",
 ];
 
 function formatDateShort(iso: string): string {

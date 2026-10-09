@@ -310,8 +310,7 @@ cantidades en cero.
   `nonnegative`) y en `MaterialTemplateItem` (default 0 en `PUT .../items`). Un
   renglón en cero significa **"a completar"**, y por eso **queda afuera** de:
   el PDF de la lista (`export-pdf`), el consolidador
-  (`consolidador.routes.ts`), los materiales proyectados del flujo de fondos
-  (los dos `findMany` de `ProjectMaterial` con `expectedDate`) y el snapshot del
+  (`consolidador.routes.ts`) y el snapshot del
   EFP (`efp.service.ts` → `buildEFPSnapshots()`). El conector MCP sí los muestra
   (`× 0`), porque describe la lista tal cual está.
 - **No hay botón Guardar**: cada celda se guarda sola al salir. Por eso el aviso
