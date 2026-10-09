@@ -581,7 +581,7 @@ export interface CobrosListResponse {
   tipoCambio: number;
 }
 
-export const getCobrosByProject = (params?: { estado?: EstadoCobranza; clientName?: string; activos?: 'true' | 'false' }) =>
+export const getCobrosByProject = (params?: { estado?: EstadoCobranza; clientName?: string }) =>
   apiClient.get<CobrosListResponse>('/api/finance/cobros-by-project', { params }).then(r => r.data);
 
 export interface CobroDetail {

@@ -61,7 +61,6 @@ export function movimientoEnUsd(
 export interface FiltroCobros {
   estado?: EstadoCobranza;
   clientName?: string;
-  activos?: boolean;
 }
 
 export async function listarCobrosPorProyecto(filtro: FiltroCobros) {
@@ -71,11 +70,9 @@ export async function listarCobrosPorProyecto(filtro: FiltroCobros) {
   // Cobros NUNCA incluye archivados ni prospectos: son ventas que no se concretaron
   // (o todavía no son proyecto), así que no forman parte del pendiente de cobrar.
   // Al archivar un proyecto caído, sale solo del listado y del total pendiente.
-  if (filtro.activos) {
-    where.status = ProjectStatus.ACTIVE;
-  } else {
-    where.status = { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.PROSPECT] };
-  }
+  // No hay filtro "solo activos" (se sacó el 9-oct-2026): un proyecto pasa a
+  // COMPLETED al habilitarse la obra, y eso no dice nada de si terminó de pagar.
+  where.status = { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.PROSPECT] };
   if (filtro.clientName && filtro.clientName.trim().length > 0) {
     where.clientName = { contains: filtro.clientName.trim(), mode: "insensitive" };
   }

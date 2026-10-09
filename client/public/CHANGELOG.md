@@ -9,6 +9,11 @@
 - En **Proyectos**, los archivados (por ejemplo, un cliente que no siguió con la obra) **ya no aparecen en el listado**. Archivar pasa a ser sacarlo de la vista.
 - Para verlos o recuperarlos está el botón **Archivados (N)**, al lado de los filtros: muestra solo esos, y desde ahí se restauran. **Volver a los activos** deja el listado como estaba.
 
+#### Cobros muestra a todos los clientes
+
+- En **Cobros**, tanto en Finanzas como en Experiencia Solar, se saca el filtro **Activos / Todos**. Venía en *Activos* y dejaba afuera a los clientes con la **obra ya habilitada**, aunque debieran plata.
+- Ahora aparecen todos los proyectos vendidos. Para acotar está el filtro por **estado del pago** (pendientes, parciales, completos…), que queda igual.
+
 ## v12.0
 
 ### 8 de octubre de 2026

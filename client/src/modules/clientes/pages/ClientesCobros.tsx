@@ -69,14 +69,13 @@ function buildResumenWhatsApp(data: CobroDetail): string {
 type EstadoFilter = 'all' | EstadoCobranza;
 
 export function ClientesCobros() {
-  const [activos, setActivos] = useState<'true' | 'all'>('true');
   const [estado, setEstado] = useState<EstadoFilter>('all');
   const [search, setSearch] = useState('');
   const [detailProject, setDetailProject] = useState<{ id: string; clientName: string } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['cobros-by-project', activos],
-    queryFn: () => getCobrosByProject({ activos: activos === 'true' ? 'true' : undefined }),
+    queryKey: ['cobros-by-project'],
+    queryFn: () => getCobrosByProject(),
   });
 
   const projects = data?.projects ?? [];
@@ -172,14 +171,6 @@ export function ClientesCobros() {
           <option value="EXCEDIDO">Excedidos</option>
           <option value="SIN_PRESUPUESTO">Sin presupuesto</option>
         </select>
-        <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden text-xs font-mono uppercase tracking-wider">
-          {([['true', 'Activos'], ['all', 'Todos']] as const).map(([val, label]) => (
-            <button key={val} onClick={() => setActivos(val)}
-              className={klass('tap-target px-3 py-2 transition-colors', activos === val ? 'bg-[var(--color-accent)] text-gray-900 font-semibold' : 'bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]')}>
-              {label}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">

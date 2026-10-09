@@ -57,7 +57,12 @@ Temas de Finanzas que ya aparecieron en el trabajo con Voltia PM. **Están
 nombrados, no descriptos**: antes de escribir cada uno hay que verificar cómo
 funciona hoy, porque varios cambiaron desde que se armaron.
 
-- Cobros a clientes y plan de pagos (que ahora arma el asesor en el onboarding)
+- Cobros a clientes y plan de pagos (que ahora arma el asesor en el onboarding).
+  Ya establecido: la lista de Cobros muestra **todos** los proyectos vendidos,
+  estén en obra o ya habilitados, porque que la obra esté habilitada no dice si
+  el cliente terminó de pagar. Solo quedan afuera las ventas caídas (proyectos
+  archivados) y lo que todavía no se vendió. Se filtra por cómo está el pago:
+  pendiente, parcial, completo, excedido o sin presupuesto.
 - Cobros que gestiona Experiencia Solar sin ver el resto de Finanzas
 - Facturación al cliente: qué proyectos llevan factura y cuáles quedan pendientes de emitir
 - Facturas y pagos a proveedores, y cómo se aplica un pago a las facturas
@@ -72,5 +77,5 @@ funciona hoy, porque varios cambiaron desde que se armaron.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.2 | 9 de octubre de 2026 | Primer lineamiento: las aprobaciones de gastos no frenan una obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Finanzas, el atraso lo explica Finanzas. |
+| 0.2 | 9 de octubre de 2026 | Primer lineamiento: las aprobaciones de gastos no frenan una obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Finanzas, el atraso lo explica Finanzas. La lista de Cobros muestra todos los proyectos vendidos, también los ya habilitados: se filtra solo por cómo está el pago. |
 | 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |

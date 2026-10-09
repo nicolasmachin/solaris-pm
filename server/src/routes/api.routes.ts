@@ -11355,13 +11355,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const query = z.object({
         estado: z.enum(["PENDIENTE", "PARCIAL", "COMPLETO", "EXCEDIDO", "SIN_PRESUPUESTO"]).optional(),
         clientName: z.string().optional(),
-        activos: z.enum(["true", "false"]).optional(),
       }).parse(request.query);
 
       return listarCobrosPorProyecto({
         estado: query.estado,
         clientName: query.clientName,
-        activos: query.activos === "true",
       });
     });
 

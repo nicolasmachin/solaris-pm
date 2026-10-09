@@ -33,6 +33,13 @@ export const LATEST_RELEASE: Release = {
         "Para verlos o recuperarlos está el botón Archivados (N), al lado de los filtros.",
       ],
     },
+    {
+      title: "Cobros muestra a todos los clientes",
+      items: [
+        "En Cobros, en Finanzas y en Experiencia Solar, se saca el filtro Activos / Todos, que dejaba afuera a los clientes con la obra habilitada aunque debieran plata.",
+        "Para acotar queda el filtro por estado del pago, igual que antes.",
+      ],
+    },
   ],
 };
 
