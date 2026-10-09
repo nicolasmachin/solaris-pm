@@ -75,6 +75,11 @@ services:
       MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-http://localhost:4000}
       # Emails habilitados a conectar, separados por coma. Vacío = nadie.
       MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:-}
+      # Biller (facturación electrónica): trae las facturas que nos emiten los
+      # proveedores a la bandeja de Cuentas por pagar. Sin token, el job no corre.
+      # BILLER_URL: https://test.biller.uy (prueba) o https://biller.uy (producción).
+      BILLER_TOKEN: ${BILLER_TOKEN:-}
+      BILLER_URL: ${BILLER_URL:-https://test.biller.uy}
     ports:
       - "4000:4000"
     volumes:

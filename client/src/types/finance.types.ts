@@ -110,6 +110,9 @@ export interface Supplier {
   telefono: string | null;
   direccion: string | null;
   condicionPago: string | null;
+  plazoCreditoDias: number;
+  limiteCredito: number | null;
+  limiteCreditoMoneda: 'USD' | 'UYU';
   notas: string | null;
   activo: boolean;
   createdAt: string;

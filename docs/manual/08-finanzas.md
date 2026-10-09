@@ -294,6 +294,125 @@ desde la lista de materiales.
 
 ---
 
+## Cuentas por pagar y facturas recibidas (Biller)
+
+### Para qué existe
+
+Para saber en todo momento cuánto se le debe a cada proveedor y para cuándo, y
+que ninguna factura de proveedor se pierda: las facturas que le emiten a Voltia
+se traen solas de la facturación electrónica (Biller) y se revisan en una bandeja.
+
+### Cómo se usa
+
+- **Finanzas → Cuentas por pagar** (`FinanceCuentasPorPagarTab.tsx`): totales
+  por tramo, una fila por proveedor (desplegable con sus facturas) y, abajo, la
+  bandeja **Facturas recibidas**.
+- **Finanzas → Facturas de proveedores** (`FinanceFacturasProveedoresTab.tsx`):
+  registro de todas las facturas, con filtros.
+- Plazo y límite: en el formulario de proveedor (`FinanceSuppliers.tsx` →
+  `SupplierForm`).
+
+### Cómo funciona
+
+**Datos.** `Supplier` suma `plazoCreditoDias` (default 30), `limiteCredito`
+(null = sin límite) y `limiteCreditoMoneda`. La migración
+`20261009232500_plazo_credito_efergia` deja a EFERGIA en 10. Las facturas
+recibidas viven en `FacturaRecibida` (`facturas_recibidas`), única por
+`rutEmisor + tipoCfe + serie + numero`, con `raw` (el JSON tal cual vino) para no
+perder nada. Una confirmada apunta a su `FinanceMovement` (`movementId @unique`).
+
+**Vencimiento.** `cuentas-por-pagar.service.ts` → `calcularVencimiento()` =
+emisión + `plazoCreditoDias`. Lo usan `POST /finance/supplier-invoices` cuando no
+viene `fechaVencimiento` (ahora opcional) y la confirmación de la bandeja. **Manda
+el plazo negociado, no el vencimiento del CFE**; la bandeja muestra los dos
+cuando difieren (`fechaVencimientoCfe` vs `vencimientoPorPlazo`).
+
+**Deuda por tramos.** `getCuentasPorPagar()`: GASTO con proveedor en
+COMPROMETIDO / A_PAGAR / PARCIALMENTE_PAGADO por su saldo (monto − aplicaciones
+de pagos vigentes), vencimiento `dueDate ?? expectedDate ?? fecha` (mismo
+criterio que el cashflow), tramos `VENCIDO` / `HASTA_7` / `HASTA_30` / `MAS_30`
+(`tramoDe()`). El saldo a favor sale de `accumulateSupplierSaldoAFavor()` y se
+muestra aparte. El límite se compara contra la deuda neta **en la moneda del
+límite**, sin convertir.
+
+**Importación desde Biller.** `services/biller/recibidos.service.ts`:
+
+- `sincronizarRecibidos(dias = 45)` pide dos endpoints y junta las filas en
+  `guardarRecibidos()`:
+  - `GET /v2/comprobantes/recibidos/obtener` (lo que tiene DGI: **todos** los CFE
+    a nuestro RUT, solo totales, con `rut_emisor`);
+  - `GET /v2/comprobantes/obtener?recibidos=1` (lo que llegó al mail publicado
+    en DGI, con `fecha_vencimiento`). La documentación no muestra dónde viene el
+    emisor en esta respuesta: `desdeMail()` lo busca en `emisor.rut`,
+    `rut_emisor` y `emisor_rut`, y si no está empareja con la fila de DGI por
+    tipo/serie/número. **No verificado con datos reales** (la cuenta de test
+    devuelve `[]`).
+- Tipos: facturas y notas de débito (101/103/111/113/121/123 y contingencia)
+  entran; notas de crédito (102/112/122…) entran marcadas; remitos y resguardos
+  se ignoran.
+- El nombre del emisor, que DGI no trae, se pide con
+  `GET /v2/dgi/empresas/nombre-entidad?documento=<rut>&tipoDocumento=2`
+  (`buscarRazonSocial()`), una vez por RUT.
+- Upsert idempotente: correrlo dos veces no duplica. A una fila ya resuelta solo
+  se le completan datos que faltaban.
+- El proveedor se asigna **por RUT normalizado** (`normalizarRut()`, sin puntos
+  ni guiones), nunca por nombre.
+- Job `recibidos.job.ts` → `startBillerRecibidosJob()`: `15 8-20 * * 1-6` hora
+  Uruguay (`CRON_BILLER_RECIBIDOS`). **No corre sin `BILLER_TOKEN`.**
+  `BILLER_URL` elige test o producción. El resultado de la última corrida queda
+  **en memoria** (`getUltimaSync()`): se pierde al reiniciar.
+
+**Bandeja** (`routes/cuentas-por-pagar.routes.ts`):
+
+- `confirmar`: crea el `FinanceMovement` GASTO / PAGO_PROVEEDOR / A_PAGAR con
+  `invoiceNumber = serie-numero`. Si el proveedor elegido no tiene RUT, se le
+  graba el del CFE; si tiene otro, `RUT_NO_COINCIDE`.
+- `vincular`: la asocia a un movimiento ya cargado a mano (mismo proveedor y
+  moneda), sin crear deuda. Las candidatas se proponen por número
+  (`invoiceNumber` terminado en el número del CFE) o monto (±0,01).
+- `descartar` exige motivo; `reabrir` solo desde DESCARTADA (una confirmada se
+  corrige desde su movimiento).
+- `crear-proveedor`: da de alta el proveedor con el RUT y la razón social, y le
+  asigna las facturas que tenía sin proveedor.
+
+**Registro.** `GET /finance/facturas-proveedores` une las `FacturaRecibida` (en
+cualquier estado) con los GASTO con proveedor que **no** están vinculados a una
+(`facturaRecibida: null`), de COMPROMETIDO a PAGADO. Filtros: `proveedor`
+(`<id>`, `sin-proveedor`, `rut:<rut>`), `desde`/`hasta` (por emisión), `origen`,
+`buscar`. Las notas de crédito van con signo negativo y los totales excluyen las
+descartadas. Devuelve además `emisoresSinAlta`.
+
+### Permisos
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /finance/cuentas-por-pagar`, `GET /finance/facturas-recibidas`, `GET /finance/facturas-proveedores` | `FINANZAS:VIEW` |
+| `POST /finance/facturas-recibidas/sincronizar`, `/:id/confirmar`, `/:id/vincular`, `/:id/descartar`, `/:id/reabrir`, `/crear-proveedor` | `FINANZAS:EDIT` |
+
+No hay guards por rol: todo pasa por la matriz.
+
+### Reglas y decisiones
+
+- **Nada entra a la deuda solo.** Igual que en la emisión de CFE (ver
+  `docs/pendientes/facturacion-biller/README.md`), una persona confirma.
+- **Notas de crédito: a mano por ahora.** El sistema modela una NC como un
+  `Payment` negativo, que no reduce deuda (`accumulateSupplierSaldoAFavor`
+  ignora negativos) y pide cuenta bancaria. Hasta definir el tratamiento con el
+  contador, la bandeja no las convierte: se marcan como registradas con el motivo.
+- Monedas distintas de USD/UYU no se importan (el enum `Moneda` no las tiene).
+
+### Casos borde
+
+- En la cuenta de **test** de Biller los endpoints de recibidos devuelven `[]`:
+  la forma real de la respuesta de mail queda por confirmar con la cuenta de
+  producción (falta el certificado de VOLTIA SAS).
+- La ventana es de 45 días hacia atrás: una factura vieja que DGI recién
+  registre después de eso no entra sola (hay que ampliar `dias`).
+- Proveedores sin RUT cargado: sus facturas quedan "sin proveedor" hasta que se
+  elige uno en la bandeja (y ahí se le graba el RUT).
+
+---
+
 ## Qué falta cubrir de este capítulo
 
 - Movimientos: tipos, fuentes y comprobantes

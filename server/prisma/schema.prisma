@@ -151,6 +151,7 @@ enum AuditEntityType {
   seguro_granizo_siniestro
   plan_granizo_documento
   cabinet_design
+  factura_recibida
 }
 
 enum AuditAction {
@@ -1902,6 +1903,12 @@ model Supplier {
   telefono       String?
   direccion      String?
   condicionPago  String?
+  // Días desde la emisión de la factura hasta su vencimiento. Con esto se
+  // calcula solo el vencimiento de cada factura (manual o importada de Biller).
+  plazoCreditoDias Int     @default(30)
+  // Tope de deuda que el proveedor nos acepta. null = sin límite.
+  limiteCredito       Decimal? @db.Decimal(14, 2)
+  limiteCreditoMoneda Moneda   @default(USD)
   activo         Boolean   @default(true)
   notas          String?
   deletedAt      DateTime?
@@ -1909,6 +1916,7 @@ model Supplier {
   updatedAt      DateTime  @updatedAt
 
   movimientos      FinanceMovement[]
+  facturasRecibidas FacturaRecibida[]
   payments         Payment[]
   comprobantes     FinanceComprobante[]
   movimientosStock StockMovement[]
@@ -1985,6 +1993,7 @@ model FinanceMovement {
   observaciones           String?
   estadoAprobacion        EstadoAprobacion         @default(REGISTRADO)
   archivoAdjuntoUrl       String?
+  facturaRecibida     FacturaRecibida?
   paymentApplications     PaymentApplication[]
   comprobantes            FinanceComprobante[]
   movimientosStock        StockMovement[]
@@ -5316,4 +5325,56 @@ model CabinetDesignVersion {
   @@unique([designId, versionNumber])
   @@index([designId])
   @@map("cabinet_design_versions")
+}
+
+// ─── Facturas recibidas de proveedores (CFE vía Biller) ─────────────────────
+//
+// Bandeja de los comprobantes que los proveedores le emiten a Voltia. Los trae
+// un job desde Biller por dos caminos que se juntan en una sola fila:
+//   - lo que registra DGI (`recibidos/obtener`): están TODOS, pero solo totales;
+//   - lo que llegó a la casilla publicada en DGI (`obtener?recibidos=1`): trae
+//     el vencimiento y el detalle.
+// Nada entra solo a la deuda: una persona confirma cada factura, y recién ahí
+// se crea (o se vincula) el FinanceMovement A_PAGAR.
+
+enum EstadoFacturaRecibida {
+  PENDIENTE
+  CONFIRMADA
+  DESCARTADA
+}
+
+model FacturaRecibida {
+  id                String                @id @default(cuid())
+  rutEmisor         String
+  razonSocialEmisor String?
+  tipoCfe           Int
+  serie             String
+  numero            Int
+  fechaEmision      DateTime              @db.Date
+  fechaVencimiento  DateTime?             @db.Date
+  moneda            Moneda
+  totalNeto         Decimal?              @db.Decimal(14, 2)
+  totalIva          Decimal?              @db.Decimal(14, 2)
+  total             Decimal               @db.Decimal(14, 2)
+  estadoDgi         String?
+  // De qué camino llegó (pueden ser los dos).
+  enDgi             Boolean               @default(false)
+  enMail            Boolean               @default(false)
+  billerId          String?
+  estado            EstadoFacturaRecibida @default(PENDIENTE)
+  motivoDescarte    String?
+  supplierId        String?
+  supplier          Supplier?             @relation(fields: [supplierId], references: [id])
+  movementId        String?               @unique
+  movement          FinanceMovement?      @relation(fields: [movementId], references: [id])
+  resueltaPorId     String?
+  resueltaAt        DateTime?
+  raw               Json?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@unique([rutEmisor, tipoCfe, serie, numero])
+  @@index([estado])
+  @@index([supplierId])
+  @@map("facturas_recibidas")
 }

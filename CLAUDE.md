@@ -336,9 +336,11 @@ Ante la duda, se revisan todos: es más barato leer un capítulo de más que dej
 un manual diciendo lo contrario que otro.
 
 **Cada manual tiene su canvas A4 y su PDF** (ver `docs/manual-posventa-pdf/` y
-`docs/manual-trabajo-pdf/`). El `.md` es la fuente de verdad; cuando cambia, en
-la misma tanda se regenera y se republica su canvas y se rehace su PDF. Un canvas
-desactualizado es un manual desactualizado: es lo que el equipo lee.
+`docs/manual-trabajo-pdf/`). El `.md` es la fuente de verdad y se corrige en
+cada cambio. **El canvas y el PDF se regeneran solo cuando Nicolás lo pide**
+(decidido el 9-oct-2026: rehacerlos en cada cambio era demasiado trabajo). Al
+cerrar un cambio que tocó un manual, se avisa en una línea que su canvas quedó
+atrasado respecto del `.md`.
 
 Están escritos **en tercera persona, hablándole al rol y no al lector**, y en
 criollo: "el asesor carga", "Experiencia Solar avisa", "se entra desde

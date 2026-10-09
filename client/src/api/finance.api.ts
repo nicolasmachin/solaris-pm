@@ -54,6 +54,9 @@ export const createSupplier = (body: {
   telefono?: string;
   direccion?: string;
   condicionPago?: string;
+  plazoCreditoDias?: number;
+  limiteCredito?: number | null;
+  limiteCreditoMoneda?: 'USD' | 'UYU';
   notas?: string;
 }) =>
   apiClient.post<Supplier>('/api/finance/suppliers', body).then(r => r.data);
@@ -66,6 +69,9 @@ export const patchSupplier = (id: string, body: Partial<{
   telefono: string | null;
   direccion: string | null;
   condicionPago: string | null;
+  plazoCreditoDias: number;
+  limiteCredito: number | null;
+  limiteCreditoMoneda: 'USD' | 'UYU';
   notas: string | null;
   activo: boolean;
 }>) =>
@@ -350,7 +356,8 @@ export interface CreateSupplierInvoiceBody {
   monto: number;
   moneda: Moneda;
   fechaEmision?: string;
-  fechaVencimiento: string;
+  /** Vacío: vence a los días de plazo del proveedor. */
+  fechaVencimiento?: string;
   invoiceNumber?: string;
   projectId?: string;
 }

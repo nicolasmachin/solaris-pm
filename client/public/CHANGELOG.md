@@ -10,6 +10,25 @@
 - Los atajos siguen estando (**Completar todo**, marcar la subetapa como completa desde la etapa o desde **Mis tareas**), pero si falta algo se abre una ventana que lo pide ahí mismo. Al terminar, **Listo, continuar** sigue con lo que se estaba haciendo.
 - Vale también para los proyectos que ya estaban en Onboarding.
 
+#### Cuentas por pagar: cuánto se le debe a cada proveedor y para cuándo
+
+- Nueva pestaña **Cuentas por pagar** en Finanzas: lo que se le debe a cada proveedor, separado en **vencido**, **vence en 7 días**, **8 a 30 días** y **más de 30**, con el saldo a favor y el total. Al tocar un proveedor se ven sus facturas una por una, con cuántos días faltan para cada vencimiento.
+- Cada proveedor tiene ahora su **plazo de crédito en días** (30 por defecto; EFERGIA, 10) y, si corresponde, su **límite de crédito**. Se cargan al editar el proveedor.
+- Al cargar una factura a pagar, si no se pone vencimiento, **vence sola** a los días de plazo del proveedor.
+- Cuando la deuda con un proveedor pasa su límite de crédito, se marca en rojo arriba de todo.
+
+#### Las facturas de los proveedores llegan solas
+
+- Voltia PM consulta la **facturación electrónica** cada hora y trae las facturas que los proveedores le emiten a Voltia: **todas las que registra DGI** y las que llegaron por mail. Aparecen en **Cuentas por pagar → Facturas recibidas**.
+- Ninguna suma a la deuda hasta que alguien la revisa: **Cargar como deuda**, **Ya cargada** (si se había cargado a mano, se vincula sin duplicar) o **Descartar** con el motivo.
+- El proveedor se reconoce por su **RUT**. Si la factura es de una empresa que todavía no está dada de alta, se puede **dar de alta** ahí mismo con el nombre que figura en DGI.
+- Las **notas de crédito** llegan, pero por ahora se registran a mano.
+
+#### Registro de todas las facturas de proveedores
+
+- Nueva pestaña **Facturas de proveedores**: todas juntas, las electrónicas (en cualquier estado, también las de empresas sin dar de alta) y las cargadas a mano.
+- Se filtra por **proveedor**, por **"sin proveedor en el sistema"**, por fechas, por origen y con un buscador. Cada una muestra neto, IVA, total, vencimiento y si está por revisar, a pagar o pagada.
+
 #### Las compras de materiales ya no se proyectan en Finanzas
 
 - En la lista de materiales del proyecto se saca el botón **Generar previstos**.

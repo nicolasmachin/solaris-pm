@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.8 — 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.9 — 9 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -241,6 +241,12 @@ no coincide con lo que factura el proveedor ni con su estado de cuenta, y
 ensucia el flujo de fondos. Y un proyecto que avanza sin plan de pagos llega a
 la etapa de cobrar sin que nadie sepa qué cobrar ni cuándo.
 
+- **El vencimiento de cada factura sale del plazo negociado con el proveedor**
+  (30 días para todos, salvo EFERGIA con 10), no de la fecha que ponga la
+  factura. Si no coinciden, se habla con el proveedor.
+- **Ninguna factura recibida entra a la deuda sin que una persona la revise**,
+  aunque llegue sola desde la facturación electrónica.
+
 **Desde cuándo rige.** 9 de octubre de 2026.
 
 **A qué manuales afecta.** Al PGT y a los manuales de trabajo de Ventas y de
@@ -277,6 +283,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.9 | 9 de octubre de 2026 | Se suma a la decisión de control de deudas: el vencimiento sale del plazo negociado con cada proveedor, y ninguna factura recibida entra a la deuda sin revisión. |
 | 0.8 | 9 de octubre de 2026 | Se registra que lo que se debe y lo que nos deben se controla con documentos reales: las compras de materiales no se proyectan (la deuda con un proveedor entra con su factura) y ningún proyecto sale del onboarding sin saber cómo y cuándo paga el cliente. |
 | 0.7 | 9 de octubre de 2026 | Se registra que la fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio deja registrado el motivo, lo explica el área que se atrasó y Gerencia lo revisa una vez por mes. Queda en definición si la fecha lleva un margen. |
 | 0.6 | 8 de octubre de 2026 | Se registra que los mantenimientos y las visitas de soporte son trabajo de Operaciones. Se corrige por qué Operaciones es el área más crítica: es el centro de la cadena, no el final, y cada atraso es plata. |

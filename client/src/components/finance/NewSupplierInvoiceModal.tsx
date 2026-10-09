@@ -54,6 +54,8 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onC
     enabled: !supplierId && !isEdit,
   });
 
+  const plazoElegido = suppliers.find((s) => s.id === form.supplierId)?.plazoCreditoDias ?? null;
+
   // En edición no se cambia el proveedor; en alta queda bloqueado si vino preseleccionado.
   const supplierBloqueado = !!supplierId || isEdit;
 
@@ -73,7 +75,7 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onC
             monto: Number(form.monto),
             moneda: form.moneda,
             fechaEmision: form.fechaEmision || undefined,
-            fechaVencimiento: form.fechaVencimiento,
+            fechaVencimiento: form.fechaVencimiento || undefined,
             invoiceNumber: form.invoiceNumber.trim() || undefined,
             projectId: form.projectId || undefined,
           }),
@@ -100,7 +102,7 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onC
     if (!form.descripcion.trim()) return toast.error("Ingresá una descripción");
     const n = Number(form.monto);
     if (!n || n <= 0) return toast.error("Ingresá un monto válido");
-    if (!form.fechaVencimiento) return toast.error("Ingresá la fecha de vencimiento");
+    if (isEdit && !form.fechaVencimiento) return toast.error("Ingresá la fecha de vencimiento");
     setSaving(true);
     saveMut.mutate(undefined, { onSettled: () => setSaving(false) });
   }
@@ -214,13 +216,19 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onC
               />
             </div>
             <div>
-              <label className={lbl}>Fecha de vencimiento *</label>
+              <label className={lbl}>Fecha de vencimiento{isEdit ? " *" : ""}</label>
               <input
                 type="date"
                 value={form.fechaVencimiento}
                 onChange={(e) => setForm({ ...form, fechaVencimiento: e.target.value })}
                 className={inp}
               />
+              {!isEdit && (
+                <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+                  Vacía: vence según el plazo del proveedor
+                  {plazoElegido != null ? ` (${plazoElegido} días desde la emisión)` : ""}.
+                </p>
+              )}
             </div>
           </div>
 

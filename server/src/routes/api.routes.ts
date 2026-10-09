@@ -116,6 +116,7 @@ import {
 import { crearAmpliacion, resolveRootProject } from "../services/ampliacion.service.js";
 import { calcularEstadoResultados, rangeForPeriod } from "../services/finance/resultados.service.js";
 import { listarCobrosPorProyecto } from "../services/finance/cobros.service.js";
+import { calcularVencimiento } from "../services/finance/cuentas-por-pagar.service.js";
 import {
   copyLatestProposalToProject,
   getLatestPublishedQuote,
@@ -13418,6 +13419,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       telefono: z.string().optional(),
       direccion: z.string().optional(),
       condicionPago: z.string().optional(),
+      plazoCreditoDias: z.coerce.number().int().min(0).max(365).optional(),
+      limiteCredito: z.coerce.number().positive().nullable().optional(),
+      limiteCreditoMoneda: z.nativeEnum(Moneda).optional(),
       notas: z.string().optional(),
     }).strict();
 
@@ -13429,6 +13433,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       telefono: z.string().nullable().optional(),
       direccion: z.string().nullable().optional(),
       condicionPago: z.string().nullable().optional(),
+      plazoCreditoDias: z.coerce.number().int().min(0).max(365).optional(),
+      limiteCredito: z.coerce.number().positive().nullable().optional(),
+      limiteCreditoMoneda: z.nativeEnum(Moneda).optional(),
       notas: z.string().nullable().optional(),
       activo: z.boolean().optional(),
     }).strict();
@@ -13437,6 +13444,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       id: string; nombre: string; rut: string | null; contactoNombre: string | null;
       email: string | null; telefono: string | null; direccion: string | null;
       condicionPago: string | null; activo: boolean; notas: string | null;
+      plazoCreditoDias: number; limiteCredito: Prisma.Decimal | null; limiteCreditoMoneda: Moneda;
       createdAt: Date; updatedAt: Date;
       _count?: { movimientos: number; comprobantes: number };
     }) {
@@ -13444,6 +13452,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: s.id, nombre: s.nombre, rut: s.rut, contactoNombre: s.contactoNombre,
         email: s.email, telefono: s.telefono, direccion: s.direccion,
         condicionPago: s.condicionPago, activo: s.activo, notas: s.notas,
+        plazoCreditoDias: s.plazoCreditoDias,
+        limiteCredito: s.limiteCredito != null ? Number(s.limiteCredito) : null,
+        limiteCreditoMoneda: s.limiteCreditoMoneda,
         createdAt: serializeDate(s.createdAt), updatedAt: serializeDate(s.updatedAt),
         ...(s._count ? { _count: s._count } : {}),
       };
@@ -18253,7 +18264,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         monto: z.coerce.number().positive(),
         moneda: z.nativeEnum(Moneda),
         fechaEmision: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-        fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        // Opcional: si no viene, vence a los `plazoCreditoDias` del proveedor.
+        fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         invoiceNumber: z.string().optional(),
         projectId: z.string().optional(),
       }).strict().parse(request.body);
@@ -18266,8 +18278,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
       }
 
-      const fechaEmision = body.fechaEmision ? parseDateOnly(body.fechaEmision) : new Date();
-      const fechaVencimiento = parseDateOnly(body.fechaVencimiento);
+      const fechaEmision = body.fechaEmision ? parseDateOnly(body.fechaEmision) : todayUtc();
+      const fechaVencimiento = body.fechaVencimiento
+        ? parseDateOnly(body.fechaVencimiento)
+        : calcularVencimiento(fechaEmision, supplier.plazoCreditoDias);
 
       const movement = await prisma.financeMovement.create({
         data: {

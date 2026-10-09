@@ -33,6 +33,8 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 | `BUNNY_STREAM_API_KEY` | alcanza la **Read-only API Key** de la biblioteca (la app solo lista videos) |
 | `BUNNY_STREAM_TOKEN_KEY` | *Token authentication key* (Stream → Security). La biblioteca tiene prendido *Embed view token authentication*: **sin esto los videos no reproducen** |
 | `BUNNY_STREAM_CDN_HOSTNAME` | `vz-xxxx.b-cdn.net`, de donde se bajan las miniaturas |
+| `BILLER_TOKEN` | token de la API de Biller (facturación electrónica). Trae las facturas que nos emiten los proveedores a Finanzas → Cuentas por pagar. Vacío = el job no corre y la bandeja avisa que no está configurada |
+| `BILLER_URL` | `https://biller.uy` en producción (default del compose de prod); `https://test.biller.uy` es la cuenta de prueba |
 | `BUNNY_STREAM_REFERER` | opcional. Referer con el que el server pide las miniaturas; default `BASE_URL`. Tiene que estar en los *Allowed domains* de Bunny |
 
 > ⚠️ **Gap conocido del compose de prod**: el bloque `server.environment` de
@@ -40,8 +42,8 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 > variable que no esté en el bloque `environment:` del compose no llega al
 > contenedor**, por más que esté en el `.env`. Al agregar una variable nueva hay
 > que sumarla ahí (`VAR: ${VAR:-}`) y recrear: `docker compose -f
-> docker-compose.prod.yml up -d server`. Hoy forwardea 39 (SMTP, Anthropic,
-> OpenAI, Growatt, Huawei, monitoreo FV, MCP, novedades y Bunny).
+> docker-compose.prod.yml up -d server`. Hoy forwardea 41 (SMTP, Anthropic,
+> OpenAI, Growatt, Huawei, monitoreo FV, MCP, novedades, Bunny y Biller).
 
 > **NODE_ENV=production** en prod: activa el guard del seed (aborta), apaga la
 > redirección de mails de dev (ver abajo) y el modo productivo. El compose de

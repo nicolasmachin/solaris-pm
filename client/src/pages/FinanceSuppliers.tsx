@@ -37,6 +37,9 @@ export function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
     telefono: initial?.telefono ?? '',
     direccion: initial?.direccion ?? '',
     condicionPago: initial?.condicionPago ?? '',
+    plazoCreditoDias: String(initial?.plazoCreditoDias ?? 30),
+    limiteCredito: initial?.limiteCredito != null ? String(initial.limiteCredito) : '',
+    limiteCreditoMoneda: initial?.limiteCreditoMoneda ?? 'USD',
     notas: initial?.notas ?? '',
   });
   const [loading, setLoading] = useState(false);
@@ -55,6 +58,10 @@ export function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
         ...(form.telefono ? { telefono: form.telefono } : {}),
         ...(form.direccion ? { direccion: form.direccion } : {}),
         ...(form.condicionPago ? { condicionPago: form.condicionPago } : {}),
+        plazoCreditoDias: Number(form.plazoCreditoDias || 0),
+        // Vacío = sin límite de crédito.
+        limiteCredito: form.limiteCredito ? Number(form.limiteCredito) : null,
+        limiteCreditoMoneda: form.limiteCreditoMoneda as 'USD' | 'UYU',
         ...(form.notas ? { notas: form.notas } : {}),
       };
       if (supplierId) {
@@ -86,6 +93,26 @@ export function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
         <div><label className={lbl}>Teléfono</label><input className={inp} value={form.telefono} onChange={e => setF('telefono', e.target.value)} /></div>
       </div>
       <div><label className={lbl}>Dirección</label><input className={inp} value={form.direccion} onChange={e => setF('direccion', e.target.value)} /></div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className={lbl}>Plazo (días)</label>
+          <input type="number" min={0} max={365} className={inp} value={form.plazoCreditoDias} onChange={e => setF('plazoCreditoDias', e.target.value)} required />
+        </div>
+        <div>
+          <label className={lbl}>Límite de crédito</label>
+          <input type="number" min={0} step="0.01" placeholder="Sin límite" className={inp} value={form.limiteCredito} onChange={e => setF('limiteCredito', e.target.value)} />
+        </div>
+        <div>
+          <label className={lbl}>Moneda del límite</label>
+          <select className={inp} value={form.limiteCreditoMoneda} onChange={e => setF('limiteCreditoMoneda', e.target.value)}>
+            <option value="USD">USD</option>
+            <option value="UYU">UYU</option>
+          </select>
+        </div>
+      </div>
+      <p className="-mt-2 text-[11px] text-[var(--color-text-muted)]">
+        Cada factura vence a los días del plazo, contados desde que se emite. Sin límite: dejarlo vacío.
+      </p>
       <div><label className={lbl}>Condición de pago</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.condicionPago} onChange={e => setF('condicionPago', e.target.value)} /></div>
       <div><label className={lbl}>Notas</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
       {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}

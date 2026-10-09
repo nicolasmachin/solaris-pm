@@ -1,3 +1,4 @@
+import { startBillerRecibidosJob } from "./services/biller/recibidos.job.js";
 import fs from "node:fs";
 import { startPlanGranizoJob } from "./services/seguro-granizo/plan-granizo.job.js";
 import path from "node:path";
@@ -100,6 +101,7 @@ async function start() {
   startDailyDigestJob();
   startNovedadesJob();
   startPlanGranizoJob();
+  startBillerRecibidosJob();
 
   // La cola de compresión de videos vive en memoria: un reinicio la vacía. Sin
   // esto, un video subido justo antes de un deploy quedaría "procesando" para
