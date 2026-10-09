@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.6 — 9 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -78,7 +78,19 @@ general):
 
 ## 3 · Lineamientos
 
-*Por escribir.*
+### Lo que Ventas deja sin hacer le cae a la obra
+
+La fecha de obra la confirma Operaciones y, una vez confirmada, **se defiende**:
+moverla es la excepción. Lo que el asesor deja sin hacer en el onboarding (la
+seña sin cobrar, el contrato sin firmar, un dato del cliente que falta) termina
+en una obra que no se puede arrancar en su fecha. Cada fecha que se mueve es
+plata: una cuadrilla que estaba organizada, una vuelta más a la casa del cliente
+y la obra de otro cliente que no se hizo.
+
+Si la fecha se mueve por algo que dependía de Ventas, **el atraso lo explica
+Ventas**: qué pasó, cuántos días y qué se intentó. Gerencia revisa una vez por
+mes cuántas fechas se movieron y por qué área. No es para buscar culpables, es
+para que no se repita.
 
 ## 4 · Las herramientas y cómo se usan
 
@@ -272,6 +284,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |
 | 0.4 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 0.2 | 30 de septiembre de 2026 | El cotizador con inversores distintos y qué pasa con cada uno (un suministro por inversor). Se agrega la consulta inicial a UTE: una por cada cuenta. |

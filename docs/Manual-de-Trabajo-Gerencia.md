@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.6 — 8 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.7 — 9 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -44,6 +44,43 @@ Voltia.
 **Desde cuándo rige.** 5 de octubre de 2026.
 
 **A qué manuales afecta.** Al PGT y al Manual de trabajo de Operaciones.
+
+### La fecha de obra confirmada se defiende
+
+**Qué se decidió.** Cuando el gerente de Operaciones confirma la fecha de obra,
+esa fecha se defiende. Si una etapa anterior se atrasa, el área que se atrasó y
+Operaciones buscan primero cómo recuperar el tiempo: darle prioridad a ese
+proyecto, horas extra, comprar en plaza, adelantar en paralelo lo que se pueda.
+La fecha se mueve solo cuando no hay forma. **Mover una fecha es la excepción, no
+el camino normal**, y cada cambio rinde cuentas:
+
+- **Queda registrado el motivo**: qué etapa se atrasó, de qué área, cuántos días
+  y qué se intentó para no mover la fecha.
+- **Explica el área que se atrasó**, no Operaciones, que es la que recibe el
+  atraso.
+- **Las causas ajenas** (la lluvia, un cambio que pide el cliente, una demora de
+  UTE) se registran igual, pero no cuentan como atraso de un área.
+- **Gerencia revisa una vez por mes** cuántas fechas se movieron, por qué área y
+  cuántos días de obra se perdieron.
+
+Buscarle la vuelta **nunca** es saltarse un ensayo, un control de calidad o una
+medida de seguridad.
+
+**Por qué.** El procedimiento dice cómo se reagenda una obra, y para el gerente
+de Operaciones reagendar es mover el calendario y seguir. Para Voltia es plata:
+la cuadrilla que estaba organizada para ese día, una vuelta más a la casa del
+cliente y la obra de otro cliente que no se hizo en ese lugar. Si cambiar una
+fecha no le cuesta nada a nadie, termina pasando todos los días. Rendir cuentas
+no es buscar culpables: es explicar qué pasó y qué se cambia para que no se
+repita.
+
+**Desde cuándo rige.** 9 de octubre de 2026.
+
+**En definición.** Si la fecha confirmada lleva uno o dos días hábiles de margen
+sobre el mínimo de 12, para que un atraso chico no la mueva.
+
+**A qué manuales afecta.** Al PGT, al de Operaciones (con Logística), al de
+Ingeniería, al de Ventas, al de Experiencia Solar y al de Finanzas.
 
 ### Los mantenimientos y el soporte son de Operaciones
 
@@ -216,6 +253,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.7 | 9 de octubre de 2026 | Se registra que la fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio deja registrado el motivo, lo explica el área que se atrasó y Gerencia lo revisa una vez por mes. Queda en definición si la fecha lleva un margen. |
 | 0.6 | 8 de octubre de 2026 | Se registra que los mantenimientos y las visitas de soporte son trabajo de Operaciones. Se corrige por qué Operaciones es el área más crítica: es el centro de la cadena, no el final, y cada atraso es plata. |
 | 0.5 | 7 de octubre de 2026 | Se registra la decisión de justificar ante UTE la potencia recortada con un informe de proyección de consumo: el criterio es el balance anual y la generación se estima en 1.450 kWh por kW. |
 | 0.4 | 5 de octubre de 2026 | Se registran cinco decisiones: al cliente la fecha de obra se le dice una sola vez; seguridad sin flexibilidad, con sanción a toda la cadena; compras en plaza con tres presupuestos, salvo que esperar el tercero frene una obra; Operaciones es el área más crítica y los plazos de las demás áreas se cumplen; en obra, el criterio del instalador le gana al del proyectista. |

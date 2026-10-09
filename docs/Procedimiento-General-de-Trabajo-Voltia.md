@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Borrador en revisión — 8 de octubre de 2026
+**Voltia · Uruguay** · Borrador en revisión — 9 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -135,7 +135,28 @@ Si el atraso mueve una fecha que ya se le dio al cliente, **la fecha se cambia
 en el calendario**. Eso le avisa a Experiencia Solar, que es quien se lo cuenta
 al cliente.
 
-### Regla 4 — Todo se registra donde ya se está trabajando
+### Regla 4 — La fecha de obra confirmada se defiende
+
+> **Mover una fecha confirmada es la excepción, no el camino normal.**
+
+Si una etapa se atrasa y pone en riesgo una fecha de obra ya confirmada, **primero
+se busca cómo recuperar el tiempo**: darle prioridad a ese proyecto, horas
+extra, comprar en plaza, adelantar en paralelo lo que se pueda. La fecha se mueve
+solo cuando no hay forma, y nunca a costa de la calidad o la seguridad.
+
+Cada fecha que se mueve **rinde cuentas**: queda registrado qué etapa se atrasó,
+de qué área, cuántos días y qué se intentó para no moverla. Lo explica **el área
+que se atrasó**, no Operaciones, que es la que recibe el atraso. Lo que no
+depende de Voltia (la lluvia, un cambio que pide el cliente, una demora de UTE)
+se registra igual, pero no cuenta como atraso de un área. **Gerencia lo revisa
+una vez por mes.**
+
+No es para buscar culpables. Cada fecha que se mueve es plata: una cuadrilla que
+estaba organizada, una vuelta más a la casa del cliente y la obra de otro
+cliente que no se hizo. Rendir cuentas es explicar qué pasó y qué se cambia para
+que no se repita.
+
+### Regla 5 — Todo se registra donde ya se está trabajando
 
 > **Si hay que preguntarle a alguien en qué anda algo, es porque falta un
 > registro.**
@@ -145,29 +166,29 @@ las vistas que le sirven. No hay que entrar al módulo de otra área. Por detrá
 la ficha del cliente es una sola: lo que registra cada área aparece en el
 historial del cliente, con el nombre del área, y lo ven todos.
 
-### Regla 5 — Si no está agendado, no vamos
+### Regla 6 — Si no está agendado, no vamos
 
 **Ninguna visita a la propiedad del cliente sin que esté en el calendario y
 avisada.** Vale para el relevamiento, para la visita técnica de coordinación,
 para dejar materiales y para la obra. Y si está agendada y no se puede ir, **se
 avisa antes de la hora**.
 
-### Regla 6 — Toda reprogramación se avisa el mismo día
+### Regla 7 — Toda reprogramación se avisa el mismo día
 
 Si una fecha que ya se le dio al cliente se mueve, **se le avisa ese mismo día,
 con el motivo**, aunque todavía no haya fecha nueva.
 
-### Regla 7 — Habilitación: de 24 a 48 horas
+### Regla 8 — Habilitación: de 24 a 48 horas
 
 Cuando UTE habilita, el cliente tiene que saber **en 24 a 48 horas** que ya puede
 encender. Cada día que pasa sin saberlo, deja de ahorrar.
 
-### Regla 8 — Reclamos: respuesta el mismo día hábil, siempre
+### Regla 9 — Reclamos: respuesta el mismo día hábil, siempre
 
 Aunque sea «lo estoy viendo, te confirmo mañana». **La solución puede demorar; la
 respuesta no.**
 
-### Regla 9 — Todo mensaje al cliente cierra con el próximo paso
+### Regla 10 — Todo mensaje al cliente cierra con el próximo paso
 
 Nunca un mensaje que lo deje sin saber qué sigue: «ahora arranca el trámite, y te
 aviso apenas habiliten».
@@ -194,7 +215,7 @@ manual.
 **Experiencia Solar, como el médico de cabecera:** el especialista le habla
 directo al paciente, pero el médico de cabecera tiene la historia completa y
 responde por cómo va todo. Por eso las demás áreas no tienen que pasar por ella
-para todo, pero sí tienen que dejar registrado lo que hacen (regla 4).
+para todo, pero sí tienen que dejar registrado lo que hacen (regla 5).
 
 ### Ventas
 
@@ -314,7 +335,9 @@ Ingeniería Final.
 12 días hábiles**, porque cada área trabaja después de la otra: Validación 4,
 Ingeniería Final 3 y Compras 5. Por eso la fecha tentativa nunca puede quedar
 antes, y **un día de atraso en cualquiera de esas etapas es un día más de
-obra**.
+obra**. Por eso también, **una vez confirmada, la fecha de obra se defiende**
+(regla 4): ante un atraso, primero se busca recuperar el tiempo, y moverla
+es la excepción.
 
 **Las Compras.** Las hace Logística, y su único punto de partida es **la lista
 de materiales de la Ingeniería Final**, que ya pasó por el capataz. Lo que
@@ -560,22 +583,25 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 > ### 3. Si una etapa se atrasa, el área avisa por qué.
 > Y si mueve una fecha que ya se le dio al cliente, se cambia en el calendario.
 
-> ### 4. Todo se registra donde ya se está trabajando.
+> ### 4. La fecha de obra confirmada se defiende.
+> Moverla es la excepción: primero se busca recuperar el tiempo, y cada cambio rinde cuentas.
+
+> ### 5. Todo se registra donde ya se está trabajando.
 > Si hay que preguntar en qué anda algo, falta un registro.
 
-> ### 5. Si no está agendado, no vamos.
+> ### 6. Si no está agendado, no vamos.
 > Y si está agendado y no se puede ir, se avisa antes de la hora.
 
-> ### 6. Toda reprogramación se avisa el mismo día.
+> ### 7. Toda reprogramación se avisa el mismo día.
 > Con el motivo, aunque todavía no haya fecha nueva.
 
-> ### 7. Habilitación: de 24 a 48 horas.
+> ### 8. Habilitación: de 24 a 48 horas.
 > Cada día que pasa, el cliente deja de ahorrar.
 
-> ### 8. Reclamos: respuesta el mismo día hábil, siempre.
+> ### 9. Reclamos: respuesta el mismo día hábil, siempre.
 > La solución puede demorar; la respuesta no.
 
-> ### 9. Todo mensaje al cliente cierra con el próximo paso.
+> ### 10. Todo mensaje al cliente cierra con el próximo paso.
 
 ---
 

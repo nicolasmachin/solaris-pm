@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.16 — 8 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.17 — 9 de octubre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -441,6 +441,14 @@ pasa a tener vencimiento y aparece en el correo de la mañana si se pasa.
 **Mover una obra ya confirmada exige el motivo en el sistema.** No es un trámite:
 quien tiene que avisarle al cliente necesita saber qué decirle. Si la obra todavía
 era tentativa no se pide motivo — nadie prometió nada.
+
+**Mover una fecha confirmada es la excepción.** Antes de moverla, las áreas
+buscan cómo recuperar el tiempo, y cada cambio rinde cuentas: el motivo dice qué
+etapa se atrasó, de qué área y qué se intentó, o qué causa ajena la movió (la
+lluvia, un cambio que pidió el cliente). Si la fecha se mueve por un pedido del
+cliente, Experiencia Solar lo deja así en el motivo, para que no cuente como
+atraso de un área. **Al cliente se le da el motivo sin nombrar áreas** (regla
+1): «tuvimos una demora con un material», no «Logística se atrasó».
 
 **Cada reprogramación genera su propio pendiente de aviso**, con el motivo
 adentro. Si a un cliente le mueven la fecha tres veces, quedan tres avisos, no
@@ -1863,6 +1871,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.17 | 9 de octubre de 2026 | Mover una fecha de obra confirmada es la excepción y cada cambio rinde cuentas. Si la mueve un pedido del cliente, Experiencia Solar lo deja escrito en el motivo; al cliente se le explica sin nombrar áreas. |
 | 1.16 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte los hace Operaciones; Experiencia Solar los coordina con el cliente. |
 | 1.15 | 5 de octubre de 2026 | Al cliente la fecha de obra se le dice una sola vez, cuando está confirmada: la fecha tentativa es interna y no se le comunica. |
 | 1.14 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |

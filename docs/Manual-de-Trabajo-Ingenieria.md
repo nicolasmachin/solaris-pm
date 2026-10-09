@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.9 — 8 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.10 — 9 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -27,6 +27,22 @@ toca más. A partir de ahí Logística compra sobre esa lista.
 ingeniería final.*
 
 ## 3 · Lineamientos
+
+### La fecha de obra depende de la Ingeniería Final
+
+Cuando Ingeniería recibe el informe del capataz, la fecha de obra **ya está
+confirmada y el cliente ya la sabe**. La Ingeniería Final tiene 3 días hábiles, y
+detrás vienen los 5 de Compras: un día de atraso en Ingeniería es un día menos
+para comprar o un día más de obra.
+
+**Esa fecha se defiende.** Si la Ingeniería Final se va a atrasar, Ingeniería
+avisa al gerente de Operaciones en cuanto lo sabe y se busca cómo recuperar el
+tiempo: darle prioridad a ese proyecto, cerrar primero la lista de materiales
+para que Compras pueda arrancar, y terminar después lo que no frena la compra.
+Si igual la fecha se mueve, **el atraso lo explica Ingeniería**: qué pasó,
+cuántos días y qué se intentó. Gerencia revisa una vez por mes cuántas fechas se
+movieron y por qué área. No es para buscar culpables: cada fecha que se mueve es
+plata, y se busca que no se repita.
 
 ### En obra, el criterio del instalador le gana al del proyectista
 
@@ -299,7 +315,7 @@ esta obra. Entra recién en la validación, cuando Ingeniería termina.
 
 ### La visita de relevamiento
 
-Hay que ir a la propiedad. **Se agenda y se avisa antes** (regla 5 del PGT).
+Hay que ir a la propiedad. **Se agenda y se avisa antes** (regla 6 del PGT).
 Ingeniería coordina con Experiencia Solar quién le avisa al cliente.
 
 ### A quién le pregunta qué
@@ -361,6 +377,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.10 | 9 de octubre de 2026 | Nuevo lineamiento: la fecha de obra confirmada se defiende. Si la Ingeniería Final se va a atrasar, se avisa y se busca recuperar el tiempo; si igual se mueve, el atraso lo explica Ingeniería. |
 | 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae. Si no se carga, se deduce de la potencia que dijo UTE; si tampoco hay, se trata como cuenta nueva. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. Al cargar cantidades, Enter pasa a la siguiente. |
 | 0.8 | 7 de octubre de 2026 | La lista de materiales se arma desde una sola plantilla, Base, con las cantidades en cero: se agrega cómo se arma la lista paso a paso, el cambio de variante en el mismo renglón, por qué no hay una plantilla por tipo de conexión y que un material en cero no sale para compras. En el catálogo se suma el rubro Monitoreo y medición. |
 | 0.7 | 7 de octubre de 2026 | Nuevo lineamiento: cuando UTE recorta la potencia pedida por el balance anual, Ingeniería contesta con un informe de justificación de potencia. Se agrega la herramienta que arma ese informe en Voltia PM, paso por paso. |

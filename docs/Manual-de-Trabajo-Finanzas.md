@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.1 — 28 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.2 — 9 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -28,7 +28,18 @@
 
 ## 4 · Lineamientos
 
-*Por escribir.*
+### Las aprobaciones de gastos no frenan una obra
+
+Finanzas aprueba los gastos de las compras. Logística tiene 5 días hábiles para
+comprar y recibir todo el material de una obra cuya fecha ya está confirmada y
+que el cliente ya sabe. Esa fecha **se defiende**: moverla es la excepción. Por
+eso una aprobación que demora es un día menos para comprar, y puede terminar en
+una obra que se mueve, que es plata (una cuadrilla organizada, una vuelta más,
+la obra de otro cliente que no se hizo).
+
+Si la fecha se mueve por algo que dependía de Finanzas, **el atraso lo explica
+Finanzas**. Gerencia revisa una vez por mes cuántas fechas se movieron y por qué
+área.
 
 ## 5 · Las herramientas y cómo se usan
 
@@ -61,4 +72,5 @@ funciona hoy, porque varios cambiaron desde que se armaron.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.2 | 9 de octubre de 2026 | Primer lineamiento: las aprobaciones de gastos no frenan una obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Finanzas, el atraso lo explica Finanzas. |
 | 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |

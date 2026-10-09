@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.6 — 8 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.7 — 9 de octubre de 2026 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -99,25 +99,27 @@ Después de la obra, Operaciones vuelve a la casa del cliente por dos motivos di
 
 **Cuánto tarda.** El reloj arranca cuando el proyecto entra a Validación de Operaciones y se agenda la **fecha tentativa**. Desde ahí hasta la obra pasan, **como mínimo, 12 días hábiles**, porque cada etapa trabaja después de la otra: Validación 4, Ingeniería Final 3 y Compras 5.
 
-Si el proyecto entra a Validación un lunes, la obra es, como muy temprano, el **jueves de la tercera semana**. Por eso **la fecha tentativa nunca puede quedar antes de ese día**.
+La obra se puede hacer, como muy temprano, el **día hábil 13**, el siguiente al último de Compras. Por eso **la fecha tentativa nunca puede quedar antes de ese día**. Los días hábiles se cuentan de lunes a viernes, sin feriados: un feriado en el medio corre todo un día.
 
 > **Un día de atraso es un día más de obra.**
 
-Si el informe del capataz sale dos días tarde, la obra pasa al lunes de la cuarta semana, y se corre todo lo que viene después.
+Si el informe del capataz sale dos días hábiles tarde, la obra se corre dos días hábiles, y con ella todo lo que viene después. Por eso, **una vez confirmada, la fecha de obra se defiende**: ante un atraso, primero se busca recuperar el tiempo (ver el capítulo 4).
 
 **El camino, paso a paso:**
 
-| Paso | Responsable | Qué pasa | Plazo | Vence (si entra un lunes) |
+| Paso | Responsable | Qué pasa | Plazo | Vence (día hábil) |
 |---|---|---|---|---|
 | 1 · Visita de venta | Gerente Comercial | Visita la casa del cliente y hace el relevamiento técnico | — | Antes |
 | 2 · Pre-ingeniería | Ingeniería | Sube a Voltia PM la pre-ingeniería y la lista de materiales preliminar | — | Antes |
-| 3 · Validación de Operaciones | Gerente de Operaciones | Agenda la fecha tentativa de obra en el calendario | Día 0 | Lunes, semana 1 |
-| 4 · Informe del capataz | Capataz | Revisa lo relevado y carga su informe | 2 días hábiles | Miércoles, semana 1 |
-| 5 · Fecha definitiva | Gerente de Operaciones · Experiencia Solar | El gerente confirma la fecha en el calendario; recién ahí Experiencia Solar se la avisa al cliente | 2 días hábiles | Viernes, semana 1 |
-| 6 · Ingeniería Final | Ingeniería | Hace los cambios del informe del capataz y cierra la lista de materiales definitiva | 3 días hábiles | Miércoles, semana 2 |
-| 7 · Compras | Logística | Compra y recibe todo el material, y coordina la entrega | 5 días hábiles | Miércoles, semana 3 |
-| 8 · Obra | Capataz y su equipo · Gerente de Operaciones | Se hace la obra; al terminar, el gerente de Operaciones la marca como pronta | — | Jueves, semana 3 |
+| 3 · Validación de Operaciones | Gerente de Operaciones | Agenda la fecha tentativa de obra en el calendario | — | Día 0 |
+| 4 · Informe del capataz | Capataz | Revisa lo relevado y carga su informe | 2 días hábiles | Día 2 |
+| 5 · Fecha definitiva | Gerente de Operaciones · Experiencia Solar | El gerente confirma la fecha en el calendario; recién ahí Experiencia Solar se la avisa al cliente | 2 días hábiles | Día 4 |
+| 6 · Ingeniería Final | Ingeniería | Hace los cambios del informe del capataz y cierra la lista de materiales definitiva | 3 días hábiles | Día 7 |
+| 7 · Compras | Logística | Compra y recibe todo el material, y coordina la entrega | 5 días hábiles | Día 12 |
+| 8 · Obra | Capataz y su equipo · Gerente de Operaciones | Se hace la obra; al terminar, el gerente de Operaciones la marca como pronta | — | Día 13, como muy temprano |
 | 9 · Después de la obra | Experiencia Solar | Le cuenta al cliente qué sigue y lo acompaña hasta la habilitación | — | Después |
+
+**Un ejemplo.** Un proyecto entra a Validación un lunes (día 0) y no hay feriados. El informe del capataz vence el miércoles; la fecha definitiva, el viernes; la Ingeniería Final, el miércoles de la semana siguiente; las Compras, el miércoles de la otra semana, y la obra puede hacerse, como muy temprano, el jueves de esa tercera semana.
 
 ## 4 · La fecha de obra
 
@@ -136,9 +138,24 @@ Decirle una fecha y después otra confunde y le saca confianza. El mensaje que l
 
 > **Plantilla «Fecha de obra confirmada».** «Hola {nombre}, te confirmo la instalación para el {fecha}. El equipo llega cerca de las {hora}. Durante la obra te va a coordinar {capataz} para horarios y accesos, te paso su contacto: {teléfono}. Cualquier otra cosa seguí conmigo.»
 
+### La fecha confirmada se defiende
+
+> **Mover una fecha confirmada es la excepción, no el camino normal.**
+
+Para el gerente de Operaciones, reprogramar es mover una obra en el calendario. Para Voltia es plata: la cuadrilla que estaba organizada para ese día, una vuelta más a la casa del cliente y la obra de otro cliente que no se hizo en ese lugar. Por eso, cuando una etapa anterior se atrasa y pone en riesgo la fecha, **antes de moverla se busca cómo recuperar el tiempo**, junto con el área que se atrasó:
+
+- darle prioridad a ese proyecto en la etapa que se atrasó;
+- horas extra o una cuadrilla más;
+- comprar en plaza lo que no llega;
+- adelantar en paralelo lo que no depende de lo atrasado.
+
+La fecha se mueve solo cuando no hay forma. Y buscarle la vuelta **nunca** es saltarse un ensayo, un control de calidad o una medida de seguridad.
+
+**Cada fecha que se mueve rinde cuentas.** Lo explica el área que se atrasó, no Operaciones, que es la que recibe el atraso. Lo que no depende de Voltia (la lluvia, un cambio que pide el cliente, una demora de UTE) se registra igual, pero no cuenta como atraso de un área. Gerencia revisa una vez por mes cuántas fechas se movieron, por qué área y cuántos días de obra se perdieron. No es para buscar culpables: es para que mover una fecha no se vuelva algo de todos los días.
+
 ### Si hay que mover la fecha
 
-Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito el motivo. Experiencia Solar necesita el motivo para explicárselo al cliente ese mismo día. Si a un cliente le mueven la fecha tres veces, son tres avisos, no uno.
+Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito el motivo. El motivo dice **qué etapa se atrasó, de qué área, cuántos días y qué se intentó para no mover la fecha**, o qué causa ajena la movió. Experiencia Solar lo necesita para explicárselo al cliente ese mismo día, y Gerencia, para la revisión del mes. Si a un cliente le mueven la fecha tres veces, son tres avisos, no uno.
 
 **Voltia PM pide el motivo** cuando la obra ya tenía la fecha confirmada, tanto con el botón **Reprogramar** como al arrastrar la obra a otro día, y con ese motivo le genera el aviso a Experiencia Solar. Si la obra todavía era tentativa, o se la lleva a una fecha que ya pasó (para dejar anotado cuándo se hizo de verdad), no lo pide.
 
@@ -669,7 +686,7 @@ compra en la ferretería más cercana.
 
 ### Un material demora y puede mover la fecha de obra
 
-**Se avisa al gerente de Operaciones en cuanto se sabe**, no el día de la preparación. Es de las pocas cosas del área que cambian lo que el cliente ya sabe: si la fecha se mueve, se reprograma en Voltia PM con su motivo.
+**Se avisa al gerente de Operaciones en cuanto se sabe**, no el día de la preparación. Antes de mover la fecha, se busca cómo conseguirlo a tiempo: otro proveedor, comprar en plaza, un flete propio. Si igual se mueve, se reprograma en Voltia PM con su motivo, y el atraso lo explica Logística.
 
 ### Llegó un material distinto al de la lista
 
@@ -686,8 +703,8 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 > ### 3. Operaciones no le comunica la fecha al cliente
 > Se la cuenta Experiencia Solar.
 
-> ### 4. Toda fecha que se mueve se reprograma en Voltia PM, con su motivo
-> Así Experiencia Solar se entera el mismo día.
+> ### 4. La fecha confirmada se defiende
+> Ante un atraso, primero se busca recuperar el tiempo. Si igual se mueve, se reprograma en Voltia PM con su motivo, y lo explica el área que se atrasó.
 
 > ### 5. Sin el informe del capataz completado, el proyecto no avanza
 > Aunque no haya nada que cambiar.
@@ -733,6 +750,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que un feriado corre todo un día. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |
 | 0.5 | 7 de octubre de 2026 | En la pestaña Compras: la lista se ve por secciones, y un material con cantidad en cero es uno que Ingeniería todavía no completó, que no sale en el PDF ni en el consolidado de compras. |
 | 0.4 | 5 de octubre de 2026 | Se reordena el manual con el mismo modelo que el de Experiencia Solar. Se agregan: las capturas de Voltia PM en cada pantalla que se explica; la entrega de materiales la coordina el capataz con el cliente; al cliente la fecha de obra se le dice una sola vez, cuando está confirmada; el capítulo de seguridad, con la responsabilidad en cadena (operario, capataz, gerente de Operaciones) y las sanciones; la regla de los tres presupuestos para las compras en plaza; qué tiene que saber Operaciones de las otras áreas; por qué Operaciones es el área más crítica (todo atraso de otra área le cae a la obra) y qué tiene que estar para confirmar una fecha; la regla de que en obra el criterio del instalador le gana al del proyectista; dónde empieza y termina cada etapa, con lo que recibe y lo que entrega; los 12 días hasta la obra; todo el módulo de Proyectos de Voltia PM explicado (lista, proyecto, panel de etapa, subetapas de Operaciones, calendario, las 23 fotos, videos, pagos a instaladores); los mensajes al cliente citados enteros; las reglas del área; los criterios técnicos de obra; qué hacer cuando algo sale mal; las hojas para llevar a la obra; las reglas en una página y el glosario. |
