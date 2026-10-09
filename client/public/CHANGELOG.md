@@ -15,6 +15,7 @@
 - En los generadores con inversor **Huawei** ahora se guarda también **cuánto se exportó a UTE cada día**, no solo lo generado. Antes ese dato estaba únicamente por mes. Los meses anteriores, desde julio, también se completan.
 - El **teléfono del cliente** ya no exige el formato de celular uruguayo (09 y 7 números). Ahora se puede cargar un número de **Argentina** u otro país, un fijo, o escribirlo con **+**, espacios, guiones o paréntesis, en el proyecto, en la ficha del cliente y al pasar un lead a proyecto.
 - En la **justificación de potencia ante UTE**, el consumo del último año ya no hace falta cargarlo (la factura no lo trae): si se anotó cuánto dijo UTE que da, el informe **deduce el consumo de esa potencia** y lo muestra como aproximado; si es una **cuenta nueva**, el balance se arma solo con las cargas que se vienen.
+- El PDF de la justificación se descarga con **el nombre del cliente** ("Justificacion de potencia - Juan Pérez.pdf") en lugar del número de versión, listo para adjuntar en el mail a UTE.
 
 ## v11.9
 

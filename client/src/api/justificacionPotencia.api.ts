@@ -55,6 +55,8 @@ export interface JustificacionVersionItem {
   textosConIa: boolean;
   createdAt: string;
   createdByName: string;
+  /** Nombre del PDF al descargarlo: "Justificacion de potencia - <cliente>.pdf". */
+  archivo: string;
   /** FileAttachment vigente en Documentos (solo la última versión lo tiene). */
   documentoId: string | null;
 }

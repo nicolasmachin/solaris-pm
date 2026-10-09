@@ -125,7 +125,7 @@ export function JustificacionToolPanel({ projectId }: { projectId: string }) {
 function PdfPreviewModal({ version, onClose }: { version: JustificacionVersionItem; onClose: () => void }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const path = justificacionPdfPath(version.id);
-  const filename = `justificacion_potencia_v${version.versionNumber}.pdf`;
+  const filename = version.archivo;
 
   useEffect(() => {
     let cancelled = false;

@@ -125,8 +125,17 @@ async function buildContexto(projectId: string) {
   };
 }
 
-function pdfFilename(clientName: string, version: number): string {
-  return `justificacion_potencia_${clientName.replace(/[^\w-]+/g, "_")}_v${version}.pdf`;
+// Nombre del archivo que se adjunta en el mail a UTE: lleva el cliente, no la
+// versión (la versión es interna). Sin tildes ni símbolos para que el header
+// Content-Disposition y los clientes de mail no lo rompan.
+function pdfFilename(cliente: string): string {
+  const limpio = cliente
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return `Justificacion de potencia - ${limpio || "cliente"}.pdf`;
 }
 
 export async function registerJustificacionPotenciaRoutes(app: FastifyInstance) {
@@ -173,6 +182,7 @@ export async function registerJustificacionPotenciaRoutes(app: FastifyInstance) 
             cumpleBalance: balance?.cumpleBalance ?? null,
             textosConIa: v.textosConIa,
             createdAt: serializeDate(v.createdAt),
+            archivo: pdfFilename((datos.success && datos.data.cliente.nombre.trim()) || contexto.cliente.nombre),
             createdByName: v.createdBy.name,
             documentoId: pdfVigente?.toolEntityId === v.id ? pdfVigente.id : null,
           };
@@ -243,7 +253,7 @@ export async function registerJustificacionPotenciaRoutes(app: FastifyInstance) 
         where: { projectId, toolSource: JUSTIFICACION_TOOL_SOURCE, deletedAt: null },
         select: { id: true, url: true },
       });
-      const stored = await saveBufferAsAttachment(pdf, pdfFilename(project.clientName, versionNumber), "application/pdf", projectId);
+      const stored = await saveBufferAsAttachment(pdf, pdfFilename(datos.cliente.nombre.trim() || project.clientName), "application/pdf", projectId);
       const attachment = await prisma.fileAttachment.create({
         data: {
           projectId,
@@ -307,7 +317,7 @@ export async function registerJustificacionPotenciaRoutes(app: FastifyInstance) 
         .header("Content-Type", "application/pdf")
         .header(
           "Content-Disposition",
-          `${download ? "attachment" : "inline"}; filename="${pdfFilename(version.project.clientName, version.versionNumber)}"`,
+          `${download ? "attachment" : "inline"}; filename="${pdfFilename(datos.cliente.nombre.trim() || version.project.clientName)}"`,
         );
       return reply.send(pdf);
     },

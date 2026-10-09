@@ -876,6 +876,11 @@ equipo está en el Manual de trabajo de Ingeniería.
   vía `datosSuministro()`; cuenta, técnico (`ti`, `ciTi`) y potencia (`potImg`)
   de `UteDocumentConfig`; si `potImg` está vacío, suma de inversores de
   `SolarSystem` y, si no hay, `capacityKwp`.
+- **Nombre del archivo**: `pdfFilename()` en la ruta arma "Justificacion de
+  potencia - <cliente>.pdf" con el nombre del encabezado del informe (o el del
+  proyecto si está vacío), sin tildes ni símbolos y **sin la versión**: es el
+  archivo que se adjunta a UTE. El listado manda ese nombre en `archivo` para la
+  descarga desde el visor.
 - **Documentos**: el PDF de la última versión se guarda como `FileAttachment`
   con `tipo = JUSTIFICACION_POTENCIA`, `toolSource = "justif-potencia"`,
   `toolVersion` = número de versión y `toolEntityId` = id de la versión. Al
