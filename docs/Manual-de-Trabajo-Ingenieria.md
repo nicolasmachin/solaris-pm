@@ -140,8 +140,8 @@ se completa, de arriba hacia abajo:
    - Si se cargó **lo que UTE dijo que da**, Voltia PM deduce el consumo de ahí.
      UTE llega a esa potencia dividiendo el consumo del último año entre lo que
      genera cada kW, así que se hace la cuenta al revés: 5 kW × 1.450 = unos
-     7.250 kWh al año. El informe lo aclara ("según la respuesta de UTE…") y no
-     lo presenta como una lectura del medidor.
+     7.250 kWh al año. El informe lo muestra como aproximado ("del orden de",
+     "≈") y no explica la cuenta: no se le cita a UTE su propia respuesta.
    - Si tampoco hay respuesta de UTE con potencia, es una **cuenta nueva**
      (cliente que recién contrata, obra en construcción): el consumo del informe
      sale solo de las cargas proyectadas.

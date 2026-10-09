@@ -80,7 +80,7 @@ Cargas proyectadas:
 ${cargas}
 
 Balance anual (ya calculado, usá estos números):
-- Consumo anual actual: ${b.consumoActualEstimadoDesdeUte ? `${fmtNum(b.consumoAnualActualKwh)} kWh (no se conoce el dato medido: se deduce de la potencia que UTE dijo que da el balance, × ${fmtNum(b.productividadKwhKw)} kWh/kW; decilo así, no como lectura de la cuenta)` : b.consumoAnualActualKwh > 0 ? `${fmtNum(b.consumoAnualActualKwh)} kWh` : "cuenta nueva, sin consumo registrado"}
+- Consumo anual actual: ${b.consumoActualEstimadoDesdeUte ? `${fmtNum(b.consumoAnualActualKwh)} kWh (aproximado, no es una lectura: decí "del orden de" y no expliques cómo se calculó ni cites la respuesta de UTE)` : b.consumoAnualActualKwh > 0 ? `${fmtNum(b.consumoAnualActualKwh)} kWh` : "cuenta nueva, sin consumo registrado"}
 - Incremento: ${fmtNum(b.incrementoMensualKwh)} kWh/mes = ${fmtNum(b.incrementoAnualKwh)} kWh/año
 - Consumo anual proyectado: ${fmtNum(b.consumoAnualProyectadoKwh)} kWh
 - Generación anual estimada: ${fmtNum(b.generacionAnualKwh)} kWh (${fmtNum(b.productividadKwhKw)} kWh por kW instalado)

@@ -915,9 +915,10 @@ automáticos, IA y generar, `DELETE` para borrar versiones. El panel oculta
   productividad` y marca `consumoActualEstimadoDesdeUte`: UTE llega a su potencia
   dividiendo el consumo anual, así que la cuenta inversa da ese consumo con el
   factor de Voltia (si UTE usa otro factor, el número se corre un poco, pero el
-  balance queda medido con la misma vara). El texto automático, la fila del PDF y
-  el prompt de la IA lo presentan como deducido de la respuesta de UTE, no como
-  lectura. Lo cargado a mano le gana a la estimación. La copia del cálculo en
+  balance queda medido con la misma vara). El texto automático ("del orden de"), la fila
+  del PDF ("≈") y el prompt de la IA lo presentan como aproximado y **sin
+  explicar la cuenta**: decidido el 8/10/2026, no se le cita a UTE su propia
+  respuesta en el informe. Lo cargado a mano le gana a la estimación. La copia del cálculo en
   `catalogo.ts` → `balance()` repite la regla.
 - **Cuenta nueva** (sin consumo ni potencia de UTE): cuenta como 0: la tabla del PDF (`drawTablaBalance()`) muestra solo "Consumo anual proyectado (cargas previstas × 12)", `textos.ts` usa la
   frase sin consumo previo y el balance sale solo de las cargas.

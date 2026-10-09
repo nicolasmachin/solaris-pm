@@ -87,7 +87,7 @@ test("sin consumo cargado pero con la potencia de UTE: el consumo actual se dedu
   assert.equal(b.consumoActualEstimadoDesdeUte, true);
   assert.equal(b.consumoAnualActualKwh, 24_650); // 17 kW × 1.450
   assert.equal(b.consumoAnualProyectadoKwh, 24_650 + 13_320);
-  assert.match(textosAutomaticos(datosSchema.parse({ ...soler, consumoAnualActualKwh: null }), b).justificacion, /Según la respuesta de UTE.*17 kW.*24\.650 kWh/);
+  assert.match(textosAutomaticos(datosSchema.parse({ ...soler, consumoAnualActualKwh: null }), b).justificacion, /del orden de 24\.650 kWh anuales/);
 });
 
 test("consumo cargado a mano le gana a la estimación por UTE; sin ninguno de los dos es cuenta nueva", () => {
