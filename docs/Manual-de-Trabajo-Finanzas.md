@@ -157,9 +157,7 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
   definir*.
 - **Comparar con el estado de cuenta de cada proveedor**: se sube el estado de
   cuenta que manda el proveedor en su ficha y Voltia PM lo compara con lo
-  cargado (ver 5.4, «Conciliación con el estado de cuenta»). [PREGUNTA: ¿cada
-  cuánto se concilia con cada proveedor: todos los meses, o cuando manda el
-  estado de cuenta?]
+  cargado (ver 5.4, «Conciliación con el estado de cuenta»). **Una vez por mes, a mano**: Finanzas le pide el estado de cuenta a cada proveedor con el que tiene cuenta a crédito, lo sube y revisa las diferencias. Voltia PM no lo pide ni lo compara solo.
 
 ### 3.4 · El recorrido de la plata de un proyecto
 
@@ -999,7 +997,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.7 | 10 de octubre de 2026 | Se responden las dudas de Gerencia: los gastos de compras no se aprueban por ahora pero quedan auditables, con la pantalla nueva Historial; el reclamo de pagos atrasados lo hace Experiencia Solar y pasará a Administración; las cuentas bancarias se concilian una vez por mes; los costos fijos los carga Finanzas desde su propia pestaña; las facturas de proveedores se cargan con IVA incluido; al marcar pagado un cobro se confirman la fecha y el monto. |
+| 0.7 | 10 de octubre de 2026 | Se responden las dudas de Gerencia: los gastos de compras no se aprueban por ahora pero quedan auditables, con la pantalla nueva Historial; el reclamo de pagos atrasados lo hace Experiencia Solar y pasará a Administración; las cuentas bancarias se concilian una vez por mes; los costos fijos los carga Finanzas desde su propia pestaña; las facturas de proveedores se cargan con IVA incluido; al marcar pagado un cobro se confirman la fecha y el monto.; la conciliación con cada proveedor se hace una vez por mes, a mano |
 | 0.6 | 10 de octubre de 2026 | Se revisa todo el manual contra Voltia PM: qué muestra cada pestaña, cómo se pagan los costos fijos y las comisiones, cómo se aplica el saldo a favor de un proveedor, la nueva conciliación con el estado de cuenta del proveedor, cómo se concilian las cuentas, de dónde sale la cotización del dólar y qué abarca el flujo de fondos. Se citan enteros los resúmenes de WhatsApp de cobros y de instaladores. Se aclara que no hay un circuito de aprobación de gastos en Voltia PM. |
 | 0.5 | 10 de octubre de 2026 | Pagos a instaladores: el pago lo genera el calendario al agendar la obra con un equipo tercerizado, a nombre de quien cobra por ese equipo; las obras de equipo propio no tienen pago aparte. |
 | 0.4 | 9 de octubre de 2026 | Plazo y límite de crédito por proveedor; las facturas de proveedores llegan solas de la facturación electrónica a una bandeja que Finanzas revisa; nuevas pantallas Cuentas por pagar y Facturas de proveedores. |
