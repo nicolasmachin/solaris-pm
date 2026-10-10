@@ -29,9 +29,9 @@ export const LATEST_RELEASE: Release = {
     {
       title: "El pago al instalador se genera al agendar la obra",
       items: [
-        "Al agendar una obra con un equipo tercerizado, el pago de la mano de obra aparece solo en Pagos a instaladores, a nombre de quien cobra por ese equipo. Ya no hay que asignarlo a mano.",
+        "La primera vez que una obra se agenda con un equipo tercerizado, el pago de la mano de obra aparece solo en Pagos a instaladores, a nombre de quien cobra por ese equipo. Ya no hay que asignarlo a mano.",
         "Las obras de equipos propios ya no quedan como pagos pendientes de asignar.",
-        "Si la obra cambia de equipo, de fecha o sale del calendario, el pago la acompaña; lo ya pagado no se toca.",
+        "Después el pago ya no cambia solo: si la obra se reagenda o cambia de equipo, se corrige a mano si hace falta.",
         "En Admin → Equipos, cada equipo tercerizado tiene quién cobra la mano de obra.",
       ],
     },

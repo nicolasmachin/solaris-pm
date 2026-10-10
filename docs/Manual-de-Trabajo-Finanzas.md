@@ -164,12 +164,12 @@ funciona hoy, porque varios cambiaron desde que se armaron.
 - Facturas y pagos a proveedores, y cómo se aplica un pago a las facturas
 - Comisiones del asesor: cómo se generan al ganar la venta y cómo se pagan
 - Pagos a instaladores. Ya establecido: el pago de la mano de obra **no se
-  asigna a mano**. Lo genera el calendario cuando Operaciones agenda la obra con
-  un equipo tercerizado, a nombre de la persona que cobra por ese equipo (se
-  configura una vez, en Admin → Equipos). Las obras de equipo propio no tienen
-  pago aparte. Finanzas registra lo que se va pagando y, si hace falta, corrige
-  el monto o el instalador. Lo que ya tiene pagos no cambia aunque se mueva la
-  agenda.
+  asigna a mano**. Lo genera el calendario la primera vez que Operaciones agenda
+  la obra con un equipo tercerizado, a nombre de la persona que cobra por ese
+  equipo (se configura una vez, en Admin → Equipos). Las obras de equipo propio
+  no tienen pago aparte. Después el pago no cambia aunque se mueva la agenda:
+  Finanzas registra lo que se va pagando y, si hace falta, corrige el monto o el
+  instalador a mano.
 - Estado de resultados (es de caja) y flujo de fondos, con los costos fijos proyectados
 - Indicadores de Finanzas en el reporte semanal
 

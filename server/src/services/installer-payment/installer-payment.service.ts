@@ -4,11 +4,11 @@
 // al instalador se congela de la propuesta ganadora —la mano de obra MÁS IVA,
 // porque el instalador factura—.
 //
-// El pago lo maneja el CALENDARIO (desde el 10-oct-2026): existe solo si la obra
-// está agendada con un equipo TERCERIZADO, y se asigna a quien cobra por ese
-// equipo (`Team.installerUserId`). Ver `syncInstallerPaymentForProject()`. Antes
-// se creaba al ganar la venta, para todas las obras y sin instalador, y quedaban
-// "sin asignar" también las de equipo propio, que no se pagan aparte.
+// El pago lo crea el CALENDARIO (desde el 10-oct-2026): la primera vez que la
+// obra se agenda con un equipo TERCERIZADO, asignado a quien cobra por ese
+// equipo (`Team.installerUserId`). Ver `crearPagoAlAgendar()`. Antes se creaba
+// al ganar la venta, para todas las obras y sin instalador, y quedaban "sin
+// asignar" también las de equipo propio, que no se pagan aparte.
 //
 // Dos diferencias con las comisiones, ambas pedidas por negocio:
 //
@@ -240,8 +240,8 @@ export interface CreateForProjectResult {
  * propuesta ganadora. **Idempotente**: si ya existe uno (aunque esté quitado) lo
  * devuelve sin tocarlo.
  *
- * Nace sin instalador; quien lo llama (`syncInstallerPaymentForProject`) le
- * pone el del equipo agendado.
+ * Nace sin instalador; quien lo llama (`crearPagoAlAgendar`) le pone el del
+ * equipo agendado.
  */
 export async function createInstallerPaymentForProject(input: {
   projectId: string;
@@ -324,135 +324,80 @@ export async function createInstallerPaymentForProject(input: {
   return { payment: serializeInstallerPayment(payment), created: true };
 }
 
-// ─── Sincronización con el calendario ────────────────────────────────────────
+// ─── Alta desde el calendario ────────────────────────────────────────────────
 
-export type SyncInstallerPaymentResult =
-  | "creado"
-  | "reactivado"
-  | "actualizado"
-  | "sin_cambios"
-  | "quitado"
-  | "con_pagos_no_se_toca"
-  | "nada";
+export type PagoAlAgendarResult = "creado" | "ya_tenia_pago" | "no_es_tercerizado";
 
 /**
- * Deja el pago al instalador de un proyecto de acuerdo a su agenda de obra.
- * Se llama cada vez que se agenda, se cambia de equipo, se mueve o se borra una
- * instalación, y cuando cambia quién cobra por un equipo.
+ * La PRIMERA vez que una obra queda agendada con un equipo TERCERIZADO se crea
+ * su pago, asignado a quien cobra por ese equipo (`Team.installerUserId`; sin
+ * asignar si el equipo no tiene a nadie) y con `fechaTrabajo` = primer día de
+ * obra. Se llama al agendar y al cambiar de equipo.
  *
- * - Agendada con equipo **TERCERIZADO** → el pago existe, asignado a quien cobra
- *   por el equipo (o sin asignar si el equipo no tiene a nadie configurado), con
- *   `fechaTrabajo` = el primer día de obra.
- * - Agendada con equipo **PROPIO** → no hay pago aparte: se quita.
- * - **Sin agenda** → se quita solo si nadie lo asignó (es un resto del alta
- *   automática vieja); uno asignado a mano se respeta. Salvo `desagendada`: la
- *   obra se acaba de sacar del calendario, así que el pago era del calendario y
- *   se quita aunque tenga instalador.
- *
- * **Lo que ya tiene entregas no se toca nunca**: ni se quita ni se reasigna.
- * Quitar es soft-delete, y como `projectId` es único, si la obra vuelve a un
- * tercerizado se reactiva el mismo pago con su monto (y su edición, si la hubo).
+ * **Después no se toca más** (decisión de Nicolás, 10-oct-2026): reagendar,
+ * cambiar de equipo o borrar la agenda no mueve ni quita el pago; si hay que
+ * corregirlo, se corrige a mano en Pagos a instaladores. Por eso si el proyecto
+ * ya tuvo un pago alguna vez —aunque esté borrado— no se crea otro.
  */
-export async function syncInstallerPaymentForProject(input: {
+export async function crearPagoAlAgendar(input: {
   projectId: string;
   userId: string;
   /** Solo devuelve qué haría, sin escribir (lo usa el script de backfill). */
   dryRun?: boolean;
-  /** Se acaba de borrar la agenda de obra (ver arriba). */
-  desagendada?: boolean;
-}): Promise<SyncInstallerPaymentResult> {
-  const { projectId, userId, dryRun, desagendada } = input;
+}): Promise<PagoAlAgendarResult> {
+  const { projectId, userId, dryRun } = input;
 
   const [schedule, payment] = await Promise.all([
     prisma.installationSchedule.findFirst({
       where: { projectId, deletedAt: null },
       include: {
-        team: { select: { type: true, installerUserId: true, name: true } },
+        team: { select: { type: true, installerUserId: true } },
         segments: { orderBy: { startDate: "asc" }, take: 1, select: { startDate: true } },
       },
     }),
-    prisma.installerPayment.findUnique({
-      where: { projectId },
-      include: { movimientos: { where: { deletedAt: null }, select: { monto: true } } },
-    }),
+    prisma.installerPayment.findUnique({ where: { projectId }, select: { id: true } }),
   ]);
 
-  const pagado = payment ? payment.movimientos.reduce((a, m) => a + Number(m.monto), 0) : 0;
-  const tieneEntregas = pagado > 0.005;
-  const vivo = payment && payment.deletedAt === null;
-
-  const tercerizado = schedule && (schedule.team?.type ?? schedule.teamType) === "TERCERIZADO";
-
-  if (!tercerizado) {
-    if (!vivo) return "nada";
-    if (tieneEntregas) return "con_pagos_no_se_toca";
-    // Sin agenda y asignado a mano: alguien lo cargó a propósito.
-    if (!schedule && payment.installerId && !desagendada) return "sin_cambios";
-    if (dryRun) return "quitado";
-    await prisma.installerPayment.update({ where: { id: payment.id }, data: { deletedAt: new Date() } });
-    await createAuditEntry({
-      entityType: AuditEntityType.installer_payment,
-      entityId: payment.id,
-      projectId,
-      userId,
-      action: AuditAction.deleted,
-      description: schedule
-        ? `Pago a instalador quitado: la obra se agendó con equipo propio (${schedule.teamName})`
-        : "Pago a instalador quitado: la obra no está agendada con un equipo tercerizado",
-    });
-    return "quitado";
-  }
+  if (payment) return "ya_tenia_pago";
+  if (!schedule || (schedule.team?.type ?? schedule.teamType) !== "TERCERIZADO") return "no_es_tercerizado";
+  if (dryRun) return "creado";
 
   const installerId = schedule.team?.installerUserId ?? null;
-  const fechaTrabajo = schedule.segments[0]?.startDate ?? payment?.fechaTrabajo ?? new Date();
-
-  if (!payment) {
-    if (dryRun) return "creado";
-    const { payment: creado } = await createInstallerPaymentForProject({ projectId, userId });
-    await prisma.installerPayment.update({
-      where: { id: creado.id },
-      data: { installerId, fechaTrabajo, dueDate: firstDayOfNextMonth(fechaTrabajo) },
-    });
-    return "creado";
-  }
-
-  if (tieneEntregas) return "con_pagos_no_se_toca";
-
-  const mismoInstalador = payment.installerId === installerId;
-  const mismaFecha = payment.fechaTrabajo.getTime() === fechaTrabajo.getTime();
-  if (vivo && mismoInstalador && mismaFecha) return "sin_cambios";
-  if (dryRun) return vivo ? "actualizado" : "reactivado";
-
+  const fechaTrabajo = schedule.segments[0]?.startDate ?? new Date();
+  const { payment: creado } = await createInstallerPaymentForProject({ projectId, userId });
   await prisma.installerPayment.update({
-    where: { id: payment.id },
-    data: {
-      deletedAt: null,
-      installerId,
-      fechaTrabajo,
-      dueDate: firstDayOfNextMonth(fechaTrabajo),
-    },
+    where: { id: creado.id },
+    data: { installerId, fechaTrabajo, dueDate: firstDayOfNextMonth(fechaTrabajo) },
   });
   await createAuditEntry({
     entityType: AuditEntityType.installer_payment,
-    entityId: payment.id,
+    entityId: creado.id,
     projectId,
     userId,
     action: AuditAction.updated,
-    description: `Pago a instalador ${vivo ? "actualizado" : "reactivado"} desde el calendario (equipo ${schedule.teamName})`,
+    description: `Pago a instalador asignado al agendar la obra con el equipo ${schedule.teamName}`,
     metadata: { installerId },
   });
-  return vivo ? "actualizado" : "reactivado";
+  return "creado";
 }
 
-/** Sincroniza todas las obras agendadas con un equipo (cambió quién cobra o el tipo). */
-export async function syncInstallerPaymentsForTeam(input: { teamId: string; userId: string }) {
+/**
+ * Se configuró quién cobra por un equipo: los pagos de sus obras que nacieron
+ * SIN instalador (porque el equipo no tenía a nadie) pasan a esa persona. Los
+ * que ya tienen instalador no se tocan.
+ */
+export async function asignarPagosSinInstaladorDelEquipo(input: { teamId: string; userId: string }) {
+  const team = await prisma.team.findUnique({ where: { id: input.teamId }, select: { installerUserId: true, name: true } });
+  if (!team?.installerUserId) return 0;
   const schedules = await prisma.installationSchedule.findMany({
     where: { teamId: input.teamId, deletedAt: null },
     select: { projectId: true },
   });
-  for (const s of schedules) {
-    await syncInstallerPaymentForProject({ projectId: s.projectId, userId: input.userId });
-  }
+  const { count } = await prisma.installerPayment.updateMany({
+    where: { projectId: { in: schedules.map((s) => s.projectId) }, installerId: null, deletedAt: null },
+    data: { installerId: team.installerUserId },
+  });
+  return count;
 }
 
 // ─── Carga manual (admin) ────────────────────────────────────────────────────

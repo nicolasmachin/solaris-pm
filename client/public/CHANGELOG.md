@@ -6,9 +6,9 @@
 
 #### El pago al instalador se genera al agendar la obra
 
-- El pago de la mano de obra a un **instalador tercerizado** ahora lo genera el **calendario**: al agendar una obra con un equipo tercerizado, aparece solo en **Pagos a instaladores**, a nombre de quien cobra por ese equipo y con la fecha de la obra. Ya no hay que asignarlo a mano.
+- El pago de la mano de obra a un **instalador tercerizado** ahora lo genera el **calendario**: la primera vez que una obra se agenda con un equipo tercerizado, aparece solo en **Pagos a instaladores**, a nombre de quien cobra por ese equipo y con la fecha de la obra. Ya no hay que asignarlo a mano.
 - Las obras de **equipos propios** ya no quedan como pagos pendientes de asignar: no se pagan aparte.
-- Si la obra se cambia de equipo, de fecha o se saca del calendario, el pago la acompaña. Lo que ya se le pagó al instalador no se toca.
+- Después el pago **ya no cambia solo**: si la obra se reagenda, cambia de equipo o se saca del calendario, queda como estaba. Si hay que corregirlo, se corrige a mano en Pagos a instaladores.
 - En **Admin → Equipos**, cada equipo tercerizado tiene ahora **quién cobra** la mano de obra.
 - Rige para las obras **de ahora en adelante**: a las obras tercerizadas anteriores que no tenían pago no se les crea, porque se pagaron por fuera. Si hace falta alguna, se carga a mano.
 

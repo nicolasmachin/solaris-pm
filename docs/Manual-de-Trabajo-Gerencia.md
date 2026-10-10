@@ -255,10 +255,10 @@ Finanzas.
 ### Al instalador tercerizado se le debe la obra que se le agenda
 
 **Qué se decidió.** El pago de la mano de obra a un instalador tercerizado
-nace cuando la obra se agenda en el calendario con su equipo, a nombre de la
-persona que cobra por ese equipo. Las obras de equipos propios no se pagan
-aparte. Si la obra cambia de equipo o se saca del calendario, el pago la sigue,
-salvo que ya se le haya pagado algo.
+nace la primera vez que la obra se agenda en el calendario con su equipo, a
+nombre de la persona que cobra por ese equipo. Las obras de equipos propios no
+se pagan aparte. Después el pago ya no cambia solo: si la obra se reagenda o
+cambia de equipo, cualquier corrección la hace Finanzas a mano.
 
 **Por qué.** Antes el pago se generaba al cerrar la venta, para todas las
 obras, y después alguien tenía que acordarse de asignarlo a mano. Quedaban
@@ -269,7 +269,8 @@ hace que lo que se debe sea lo que realmente se agendó.
 **Desde cuándo rige.** 10 de octubre de 2026, para las obras de ahí en
 adelante. A las obras tercerizadas anteriores que no tenían pago cargado no se
 les genera: se pagaron por fuera de Voltia PM. Si alguna está pendiente, se
-carga a mano.
+carga a mano. Como excepción se le genera a la obra de Antonella Brondo (7 de
+octubre de 2026), a nombre de Fernando Leal.
 
 **A qué manuales afecta.** A los manuales de trabajo de Operaciones y de
 Finanzas.

@@ -22,10 +22,10 @@ que se agenda la obra en el calendario**.
 
 ### Cómo se usa
 
-**El pago lo crea el calendario.** Al agendar una obra con un equipo
-**tercerizado**, se crea solo, con el monto congelado de la propuesta ganadora,
-asignado a **quien cobra por ese equipo** y con la fecha de trabajo = el primer
-día de obra. Cada equipo tercerizado tiene su "quién cobra" en **Admin →
+**El pago lo crea el calendario.** La **primera vez** que una obra se agenda con
+un equipo **tercerizado**, se crea solo, con el monto congelado de la propuesta
+ganadora, asignado a **quien cobra por ese equipo** y con la fecha de trabajo =
+el primer día de obra. Después no se toca más. Cada equipo tercerizado tiene su "quién cobra" en **Admin →
 Equipos** (`Team.installerUserId`). Las obras de **equipo propio** no generan
 pago: no se paga aparte.
 
@@ -59,39 +59,40 @@ viejas, o proyectos cargados a mano), el pago nace en **0** y marcado
 
 `readManoDeObraFromSnapshot()` en `installer-payment.service.ts`.
 
-**Quién crea, mueve y quita el pago:** `syncInstallerPaymentForProject()` en
-`installer-payment.service.ts`. Lo llaman todas las rutas del calendario que
-tocan la agenda (`POST /calendar`, `PATCH /calendar/:id`, `/reschedule`, los
-tramos y `DELETE /calendar/:id`) por el helper `syncPagoInstalador()` de
-`api.routes.ts`, y `PATCH /teams/:id` cuando cambia quién cobra o el tipo del
-equipo (`syncInstallerPaymentsForTeam()`). Es best-effort: si falla, la agenda
-igual queda guardada.
+**Quién crea el pago:** `crearPagoAlAgendar()` en `installer-payment.service.ts`,
+llamado desde `POST /calendar` y desde `PATCH /calendar/:id` cuando cambia el
+equipo (helper `pagoInstaladorAlAgendar()` en `api.routes.ts`, best-effort: si
+falla, la agenda igual queda guardada).
 
-| Situación de la obra | Qué pasa con el pago |
-|---|---|
-| Agendada con equipo tercerizado | Existe, asignado a quien cobra por el equipo (o sin asignar si el equipo no tiene a nadie), `fechaTrabajo` = primer tramo, vence el 1.º del mes siguiente |
-| Agendada con equipo propio | Se quita |
-| Se borra la agenda | Se quita |
-| Sin agenda (nunca se agendó) | Se quita solo si nadie lo asignó; uno asignado a mano se respeta |
-| **Tiene entregas** | **No se toca nunca**: ni se quita ni se reasigna |
+- **Solo la primera vez**: si la obra queda con un equipo tercerizado y el
+  proyecto **nunca tuvo pago**, se crea con el monto de la propuesta, asignado a
+  quien cobra por el equipo (sin asignar si el equipo no tiene a nadie) y con
+  `fechaTrabajo` = primer tramo (vence el 1.º del mes siguiente).
+- **Después no se toca más** (decisión de Nicolás, 10-oct-2026): reagendar,
+  cambiar de equipo, pasar a equipo propio o borrar la agenda **no mueve ni
+  quita el pago**. Si hay que corregirlo, se corrige a mano en Pagos a
+  instaladores.
+- Si el proyecto ya tuvo un pago alguna vez, **aunque esté borrado**, no se crea
+  otro (`projectId` es `@unique`, y además es la regla: solo la primera vez).
+- Al configurar quién cobra por un equipo (`PATCH /teams/:id`),
+  `asignarPagosSinInstaladorDelEquipo()` asigna los pagos de sus obras que
+  nacieron **sin** instalador. Los ya asignados no se tocan.
 
-"Quitar" es soft-delete (`deletedAt`). Como `projectId` es `@unique`, si la obra
-vuelve a un tercerizado se **reactiva el mismo pago**, con su monto (y su
-edición, si la tuvo). El monto se congela con `createInstallerPaymentForProject()`,
-idempotente por `projectId`.
+El monto se congela con `createInstallerPaymentForProject()`, idempotente por
+`projectId`.
 
 **Hasta el 10-oct-2026 el pago se creaba al ganar la venta**, para todas las
 obras y sin instalador: quedaban "sin asignar" también las de equipo propio, y
-faltaban las de tercerizados vendidas antes del módulo (ej. Antonella Brondo,
-agendada con Fernando y sin pago). Lo de antes se ordenó con
-`server/prisma/scripts/sync-pagos-instalador-calendario.ts` (idempotente,
-`--dry-run`, `--desde AAAA-MM-DD`): vincula cada equipo tercerizado con el
-instalador cuyo nombre empieza igual ("Fernando" → "Fernando Leal") y corre la
-sincronización en cada proyecto con agenda o con pago. **Decisión de Nicolás
-(10-oct): rige de ahora en adelante**, así que en prod se corre con `--desde
-2026-10-10`: a las obras tercerizadas anteriores sin pago no se les crea (se
-pagaron por fuera, y el módulo recién existe desde el 20-ago); si hace falta
-alguna, se carga a mano. Quitar los "sin asignar" sobrantes se hace en todas.
+faltaban las de tercerizados vendidas antes del módulo. Lo de antes se ordena
+una sola vez con `server/prisma/scripts/sync-pagos-instalador-calendario.ts`
+(idempotente, `--dry-run`): (1) vincula cada equipo tercerizado con el
+instalador cuyo nombre empieza igual ("Fernando" → "Fernando Leal"); (2) quita
+los pagos sin asignar, sin entregas, de obras que no están agendadas con un
+tercerizado; (3) crea el pago de las obras tercerizadas que no lo tienen, solo
+desde `--desde`. **Nicolás decidió "de ahora en adelante"**: en prod se corre con
+`--desde 2026-10-10 --incluir PRY-2026-047` (Antonella Brondo, excepción pedida:
+obra del 7-oct, a Fernando Leal). Las obras anteriores se pagaron por fuera (el
+módulo existe desde el 20-ago); si hace falta alguna, se carga a mano.
 
 **El saldo no se guarda**: se deriva de los movimientos con `calcularSaldo()`,
 que es también el único lugar donde se decide el estado.
@@ -119,11 +120,11 @@ esa maquinaria.
 | Corregir una entrega ya registrada | `FINANZAS:EDIT` |
 | Anular una entrega ya registrada | `FINANZAS:DELETE` |
 | Borrar el trabajo entero | `FINANZAS:DELETE` |
-| Crear / mover / quitar el pago al agendar la obra | el de la ruta del calendario (`OPERACIONES:CREATE`/`EDIT`/`DELETE`) |
+| Crear el pago al agendar la obra | el de la ruta del calendario (`OPERACIONES:CREATE`/`EDIT`) |
 | Configurar quién cobra por un equipo | `CONFIGURACION:CREATE`/`EDIT` (Admin → Equipos) |
 
 Quien agenda en el calendario **no necesita permisos de Finanzas** para que el
-pago se cree o se mueva: es un efecto de agendar, no una acción sobre el pago.
+pago se cree: es un efecto de agendar, no una acción sobre el pago.
 
 El rol **`INSTALADOR_TERCERIZADO`** clona a `CAPATAZ` y suma `PAGOS_INSTALADOR:VIEW`.
 El capataz propio **no** lo lleva: cobra sueldo, no por obra.

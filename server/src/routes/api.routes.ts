@@ -96,8 +96,8 @@ import {
 } from "../services/file-storage.service.js";
 import { convertirHeicABufferJpeg, esHeic } from "../services/heic.service.js";
 import {
-  syncInstallerPaymentForProject,
-  syncInstallerPaymentsForTeam,
+  asignarPagosSinInstaladorDelEquipo,
+  crearPagoAlAgendar,
 } from "../services/installer-payment/installer-payment.service.js";
 import {
   deleteMaterialPhotoFile,
@@ -9264,13 +9264,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    // Cambió quién cobra o el tipo: los pagos de las obras agendadas con este
-    // equipo se reasignan (los que ya tienen entregas no se tocan).
-    if (updated.installerUserId !== existing.installerUserId || typeChanged) {
+    // Se configuró quién cobra: los pagos de este equipo que nacieron sin
+    // instalador pasan a esa persona. Los ya asignados no se tocan.
+    if (updated.installerUserId && updated.installerUserId !== existing.installerUserId) {
       try {
-        await syncInstallerPaymentsForTeam({ teamId: id, userId: user.id });
+        await asignarPagosSinInstaladorDelEquipo({ teamId: id, userId: user.id });
       } catch (err) {
-        request.log.error({ err, teamId: id }, "sync installer payments for team failed");
+        request.log.error({ err, teamId: id }, "asignar pagos sin instalador failed");
       }
     }
 
@@ -9626,20 +9626,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return teams.map((t) => ({ id: t.id, teamName: t.name, teamColor: t.color }));
   });
 
-  // El pago al instalador sigue a la agenda de obra: equipo tercerizado → pago
-  // asignado a quien cobra por ese equipo; equipo propio o sin agenda → no hay
-  // pago aparte. Best-effort: si falla, la agenda ya quedó guardada y el pago se
-  // puede corregir desde Pagos a instaladores; tirar el request sería peor.
-  async function syncPagoInstalador(
-    projectId: string,
-    userId: string,
-    log: import("fastify").FastifyRequest["log"],
-    opts: { desagendada?: boolean } = {},
-  ) {
+  // La primera vez que la obra queda con un equipo tercerizado se crea el pago al
+  // instalador; después no se toca (ver crearPagoAlAgendar). Best-effort: si
+  // falla, la agenda ya quedó guardada y el pago se carga a mano.
+  async function pagoInstaladorAlAgendar(projectId: string, userId: string, log: import("fastify").FastifyRequest["log"]) {
     try {
-      await syncInstallerPaymentForProject({ projectId, userId, desagendada: opts.desagendada });
+      await crearPagoAlAgendar({ projectId, userId });
     } catch (err) {
-      log.error({ err, projectId }, "sync installer payment failed");
+      log.error({ err, projectId }, "crear pago instalador al agendar failed");
     }
   }
 
@@ -9730,7 +9724,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(body.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
-    await syncPagoInstalador(created.projectId, user.id, request.log);
+    await pagoInstaladorAlAgendar(created.projectId, user.id, request.log);
     reply.code(201);
     return { data: serializeSchedule(created), warning: null };
   });
@@ -9818,13 +9812,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         : `Actualizó la instalación`,
     });
 
+    // Pasó a un equipo tercerizado: si la obra nunca tuvo pago, nace ahora.
+    if (body.teamId !== undefined) await pagoInstaladorAlAgendar(existing.projectId, user.id, request.log);
+
     // G.2: recalcular si cambiaron los tramos
     if (wantsSegmentReplace) {
       const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
       reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
     }
 
-    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return serializeSchedule(updated);
   });
 
@@ -9974,7 +9970,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
-    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return { data: serializeSchedule(updated), warning: null };
   });
 
@@ -10043,7 +10038,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
-    await syncPagoInstalador(updated.projectId, user.id, request.log);
     reply.code(201);
     return serializeSchedule(updated);
   });
@@ -10120,7 +10114,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
     }
 
-    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return serializeSchedule(updated);
   });
 
@@ -10179,7 +10172,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
     }
 
-    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return serializeSchedule(updated);
   });
 
@@ -10218,7 +10210,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, forceRecalculate);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
-    await syncPagoInstalador(existing.projectId, user.id, request.log, { desagendada: true });
     return { success: true };
   });
 
