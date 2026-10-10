@@ -454,6 +454,96 @@ No hay guards por rol: todo pasa por la matriz.
 
 ---
 
+## Conciliación con el estado de cuenta del proveedor
+
+### Para qué existe
+
+Para comprobar, cada vez que se pide el estado de cuenta a un proveedor, que
+coincida con lo que tiene Voltia PM, y ver exactamente dónde no.
+
+### Cómo funciona
+
+`services/finance/conciliacion-proveedor.service.ts`, en dos pasos:
+
+1. **`extraerEstadoDeCuenta()`**: la IA (`CONCILIACION_MODEL`, default
+   `claude-sonnet-4-5-20250929`, feature `conciliacion_proveedor` en `ai_usage`)
+   pasa el documento a `EstadoDeCuentaSchema`: proveedor, RUT, moneda, fecha de
+   corte, saldos inicial y final y renglones `{fecha, tipo, numero, descripcion,
+   importe}`. Los tipos son FACTURA, NOTA_CREDITO, PAGO u OTRO, y el importe va
+   siempre positivo. El PDF va entero como documento (lee también escaneados); el
+   Excel y las fotos pasan por `leerContenidoAdjunto()`.
+2. **`compararConVoltia()`**, determinística. Lado Voltia: GASTO del proveedor
+   (de COMPROMETIDO a PAGADO) y `Payment`, en la moneda del estado de cuenta,
+   hasta la fecha de corte. **Saldo Voltia** = facturas − pagos hasta esa fecha.
+   **Saldo proveedor** = `saldoFinal`, o `saldoInicial` ± renglones.
+   `emparejar()`:
+   - Factura o NC por número (`numeroComparable()`: solo dígitos y sin ceros
+     adelante; acepta que uno termine en el otro). Si el número coincide pero el
+     monto no, va a `diferenciasMonto`.
+   - Sin número que coincida: importe exacto (±0,01) y fecha ±7 días; los pagos,
+     ±5 días.
+   - Segunda pasada: una factura suelta del proveedor y una de Voltia del mismo
+     día (±2) se emparejan como diferencia de monto.
+   - Se empareja solo dentro del período que cubre el estado de cuenta (desde
+     su primer renglón).
+
+Se guarda en `ConciliacionProveedor` (`conciliaciones_proveedor`), con el
+archivo en `storage/proveedores/<supplierId>/`, la extracción, el resultado y el
+costo. `recomparar` repite el paso 2 sin IA.
+
+**Rutas** (`cuentas-por-pagar.routes.ts`):
+
+| Endpoint | Permiso |
+|---|---|
+| `POST /finance/suppliers/:id/conciliaciones` (multipart; `?moneda=` y `?fechaCorte=` opcionales) | `FINANZAS:EDIT` |
+| `GET /finance/suppliers/:id/conciliaciones`, `GET /finance/conciliaciones/:id`, `GET …/:id/archivo` | `FINANZAS:VIEW` |
+| `POST /finance/conciliaciones/:id/recomparar` | `FINANZAS:EDIT` |
+
+**UI:** pestaña **Conciliación** de la ficha del proveedor
+(`components/finance/ConciliacionProveedor.tsx`).
+
+### Casos borde
+
+- Archivos aceptados: PDF, `.xlsx` e imágenes. Un `.xls` viejo o un CSV no
+  entran: hay que exportarlo como `.xlsx` o PDF.
+- Las notas de crédito del proveedor se comparan con signo negativo, pero en
+  Voltia PM no hay facturas negativas (ver "Notas de crédito: a mano"), así que
+  hoy caen en "falta cargar".
+- Un GASTO PAGADO con proveedor cargado como pago directo (sin factura) cuenta
+  como factura del lado Voltia. Si el proveedor lo lista como factura + recibo,
+  aparece como pago que "el proveedor no tiene".
+- Probado con un estado de cuenta generado; no con uno real de un proveedor.
+
+---
+
+## Posición financiera (nos deben / debemos)
+
+`services/finance/posicion.service.ts` → `getPosicionFinanciera()`, expuesta en
+`GET /finance/posicion` (`FINANZAS:VIEW`, en `api.routes.ts`, que le suma la
+caja con `computeAccountBalance()`). Se muestra con `PosicionFinanciera.tsx`
+arriba de Flujo de fondos y de Estado de resultados. Todo en USD, con
+`ultimoUsdToUyu()`.
+
+- **Nos deben** = `saldoPendienteUSD` de `listarCobrosPorProyecto()`, el mismo
+  número que la pantalla Cobros. La parte con fecha sale de los INGRESO PREVISTO
+  no cobrados (sin Plan granizo, sin archivados ni prospectos), topeados al saldo
+  de la obra. Lo que la obra debe por encima de sus previstos va a `SIN_FECHA`
+  (`obrasSinPlanCompleto` las cuenta).
+- **Debemos** = cuatro partes:
+  - proveedores (`getCuentasPorPagar()`, por vencimiento);
+  - otros compromisos (GASTO COMPROMETIDO o A_PAGAR sin proveedor);
+  - comisiones `PENDIENTE` (por `dueDate`);
+  - pagos a instaladores PENDIENTE o PARCIAL (monto − entregas pagadas).
+
+  Se descuenta el saldo a favor con proveedores.
+- **Neto** = nos deben − debemos; `netoConCaja` le suma la caja.
+- Los costos fijos no entran: no son deuda hasta el mes.
+- **Diferencia a propósito con el Flujo de fondos**: el flujo no proyecta
+  comisiones, compromisos sin proveedor ni instaladores, y saltea los cobros
+  vencidos. La posición los incluye.
+
+---
+
 ## Qué falta cubrir de este capítulo
 
 - Movimientos: tipos, fuentes y comprobantes

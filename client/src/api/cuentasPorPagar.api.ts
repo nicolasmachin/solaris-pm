@@ -140,3 +140,66 @@ export const crearProveedorDesdeRut = (rut: string, nombre?: string) =>
   apiClient.post<{ supplierId: string; nombre: string; facturasAsignadas: number }>(
     '/api/finance/facturas-recibidas/crear-proveedor', { rut, ...(nombre ? { nombre } : {}) },
   ).then((r) => r.data);
+
+// ─── Conciliación con el estado de cuenta del proveedor ────────────────────
+
+export interface LineaEstado {
+  fecha: string | null;
+  tipo: 'FACTURA' | 'NOTA_CREDITO' | 'PAGO' | 'OTRO';
+  numero: string | null;
+  descripcion: string | null;
+  importe: number;
+}
+export interface ItemVoltia {
+  id: string; clase: 'FACTURA' | 'PAGO'; fecha: string; numero: string | null; descripcion: string; importe: number;
+}
+export interface ConciliacionResumen {
+  id: string;
+  supplierId: string;
+  moneda: Moneda;
+  fechaCorte: string;
+  archivoNombre: string;
+  saldoProveedor: number | null;
+  saldoVoltia: number;
+  diferenciaSaldo: number | null;
+  cuenta: { coinciden: number; diferenciasMonto: number; soloProveedor: number; soloVoltia: number };
+  createdAt: string;
+  calculadoAt: string;
+}
+export interface ConciliacionDetalle extends ConciliacionResumen {
+  costUsd: number;
+  resultado: {
+    desde: string | null;
+    coinciden: Array<{ linea: LineaEstado; voltia: ItemVoltia }>;
+    diferenciasMonto: Array<{ linea: LineaEstado; voltia: ItemVoltia; diferencia: number }>;
+    soloProveedor: LineaEstado[];
+    soloVoltia: ItemVoltia[];
+    otras: LineaEstado[];
+  };
+}
+
+export const getConciliaciones = (supplierId: string) =>
+  apiClient.get<ConciliacionResumen[]>(`/api/finance/suppliers/${supplierId}/conciliaciones`).then((r) => r.data);
+
+export const getConciliacion = (id: string) =>
+  apiClient.get<ConciliacionDetalle>(`/api/finance/conciliaciones/${id}`).then((r) => r.data);
+
+export const subirEstadoDeCuenta = (supplierId: string, file: File, opts: { moneda?: Moneda; fechaCorte?: string }) => {
+  const form = new FormData();
+  form.append('file', file);
+  return apiClient.post<ConciliacionDetalle>(
+    `/api/finance/suppliers/${supplierId}/conciliaciones`, form,
+    { params: opts, headers: { 'Content-Type': 'multipart/form-data' }, timeout: 180_000 },
+  ).then((r) => r.data);
+};
+
+export const recompararConciliacion = (id: string) =>
+  apiClient.post<ConciliacionDetalle>(`/api/finance/conciliaciones/${id}/recomparar`).then((r) => r.data);
+
+/** Abre el estado de cuenta original en otra pestaña (la descarga lleva la sesión). */
+export async function abrirArchivoConciliacion(id: string) {
+  const r = await apiClient.get(`/api/finance/conciliaciones/${id}/archivo`, { responseType: 'blob' });
+  const url = URL.createObjectURL(r.data as Blob);
+  window.open(url, '_blank', 'noopener');
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}

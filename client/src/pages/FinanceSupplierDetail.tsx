@@ -22,12 +22,14 @@ import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForS
 import { NewSupplierInvoiceModal, type EditableInvoice } from '../components/finance/NewSupplierInvoiceModal';
 import { SupplierForm } from './FinanceSuppliers';
 
+import { ConciliacionProveedor } from '../components/finance/ConciliacionProveedor';
+
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 function getApiErr(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
 
-type Tab = 'facturas' | 'pagos' | 'estado';
+type Tab = 'facturas' | 'pagos' | 'estado' | 'conciliacion';
 
 export function FinanceSupplierDetail() {
   const { id } = useParams<{ id: string }>();
@@ -177,7 +179,7 @@ export function FinanceSupplierDetail() {
 
           {/* Tabs */}
           <div className="flex gap-2 border-b border-[var(--color-border)]">
-            {(['facturas', 'pagos', 'estado'] as const).map(t => (
+            {(['facturas', 'pagos', 'estado', 'conciliacion'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -191,11 +193,13 @@ export function FinanceSupplierDetail() {
                 {t === 'facturas' && `Facturas (${summary.facturas.length})`}
                 {t === 'pagos' && `Pagos (${summary.pagos.length})`}
                 {t === 'estado' && 'Estado de cuenta'}
+                {t === 'conciliacion' && 'Conciliación'}
               </button>
             ))}
           </div>
 
           {/* Tab content */}
+          {tab === 'conciliacion' && <ConciliacionProveedor supplierId={supplier.id} />}
           {tab === 'facturas' && (
             <FacturasTab
               facturas={facturasFiltered}

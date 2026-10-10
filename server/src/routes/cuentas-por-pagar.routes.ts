@@ -16,6 +16,8 @@ import {
   Prisma,
   TipoMovimiento,
 } from "@prisma/client";
+import fs from "node:fs";
+
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
@@ -33,7 +35,15 @@ import {
   TIPO_CFE_LABEL,
 } from "../services/biller/recibidos.service.js";
 import { calcularVencimiento, getCuentasPorPagar } from "../services/finance/cuentas-por-pagar.service.js";
-import { parseDateOnly, toDateOnlyString } from "../utils/dates.js";
+import {
+  compararConVoltia,
+  EstadoDeCuentaSchema,
+  extraerEstadoDeCuenta,
+  type ResultadoConciliacion,
+} from "../services/finance/conciliacion-proveedor.service.js";
+import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
+import { contentDisposition } from "../utils/content-disposition.js";
+import { parseDateOnly, toDateOnlyString, todayUtc } from "../utils/dates.js";
 import { AppError, badRequest, notFound, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
@@ -532,5 +542,147 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
       description: `Volvió a la bandeja la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)}`,
     });
     return { ok: true };
+  });
+
+  // ── Conciliación contra el estado de cuenta del proveedor ───────────────────
+
+  function serializarConciliacion(c: {
+    id: string; supplierId: string; moneda: string; fechaCorte: Date; archivoNombre: string;
+    saldoProveedor: Prisma.Decimal | null; saldoVoltia: Prisma.Decimal; resultado: Prisma.JsonValue;
+    costUsd: Prisma.Decimal; createdAt: Date; extraccion: Prisma.JsonValue;
+  }, completo: boolean) {
+    const r = c.resultado as unknown as ResultadoConciliacion;
+    const base = {
+      id: c.id,
+      supplierId: c.supplierId,
+      moneda: c.moneda,
+      fechaCorte: toDateOnlyString(c.fechaCorte),
+      archivoNombre: c.archivoNombre,
+      saldoProveedor: c.saldoProveedor != null ? Number(c.saldoProveedor) : null,
+      saldoVoltia: Number(c.saldoVoltia),
+      diferenciaSaldo: r.diferenciaSaldo,
+      cuenta: {
+        coinciden: r.coinciden.length,
+        diferenciasMonto: r.diferenciasMonto.length,
+        soloProveedor: r.soloProveedor.length,
+        soloVoltia: r.soloVoltia.length,
+      },
+      createdAt: c.createdAt.toISOString(),
+      calculadoAt: r.calculadoAt,
+    };
+    return completo ? { ...base, resultado: r, costUsd: Number(c.costUsd), extraccion: c.extraccion } : base;
+  }
+
+  app.post("/finance/suppliers/:id/conciliaciones", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const q = z.object({
+      // Si el documento no las dice claro, se pueden indicar a mano.
+      moneda: z.enum(["USD", "UYU"]).optional(),
+      fechaCorte: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    }).parse(request.query);
+    const supplier = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
+    if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+
+    const part = await request.file();
+    if (!part) throw badRequest("FILE_REQUIRED", "Adjuntá el estado de cuenta");
+    if (!/\.(pdf|xlsx|jpe?g|png|webp|heic|heif)$/i.test(part.filename)) {
+      throw badRequest("TIPO_NO_SOPORTADO", "El estado de cuenta tiene que ser PDF, Excel (.xlsx) o una foto.");
+    }
+    const guardado = await saveUploadedFile(part, `proveedores/${supplier.id}`);
+
+    let extr: Awaited<ReturnType<typeof extraerEstadoDeCuenta>>;
+    try {
+      extr = await extraerEstadoDeCuenta({
+        archivoUrl: guardado.url, archivoNombre: guardado.filename, mimeType: guardado.mimeType,
+        userId: user.id, supplierId: supplier.id,
+      });
+    } catch (err) {
+      await deleteStoredFile(guardado.url);
+      throw new AppError(422, "ESTADO_ILEGIBLE", err instanceof Error ? err.message : "No se pudo leer el estado de cuenta");
+    }
+
+    const moneda = (q.moneda ?? extr.data.moneda ?? "USD") as "USD" | "UYU";
+    const fechaCorte = q.fechaCorte
+      ? parseDateOnly(q.fechaCorte)
+      : extr.data.fechaCorte ? parseDateOnly(extr.data.fechaCorte) : todayUtc();
+    const resultado = await compararConVoltia({ supplierId: supplier.id, moneda, fechaCorte, estado: extr.data });
+
+    const c = await prisma.conciliacionProveedor.create({
+      data: {
+        supplierId: supplier.id, moneda, fechaCorte,
+        archivoUrl: guardado.url, archivoNombre: guardado.filename, archivoMime: guardado.mimeType,
+        extraccion: extr.data as unknown as Prisma.InputJsonValue,
+        resultado: resultado as unknown as Prisma.InputJsonValue,
+        saldoProveedor: resultado.saldoProveedor != null ? new Prisma.Decimal(resultado.saldoProveedor) : null,
+        saldoVoltia: new Prisma.Decimal(resultado.saldoVoltia),
+        modelUsed: extr.model, tokensInput: extr.tokensInput, tokensOutput: extr.tokensOutput,
+        costUsd: new Prisma.Decimal(extr.costUsd),
+        createdById: user.id,
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.conciliacion_proveedor,
+      entityId: c.id,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Concilió el estado de cuenta de ${supplier.nombre} al ${toDateOnlyString(fechaCorte)}`
+        + (resultado.diferenciaSaldo != null ? ` (diferencia de saldo ${resultado.diferenciaSaldo} ${moneda})` : ""),
+    });
+    return serializarConciliacion(c, true);
+  });
+
+  app.get("/finance/suppliers/:id/conciliaciones", ver, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const lista = await prisma.conciliacionProveedor.findMany({
+      where: { supplierId: id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return lista.map((c) => serializarConciliacion(c, false));
+  });
+
+  app.get("/finance/conciliaciones/:id", ver, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const c = await prisma.conciliacionProveedor.findUnique({ where: { id } });
+    if (!c) throw notFound("CONCILIACION_NOT_FOUND", "Conciliación no encontrada");
+    return serializarConciliacion(c, true);
+  });
+
+  // Vuelve a comparar el mismo estado de cuenta contra lo que hay hoy en Voltia
+  // PM (por ejemplo, después de cargar las facturas que faltaban). Sin IA.
+  app.post("/finance/conciliaciones/:id/recomparar", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const c = await prisma.conciliacionProveedor.findUnique({ where: { id } });
+    if (!c) throw notFound("CONCILIACION_NOT_FOUND", "Conciliación no encontrada");
+    const estado = EstadoDeCuentaSchema.parse(c.extraccion);
+    const resultado = await compararConVoltia({ supplierId: c.supplierId, moneda: c.moneda, fechaCorte: c.fechaCorte, estado });
+    const actualizada = await prisma.conciliacionProveedor.update({
+      where: { id },
+      data: {
+        resultado: resultado as unknown as Prisma.InputJsonValue,
+        saldoVoltia: new Prisma.Decimal(resultado.saldoVoltia),
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.conciliacion_proveedor,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: "Volvió a comparar un estado de cuenta de proveedor",
+    });
+    return serializarConciliacion(actualizada, true);
+  });
+
+  app.get("/finance/conciliaciones/:id/archivo", ver, async (request, reply) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const c = await prisma.conciliacionProveedor.findUnique({ where: { id } });
+    if (!c) throw notFound("CONCILIACION_NOT_FOUND", "Conciliación no encontrada");
+    const ruta = getStoredFilePath(c.archivoUrl);
+    if (!fs.existsSync(ruta)) throw notFound("FILE_NOT_FOUND", "El archivo no está en el servidor");
+    reply.header("Content-Type", c.archivoMime);
+    reply.header("Content-Disposition", contentDisposition("inline", c.archivoNombre));
+    return reply.send(fs.createReadStream(ruta));
   });
 }

@@ -152,6 +152,7 @@ enum AuditEntityType {
   plan_granizo_documento
   cabinet_design
   factura_recibida
+  conciliacion_proveedor
 }
 
 enum AuditAction {
@@ -1918,6 +1919,7 @@ model Supplier {
 
   movimientos      FinanceMovement[]
   facturasRecibidas FacturaRecibida[]
+  conciliaciones    ConciliacionProveedor[]
   payments         Payment[]
   comprobantes     FinanceComprobante[]
   movimientosStock StockMovement[]
@@ -5385,4 +5387,36 @@ model FacturaRecibida {
   @@index([estado])
   @@index([supplierId])
   @@map("facturas_recibidas")
+}
+
+// ─── Conciliación contra el estado de cuenta del proveedor ──────────────────
+//
+// Finanzas pide cada tanto el estado de cuenta a un proveedor y lo sube: la IA
+// lo pasa a renglones (`extraccion`) y se compara contra lo cargado en Voltia PM
+// (`resultado`). Se guarda para poder volver a comparar después de cargar lo que
+// faltaba, sin volver a gastar IA.
+
+model ConciliacionProveedor {
+  id             String    @id @default(cuid())
+  supplierId     String
+  supplier       Supplier  @relation(fields: [supplierId], references: [id])
+  moneda         Moneda
+  fechaCorte     DateTime  @db.Date
+  archivoUrl     String
+  archivoNombre  String
+  archivoMime    String
+  extraccion     Json
+  resultado      Json
+  saldoProveedor Decimal?  @db.Decimal(14, 2)
+  saldoVoltia    Decimal   @db.Decimal(14, 2)
+  modelUsed      String
+  tokensInput    Int
+  tokensOutput   Int
+  costUsd        Decimal   @db.Decimal(10, 4)
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([supplierId, createdAt])
+  @@map("conciliaciones_proveedor")
 }

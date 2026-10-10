@@ -4,6 +4,18 @@
 
 ### 10 de octubre de 2026
 
+#### Conciliar con el estado de cuenta del proveedor
+
+- En la ficha de cada proveedor hay una pestaña nueva, **Conciliación**: se sube el estado de cuenta que mandó el proveedor (PDF, Excel o una foto) y Voltia PM lo lee y lo compara con lo que tiene cargado.
+- Muestra el **saldo según el proveedor**, el **saldo según Voltia PM** y la diferencia, y separa lo que **coincide**, lo que tiene **montos distintos**, lo que **falta cargar** en Voltia PM y lo que **el proveedor no tiene**.
+- Después de cargar lo que faltaba, **Volver a comparar** repite la comparación con el mismo estado de cuenta. Cada conciliación queda guardada, con el archivo original.
+
+#### Posición: lo que nos deben y lo que debemos
+
+- Arriba de **Flujo de fondos** y de **Estado de resultados** aparece la **posición** de Voltia: lo que hay **en cuentas**, lo que **nos deben** los clientes, lo que **debemos**, y cuánto quedaría si hoy se cobrara y pagara todo. Todo en dólares.
+- **Ver por vencimiento** abre el detalle: vencido, próximos 7 días, 8 a 30, más de 30 y sin fecha. Lo que debemos se separa en proveedores, comisiones de asesores, instaladores y otros compromisos.
+- "Sin fecha" es lo que una obra debe y no tiene una cuota prevista en su plan de pagos.
+
 #### El pago al instalador se genera al agendar la obra
 
 - El pago de la mano de obra a un **instalador tercerizado** ahora lo genera el **calendario**: la primera vez que una obra se agenda con un equipo tercerizado, aparece solo en **Pagos a instaladores**, a nombre de quien cobra por ese equipo y con la fecha de la obra. Ya no hay que asignarlo a mano.

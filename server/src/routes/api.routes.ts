@@ -120,6 +120,7 @@ import { crearAmpliacion, resolveRootProject } from "../services/ampliacion.serv
 import { calcularEstadoResultados, rangeForPeriod } from "../services/finance/resultados.service.js";
 import { listarCobrosPorProyecto } from "../services/finance/cobros.service.js";
 import { calcularVencimiento } from "../services/finance/cuentas-por-pagar.service.js";
+import { getPosicionFinanciera } from "../services/finance/posicion.service.js";
 import {
   copyLatestProposalToProject,
   getLatestPublishedQuote,
@@ -19791,6 +19792,29 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
     return events;
   }
+
+  // Posición financiera: caja + lo que nos deben − lo que debemos, por
+  // vencimiento. La ven Flujo de fondos y Estado de resultados.
+  app.get("/finance/posicion", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+    const posicion = await getPosicionFinanciera();
+    const accounts = await prisma.account.findMany({
+      where: { deletedAt: null, activa: true },
+      select: { id: true, moneda: true },
+    });
+    let cajaUSD = 0;
+    let cajaUYU = 0;
+    for (const a of accounts) {
+      const bal = await computeAccountBalance(a.id);
+      if (a.moneda === Moneda.USD) cajaUSD += bal.saldoActual;
+      else cajaUYU += bal.saldoActual;
+    }
+    const cajaEnUsd = roundMoney(cajaUSD + (posicion.usdToUyu > 0 ? cajaUYU / posicion.usdToUyu : 0));
+    return {
+      ...posicion,
+      caja: { USD: roundMoney(cajaUSD), UYU: roundMoney(cajaUYU), totalUsd: cajaEnUsd },
+      netoConCaja: roundMoney(cajaEnUsd + posicion.neto),
+    };
+  });
 
   app.get("/finance/cashflow", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
     const now = todayUtc();
