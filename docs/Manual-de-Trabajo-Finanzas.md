@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.7 — 10 de octubre de 2026 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.7 · vigente desde el 10 de octubre de 2026 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,

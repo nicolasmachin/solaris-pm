@@ -374,7 +374,7 @@ acceso": describen **cómo se trabaja**, no cómo está la cartera en un momento
 Un número medido envejece en una semana y ensucia lo que tiene que durar años;
 si el dato importa, va a un informe, no al manual.
 
-Al tocarlos, **subir la versión de su cabecera** (`Versión 1.1 — {fecha}`).
+Al tocarlos, **subir la versión de su cabecera** (`Versión 1.1 · vigente desde el {fecha}`): la fecha es desde cuándo rige esa versión, y la portada del canvas la muestra completa.
 
 **Cada manual cierra con un anexo "Registro de cambios"**: una entrada por
 versión, la más nueva arriba, con la fecha y **qué se agregó o modificó** en esa

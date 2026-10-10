@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.5 · vigente desde el 7 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de

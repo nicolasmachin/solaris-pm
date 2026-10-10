@@ -1321,9 +1321,11 @@ def hoja_reglas(lineas, numero):
 
 def leer_fuente():
     lineas = open(FUENTE, encoding="utf-8").read().split("\n")
-    m = re.search(r"Versión ([\d.]+) — (.+)$", lineas[2])
+    # "Versión 0.7 · vigente desde el 10 de octubre de 2026": la portada lleva
+    # la versión y la fecha completa desde la que rige (pedido del 10-oct-2026).
+    m = re.search(r"Versión ([\d.]+) · vigente desde el ([^·]+)", lineas[2])
     if m:
-        version = f"Versión {m.group(1)} · {m.group(2).split(' · ')[0].split(' de ', 1)[-1]}"
+        version = f"Versión {m.group(1)} · vigente desde el {m.group(2).strip()}"
     else:
         # Mientras es borrador la cabecera no lleva número: "Borrador en revisión — fecha".
         b = re.search(r"· ([^·]+?) — (.+)$", lineas[2])

@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.9 — 10 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.9 · vigente desde el 10 de octubre de 2026 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
