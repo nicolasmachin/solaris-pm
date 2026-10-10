@@ -121,6 +121,7 @@ import { calcularEstadoResultados, rangeForPeriod } from "../services/finance/re
 import { listarCobrosPorProyecto } from "../services/finance/cobros.service.js";
 import { calcularVencimiento } from "../services/finance/cuentas-por-pagar.service.js";
 import { getPosicionFinanciera } from "../services/finance/posicion.service.js";
+import { CAMPOS_MOVIMIENTO, CAMPOS_PAGO, ENTIDADES_FINANZAS, registrarCambios } from "../services/finance/auditoria.service.js";
 import {
   copyLatestProposalToProject,
   getLatestPublishedQuote,
@@ -11665,13 +11666,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const updated = await prisma.financeMovement.update({ where: { id: movementId }, data });
 
-      await createAuditEntry({
+      await registrarCambios({
         entityType: AuditEntityType.finance_movement,
         entityId: movementId,
         projectId: mov.projectId ?? null,
         userId: user.id,
-        action: AuditAction.updated,
-        description: `Actualizó un cobro a cliente (${updated.descripcion})`,
+        nombre: `el cobro "${updated.descripcion}"`,
+        campos: CAMPOS_MOVIMIENTO,
+        antes: mov,
+        despues: updated,
       });
 
       return {
@@ -16369,14 +16372,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
           userId: user.id,
         });
       }
-      await createAuditEntry({
+      const cambiosMov = await registrarCambios({
         entityType: AuditEntityType.finance_movement,
         entityId: id,
         projectId: existing.projectId,
         userId: user.id,
-        action: AuditAction.updated,
-        description: `Actualizó movimiento: ${existing.descripcion}`,
+        nombre: `el movimiento "${existing.descripcion}"`,
+        campos: CAMPOS_MOVIMIENTO,
+        antes: existing,
+        despues: updated,
       });
+      if (cambiosMov === 0) {
+        await createAuditEntry({
+          entityType: AuditEntityType.finance_movement,
+          entityId: id,
+          projectId: existing.projectId,
+          userId: user.id,
+          action: AuditAction.updated,
+          description: `Guardó el movimiento "${existing.descripcion}" sin cambios`,
+        });
+      }
       void checkInvariantOrWarn("patch movement", { movementId: id });
       const patchWarning = detectPastDateNotPaidWarning(updated);
       const patchWarnings = patchWarning ? [patchWarning] : [];
@@ -16619,6 +16634,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
         userId: user.id,
         action: AuditAction.status_changed,
         description: `Transición ${existing.status} → ${body.newStatus} en movimiento ${existing.descripcion}`,
+      });
+      await registrarCambios({
+        entityType: AuditEntityType.finance_movement,
+        entityId: id,
+        projectId: existing.projectId,
+        userId: user.id,
+        nombre: `el movimiento "${existing.descripcion}"`,
+        campos: CAMPOS_MOVIMIENTO.filter((c) => c !== "status"),
+        antes: existing,
+        despues: updated,
       });
       // Auto-detección de desglose pendiente al pasar a A_PAGAR / PAGADO.
       // Sólo aplica a GASTO con proveedor — los movimientos sin proveedor
@@ -17536,13 +17561,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (body.notas !== undefined) data.notas = body.notas;
 
       const updated = await prisma.payment.update({ where: { id }, data, include: { supplier: { select: { id: true, nombre: true } } } });
-      await createAuditEntry({
+      const cambiosPago = await registrarCambios({
         entityType: AuditEntityType.payment,
         entityId: id,
         userId: user.id,
-        action: AuditAction.updated,
-        description: `Actualizó pago a ${updated.supplier.nombre}`,
+        nombre: `el pago a ${updated.supplier.nombre}`,
+        campos: CAMPOS_PAGO,
+        antes: existing,
+        despues: updated,
       });
+      if (cambiosPago === 0) {
+        await createAuditEntry({
+          entityType: AuditEntityType.payment,
+          entityId: id,
+          userId: user.id,
+          action: AuditAction.updated,
+          description: `Guardó el pago a ${updated.supplier.nombre} sin cambios`,
+        });
+      }
       const balance = await getPaymentBalance(id);
       return serializePayment(updated, balance ?? undefined);
     });
@@ -19795,6 +19831,71 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   // Posición financiera: caja + lo que nos deben − lo que debemos, por
   // vencimiento. La ven Flujo de fondos y Estado de resultados.
+  // Historial de Finanzas: quién creó, cambió o borró qué, con el valor anterior
+  // y el nuevo. Lee audit_logs de las entidades de Finanzas.
+  app.get("/finance/historial", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+    const q = z.object({
+      desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      userId: z.string().optional(),
+      entidad: z.nativeEnum(AuditEntityType).optional(),
+      accion: z.nativeEnum(AuditAction).optional(),
+      buscar: z.string().trim().optional(),
+      entityId: z.string().optional(),
+      page: z.coerce.number().int().min(1).default(1),
+    }).parse(request.query);
+    const POR_PAGINA = 100;
+    const where: Prisma.AuditLogWhereInput = {
+      entityType: q.entidad ? q.entidad : { in: ENTIDADES_FINANZAS },
+      ...(q.entityId ? { entityId: q.entityId } : {}),
+      ...(q.userId ? { userId: q.userId } : {}),
+      ...(q.accion ? { action: q.accion } : {}),
+      ...(q.desde || q.hasta ? { timestamp: {
+        ...(q.desde ? { gte: new Date(`${q.desde}T03:00:00.000Z`) } : {}),
+        // Fin del día en Uruguay (UTC-3).
+        ...(q.hasta ? { lt: new Date(new Date(`${q.hasta}T03:00:00.000Z`).getTime() + 86_400_000) } : {}),
+      } } : {}),
+      ...(q.buscar ? { description: { contains: q.buscar, mode: "insensitive" } } : {}),
+    };
+    const [total, filas, usuarios] = await Promise.all([
+      prisma.auditLog.count({ where }),
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { timestamp: "desc" },
+        skip: (q.page - 1) * POR_PAGINA,
+        take: POR_PAGINA,
+        include: {
+          user: { select: { id: true, name: true } },
+          project: { select: { id: true, code: true, clientName: true } },
+        },
+      }),
+      prisma.auditLog.findMany({
+        where: { entityType: { in: ENTIDADES_FINANZAS } },
+        distinct: ["userId"],
+        select: { user: { select: { id: true, name: true } } },
+      }),
+    ]);
+    return {
+      total,
+      page: q.page,
+      porPagina: POR_PAGINA,
+      usuarios: usuarios.map((u) => u.user).sort((a, b) => a.name.localeCompare(b.name)),
+      entradas: filas.map((f) => ({
+        id: f.id,
+        timestamp: f.timestamp.toISOString(),
+        entidad: f.entityType,
+        entityId: f.entityId,
+        accion: f.action,
+        campo: f.fieldChanged,
+        antes: f.oldValue,
+        despues: f.newValue,
+        descripcion: f.description,
+        usuario: f.user,
+        project: f.project,
+      })),
+    };
+  });
+
   app.get("/finance/posicion", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
     const posicion = await getPosicionFinanciera();
     const accounts = await prisma.account.findMany({

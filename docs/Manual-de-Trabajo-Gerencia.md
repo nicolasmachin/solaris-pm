@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.10 — 10 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.11 — 10 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -275,6 +275,38 @@ octubre de 2026), a nombre de Fernando Leal.
 **A qué manuales afecta.** A los manuales de trabajo de Operaciones y de
 Finanzas.
 
+### Los gastos de compras no se aprueban por ahora, pero todo queda auditable
+
+**Qué se decidió.** Por ahora los gastos de compras **no pasan por una
+aprobación** de Finanzas: el circuito de aprobación queda para más adelante.
+Lo que sí se exige desde ya es que **todo lo que se carga en Finanzas se pueda
+auditar**: quién cargó, cambió o borró cada cosa, cuándo, y en cada cambio el
+valor anterior y el nuevo.
+
+**Por qué.** Una aprobación agrega un paso que hoy frenaría las compras de obra
+sin que haya quién la sostenga todos los días. La auditoría permite revisar
+después sin frenar antes.
+
+**Desde cuándo rige.** 10 de octubre de 2026.
+
+**A qué manuales afecta.** A los manuales de trabajo de Finanzas y de
+Operaciones (Logística).
+
+### El reclamo de los pagos atrasados pasa a Administración
+
+**Qué se decidió.** Hoy el reclamo al cliente por una cuota atrasada lo hace
+Experiencia Solar. Va a pasar al **área de Administración** (la contadora)
+cuando esa área se haga cargo de Finanzas en Voltia PM.
+
+**Por qué.** El que lleva los cobros es el que tiene que reclamar lo que no
+entró, y Experiencia Solar queda para el vínculo con el cliente.
+
+**Desde cuándo rige.** Decidido el 10 de octubre de 2026; el cambio se aplica
+cuando Administración tome el módulo. Hasta entonces, sigue Experiencia Solar.
+
+**A qué manuales afecta.** Al PGT y a los manuales de Finanzas y de Experiencia
+Solar.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -306,6 +338,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
 | 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |
 | 0.9 | 9 de octubre de 2026 | Se suma a la decisión de control de deudas: el vencimiento sale del plazo negociado con cada proveedor, y ninguna factura recibida entra a la deuda sin revisión. |
 | 0.8 | 9 de octubre de 2026 | Se registra que lo que se debe y lo que nos deben se controla con documentos reales: las compras de materiales no se proyectan (la deuda con un proveedor entra con su factura) y ningún proyecto sale del onboarding sin saber cómo y cuándo paga el cliente. |

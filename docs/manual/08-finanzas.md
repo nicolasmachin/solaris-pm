@@ -544,6 +544,39 @@ arriba de Flujo de fondos y de Estado de resultados. Todo en USD, con
 
 ---
 
+## Historial (auditoría de Finanzas)
+
+`services/finance/auditoria.service.ts` → `registrarCambios()`. Por cada campo
+que cambia deja una fila en `audit_logs`, con `fieldChanged`, `oldValue` y
+`newValue`. Los valores van legibles: fechas en aaaa-mm-dd, montos como número, y
+cuentas, proveedores y proyectos por su nombre.
+
+- Se llama en `PATCH /finance/movements/:id`, en `PATCH /finance/cobros/:id`
+  (Experiencia Solar), en la transición de estado (además de su fila
+  `status_changed`) y en `PATCH /finance/payments/:id`.
+- Si no cambió nada, queda una sola fila "sin cambios".
+- Altas y bajas ya se auditaban.
+
+`GET /finance/historial` (`FINANZAS:VIEW`) lee `audit_logs` de
+`ENTIDADES_FINANZAS`, con filtros `desde`/`hasta` (días de Uruguay), `userId`,
+`entidad`, `accion`, `buscar` y `entityId`, y páginas de 100. La pestaña es
+`FinanceHistorialTab.tsx`.
+
+**Agujeros conocidos:** no todos los caminos que modifican plata pasan por
+`registrarCambios()`. Quedan afuera:
+
+- el cambio de fecha desde Pendientes o el cashflow (`/finance/cashflow/events/...`);
+- las ediciones de comisiones e instaladores, que tienen su propia auditoría
+  descriptiva;
+- el plan de pagos, que reemplaza los previstos con borrado lógico.
+
+## Costos fijos en Finanzas
+
+La pestaña **Finanzas → Costos fijos** monta el mismo `TabCostosFijos`
+(`AdminCostosFijos.tsx`) que Administración. Los endpoints `/admin/fixed-costs*`
+ya pedían `FINANZAS:*`, así que no cambió ningún permiso: antes un usuario de
+Finanzas sin acceso a `/admin` no tenía cómo llegar a la pantalla.
+
 ## Qué falta cubrir de este capítulo
 
 - Movimientos: tipos, fuentes y comprobantes

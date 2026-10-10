@@ -11,7 +11,9 @@ const TABS = [
   { to: "facturacion", label: "Facturación" },
   { to: "flujo", label: "Flujo de fondos" },
   { to: "resultados", label: "Estado de resultados" },
+  { to: "costos-fijos", label: "Costos fijos" },
   { to: "cuentas", label: "Cuentas" },
+  { to: "historial", label: "Historial" },
 ];
 
 export function FinanceLayout() {

@@ -418,8 +418,10 @@ Posventa).
 
 **Qué hace.** Cobra a los clientes según el plan de pagos que dejó armado Ventas,
 paga a los proveedores, a los instaladores y las comisiones, emite las facturas
-y lleva los resultados de la empresa. Su trabajo con un proyecto termina cuando
-está cobrado entero y sus gastos, pagados. El detalle está en el Manual de
+y lleva los resultados de la empresa. Si una cuota vence sin pagarse, el
+reclamo al cliente lo hace Experiencia Solar, que es quien habla con él; está
+decidido que pase al área de Administración cuando esa área tome Finanzas. Su
+trabajo con un proyecto termina cuando está cobrado entero y sus gastos, pagados. El detalle está en el Manual de
 trabajo de Finanzas, que está en armado.
 
 ### Gerencia
@@ -477,7 +479,7 @@ Y en ningún caso el cliente hace de mensajero.
 | Si hace falta saber… | Se le pregunta a… |
 |---|---|
 | Qué se le prometió al cliente en la venta: alcance, plazos, condiciones | Al **asesor comercial** del proyecto. No hay responsable de ventas: cada proyecto tiene el suyo |
-| Si entró la seña, cómo se le cobra, si hay aprobación para un gasto | Finanzas |
+| Si entró la seña, cómo se le cobra, cómo se registra un gasto | Finanzas |
 | Qué fecha tentativa se puede prometer, cuándo se puede ir a relevar | Gerente de Operaciones |
 | Algo del plano o del paquete técnico | Ingeniería |
 | Si hay stock, si está el material en depósito, si la lista está cerrada | Logística (y la lista, a Ingeniería) |

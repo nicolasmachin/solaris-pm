@@ -467,7 +467,7 @@ function CashflowEventTable({ events }: { events: CashflowEvent[] }) {
             onClick={() => {
               if (isFixedCost) {
                 toast(
-                  "La fecha de un costo fijo se cambia desde Administración → Costos fijos.",
+                  "La fecha de un costo fijo se cambia desde Finanzas → Costos fijos.",
                   { icon: "ℹ️" },
                 );
                 return;

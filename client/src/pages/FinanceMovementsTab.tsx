@@ -1066,7 +1066,7 @@ function NewMovementModal({
               ) : (
                 <div className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-[11px] text-[var(--color-text-muted)]">
                   No hay costos fijos pendientes este mes. Configurálos desde{" "}
-                  <span className="font-mono">Administración → Costos fijos</span>, o seguí sin
+                  <span className="font-mono">Finanzas → Costos fijos</span>, o seguí sin
                   asociar.
                 </div>
               )}

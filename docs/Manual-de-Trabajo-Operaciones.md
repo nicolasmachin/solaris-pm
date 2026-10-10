@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.8 — 10 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.9 — 10 de octubre de 2026 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -677,14 +677,14 @@ compra en la ferretería más cercana.
 2. El capataz define si el material va a la casa del cliente el mismo día de la obra o el día anterior.
 3. El capataz le avisa al cliente el día, la franja horaria y que alguien tiene que estar para recibirlo.
 
-*A completar con Logística:* cómo se compra (proveedores, pedidos, aprobación de Finanzas), cómo se sigue un pedido, cómo se recibe en el local y cómo se maneja el stock en Voltia PM.
+*A completar con Logística:* cómo se compra (proveedores, pedidos; por ahora las compras no pasan por una aprobación de Finanzas, pero todo gasto queda registrado y auditable), cómo se sigue un pedido, cómo se recibe en el local y cómo se maneja el stock en Voltia PM.
 
 ### A quién le pregunta qué
 
 | Necesita saber… | Le pregunta a… |
 |---|---|
 | Si la lista está cerrada de verdad | Ingeniería |
-| Si tiene aprobación para el gasto | Finanzas |
+| Cómo se registra un gasto o una factura de proveedor | Finanzas |
 | Qué hacer si un material demora | Gerente de Operaciones |
 
 ## 20 · Cuando algo sale mal en Logística
@@ -755,6 +755,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.9 | 10 de octubre de 2026 | Las compras no pasan por una aprobación de Finanzas por ahora; todo gasto queda registrado y auditable. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que un feriado corre todo un día. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |

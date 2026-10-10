@@ -203,7 +203,7 @@ export function FinancePendientesTab() {
     if (item.sourceType === "COMMITTED_EXPENSE" || item.sourceType === "MANUAL_PENDING") {
       setEditingCommittedId(item.sourceId);
     } else if (item.sourceType === "FIXED_COST") {
-      navigate("/admin");
+      navigate("/finanzas/costos-fijos");
     } else if (item.sourceType === "PROJECT_MATERIAL" && item.project) {
       navigate(`/projects/${item.project.id}`);
     } else if (item.sourceType === "SUPPLIER_DEBT" && item.supplier) {
@@ -584,7 +584,7 @@ function PendingRow({
             onClick={() => {
               if (isFixedCost) {
                 toast(
-                  "La fecha de un costo fijo se cambia desde Administración → Costos fijos.",
+                  "La fecha de un costo fijo se cambia desde Finanzas → Costos fijos.",
                   { icon: "ℹ️" },
                 );
                 return;
@@ -660,13 +660,13 @@ function PendingRow({
           ) : (
             <button
               onClick={() => {
-                if (item.sourceType === "FIXED_COST") navigate("/admin");
+                if (item.sourceType === "FIXED_COST") navigate("/finanzas/costos-fijos");
                 else if (item.sourceType === "PROJECT_MATERIAL" && item.project) navigate(`/projects/${item.project.id}`);
                 else if (item.sourceType === "SUPPLIER_DEBT" && item.supplier) navigate(`/finanzas/proveedores/${item.supplier.id}`);
               }}
               title={
                 item.sourceType === "FIXED_COST"
-                  ? "Editar en Administración → Costos fijos"
+                  ? "Editar en Finanzas → Costos fijos"
                   : item.sourceType === "PROJECT_MATERIAL"
                     ? "Editar desde Ingeniería del proyecto"
                     : "Editar en cuenta del proveedor"

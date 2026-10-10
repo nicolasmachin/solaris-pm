@@ -4,6 +4,20 @@
 
 ### 10 de octubre de 2026
 
+#### Historial de Finanzas
+
+- Nueva pestaña **Historial** en Finanzas: todo lo que se cargó, cambió o borró (movimientos, cobros, pagos, proveedores, cuentas, comisiones, instaladores, facturas recibidas), **quién** lo hizo y **cuándo**.
+- Cuando algo se edita, queda escrito **qué cambió, el valor de antes y el de después** (por ejemplo, el monto de una factura de 1.220 a 1.250). Se filtra por fechas, persona, tipo y con un buscador.
+
+#### Costos fijos dentro de Finanzas
+
+- Los **costos fijos** (alquiler, contador, servicios) se configuran ahora desde **Finanzas → Costos fijos**, sin entrar a Administración. Los botones que llevaban a Administración llevan ahí.
+
+#### Cobros y facturas
+
+- En **Experiencia Solar → Cobros**, **Marcar pagado** pide confirmar **la fecha en que entró la plata y el monto**: propone hoy y el monto previsto, y se corrigen si el cliente pagó otro día u otro monto.
+- Al cargar una factura de proveedor, el monto dice **con IVA incluido**.
+
 #### Conciliar con el estado de cuenta del proveedor
 
 - En la ficha de cada proveedor hay una pestaña nueva, **Conciliación**: se sube el estado de cuenta que mandó el proveedor (PDF, Excel o una foto) y Voltia PM lo lee y lo compara con lo que tiene cargado.

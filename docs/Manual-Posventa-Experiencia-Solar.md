@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.17 — 9 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.18 — 10 de octubre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1629,6 +1629,9 @@ partes:
 
 **Política interna:** los montos y las fechas se sacan del **plan de pagos** del proyecto, no de memoria. Si no está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más cuesta arreglar.
 
+- **Cuando el cliente paga**, Experiencia Solar lo marca en la pestaña **Cobros** con **Marcar pagado**, confirmando **la fecha en que entró la plata y el monto** que pagó (Voltia PM propone la fecha de hoy y el monto previsto; se corrigen si fue otro día u otro monto). Nadie lo revisa después: lo que se carga ahí es lo que queda.
+- **Si una cuota vence y el cliente no pagó**, el reclamo lo hace Experiencia Solar, que es quien habla con él. Está decidido que esto pase al área de Administración (la contadora) cuando esa área se haga cargo de Finanzas en Voltia PM.
+
 **Cuándo escalar:** cualquier duda de montos, al asesor comercial.
 
 #### 6. El portal y la aplicación del inversor
@@ -1871,6 +1874,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.18 | 10 de octubre de 2026 | Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas vencidas lo hace Experiencia Solar hasta que pase al área de Administración. |
 | 1.17 | 9 de octubre de 2026 | Mover una fecha de obra confirmada es la excepción y cada cambio rinde cuentas. Si la mueve un pedido del cliente, Experiencia Solar lo deja escrito en el motivo; al cliente se le explica sin nombrar áreas. |
 | 1.16 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte los hace Operaciones; Experiencia Solar los coordina con el cliente. |
 | 1.15 | 5 de octubre de 2026 | Al cliente la fecha de obra se le dice una sola vez, cuando está confirmada: la fecha tentativa es interna y no se le comunica. |

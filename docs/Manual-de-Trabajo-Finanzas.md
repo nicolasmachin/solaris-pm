@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.6 — 10 de octubre de 2026 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.7 — 10 de octubre de 2026 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -77,7 +77,7 @@ las cuentas y los resultados se llevan todos los meses.
 | **Ventas** (el asesor comercial) | Cada proyecto vendido llega con su **modalidad de pago** y lo que esa modalidad pide: el plan de pagos, la proforma para el banco o la explicación escrita de lo acordado. También indica si el proyecto **lleva factura** | Finanzas → Cobros; Finanzas → Facturación |
 | **Ventas** (al ganar la venta) | La **comisión del asesor**, que se registra sola con el precio de la última propuesta publicada | Comisiones; Finanzas → Pendientes |
 | **Operaciones** (al agendar la obra con un equipo tercerizado) | El **pago de la mano de obra** al instalador, a nombre de quien cobra por ese equipo | Finanzas → Instaladores |
-| **Logística** | Los **gastos de compras** para aprobar | En ninguna: Voltia PM **no tiene un circuito de aprobación de gastos** (no hay botón de aprobar ni lista de gastos por aprobar). [PREGUNTA: ¿por dónde le pide hoy Logística la aprobación a Finanzas, y cómo queda constancia?] |
+| **Logística** | Los **gastos de compras** para aprobar | En ninguna: **los gastos de compras no se aprueban** por ahora (es una decisión de Gerencia, que lo deja para más adelante). Lo que sí se exige es que todo gasto quede **auditable**: ver 5.19 |
 | **Proveedores** (por la facturación electrónica) | Las **facturas** que le emiten a Voltia | Finanzas → Cuentas por pagar → Facturas recibidas |
 | **Experiencia Solar** | Los cobros que registra o marca pagados en su propia pestaña, y las anualidades del **Plan de Protección contra Granizo** | Finanzas → Cobros y Movimientos (es la misma información) |
 
@@ -119,10 +119,10 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
    revisarlas: *pendiente de definir*.
 2. **Aprobar los gastos de compras** que pide Logística. Logística tiene 5 días
    hábiles para comprar y recibir el material de una obra con fecha confirmada:
-   cada día que demora una aprobación es un día menos. Plazo de la aprobación:
-   *pendiente de definir*. La aprobación **se hace por fuera de Voltia PM**:
-   el sistema no tiene un paso de aprobación de gastos. [PREGUNTA: ¿cómo se
-   aprueban hoy los gastos de compras y quién deja constancia?]
+   cada día que demora una aprobación es un día menos. **Por ahora los gastos
+   de compras no pasan por una aprobación**: Gerencia lo dejó para más
+   adelante. Mientras tanto, cada gasto queda registrado con quién lo cargó,
+   cuándo y cada cambio que se le hizo (ver 5.19, Historial).
 3. **Registrar lo que entró y lo que salió**: cada cobro que entra se marca
    pagado con **la fecha real** del pago; cada pago a un proveedor, a un
    instalador o de una comisión se registra cuando sale la plata.
@@ -132,9 +132,10 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
 
 - **Revisar Cobros**: qué cuotas vencieron sin cobrar. Si una cuota está
   vencida, se le pregunta al asesor qué pasó antes de reclamarle al cliente.
-  [PREGUNTA: ¿quién le reclama al cliente un pago atrasado? Si vale el PGT
-  —con el cliente hablan solo el capataz y Experiencia Solar—, el reclamo lo
-  hace Experiencia Solar.]
+  **El reclamo al cliente lo hace Experiencia Solar**, que es quien habla con
+  él. Está decidido que pase al **área de Administración** (la contadora)
+  cuando esa área se haga cargo de Finanzas en Voltia PM; ese día se corrige
+  este manual.
 - **Revisar Cuentas por pagar**: lo vencido y lo que vence en los próximos 7
   días, para programar los pagos.
 - **Revisar el Flujo de fondos**: si la plata alcanza para lo que vence.
@@ -148,8 +149,8 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
 - **Pagar las comisiones** del mes: cada comisión vence el **día 1 del mes
   siguiente** a la venta.
 - **Revisar los costos fijos** del mes y marcarlos pagados.
-- **Conciliar las cuentas bancarias** con el saldo real del banco (ver 5.13).
-  [PREGUNTA: ¿se concilia todos los meses o con otra frecuencia?]
+- **Conciliar las cuentas bancarias** con el saldo real del banco, **una vez
+  por mes** (ver 5.13).
 - **Cerrar el estado de resultados** del mes.
 - **Controlar la facturación al cliente**: que no queden facturas pendientes de
   emitir de proyectos que ya cobraron. Plazo para emitir: *pendiente de
@@ -354,13 +355,11 @@ gestiona desde Comisiones.
 ### 5.2 · Costos fijos
 
 Los **costos fijos** son los gastos que se repiten (alquiler, contador,
-servicios). Se configuran una vez en **Administración → Configuración del
-negocio → Costos fijos**, con **«Agregar costo fijo»**: nombre, descripción
+servicios). Se configuran una vez en **Finanzas → Costos fijos**, con
+**«Agregar costo fijo»**: nombre, descripción
 (opcional), **periodicidad** —**mensual**, **bimensual** (en los meses pares o
 en los impares) o **anual** (en un mes elegido)—, el **día del mes de pago** y un
-**monto de referencia** con su moneda. [PREGUNTA: esa pantalla está en
-Administración; ¿la persona de Finanzas tiene acceso, o los costos fijos los
-carga otro?]
+**monto de referencia** con su moneda. Los carga Finanzas (y también un administrador).
 
 **No generan movimientos solos.** Cada costo fijo figura en **Pendientes**
 desde que empieza el mes que le toca, y el **Flujo de fondos** los proyecta
@@ -374,7 +373,7 @@ para los próximos 3 meses. Sale de Pendientes cuando:
   ese mes: el costo fijo sigue activo para los siguientes.
 
 Un costo fijo no se puede reagendar desde Pendientes: su fecha es la del día del
-mes configurado, y se cambia desde Administración.
+mes configurado, y se cambia desde Finanzas → Costos fijos.
 
 ### 5.3 · Pendientes
 
@@ -436,8 +435,9 @@ a los días de plazo del proveedor. Lo normal hoy es que la factura llegue sola
 por la bandeja de facturas recibidas (5.6); a mano se carga lo que no llega así.
 Cada factura se puede **editar** o **eliminar** desde la ficha.
 
-[PREGUNTA: el monto de la factura se carga como un solo número, sin IVA
-aparte; ¿se carga siempre con IVA incluido?]
+**El monto de una factura se carga siempre con IVA incluido**: es el total
+que figura en la factura y el que se le paga al proveedor. El desglose del IVA
+no se carga por ahora.
 
 **Registrar un pago.** Se piden la fecha, el monto y la moneda, la **cuenta de
 donde sale la plata** (obligatoria, y de la misma moneda que el pago), el
@@ -622,9 +622,10 @@ Dos diferencias con Finanzas que Finanzas tiene que conocer:
 - **No elige cuenta**: los cobros que registra o marca pagados Experiencia Solar
   quedan **sin cuenta**. Finanzas les asigna la cuenta editando el movimiento en
   Movimientos; hasta entonces no suman al saldo de ninguna cuenta.
-- **Al marcar pagado un previsto, queda con la fecha de hoy**: no se elige otra.
-  Si el cliente pagó otro día, Finanzas corrige la fecha. [PREGUNTA: ¿quién
-  revisa esos cobros para ponerles cuenta y fecha real, y cada cuánto?]
+- **Al marcar pagado un previsto se confirman la fecha y el monto**: Voltia PM
+  propone la fecha de hoy y el monto previsto, y quien lo registra los corrige
+  si el cliente pagó otro día u otro monto. **La fecha y el monto los pone quien
+  ingresa el cobro**; no hay una revisión posterior.
 
 **Es la misma información que Finanzas**: lo que cambia uno lo ve el otro al
 instante. En el historial del cliente aparecen solos **los cobros efectivos**,
@@ -873,6 +874,24 @@ indicadores, del mes que acaba de cerrar comparado con el anterior.
 
 ---
 
+### 5.19 · Historial: auditar lo que se hizo
+
+Se entra desde **Finanzas → Historial**. Es el registro de **todo lo que se
+cargó, cambió o borró** en Finanzas: movimientos y cobros, pagos a proveedores y
+cómo se aplicaron, proveedores, cuentas, comisiones, pagos a instaladores,
+facturas recibidas y conciliaciones.
+
+Cada renglón dice **cuándo**, **quién**, **qué** (alta, cambio, baja o cambio de
+estado) y el detalle. Cuando es un cambio, muestra **el valor de antes y el de
+después**: si alguien corrigió el monto de una factura de 1.220 a 1.250, queda
+escrito así, con su nombre y la hora.
+
+Se filtra por fechas, por persona, por tipo (movimientos, pagos, proveedores…),
+por alta/cambio/baja, y con un buscador sobre el detalle.
+
+No se puede editar ni borrar: es la constancia de lo que pasó. Es la herramienta
+para revisar los gastos mientras no exista un circuito de aprobación.
+
 ## 6 · Cuando algo sale mal
 
 ### Un proyecto aparece en Cobros sin plan de pagos
@@ -886,8 +905,8 @@ cliente. No se inventan fechas.
 
 Se mira primero si el pago entró y no se registró. Si no entró, se le pregunta
 al asesor si hubo algún cambio acordado. El reclamo al cliente lo hace
-Experiencia Solar, que es quien habla con él. [PREGUNTA: ¿Gerencia confirma que
-el reclamo de un pago atrasado lo hace Experiencia Solar?]
+Experiencia Solar, que es quien habla con él (va a pasar al área de
+Administración cuando esa área se haga cargo de Finanzas en Voltia PM).
 
 ### El saldo de un proveedor no coincide con su estado de cuenta
 
@@ -941,6 +960,7 @@ una vez por mes.
 |---|---|
 | **Voltia PM** | El sistema interno donde trabajan todas las áreas de Voltia: proyectos, clientes, calendario, finanzas. |
 | **Portal de Voltia** | Lo que ve el cliente: avance, documentación, reportes y reclamos. |
+| **Área de Administración** | El área de la contadora. Va a usar el módulo de Finanzas de Voltia PM y a hacerse cargo de reclamar los pagos atrasados. No confundir con **Administración** de Voltia PM, el menú de configuración del sistema. |
 | **UTE** | La empresa estatal de electricidad. Tiene que aprobar y **habilitar** la instalación para que el cliente pueda encenderla. |
 | **DGI** | La Dirección General Impositiva. Registra todas las facturas electrónicas. |
 | **CFE** | Comprobante fiscal electrónico: la factura electrónica (o nota de crédito, o nota de débito). |
@@ -979,6 +999,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.7 | 10 de octubre de 2026 | Se responden las dudas de Gerencia: los gastos de compras no se aprueban por ahora pero quedan auditables, con la pantalla nueva Historial; el reclamo de pagos atrasados lo hace Experiencia Solar y pasará a Administración; las cuentas bancarias se concilian una vez por mes; los costos fijos los carga Finanzas desde su propia pestaña; las facturas de proveedores se cargan con IVA incluido; al marcar pagado un cobro se confirman la fecha y el monto. |
 | 0.6 | 10 de octubre de 2026 | Se revisa todo el manual contra Voltia PM: qué muestra cada pestaña, cómo se pagan los costos fijos y las comisiones, cómo se aplica el saldo a favor de un proveedor, la nueva conciliación con el estado de cuenta del proveedor, cómo se concilian las cuentas, de dónde sale la cotización del dólar y qué abarca el flujo de fondos. Se citan enteros los resúmenes de WhatsApp de cobros y de instaladores. Se aclara que no hay un circuito de aprobación de gastos en Voltia PM. |
 | 0.5 | 10 de octubre de 2026 | Pagos a instaladores: el pago lo genera el calendario al agendar la obra con un equipo tercerizado, a nombre de quien cobra por ese equipo; las obras de equipo propio no tienen pago aparte. |
 | 0.4 | 9 de octubre de 2026 | Plazo y límite de crédito por proveedor; las facturas de proveedores llegan solas de la facturación electrónica a una bandeja que Finanzas revisa; nuevas pantallas Cuentas por pagar y Facturas de proveedores. |

@@ -182,7 +182,7 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onC
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={lbl}>Monto *</label>
+              <label className={lbl}>Monto con IVA incluido *</label>
               <input
                 type="number"
                 step="0.01"

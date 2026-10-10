@@ -64,6 +64,8 @@ const FinanceResultsTab = lazy(() =>
 const FinanceMovements = lazy(() => import("./pages/FinanceMovements").then((module) => ({ default: module.FinanceMovements })));
 const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((module) => ({ default: module.FinanceSuppliers })));
 const FinanceFacturasProveedoresTab = lazy(() => import("./pages/FinanceFacturasProveedoresTab").then((module) => ({ default: module.FinanceFacturasProveedoresTab })));
+const FinanceHistorialTab = lazy(() => import("./pages/FinanceHistorialTab").then((module) => ({ default: module.FinanceHistorialTab })));
+const FinanceCostosFijosTab = lazy(() => import("./pages/AdminCostosFijos").then((module) => ({ default: module.TabCostosFijos })));
 const FinanceCuentasPorPagarTab = lazy(() => import("./pages/FinanceCuentasPorPagarTab").then((module) => ({ default: module.FinanceCuentasPorPagarTab })));
 const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
 const FinanceAPagar = lazy(() => import("./pages/FinanceAPagar").then((module) => ({ default: module.FinanceAPagar })));
@@ -405,6 +407,8 @@ export function App() {
           <Route path="proveedores" element={<FinanceSuppliers />} />
           <Route path="cuentas-por-pagar" element={<FinanceCuentasPorPagarTab />} />
           <Route path="facturas-proveedores" element={<FinanceFacturasProveedoresTab />} />
+          <Route path="costos-fijos" element={<FinanceCostosFijosTab />} />
+          <Route path="historial" element={<FinanceHistorialTab />} />
           <Route path="cobros" element={<FinanceCobros />} />
           {/* Misma pantalla que /pagos-instalador: acá el admin la ve completa
               (todos los instaladores + gestión); el tercerizado entra por el

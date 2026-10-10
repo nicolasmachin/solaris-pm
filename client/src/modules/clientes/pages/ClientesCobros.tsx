@@ -205,6 +205,11 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
   const [showRegistrar, setShowRegistrar] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editMonto, setEditMonto] = useState('');
+  // "Marcar pagado" pide confirmar la fecha en que entró la plata y el monto:
+  // quien lo registra es quien sabe cuándo y cuánto pagó el cliente.
+  const [pagoId, setPagoId] = useState<string | null>(null);
+  const [pagoFecha, setPagoFecha] = useState('');
+  const [pagoMonto, setPagoMonto] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; descripcion: string } | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -215,8 +220,9 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
 
   const marcarPagado = useMutation({
-    mutationFn: (id: string) => patchCobroCliente(id, { estado: 'PAGADO', fecha: todayLocalISO() }),
-    onSuccess: () => { toast.success('Cobro marcado como pagado'); invalidate(); },
+    mutationFn: (v: { id: string; fecha: string; monto: number }) =>
+      patchCobroCliente(v.id, { estado: 'PAGADO', fecha: v.fecha, monto: v.monto }),
+    onSuccess: () => { toast.success('Cobro marcado como pagado'); setPagoId(null); invalidate(); },
     onError: (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'No se pudo marcar'),
   });
 
@@ -304,7 +310,20 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
                             <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{fmtDate(c.fecha ?? c.dueDate ?? '')}</div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            {editing ? (
+                            {pagoId === c.id ? (
+                              <>
+                                <input type="date" value={pagoFecha} max={todayLocalISO()} onChange={e => setPagoFecha(e.target.value)}
+                                  title="Fecha en que entró la plata"
+                                  className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-[var(--color-text-primary)]" />
+                                <input type="number" step="0.01" value={pagoMonto} onChange={e => setPagoMonto(e.target.value)}
+                                  title="Monto que pagó"
+                                  className="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-right tabular-nums text-[var(--color-text-primary)]" />
+                                <button onClick={() => { const m = Number(pagoMonto); if (m > 0 && pagoFecha) marcarPagado.mutate({ id: c.id, fecha: pagoFecha, monto: m }); }}
+                                  disabled={marcarPagado.isPending || !pagoFecha || !(Number(pagoMonto) > 0)}
+                                  className="text-[11px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold disabled:opacity-50">Confirmar pago</button>
+                                <button onClick={() => setPagoId(null)} className="text-[11px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)]">Cancelar</button>
+                              </>
+                            ) : editing ? (
                               <>
                                 <input type="number" step="0.01" value={editMonto} onChange={e => setEditMonto(e.target.value)}
                                   className="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-right tabular-nums text-[var(--color-text-primary)]" autoFocus />
@@ -319,7 +338,7 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
                                 <button onClick={() => { setEditId(c.id); setEditMonto(String(c.monto)); }}
                                   className="text-[11px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]">Editar monto</button>
                                 {previsto && (
-                                  <button onClick={() => marcarPagado.mutate(c.id)} disabled={marcarPagado.isPending}
+                                  <button onClick={() => { setPagoId(c.id); setPagoFecha(todayLocalISO()); setPagoMonto(String(c.monto)); }}
                                     className="text-[11px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-50">Marcar pagado</button>
                                 )}
                                 <button onClick={() => setDeleteTarget({ id: c.id, descripcion: stripPlan(c.descripcion) })}
