@@ -28,6 +28,7 @@ import {
   listInstallerPayments,
   registrarPago,
   updateInstallerPayment,
+  presupuestoManoDeObra,
 } from "../services/installer-payment/installer-payment.service.js";
 import { parseDateOnly } from "../utils/dates.js";
 import { unauthorized } from "../utils/errors.js";
@@ -65,6 +66,19 @@ const CURRENT_YEAR_DEFAULT = () => new Date().getUTCFullYear();
 
 export async function registerInstallerPaymentRoutes(app: FastifyInstance) {
   // ── Lectura ────────────────────────────────────────────────────────────────
+
+  // El presupuesto de mano de obra que el gerente de Operaciones le informa al
+  // tercerizado antes de agendar la obra. Va con PAGOS_INSTALADOR:VIEW y no con
+  // OPERACIONES:VIEW, que lo tienen casi todos los roles (asesores incluidos):
+  // el costo de mano de obra no es para todos.
+  app.get(
+    "/projects/:projectId/mano-de-obra",
+    { preHandler: [authenticate, authorize(Module.PAGOS_INSTALADOR, Action.VIEW)] },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string().min(1) }).strict().parse(request.params);
+      return presupuestoManoDeObra(projectId);
+    },
+  );
 
   // Los pagos del instalador logueado. Siempre scopeado: no acepta installerId.
   app.get(

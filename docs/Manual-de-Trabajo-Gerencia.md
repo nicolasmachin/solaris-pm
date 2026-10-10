@@ -76,8 +76,9 @@ repita.
 
 **Desde cuándo rige.** 9 de octubre de 2026.
 
-**En definición.** Si la fecha confirmada lleva uno o dos días hábiles de margen
-sobre el mínimo de 12, para que un atraso chico no la mueva.
+**Sin margen extra.** Los plazos de cada etapa ya tienen margen. No se suma un
+margen más sobre la fecha confirmada: un plazo con un margen encima es un plazo
+que nadie sabe cuál es.
 
 **A qué manuales afecta.** Al PGT, al de Operaciones (con Logística), al de
 Ingeniería, al de Ventas, al de Experiencia Solar y al de Finanzas.
@@ -342,7 +343,7 @@ decisión vigente.
 | 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |
 | 0.9 | 9 de octubre de 2026 | Se suma a la decisión de control de deudas: el vencimiento sale del plazo negociado con cada proveedor, y ninguna factura recibida entra a la deuda sin revisión. |
 | 0.8 | 9 de octubre de 2026 | Se registra que lo que se debe y lo que nos deben se controla con documentos reales: las compras de materiales no se proyectan (la deuda con un proveedor entra con su factura) y ningún proyecto sale del onboarding sin saber cómo y cuándo paga el cliente. |
-| 0.7 | 9 de octubre de 2026 | Se registra que la fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio deja registrado el motivo, lo explica el área que se atrasó y Gerencia lo revisa una vez por mes. Queda en definición si la fecha lleva un margen. |
+| 0.7 | 9 de octubre de 2026 | Se registra que la fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio deja registrado el motivo, lo explica el área que se atrasó y Gerencia lo revisa una vez por mes. Los plazos ya tienen margen: no se suma otro sobre la fecha. |
 | 0.6 | 8 de octubre de 2026 | Se registra que los mantenimientos y las visitas de soporte son trabajo de Operaciones. Se corrige por qué Operaciones es el área más crítica: es el centro de la cadena, no el final, y cada atraso es plata. |
 | 0.5 | 7 de octubre de 2026 | Se registra la decisión de justificar ante UTE la potencia recortada con un informe de proyección de consumo: el criterio es el balance anual y la generación se estima en 1.450 kWh por kW. |
 | 0.4 | 5 de octubre de 2026 | Se registran cinco decisiones: al cliente la fecha de obra se le dice una sola vez; seguridad sin flexibilidad, con sanción a toda la cadena; compras en plaza con tres presupuestos, salvo que esperar el tercero frene una obra; Operaciones es el área más crítica y los plazos de las demás áreas se cumplen; en obra, el criterio del instalador le gana al del proyectista. |

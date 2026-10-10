@@ -5,6 +5,7 @@ const STATUS_BAR_COLOR: Record<SubstageStatus, string> = {
   IN_PROGRESS: "var(--color-accent)",
   BLOCKED: "var(--color-danger-text)",
   PENDING: "var(--color-border-hover)",
+  NO_APLICA: "var(--color-border-hover)",
 };
 
 const STATUS_PCT: Record<SubstageStatus, number> = {
@@ -12,6 +13,7 @@ const STATUS_PCT: Record<SubstageStatus, number> = {
   IN_PROGRESS: 50,
   BLOCKED: 0,
   PENDING: 0,
+  NO_APLICA: 100,
 };
 
 interface ProgressPanelProps {

@@ -48,6 +48,12 @@
 - En **Admin → Equipos**, cada equipo tercerizado tiene ahora **quién cobra** la mano de obra.
 - Rige para las obras **de ahora en adelante**: a las obras tercerizadas anteriores que no tenían pago no se les crea, porque se pagaron por fuera. Si hace falta alguna, se carga a mano.
 
+#### Presupuesto de mano de obra para el instalador tercerizado
+
+- En **Validación de Operaciones** hay una subetapa nueva, **Presupuesto al instalador tercerizado**, entre el informe del capataz y la fecha de obra confirmada.
+- Muestra el **monto de mano de obra** de la propuesta ganadora, con IVA, que es lo que el gerente de Operaciones le ofrece al instalador antes de agendar la obra. Si la obra ya se agendó con un tercerizado, muestra el monto del pago que se generó.
+- El gerente lo tilda cuando se lo informó y cuando el instalador aceptó. Si la obra va con el equipo propio, la subetapa se marca **No aplica**, una opción nueva en el estado de las subetapas.
+
 ## v12.1
 
 ### 9 de octubre de 2026

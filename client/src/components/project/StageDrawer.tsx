@@ -25,6 +25,7 @@ import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 import { ContractBuilderModal } from "../contract/ContractBuilderModal";
 import { ContractVersionsList } from "../contract/ContractVersionsList";
 import { ModalidadPagoPanel } from "./ModalidadPagoPanel";
+import { PresupuestoManoDeObraPanel } from "./PresupuestoManoDeObraPanel";
 import { pedirDefinicionesSiFaltan } from "../../store/definicionesPendientes.store";
 import { PlanGranizoDocSection } from "../planGranizo/PlanGranizoDocSection";
 import { stageLabel } from "../../constants/stages";
@@ -362,6 +363,7 @@ function SubstageRow({
     IN_PROGRESS: "#a3e635",
     BLOCKED: "#f87171",
     PENDING: "#3a4a65",
+    NO_APLICA: "#3a4a65",
   }[substage.status];
 
   return (
@@ -551,6 +553,13 @@ function SubstageRow({
             {substage.name === "Modalidad de pago definida" && (
               <CanAccess module="ONBOARDING" action="EDIT">
                 <ModalidadPagoPanel projectId={projectId} />
+              </CanAccess>
+            )}
+
+            {/* El presupuesto que el gerente le informa al instalador tercerizado */}
+            {substage.name === "Presupuesto al instalador tercerizado" && (
+              <CanAccess module="PAGOS_INSTALADOR" action="VIEW">
+                <PresupuestoManoDeObraPanel projectId={projectId} />
               </CanAccess>
             )}
 
@@ -950,12 +959,13 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  const STATUS_OPTIONS: SubstageStatus[] = ["PENDING", "IN_PROGRESS", "COMPLETED", "BLOCKED"];
+  const STATUS_OPTIONS: SubstageStatus[] = ["PENDING", "IN_PROGRESS", "COMPLETED", "BLOCKED", "NO_APLICA"];
   const STATUS_LABELS: Record<SubstageStatus, string> = {
     PENDING: "Pendiente",
     IN_PROGRESS: "En progreso",
     COMPLETED: "Completado",
     BLOCKED: "Bloqueado",
+    NO_APLICA: "No aplica",
   };
 
   return (

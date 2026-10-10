@@ -59,6 +59,23 @@ viejas, o proyectos cargados a mano), el pago nace en **0** y marcado
 
 `readManoDeObraFromSnapshot()` en `installer-payment.service.ts`.
 
+**El monto antes de agendar.** El gerente de Operaciones le informa el
+presupuesto al tercerizado **antes** de agendar la obra, y el pago recién nace al
+agendar. Para eso, Validación de Operaciones tiene la subetapa **"Presupuesto al
+instalador tercerizado"** (`PRESUPUESTO_MANO_DE_OBRA` en
+`pipeline-definitions.ts`), con el panel `PresupuestoManoDeObraPanel` en el
+`StageDrawer`. El dato sale de `GET /projects/:projectId/mano-de-obra`
+(permiso **PAGOS_INSTALADOR:VIEW**: OPERACIONES:VIEW lo tienen casi todos los roles, asesores incluidos, y el costo de mano de obra no es para todos) →
+`presupuestoManoDeObra()`: si el pago ya existe manda su `montoUsd` (puede estar
+corregido a mano), si no, el de la propuesta ganadora calculado en el momento
+con `buscarManoDeObraPropuesta()`, la misma búsqueda que usa
+`createInstallerPaymentForProject()`. Con equipo propio la subetapa se marca
+**No aplica** (`NO_APLICA`, que el cliente no ofrecía hasta el 10-oct-2026). No se
+marca sola según el equipo: lo hace el gerente. El gerente no negocia el monto:
+pagar más lo autoriza Gerencia. La subetapa se sumó a los proyectos con
+Validación abierta y a la plantilla guardada en settings con
+`prisma/scripts/add-subetapa-presupuesto-tercerizado.ts` (`--apply`).
+
 **Quién crea el pago:** `crearPagoAlAgendar()` en `installer-payment.service.ts`,
 llamado desde `POST /calendar` y desde `PATCH /calendar/:id` cuando cambia el
 equipo (helper `pagoInstaladorAlAgendar()` en `api.routes.ts`, best-effort: si

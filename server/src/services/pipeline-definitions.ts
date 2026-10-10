@@ -1,6 +1,9 @@
 import { ModalidadPago, SettingKey, SettingLevel, StageType, TipoObra } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 
+/** Subetapa de Validación de Operaciones donde se le informa el presupuesto al tercerizado. */
+export const PRESUPUESTO_MANO_DE_OBRA = "Presupuesto al instalador tercerizado";
+
 export type ChecklistTemplate = {
   label: string;
   isRequired?: boolean;
@@ -391,8 +394,23 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
           { label: "Informe cargado (texto/audio/fotos, procesado por IA)", isRequired: true },
         ],
       },
+      // Si la obra va con un equipo tercerizado, el gerente le dice el
+      // presupuesto de mano de obra antes de agendarla, y el instalador acepta o
+      // no. El monto lo muestra el panel de la subetapa (StageDrawer). Con
+      // equipo propio se marca "No aplica".
       {
         order: 2,
+        name: PRESUPUESTO_MANO_DE_OBRA,
+        responsableRol: "Gerente de Operaciones",
+        responsible: "Gerente de Operaciones",
+        isSystem: true,
+        checklist: [
+          { label: "Presupuesto de mano de obra informado al instalador", isRequired: true },
+          { label: "El instalador aceptó el presupuesto", isRequired: true },
+        ],
+      },
+      {
+        order: 3,
         name: "Fecha de obra confirmada",
         responsableRol: "Gerente de Operaciones",
         responsible: "Gerente de Operaciones",

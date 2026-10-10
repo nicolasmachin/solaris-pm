@@ -16,7 +16,10 @@ export type SubstageStatus =
   | "PENDING"
   | "IN_PROGRESS"
   | "COMPLETED"
-  | "BLOCKED";
+  | "BLOCKED"
+  // Subetapa condicional que no corresponde a este proyecto (ej. el presupuesto
+  // al tercerizado cuando la obra va con equipo propio). Cuenta como resuelta.
+  | "NO_APLICA";
 export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "WAITING";
 export type TaskPriority = "LOW" | "NORMAL" | "MEDIUM" | "HIGH" | "URGENT";
 export type NotificationType =

@@ -135,3 +135,17 @@ export async function borrarEntregaInstalador(
   );
   return data.payment;
 }
+
+/** Presupuesto de mano de obra para informarle al instalador tercerizado. */
+export interface PresupuestoManoDeObra {
+  /** USD con IVA. null si el proyecto no tiene propuesta con mano de obra. */
+  montoUsd: number | null;
+  /** PAGO = ya se agendó y es el monto del pago; PROPUESTA = de la propuesta ganadora. */
+  origen: "PAGO" | "PROPUESTA" | null;
+  versionNumber: number | null;
+}
+
+export async function getPresupuestoManoDeObra(projectId: string): Promise<PresupuestoManoDeObra> {
+  const { data } = await api.get<PresupuestoManoDeObra>(`/projects/${projectId}/mano-de-obra`);
+  return data;
+}

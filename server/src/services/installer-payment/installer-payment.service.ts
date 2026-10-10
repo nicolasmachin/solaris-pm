@@ -243,6 +243,62 @@ export interface CreateForProjectResult {
  * Nace sin instalador; quien lo llama (`crearPagoAlAgendar`) le pone el del
  * equipo agendado.
  */
+/**
+ * Mano de obra (con IVA) de la última propuesta publicada del lead que originó
+ * el proyecto. `null` si no hay lead, propuesta o monto.
+ */
+async function buscarManoDeObraPropuesta(
+  projectId: string,
+  leadIdDado?: string | null,
+): Promise<{ montoUsd: number; proposalVersionId: string; versionNumber: number } | null> {
+  const leadId =
+    leadIdDado ??
+    (
+      await prisma.salesLead.findFirst({
+        where: { convertedToProjectId: projectId },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      })
+    )?.id ??
+    null;
+  if (!leadId) return null;
+
+  const version = await prisma.proposalV2Version.findFirst({
+    where: { leadId, status: "PUBLISHED" },
+    orderBy: { versionNumber: "desc" },
+    select: { id: true, snapshot: true, versionNumber: true },
+  });
+  const monto = version ? readManoDeObraFromSnapshot(version.snapshot) : null;
+  if (monto == null || !version) return null;
+  return { montoUsd: monto, proposalVersionId: version.id, versionNumber: version.versionNumber };
+}
+
+/**
+ * El presupuesto de mano de obra que el gerente de Operaciones le informa al
+ * instalador tercerizado ANTES de agendar la obra (subetapa
+ * "Presupuesto al instalador tercerizado" de Validación de Operaciones).
+ *
+ * Si el pago ya existe (la obra ya se agendó con un tercerizado), manda el monto
+ * congelado del pago, que es lo que se le va a pagar —puede estar corregido a
+ * mano—. Si no, el de la propuesta ganadora, calculado en el momento.
+ */
+export async function presupuestoManoDeObra(projectId: string): Promise<{
+  montoUsd: number | null;
+  origen: "PAGO" | "PROPUESTA" | null;
+  versionNumber: number | null;
+}> {
+  const pago = await prisma.installerPayment.findUnique({
+    where: { projectId },
+    select: { montoUsd: true },
+  });
+  if (pago && Number(pago.montoUsd) > 0) {
+    return { montoUsd: Number(pago.montoUsd), origen: "PAGO", versionNumber: null };
+  }
+  const propuesta = await buscarManoDeObraPropuesta(projectId);
+  if (!propuesta) return { montoUsd: null, origen: null, versionNumber: null };
+  return { montoUsd: propuesta.montoUsd, origen: "PROPUESTA", versionNumber: propuesta.versionNumber };
+}
+
 export async function createInstallerPaymentForProject(input: {
   projectId: string;
   userId: string;
@@ -268,29 +324,11 @@ export async function createInstallerPaymentForProject(input: {
   let proposalVersionId: string | null = null;
   let origenManual = true;
 
-  const leadId =
-    input.leadId ??
-    (
-      await prisma.salesLead.findFirst({
-        where: { convertedToProjectId: projectId },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      })
-    )?.id ??
-    null;
-
-  if (leadId) {
-    const version = await prisma.proposalV2Version.findFirst({
-      where: { leadId, status: "PUBLISHED" },
-      orderBy: { versionNumber: "desc" },
-      select: { id: true, snapshot: true },
-    });
-    const monto = version ? readManoDeObraFromSnapshot(version.snapshot) : null;
-    if (monto != null) {
-      montoUsd = monto;
-      proposalVersionId = version!.id;
-      origenManual = false;
-    }
+  const propuesta = await buscarManoDeObraPropuesta(projectId, input.leadId);
+  if (propuesta) {
+    montoUsd = propuesta.montoUsd;
+    proposalVersionId = propuesta.proposalVersionId;
+    origenManual = false;
   }
 
   const fechaTrabajo = project.saleDate ?? project.startDate ?? new Date();
