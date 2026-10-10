@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.8 · del 10/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.9 · del 10/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -708,6 +708,16 @@ para cargar el monto. Las obras de equipo propio no tienen pago aparte.
 **Después no cambia solo**: si la obra se reagenda o cambia de equipo, Finanzas
 corrige el instalador o el monto a mano.
 
+**Cuándo se le paga:** el **50 % al arrancar la obra** y el **50 % al
+terminarla**. La orden de pago la da el responsable de Administración y Finanzas
+o Gerencia, cuando en Voltia PM la etapa de Ejecución de obra figura terminada.
+El monto no se negocia: el gerente de Operaciones se lo informa al tercerizado
+antes de agendar, y pagar más lo autoriza solo Gerencia.
+
+**Un gasto de obra que no estaba previsto:** hasta **USD 200** lo autoriza el
+gerente de Operaciones; más, Gerencia. Se carga en Finanzas asignado a la obra,
+y se suma a su costeo.
+
 Finanzas:
 
 - **«Asignar»** o **«Editar»** un trabajo: el instalador y el monto.
@@ -1022,6 +1032,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Un gasto de obra no previsto lo autoriza el gerente de Operaciones hasta USD 200, y Gerencia por encima. |
 | 0.8 | 10 de octubre de 2026 | Las facturas recibidas también se cargan a mano, con el mismo control para no cargar dos veces la misma; cada factura tiene su PDF (de la facturación electrónica o subido a mano). |
 | 0.7 | 10 de octubre de 2026 | Se responden las dudas de Gerencia: los gastos de compras no se aprueban por ahora pero quedan auditables, con la pantalla nueva Historial; el reclamo de pagos atrasados lo hace Experiencia Solar y pasará a Administración; las cuentas bancarias se concilian una vez por mes; los costos fijos los carga Finanzas desde su propia pestaña; las facturas de proveedores se cargan con IVA incluido; al marcar pagado un cobro se confirman la fecha y el monto.; la conciliación con cada proveedor se hace una vez por mes, a mano |
 | 0.6 | 10 de octubre de 2026 | Se revisa todo el manual contra Voltia PM: qué muestra cada pestaña, cómo se pagan los costos fijos y las comisiones, cómo se aplica el saldo a favor de un proveedor, la nueva conciliación con el estado de cuenta del proveedor, cómo se concilian las cuentas, de dónde sale la cotización del dólar y qué abarca el flujo de fondos. Se citan enteros los resúmenes de WhatsApp de cobros y de instaladores. Se aclara que no hay un circuito de aprobación de gastos en Voltia PM. |

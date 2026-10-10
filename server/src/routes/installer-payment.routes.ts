@@ -31,7 +31,8 @@ import {
   presupuestoManoDeObra,
 } from "../services/installer-payment/installer-payment.service.js";
 import { parseDateOnly } from "../utils/dates.js";
-import { unauthorized } from "../utils/errors.js";
+import { forbidden, unauthorized } from "../utils/errors.js";
+import { prisma } from "../lib/prisma.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -68,14 +69,24 @@ export async function registerInstallerPaymentRoutes(app: FastifyInstance) {
   // ── Lectura ────────────────────────────────────────────────────────────────
 
   // El presupuesto de mano de obra que el gerente de Operaciones le informa al
-  // tercerizado antes de agendar la obra. Va con PAGOS_INSTALADOR:VIEW y no con
-  // OPERACIONES:VIEW, que lo tienen casi todos los roles (asesores incluidos):
-  // el costo de mano de obra no es para todos.
+  // tercerizado antes de agendar la obra. Lo ve quien ve los pagos de todos los
+  // instaladores (`canSeeAll`: gerente de Operaciones, Finanzas, Admin, según la
+  // matriz). El tercerizado, que tiene PAGOS_INSTALADOR:VIEW para "Mis cobros",
+  // solo el de una obra cuyo pago ya es suyo. No va con OPERACIONES:VIEW: lo
+  // tienen casi todos los roles, asesores incluidos.
   app.get(
     "/projects/:projectId/mano-de-obra",
     { preHandler: [authenticate, authorize(Module.PAGOS_INSTALADOR, Action.VIEW)] },
     async (request) => {
+      const user = ensureUser(request);
       const { projectId } = z.object({ projectId: z.string().min(1) }).strict().parse(request.params);
+      if (!(await canSeeAll(user.role))) {
+        const pago = await prisma.installerPayment.findUnique({
+          where: { projectId },
+          select: { installerId: true },
+        });
+        if (pago?.installerId !== user.id) throw forbidden("Solo podés ver el presupuesto de tus obras");
+      }
       return presupuestoManoDeObra(projectId);
     },
   );

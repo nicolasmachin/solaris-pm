@@ -167,16 +167,64 @@ Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito
 
 ## 5 · Planificación, cuadrillas y costos
 
-*A completar con el gerente de Operaciones:* cómo se arma la semana de obras, cómo se asignan las cuadrillas propias y cuándo se usa un instalador tercerizado, qué se controla de los costos de cada obra y cómo se paga a los instaladores.
+### La semana del gerente de Operaciones
 
-### Una semana de trabajo del gerente de Operaciones
+Si todo sigue el procedimiento, el gerente de Operaciones no tiene que inventar la planificación: **su trabajo es velar por que el procedimiento se cumpla**.
 
-*Propuesta armada a partir del procedimiento, a confirmar con el gerente de Operaciones.*
-
-- **Todos los días:** mira qué proyectos entraron a Validación y les agenda la fecha tentativa ese mismo día; revisa qué informes del capataz vencen y qué fechas tiene que confirmar.
+- **Todos los días:** a cada proyecto que entra a Validación le agenda la fecha tentativa **ese mismo día**. A cada uno que ya tiene el informe del capataz le confirma la fecha definitiva, como mucho 2 días hábiles después, y lo pasa a Ingeniería Final.
+- **Una vez por semana, preferentemente el viernes:** coordina con los capataces el trabajo de la semana siguiente, para que cada uno sepa qué obras tiene. Ese mismo día revisa el calendario de las próximas semanas, detecta qué fechas confirmadas están en riesgo y, con el área que se está atrasando, busca cómo sostenerlas. Lo que no se puede sostener lo reprograma en Voltia PM, con su motivo.
+- **En la reunión de coordinación de Operaciones con Gerencia, los viernes:** rinde cuentas de cómo viene la planificación de la semana siguiente. Por eso la coordinación con los capataces tiene que estar hecha antes de esa reunión.
 - **Antes de cada obra:** confirma con Logística que el material va a estar listo y con el capataz que la cuadrilla está asignada.
 - **Al terminar cada obra:** revisa que la documentación esté completa y marca la obra como pronta.
-- **Una vez por semana:** mira el calendario de las próximas semanas y detecta qué fechas confirmadas están en riesgo. Con el área que se está atrasando, busca cómo sostenerlas. Lo que no se puede sostener lo reprograma en Voltia PM, con su motivo.
+
+### Las cuadrillas
+
+- **La cuadrilla propia:** un capataz y sus peones. Si el trabajo lo pide, el gerente de Operaciones puede sumar gente.
+- **Las cuadrillas tercerizadas:** empresas instaladoras que trabajan para Voltia, cada una en su zona. Hoy hay una para Montevideo y Canelones y otra para el litoral oeste (San José, Colonia, Soriano, Flores y Río Negro). La idea es sumar más.
+- **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso.
+
+### Cuadrilla propia o tercerizada
+
+**Lo decide el gerente de Operaciones, con su criterio**, siguiendo estas reglas:
+
+> **Primero se llena la agenda de la cuadrilla propia.**
+
+La cuadrilla propia cobra sueldo haya obra o no. No se le da trabajo a un tercerizado mientras la cuadrilla propia está sin trabajo.
+
+- **Las obras grandes o complejas** las hace la cuadrilla propia.
+- **Las obras estándar o chicas, y las del interior**, van a una cuadrilla tercerizada.
+- **En el litoral oeste**, las obras van a la tercerizada de esa zona, salvo que sea una obra grande: esa la puede hacer la cuadrilla propia.
+- **Las obras chicas en Montevideo y Canelones** van a la tercerizada de esa zona.
+- En todos los casos depende de **qué equipo tiene lugar** en la agenda.
+
+### Cómo se trabaja con un tercerizado
+
+**Voltia contrata a la empresa, no a su gente.** El tercerizado contrata a los trabajadores que necesita para la obra, y Voltia no se mete en esa relación. Lo que sí le exige es el estándar de calidad y el de seguridad.
+
+**El presupuesto no se negocia.** El monto de mano de obra de cada obra ya está fijado en el costeo de la venta. Antes de agendar la obra, el gerente de Operaciones **se lo informa al tercerizado** y el tercerizado acepta o no. Si acepta, se agenda con su equipo, y el pago queda pendiente a su nombre (ver «Pagos a instaladores» en el capítulo 7). El gerente de Operaciones no tiene margen para negociar: **pagar más lo autoriza solo Gerencia**.
+
+En Voltia PM el monto está en la subetapa **Presupuesto al instalador tercerizado** de Validación de Operaciones: se tilda cuando se le informó y cuando aceptó. Si la obra va con la cuadrilla propia, la subetapa se marca **No aplica**.
+
+**Cómo se le paga:** el **50 % al arrancar la obra** y el **50 % al terminarla**. La orden de pago la da el responsable de Administración y Finanzas o Gerencia, cuando en Voltia PM la etapa de Ejecución de obra figura terminada. Cada pago se registra en Finanzas, y el tercerizado ve en **Mis cobros** lo que cobró y lo que le falta cobrar.
+
+**La calidad:** al evaluar la obra terminada se le pueden pedir correcciones si no quedó como se espera.
+
+> *En definición:* el estándar de calidad escrito que se le exige a cada tercerizado.
+
+**La seguridad es innegociable, también con los tercerizados.** Si a un trabajador de un tercerizado le pasa algo en una obra de Voltia, Voltia también responde. Por eso, todos los meses, se le pide a cada tercerizado la documentación que demuestra que tiene a su gente en regla: el certificado del BPS al día, el recibo de los aportes, la póliza de accidentes de trabajo del BSE vigente para todos los que van a la obra, la planilla de trabajo y los recibos de sueldo. Si no la presenta, se le puede retener el pago.
+
+> *En definición:* el plan de seguridad, que se está armando con un técnico prevencionista. Con ese plan se va a capacitar a la cuadrilla propia y a los tercerizados, y va a ser parte de lo que se le exige a cada tercerizado.
+
+> *Por armar:* el contrato entre Voltia y cada instalador tercerizado. Va como anexo de este manual.
+
+### Los costos de cada obra
+
+**Los controla Finanzas.** Los costos de cada obra quedan definidos cuando se presupuesta la venta, en el costeo. Si después aparece un gasto variable de esa obra, se carga en Finanzas asignado a la obra y se suma a su costeo. Lo que se compra a los proveedores habituales va por el camino normal de las compras.
+
+**Un gasto que no estaba previsto:**
+
+- **Hasta USD 200** lo autoriza el gerente de Operaciones.
+- **Más de USD 200** lo autoriza Gerencia.
 
 ## 6 · Las reglas de Operaciones
 
@@ -753,7 +801,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 10 de octubre de 2026 | Las compras no pasan por una aprobación de Finanzas por ahora; todo gasto queda registrado y auditable. |
+| 0.9 | 10 de octubre de 2026 | Las compras no pasan por una aprobación de Finanzas por ahora; todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |

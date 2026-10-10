@@ -65,7 +65,7 @@ agendar. Para eso, Validación de Operaciones tiene la subetapa **"Presupuesto a
 instalador tercerizado"** (`PRESUPUESTO_MANO_DE_OBRA` en
 `pipeline-definitions.ts`), con el panel `PresupuestoManoDeObraPanel` en el
 `StageDrawer`. El dato sale de `GET /projects/:projectId/mano-de-obra`
-(permiso **PAGOS_INSTALADOR:VIEW**: OPERACIONES:VIEW lo tienen casi todos los roles, asesores incluidos, y el costo de mano de obra no es para todos) →
+(lo ve quien pasa `canSeeAll()` —FINANZAS:VIEW o PAGOS_INSTALADOR:EDIT—: el gerente de Operaciones, Finanzas y Admin, decisión de Nicolás del 10-oct-2026; para eso el script le da a GERENTE_OPERACIONES PAGOS_INSTALADOR:EDIT, que en este módulo solo significa "ver todos". El tercerizado, que tiene PAGOS_INSTALADOR:VIEW para Mis cobros, solo ve el de una obra cuyo pago ya es suyo. No va con OPERACIONES:VIEW: lo tienen casi todos los roles, asesores incluidos) →
 `presupuestoManoDeObra()`: si el pago ya existe manda su `montoUsd` (puede estar
 corregido a mano), si no, el de la propuesta ganadora calculado en el momento
 con `buscarManoDeObraPropuesta()`, la misma búsqueda que usa

@@ -558,7 +558,7 @@ function SubstageRow({
 
             {/* El presupuesto que el gerente le informa al instalador tercerizado */}
             {substage.name === "Presupuesto al instalador tercerizado" && (
-              <CanAccess module="PAGOS_INSTALADOR" action="VIEW">
+              <CanAccess module="PAGOS_INSTALADOR" action="EDIT">
                 <PresupuestoManoDeObraPanel projectId={projectId} />
               </CanAccess>
             )}

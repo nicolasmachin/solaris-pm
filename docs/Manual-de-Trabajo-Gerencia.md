@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.11 · del 10/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.8 — 10 de octubre de 2026· *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -82,6 +82,38 @@ que nadie sabe cuál es.
 
 **A qué manuales afecta.** Al PGT, al de Operaciones (con Logística), al de
 Ingeniería, al de Ventas, al de Experiencia Solar y al de Finanzas.
+
+### Cuadrillas tercerizadas: primero la propia, presupuesto sin negociación
+
+**Qué se decidió.**
+
+- **Primero se llena la agenda de la cuadrilla propia.** No se le da trabajo a un
+  tercerizado mientras la cuadrilla propia está sin trabajo. Las obras grandes o
+  complejas son de la propia; las estándar, chicas o del interior, de los
+  tercerizados, cada uno en su zona.
+- **El presupuesto de mano de obra no se negocia.** Sale del costeo de la venta;
+  el gerente de Operaciones se lo informa al tercerizado antes de agendar, y el
+  tercerizado acepta o no. Pagar más lo autoriza solo Gerencia.
+- **Se le paga el 50 % al arrancar la obra y el 50 % al terminarla.** La orden la
+  da el responsable de Administración y Finanzas o Gerencia.
+- **Un gasto de obra no previsto** lo autoriza el gerente de Operaciones hasta
+  USD 200; por encima, Gerencia.
+- **Voltia contrata a la empresa, no a su gente**, pero le exige el estándar de
+  calidad y el de seguridad, y todos los meses la documentación que demuestra que
+  tiene a su gente en regla.
+
+**Por qué.** La cuadrilla propia cobra sueldo haya obra o no: darle trabajo a un
+tercerizado mientras está parada es pagar dos veces. El presupuesto sin
+negociación cuida el margen que se fijó al vender. Y si a un trabajador de un
+tercerizado le pasa algo en una obra de Voltia, Voltia también responde: pedir
+la documentación todos los meses es lo que la protege.
+
+**Desde cuándo rige.** 10 de octubre de 2026.
+
+**En definición.** El estándar de calidad escrito, el plan de seguridad (con un
+técnico prevencionista) y el contrato con cada tercerizado.
+
+**A qué manuales afecta.** Al de Operaciones y al de Finanzas.
 
 ### Los mantenimientos y el soporte son de Operaciones
 
@@ -339,6 +371,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.8 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia, se paga 50 % y 50 %, y un gasto no previsto lo autoriza el gerente de Operaciones hasta USD 200. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
 | 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |
 | 0.9 | 9 de octubre de 2026 | Se suma a la decisión de control de deudas: el vencimiento sale del plazo negociado con cada proveedor, y ninguna factura recibida entra a la deuda sin revisión. |

@@ -5,7 +5,7 @@
  *   docker compose exec server npx tsx prisma/scripts/add-subetapa-presupuesto-tercerizado.ts          # muestra qué haría
  *   docker compose exec server npx tsx prisma/scripts/add-subetapa-presupuesto-tercerizado.ts --apply  # aplica
  *
- * Hace dos cosas:
+ * Hace tres cosas:
  *  1. La suma a la plantilla del pipeline guardada en settings (PIPELINE_TEMPLATE),
  *     si existe: sin eso, los proyectos nuevos no la crean, porque la plantilla
  *     guardada le gana al código.
@@ -13,10 +13,16 @@
  *     Las etapas ya completadas no se tocan: meterle una subetapa pendiente la
  *     reabriría.
  *
+ *  3. Le da a GERENTE_OPERACIONES el permiso PAGOS_INSTALADOR:EDIT, que hoy solo
+ *     significa "ver los pagos de todos los instaladores" (la gestión va con
+ *     FINANZAS). Sin eso no ve el presupuesto: decisión de Nicolás, 10-oct-2026,
+ *     lo ven el gerente de Operaciones, Finanzas y Admin. Reiniciar el server
+ *     después (el authorize cachea 5 minutos).
+ *
  * Idempotente: si ya está, no la vuelve a crear.
  */
 
-import { PrismaClient, SettingKey, SettingLevel, StageStatus, StageType, SubstageStatus } from "@prisma/client";
+import { Action, Module, PrismaClient, SettingKey, SettingLevel, StageStatus, StageType, SubstageStatus } from "@prisma/client";
 
 import {
   getStageDefinition,
@@ -112,6 +118,22 @@ async function main() {
         });
       }
     });
+  }
+
+  // 3. Permiso del gerente de Operaciones
+  const rol = await prisma.role.findUnique({ where: { name: "GERENTE_OPERACIONES" } });
+  if (!rol) {
+    console.log("\nRol GERENTE_OPERACIONES: no existe; no se otorga el permiso.");
+  } else {
+    const ya = await prisma.permission.findUnique({
+      where: { roleId_module_action: { roleId: rol.id, module: Module.PAGOS_INSTALADOR, action: Action.EDIT } },
+    });
+    console.log(`\nGERENTE_OPERACIONES:PAGOS_INSTALADOR:EDIT: ${ya ? "ya lo tiene" : APPLY ? "otorgado" : "a otorgar"}.`);
+    if (!ya && APPLY) {
+      await prisma.permission.create({
+        data: { roleId: rol.id, module: Module.PAGOS_INSTALADOR, action: Action.EDIT },
+      });
+    }
   }
 
   console.log(`\nProyectos con Validación abierta: ${etapas.length} · subetapas ${APPLY ? "creadas" : "a crear"}: ${creadas}`);
