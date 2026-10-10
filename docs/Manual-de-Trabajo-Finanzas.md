@@ -157,7 +157,7 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
   definir*.
 - **Comparar con el estado de cuenta de cada proveedor**: se sube el estado de
   cuenta que manda el proveedor en su ficha y Voltia PM lo compara con lo
-  cargado (ver 5.4, «Conciliación con el estado de cuenta»). **Una vez por mes, a mano**: Finanzas le pide el estado de cuenta a cada proveedor con el que tiene cuenta a crédito, lo sube y revisa las diferencias. Voltia PM no lo pide ni lo compara solo.
+  cargado (ver 5.4, «Conciliación con el estado de cuenta»). **Una vez por mes, a mano**: Finanzas le pide el estado de cuenta a cada proveedor con el que tiene cuenta a crédito, lo sube y revisa las diferencias. Voltia PM no lo pide ni lo sube solo: la comparación la hace al subirlo.
 
 ### 3.4 · El recorrido de la plata de un proyecto
 
