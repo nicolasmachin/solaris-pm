@@ -61,6 +61,8 @@ export interface FacturaRecibida {
   totalIva: number | null;
   enDgi: boolean;
   enMail: boolean;
+  enManual: boolean;
+  pdf: 'GUARDADO' | 'EN_BILLER' | 'NO';
   estado: EstadoFacturaRecibida;
   motivoDescarte: string | null;
   supplier: { id: string; nombre: string } | null;
@@ -121,6 +123,8 @@ export interface FacturaProveedorFila {
   estadoPago: string | null;
   enDgi: boolean;
   enMail: boolean;
+  enManual: boolean;
+  pdf: 'GUARDADO' | 'EN_BILLER' | 'NO' | null;
   project: { id: string; code: string; clientName: string } | null;
 }
 
@@ -203,3 +207,45 @@ export async function abrirArchivoConciliacion(id: string) {
   window.open(url, '_blank', 'noopener');
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
+
+// ─── PDF de una factura recibida ───────────────────────────────────────────
+
+/** Abre el PDF en otra pestaña. Si no hay, el error trae el motivo. */
+export async function abrirPdfFacturaRecibida(id: string) {
+  const r = await apiClient.get(`/api/finance/facturas-recibidas/${id}/pdf`, { responseType: 'blob' });
+  const url = URL.createObjectURL(r.data as Blob);
+  window.open(url, '_blank', 'noopener');
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+export const subirPdfFacturaRecibida = (id: string, file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return apiClient.post(`/api/finance/facturas-recibidas/${id}/pdf`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((r) => r.data);
+};
+
+// ─── Carga manual de una factura recibida ──────────────────────────────────
+
+export interface CargaManualBody {
+  supplierId?: string;
+  rutEmisor?: string;
+  razonSocialEmisor?: string;
+  tipoCfe: number;
+  serie: string;
+  numero: number;
+  fechaEmision: string;
+  fechaVencimiento?: string;
+  moneda: 'USD' | 'UYU';
+  total: number;
+  totalIva?: number;
+  cargarComoDeuda: boolean;
+  projectId?: string | null;
+  descripcion?: string;
+}
+
+export const cargarFacturaRecibida = (body: CargaManualBody) =>
+  apiClient.post<{ facturaId: string; movementId: string | null; candidatas: Array<{ id: string; descripcion: string; monto: number }>; sinProveedor: boolean }>(
+    '/api/finance/facturas-recibidas', body,
+  ).then((r) => r.data);

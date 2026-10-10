@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.7 · del 10/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.8 · del 10/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -519,6 +519,30 @@ cada una, la persona de Finanzas elige:
 El proveedor se reconoce **por el RUT**, nunca por el nombre. Por eso conviene
 que cada proveedor tenga su RUT cargado.
 
+**Las facturas llegan por tres caminos** y terminan en la misma bandeja: lo que
+DGI tiene registrado, lo que llegó por mail a la casilla publicada en DGI (los
+dos los trae la facturación electrónica) y **la carga a mano**. Con el botón
+**Cargar a mano** se completa proveedor (o su RUT, si todavía no está dado de
+alta), tipo de comprobante, serie, número, fecha, moneda, **total con IVA
+incluido** y, si se quiere, el IVA, el vencimiento, la obra y el PDF. La casilla
+**Cargarla como deuda ahora** la confirma en el mismo paso.
+
+**Una factura nunca se carga dos veces.** Cada comprobante se identifica por el
+RUT de quien lo emite, el tipo, la serie y el número:
+
+- Si ya está en Voltia PM, por cualquiera de los tres caminos, Voltia PM no la
+  carga y avisa por dónde llegó y en qué estado está.
+- Si se carga a mano y después la trae la facturación electrónica, se reconoce
+  como la misma.
+- Si ya había una deuda de ese proveedor cargada con **Cargar factura** (en su
+  ficha) que parece la misma —mismo número o mismo monto—, no se crea otra: queda
+  en la bandeja para vincularla.
+
+**El PDF.** Cada factura tiene **Ver PDF**. Si llegó por mail, Voltia PM se lo
+pide a la facturación electrónica y lo guarda. Si llegó solo por DGI, que no
+guarda el PDF, o si no se consiguió, aparece **Subir PDF** para cargar el que
+mandó el proveedor.
+
 ### 5.7 · Facturas de proveedores
 
 Se entra desde **Finanzas → Facturas de proveedores**. Es el registro de **todas**
@@ -526,8 +550,9 @@ las facturas de proveedores, para buscar cualquiera: las que llegaron por la
 facturación electrónica —en cualquier estado, también las descartadas y las de
 empresas sin dar de alta— y las que se cargaron a mano. Se filtra por proveedor
 (o por **Sin proveedor en el sistema**), por fechas, por origen y con un buscador.
-Cada factura muestra neto, IVA, total, vencimiento y en qué está: por revisar,
-a pagar, pagada o descartada.
+Cada factura muestra neto, IVA, total, vencimiento, por dónde llegó (DGI, mail
+o a mano), en qué está —por revisar, a pagar, pagada o descartada— y su PDF. El
+botón **Cargar factura a mano** es el mismo de la bandeja.
 
 ### 5.8 · Cobros a clientes y plan de pagos
 
@@ -997,6 +1022,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.8 | 10 de octubre de 2026 | Las facturas recibidas también se cargan a mano, con el mismo control para no cargar dos veces la misma; cada factura tiene su PDF (de la facturación electrónica o subido a mano). |
 | 0.7 | 10 de octubre de 2026 | Se responden las dudas de Gerencia: los gastos de compras no se aprueban por ahora pero quedan auditables, con la pantalla nueva Historial; el reclamo de pagos atrasados lo hace Experiencia Solar y pasará a Administración; las cuentas bancarias se concilian una vez por mes; los costos fijos los carga Finanzas desde su propia pestaña; las facturas de proveedores se cargan con IVA incluido; al marcar pagado un cobro se confirman la fecha y el monto.; la conciliación con cada proveedor se hace una vez por mes, a mano |
 | 0.6 | 10 de octubre de 2026 | Se revisa todo el manual contra Voltia PM: qué muestra cada pestaña, cómo se pagan los costos fijos y las comisiones, cómo se aplica el saldo a favor de un proveedor, la nueva conciliación con el estado de cuenta del proveedor, cómo se concilian las cuentas, de dónde sale la cotización del dólar y qué abarca el flujo de fondos. Se citan enteros los resúmenes de WhatsApp de cobros y de instaladores. Se aclara que no hay un circuito de aprobación de gastos en Voltia PM. |
 | 0.5 | 10 de octubre de 2026 | Pagos a instaladores: el pago lo genera el calendario al agendar la obra con un equipo tercerizado, a nombre de quien cobra por ese equipo; las obras de equipo propio no tienen pago aparte. |

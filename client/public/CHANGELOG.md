@@ -4,6 +4,16 @@
 
 ### 10 de octubre de 2026
 
+#### Cargar a mano las facturas que te emiten, sin duplicar
+
+- En **Cuentas por pagar → Facturas recibidas** y en **Facturas de proveedores** está **Cargar a mano**: proveedor (o su RUT si no está dado de alta), tipo, serie, número, fecha, total con IVA y, si se quiere, vencimiento, obra y el PDF.
+- Antes de cargarla se fija si **esa misma factura ya está** en Voltia PM, por la facturación electrónica o cargada antes. Si está, no la carga y avisa por dónde llegó. Si después la trae la facturación electrónica, la reconoce como la misma.
+- Si parece igual a una deuda que ya se había cargado en la ficha del proveedor, queda en la bandeja para **vincularla**, sin crear deuda nueva.
+
+#### El PDF de cada factura recibida
+
+- Cada factura recibida tiene **Ver PDF**: si llegó por mail se pide a la facturación electrónica; si no, se puede **Subir PDF**.
+
 #### Historial de Finanzas
 
 - Nueva pestaña **Historial** en Finanzas: todo lo que se cargó, cambió o borró (movimientos, cobros, pagos, proveedores, cuentas, comisiones, instaladores, facturas recibidas), **quién** lo hizo y **cuándo**.

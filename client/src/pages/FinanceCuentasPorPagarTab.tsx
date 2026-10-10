@@ -12,6 +12,8 @@ import {
   type EstadoFacturaRecibida, type FacturaRecibida, type ProveedorAPagar, type TotalesTramo,
 } from '../api/cuentasPorPagar.api';
 import { usePermission } from '../hooks/usePermission';
+import { PdfFacturaRecibida } from '../components/finance/PdfFacturaRecibida';
+import { CargarFacturaRecibidaModal } from '../components/finance/CargarFacturaRecibidaModal';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -232,8 +234,9 @@ function FilaRecibida({ f, canEdit, proveedores }: {
       <td className="px-3 py-2">
         <span className={f.esNotaCredito ? 'text-green-400' : undefined}>{f.tipoLabel}</span> {f.serie}-{f.numero}
         <span className="block text-[11px] text-[var(--color-text-muted)]">
-          {[f.enDgi && 'DGI', f.enMail && 'mail'].filter(Boolean).join(' + ')}
+          {[f.enDgi && 'DGI', f.enMail && 'mail', f.enManual && 'a mano'].filter(Boolean).join(' + ')}
         </span>
+        <span className="mt-1 block"><PdfFacturaRecibida id={f.id} pdf={f.pdf} /></span>
       </td>
       <td className="px-3 py-2 text-right tabular-nums">{fmtCurrency(f.total, f.moneda)}</td>
       <td className="px-3 py-2 text-[12px]">
@@ -312,14 +315,16 @@ function BandejaRecibidas() {
     onError: (e) => toast.error(apiErr(e) ?? 'No se pudo consultar Biller'),
   });
 
+  const [cargando, setCargando] = useState(false);
   const ultima = data?.ultimaSync;
   return (
     <section className="space-y-3">
+      {cargando && <CargarFacturaRecibidaModal onClose={() => setCargando(false)} />}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Facturas recibidas</h2>
           <p className="text-xs text-[var(--color-text-muted)]">
-            Las que los proveedores le emiten a Voltia, traídas de la facturación electrónica. Ninguna suma a la deuda hasta que se confirma.
+            Las que los proveedores le emiten a Voltia: traídas de la facturación electrónica (DGI y mail) o cargadas a mano. Ninguna suma a la deuda hasta que se confirma.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -330,6 +335,9 @@ function BandejaRecibidas() {
             <option value="DESCARTADA">Descartadas</option>
             <option value="todas">Todas</option>
           </select>
+          {canEdit && (
+            <button className={klass(btn, 'py-1.5')} onClick={() => setCargando(true)}>Cargar a mano</button>
+          )}
           {canEdit && data?.billerConfigurado && (
             <button className={klass(btn, 'flex items-center gap-1 py-1.5')} disabled={sync.isPending} onClick={() => sync.mutate()}>
               <RefreshCw className={klass('w-3.5 h-3.5', sync.isPending && 'animate-spin')} /> Buscar facturas nuevas

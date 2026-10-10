@@ -9,6 +9,8 @@ import {
   crearProveedorDesdeRut, getFacturasProveedores, type FacturaProveedorFila,
 } from '../api/cuentasPorPagar.api';
 import { usePermission } from '../hooks/usePermission';
+import { PdfFacturaRecibida } from '../components/finance/PdfFacturaRecibida';
+import { CargarFacturaRecibidaModal } from '../components/finance/CargarFacturaRecibidaModal';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -50,6 +52,7 @@ export function FinanceFacturasProveedoresTab() {
   const [hasta, setHasta] = useState('');
   const [origen, setOrigen] = useState<'todas' | 'electronica' | 'manual'>('todas');
   const [buscar, setBuscar] = useState('');
+  const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
     try {
@@ -107,7 +110,12 @@ export function FinanceFacturasProveedoresTab() {
         empresas que todavía no están dadas de alta como proveedor— y las que se cargaron a mano.
       </p>
 
+      {cargando && <CargarFacturaRecibidaModal onClose={() => setCargando(false)} />}
       <div className="flex flex-wrap gap-2">
+        {canEdit && (
+          <button className="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-[var(--color-accent-hover)]"
+            onClick={() => setCargando(true)}>Cargar factura a mano</button>
+        )}
         <select className={sel} value={proveedor} onChange={(e) => setProveedor(e.target.value)}>
           <option value="">Todos los proveedores</option>
           <option value="sin-proveedor">Sin proveedor en el sistema{sinAlta.length ? ` (${sinAlta.length})` : ''}</option>
@@ -194,9 +202,12 @@ export function FinanceFacturasProveedoresTab() {
                         <span className="block text-[11px] text-[var(--color-text-muted)]">
                           {f.origen === 'MANUAL'
                             ? 'Cargada a mano'
-                            : [f.enDgi && 'DGI', f.enMail && 'mail'].filter(Boolean).join(' + ')}
+                            : [f.enDgi && 'DGI', f.enMail && 'mail', f.enManual && 'a mano'].filter(Boolean).join(' + ')}
                           {f.descripcion && f.origen === 'MANUAL' ? ` · ${f.descripcion}` : ''}
                         </span>
+                        {f.origen === 'ELECTRONICA' && f.pdf && (
+                          <span className="mt-1 block"><PdfFacturaRecibida id={f.id} pdf={f.pdf} /></span>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-[12px]">{f.project ? `${f.project.code} · ${f.project.clientName}` : '—'}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{f.totalNeto != null ? fmtCurrency(f.totalNeto, f.moneda) : '—'}</td>

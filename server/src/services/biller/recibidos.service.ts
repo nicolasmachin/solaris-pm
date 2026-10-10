@@ -158,6 +158,33 @@ export function desdeMail(row: Obj): (Omit<CfeRecibido, "rutEmisor"> & { rutEmis
   };
 }
 
+/**
+ * El PDF de un comprobante que Biller tiene guardado (los que llegaron por
+ * mail; los que solo están en DGI no tienen PDF en Biller). Biller lo devuelve
+ * en base64, a veces entre comillas. null = Biller no lo dio.
+ *
+ * La documentación solo muestra este pedido para comprobantes emitidos: que
+ * sirva para los recibidos está sin verificar hasta tener la cuenta productiva.
+ */
+export async function bajarPdfBiller(billerId: string): Promise<Buffer | null> {
+  if (!billerConfigurado()) return null;
+  const res = await fetch(`${BASE_URL}/v2/comprobantes/pdf?id=${encodeURIComponent(billerId)}`, {
+    headers: { Authorization: `Bearer ${process.env.BILLER_TOKEN}`, "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!res.ok) return null;
+  let texto = (await res.text()).trim();
+  try {
+    const j = JSON.parse(texto);
+    if (typeof j === "string") texto = j;
+    else if (j && typeof j === "object" && typeof (j as Obj).pdf === "string") texto = (j as Obj).pdf as string;
+  } catch {
+    // No era JSON: es el base64 pelado.
+  }
+  const buf = Buffer.from(texto.replace(/^"|"$/g, ""), "base64");
+  return buf.subarray(0, 4).toString() === "%PDF" ? buf : null;
+}
+
 /** Razón social (o nombre de la persona) registrada en DGI para un RUT. */
 export async function buscarRazonSocial(rut: string): Promise<string | null> {
   if (!billerConfigurado()) return null;

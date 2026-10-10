@@ -26,6 +26,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import {
+  bajarPdfBiller,
   billerConfigurado,
   buscarRazonSocial,
   esNotaCredito,
@@ -41,7 +42,7 @@ import {
   extraerEstadoDeCuenta,
   type ResultadoConciliacion,
 } from "../services/finance/conciliacion-proveedor.service.js";
-import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
+import { deleteStoredFile, getStoredFilePath, saveBufferAsAttachment, saveUploadedFile } from "../services/file-storage.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { parseDateOnly, toDateOnlyString, todayUtc } from "../utils/dates.js";
 import { AppError, badRequest, notFound, unauthorized } from "../utils/errors.js";
@@ -130,6 +131,8 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
           totalIva: f.totalIva != null ? Number(f.totalIva) : null,
           enDgi: f.enDgi,
           enMail: f.enMail,
+          enManual: f.enManual,
+          pdf: f.pdfUrl ? "GUARDADO" : f.billerId ? "EN_BILLER" : "NO",
           estado: f.estado,
           motivoDescarte: f.motivoDescarte,
           supplier: f.supplier ? { id: f.supplier.id, nombre: f.supplier.nombre } : null,
@@ -184,6 +187,8 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
       estadoPago: FinanceMovementStatus | null;
       enDgi: boolean;
       enMail: boolean;
+      enManual: boolean;
+      pdf: "GUARDADO" | "EN_BILLER" | "NO" | null;
       project: { id: string; code: string; clientName: string } | null;
     };
     const filas: Fila[] = [];
@@ -237,6 +242,8 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
           estadoPago: f.movement?.status ?? null,
           enDgi: f.enDgi,
           enMail: f.enMail,
+          enManual: f.enManual,
+          pdf: f.pdfUrl ? "GUARDADO" : f.billerId ? "EN_BILLER" : "NO",
           project: f.movement?.project ?? null,
         });
       }
@@ -289,6 +296,8 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
           estadoPago: m.status,
           enDgi: false,
           enMail: false,
+          enManual: false,
+          pdf: null,
           project: m.project,
         });
       }
@@ -364,6 +373,59 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     return { supplierId: supplier.id, nombre, facturasAsignadas: asignadas.count };
   });
 
+  // ── PDF de una factura recibida ─────────────────────────────────────────────
+  //
+  // Si ya está guardado, se sirve. Si no y vino por mail, se le pide a Biller y
+  // se guarda. Si vino solo por DGI, Biller no lo tiene: se sube a mano.
+  const mimeDe = (url: string) =>
+    /\.pdf$/i.test(url) ? "application/pdf" : /\.png$/i.test(url) ? "image/png" : /\.webp$/i.test(url) ? "image/webp" : "image/jpeg";
+
+  app.get("/finance/facturas-recibidas/:id/pdf", ver, async (request, reply) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const f = await prisma.facturaRecibida.findUnique({ where: { id } });
+    if (!f) throw notFound("FACTURA_RECIBIDA_NOT_FOUND", "Factura recibida no encontrada");
+    let url = f.pdfUrl && fs.existsSync(getStoredFilePath(f.pdfUrl)) ? f.pdfUrl : null;
+    if (!url && f.billerId) {
+      const buf = await bajarPdfBiller(f.billerId).catch(() => null);
+      if (buf) {
+        const g = await saveBufferAsAttachment(buf, `${f.rutEmisor}-${f.serie}${f.numero}.pdf`, "application/pdf", "proveedores/recibidas");
+        await prisma.facturaRecibida.update({ where: { id }, data: { pdfUrl: g.url, pdfOrigen: "biller" } });
+        url = g.url;
+      }
+    }
+    if (!url) {
+      throw new AppError(404, "PDF_NO_DISPONIBLE", f.billerId
+        ? "Biller no devolvió el PDF de esta factura. Se puede subir a mano."
+        : "Esta factura llegó solo por DGI, que no guarda el PDF. Se puede subir a mano.");
+    }
+    reply.header("Content-Type", mimeDe(url));
+    reply.header("Content-Disposition", contentDisposition("inline", `${TIPO_CFE_LABEL[f.tipoCfe] ?? "CFE"} ${f.serie}-${f.numero}${url.slice(url.lastIndexOf("."))}`));
+    return reply.send(fs.createReadStream(getStoredFilePath(url)));
+  });
+
+  app.post("/finance/facturas-recibidas/:id/pdf", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const f = await prisma.facturaRecibida.findUnique({ where: { id } });
+    if (!f) throw notFound("FACTURA_RECIBIDA_NOT_FOUND", "Factura recibida no encontrada");
+    const part = await request.file();
+    if (!part) throw badRequest("FILE_REQUIRED", "Adjuntá el PDF de la factura");
+    if (!/\.(pdf|jpe?g|png|webp|heic|heif)$/i.test(part.filename)) {
+      throw badRequest("TIPO_NO_SOPORTADO", "Tiene que ser un PDF o una foto de la factura.");
+    }
+    const g = await saveUploadedFile(part, "proveedores/recibidas");
+    if (f.pdfUrl) await deleteStoredFile(f.pdfUrl);
+    await prisma.facturaRecibida.update({ where: { id }, data: { pdfUrl: g.url, pdfOrigen: "manual" } });
+    await createAuditEntry({
+      entityType: AuditEntityType.factura_recibida,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.file_uploaded,
+      description: `Subió el PDF de la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)}`,
+    });
+    return { ok: true };
+  });
+
   app.post("/finance/facturas-recibidas/sincronizar", editar, async () => {
     if (!billerConfigurado()) throw badRequest("BILLER_NO_CONFIGURADO", "Falta configurar la cuenta de Biller.");
     const r = await sincronizarYRegistrar();
@@ -396,17 +458,10 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     return s;
   }
 
-  app.post("/finance/facturas-recibidas/:id/confirmar", editar, async (request) => {
-    const user = ensureUser(request);
-    const { id } = z.object({ id: z.string() }).parse(request.params);
-    const body = z.object({
-      supplierId: z.string().min(1).optional(),
-      descripcion: z.string().min(1).optional(),
-      projectId: z.string().min(1).nullable().optional(),
-      fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    }).strict().parse(request.body ?? {});
+  type DatosConfirmar = { supplierId?: string; descripcion?: string; projectId?: string | null; fechaVencimiento?: string };
 
-    const f = await cargarPendiente(id);
+  /** Crea la deuda (FinanceMovement A_PAGAR) de una factura recibida pendiente. */
+  async function confirmarFactura(f: Awaited<ReturnType<typeof cargarPendiente>>, body: DatosConfirmar, userId: string): Promise<string> {
     if (esNotaCredito(f.tipoCfe)) {
       throw badRequest(
         "NOTA_CREDITO_A_MANO",
@@ -441,14 +496,14 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
           anio: venc.getUTCFullYear(),
           pagado: false,
           impactaFlujo: true,
-          creadoPorId: user.id,
+          creadoPorId: userId,
         },
       });
       await tx.facturaRecibida.update({
         where: { id: f.id },
         data: {
           estado: EstadoFacturaRecibida.CONFIRMADA, supplierId: s.id, movementId: m.id,
-          resueltaPorId: user.id, resueltaAt: new Date(),
+          resueltaPorId: userId, resueltaAt: new Date(),
         },
       });
       return { ...m, supplierNombre: s.nombre };
@@ -457,11 +512,124 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     await createAuditEntry({
       entityType: AuditEntityType.factura_recibida,
       entityId: f.id,
-      userId: user.id,
+      userId: userId,
       action: AuditAction.created,
       description: `Confirmó la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)} de ${movement.supplierNombre} por ${Number(f.total)} ${f.moneda}`,
     });
-    return { movementId: movement.id };
+    return movement.id;
+  }
+
+  app.post("/finance/facturas-recibidas/:id/confirmar", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({
+      supplierId: z.string().min(1).optional(),
+      descripcion: z.string().min(1).optional(),
+      projectId: z.string().min(1).nullable().optional(),
+      fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    }).strict().parse(request.body ?? {});
+    const f = await cargarPendiente(id);
+    return { movementId: await confirmarFactura(f, body, user.id) };
+  });
+
+  // Tercer camino de carga, además de DGI y mail: una persona carga a mano una
+  // factura que le emitieron a Voltia. Entra a la misma bandeja, con los mismos
+  // controles: si el comprobante ya está (por Biller o cargado antes) no se
+  // duplica, y si ya había una deuda cargada a mano que parece la misma, se
+  // ofrece vincularla en vez de crear otra.
+  app.post("/finance/facturas-recibidas", editar, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = z.object({
+      supplierId: z.string().min(1).optional(),
+      rutEmisor: z.string().min(1).optional(),
+      razonSocialEmisor: z.string().trim().min(1).optional(),
+      tipoCfe: z.coerce.number().int(),
+      serie: z.string().trim().min(1).max(4).transform((x) => x.toUpperCase()),
+      numero: z.coerce.number().int().positive(),
+      fechaEmision: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      moneda: z.enum(["USD", "UYU"]),
+      total: z.coerce.number().positive(),
+      totalIva: z.coerce.number().min(0).optional(),
+      cargarComoDeuda: z.boolean().default(true),
+      projectId: z.string().min(1).nullable().optional(),
+      descripcion: z.string().trim().min(1).optional(),
+    }).strict().parse(request.body);
+
+    if (!TIPO_CFE_LABEL[body.tipoCfe]) throw badRequest("TIPO_CFE_INVALIDO", "Tipo de comprobante no reconocido.");
+
+    // El RUT es la llave para no duplicar: sale del proveedor o se escribe.
+    const supplier = body.supplierId
+      ? await prisma.supplier.findFirst({ where: { id: body.supplierId, deletedAt: null } })
+      : null;
+    if (body.supplierId && !supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+    const rut = normalizarRut(body.rutEmisor) ?? normalizarRut(supplier?.rut);
+    if (!rut) throw badRequest("RUT_REQUERIDO", "Falta el RUT del proveedor que emitió la factura.");
+    if (supplier?.rut && normalizarRut(supplier.rut) !== rut) {
+      throw badRequest("RUT_NO_COINCIDE", `${supplier.nombre} tiene el RUT ${supplier.rut}, distinto del escrito.`);
+    }
+
+    const ya = await prisma.facturaRecibida.findUnique({
+      where: { rutEmisor_tipoCfe_serie_numero: { rutEmisor: rut, tipoCfe: body.tipoCfe, serie: body.serie, numero: body.numero } },
+    });
+    if (ya) {
+      const por = [ya.enDgi && "DGI", ya.enMail && "mail", ya.enManual && "carga manual"].filter(Boolean).join(" + ");
+      const estado = ya.estado === EstadoFacturaRecibida.PENDIENTE ? "está en la bandeja, por revisar"
+        : ya.estado === EstadoFacturaRecibida.CONFIRMADA ? "ya está cargada como deuda" : "fue descartada";
+      throw new AppError(409, "FACTURA_YA_CARGADA",
+        `Esa factura ya está en Voltia PM (llegó por ${por}) y ${estado}.`, { facturaId: ya.id });
+    }
+
+    const proveedorId = supplier?.id ?? (await (async () => {
+      const ss = await prisma.supplier.findMany({ where: { deletedAt: null, rut: { not: null } }, select: { id: true, rut: true } });
+      return ss.find((x) => normalizarRut(x.rut) === rut)?.id ?? null;
+    })());
+
+    const f = await prisma.facturaRecibida.create({
+      data: {
+        rutEmisor: rut,
+        razonSocialEmisor: body.razonSocialEmisor ?? supplier?.nombre ?? (await buscarRazonSocial(rut)),
+        tipoCfe: body.tipoCfe, serie: body.serie, numero: body.numero,
+        fechaEmision: parseDateOnly(body.fechaEmision),
+        fechaVencimiento: body.fechaVencimiento ? parseDateOnly(body.fechaVencimiento) : null,
+        moneda: body.moneda,
+        total: new Prisma.Decimal(body.total),
+        totalIva: body.totalIva != null ? new Prisma.Decimal(body.totalIva) : null,
+        enManual: true,
+        cargadaPorId: user.id,
+        supplierId: proveedorId,
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.factura_recibida,
+      entityId: f.id,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Cargó a mano la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)} (RUT ${rut}) por ${body.total} ${body.moneda}`,
+    });
+
+    // ¿Ya había una deuda de ese proveedor que parece la misma (cargada antes por
+    // "Cargar factura a pagar")? Entonces no se crea otra: queda en la bandeja
+    // para vincularla.
+    let candidatas: Array<{ id: string; descripcion: string; monto: number }> = [];
+    if (proveedorId) {
+      const movs = await prisma.financeMovement.findMany({
+        where: { deletedAt: null, supplierId: proveedorId, moneda: body.moneda, tipoMovimiento: TipoMovimiento.GASTO, facturaRecibida: null },
+        select: { id: true, descripcion: true, invoiceNumber: true, monto: true },
+      });
+      candidatas = movs
+        .filter((m) => (m.invoiceNumber ?? "").replace(/\D/g, "").endsWith(String(body.numero)) || Math.abs(Number(m.monto) - body.total) <= 0.01)
+        .map((m) => ({ id: m.id, descripcion: m.descripcion, monto: Number(m.monto) }));
+    }
+
+    let movementId: string | null = null;
+    if (body.cargarComoDeuda && proveedorId && candidatas.length === 0 && !esNotaCredito(body.tipoCfe)) {
+      movementId = await confirmarFactura(await cargarPendiente(f.id), {
+        supplierId: proveedorId, projectId: body.projectId, descripcion: body.descripcion, fechaVencimiento: body.fechaVencimiento,
+      }, user.id);
+    }
+    reply.code(201);
+    return { facturaId: f.id, movementId, candidatas, sinProveedor: !proveedorId };
   });
 
   app.post("/finance/facturas-recibidas/:id/vincular", editar, async (request) => {

@@ -161,8 +161,6 @@ Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito
 
 ![Reprogramar una obra con la fecha confirmada: Voltia PM pide el motivo, que le llega a Experiencia Solar.](captura:ops-calendario-reprogramar)
 
-> **Hasta que se publique la próxima versión de Voltia PM**, el botón Reprogramar todavía no pide el motivo: quien reprograma lo escribe en los **Comentarios** del proyecto y le avisa a Experiencia Solar.
-
 > **Plantilla «Reprogramación de la obra».** «Hola {nombre}, te aviso que tenemos que mover la fecha del {fecha} por {motivo}. Apenas tengamos la nueva te la confirmo — calculamos {estimación}. Perdón por el cambio.»
 
 > **Reprogramar en Voltia PM es el mecanismo.** Que Experiencia Solar tenga que pedir explicaciones es la señal de que no se usó.

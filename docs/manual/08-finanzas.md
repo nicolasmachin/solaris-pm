@@ -423,10 +423,37 @@ cualquier estado) con los GASTO con proveedor que **no** están vinculados a una
 `buscar`. Las notas de crédito van con signo negativo y los totales excluyen las
 descartadas. Devuelve además `emisoresSinAlta`.
 
+**Carga manual (tercer camino).** `POST /finance/facturas-recibidas` crea una
+`FacturaRecibida` con `enManual=true` y `cargadaPorId`:
+
+- El RUT sale del proveedor elegido o se escribe; sin RUT no se carga, porque
+  es la llave anti-duplicado.
+- Si la clave `rutEmisor+tipoCfe+serie+numero` ya existe, devuelve 409
+  `FACTURA_YA_CARGADA` diciendo por qué camino llegó y en qué estado está.
+- Si hay GASTO del proveedor sin vincular con el mismo número o monto, no
+  confirma: devuelve `candidatas` y queda PENDIENTE para vincular.
+- Si no hay candidatas y viene `cargarComoDeuda`, confirma en el mismo paso,
+  con `confirmarFactura()`, el mismo código que el botón de la bandeja.
+- La sincronización posterior con Biller hace upsert sobre la misma clave: suma
+  `enDgi` y `enMail` y no duplica (probado).
+
+**PDF.**
+
+- `GET /finance/facturas-recibidas/:id/pdf` sirve `pdfUrl` si existe. Si no, y
+  hay `billerId`, lo pide con `bajarPdfBiller()` (`/v2/comprobantes/pdf`,
+  base64; valida que empiece con `%PDF`) y lo guarda en
+  `storage/proveedores/recibidas/`. Si no hay forma, devuelve 404
+  `PDF_NO_DISPONIBLE`.
+- `POST …/pdf` (multipart) lo sube a mano (`pdfOrigen = manual`).
+- **No verificado:** que Biller dé el PDF de un comprobante *recibido*. La
+  documentación lo muestra solo para emitidos.
+
 ### Permisos
 
 | Endpoint | Permiso |
 |---|---|
+| `POST /finance/facturas-recibidas` (carga manual), `POST …/:id/pdf` | `FINANZAS:EDIT` |
+| `GET /finance/facturas-recibidas/:id/pdf` | `FINANZAS:VIEW` |
 | `GET /finance/cuentas-por-pagar`, `GET /finance/facturas-recibidas`, `GET /finance/facturas-proveedores` | `FINANZAS:VIEW` |
 | `POST /finance/facturas-recibidas/sincronizar`, `/:id/confirmar`, `/:id/vincular`, `/:id/descartar`, `/:id/reabrir`, `/crear-proveedor` | `FINANZAS:EDIT` |
 

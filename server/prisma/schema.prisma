@@ -5370,7 +5370,15 @@ model FacturaRecibida {
   // De qué camino llegó (pueden ser los dos).
   enDgi             Boolean               @default(false)
   enMail            Boolean               @default(false)
+  // Cargada a mano en la bandeja (tercer camino, además de DGI y mail). Si
+  // después la trae Biller, se reconoce por RUT+tipo+serie+número y no se duplica.
+  enManual          Boolean               @default(false)
+  cargadaPorId      String?
   billerId          String?
+  // PDF de la factura en el storage: bajado de Biller (si vino por mail) o
+  // subido a mano. null = todavía no se pidió o no hay.
+  pdfUrl            String?
+  pdfOrigen         String?
   estado            EstadoFacturaRecibida @default(PENDIENTE)
   motivoDescarte    String?
   supplierId        String?
