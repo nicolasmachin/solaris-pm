@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.7 · vigente desde el 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.7 · del 09/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
