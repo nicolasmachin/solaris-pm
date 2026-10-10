@@ -6,6 +6,8 @@ export interface Team {
   color: string;
   type: "PROPIO" | "TERCERIZADO";
   notes: string | null;
+  /** Quién cobra la mano de obra de las obras de este equipo (solo tercerizados). */
+  installerUserId: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -23,6 +25,7 @@ export async function createTeam(body: {
   color?: string;
   type: "PROPIO" | "TERCERIZADO";
   notes?: string | null;
+  installerUserId?: string | null;
 }): Promise<Team> {
   const { data } = await apiClient.post<Team>("/api/teams", body);
   return data;
@@ -30,7 +33,13 @@ export async function createTeam(body: {
 
 export async function patchTeam(
   id: string,
-  body: { name?: string; color?: string; type?: "PROPIO" | "TERCERIZADO"; notes?: string | null },
+  body: {
+    name?: string;
+    color?: string;
+    type?: "PROPIO" | "TERCERIZADO";
+    notes?: string | null;
+    installerUserId?: string | null;
+  },
 ): Promise<Team> {
   const { data } = await apiClient.patch<Team>(`/api/teams/${id}`, body);
   return data;

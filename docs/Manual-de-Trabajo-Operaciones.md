@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.7 — 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.8 — 10 de octubre de 2026 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -358,6 +358,10 @@ En **Capacitación** (menú de usuario) están los videos de puesta en marcha de
 ### Pagos a instaladores
 
 Es una pantalla aparte, **Pagos a instaladores**: por obra, el instalador, la fecha, cuánto se pagó, el saldo y el estado (pendiente, parcial o pagado). El instalador tercerizado ve sus cobros en **Mis cobros**.
+
+**El pago lo genera el calendario.** Cuando el gerente de Operaciones agenda una obra con un equipo **tercerizado**, el pago de la mano de obra aparece solo, a nombre de la persona que cobra por ese equipo y con la fecha de la obra. Si la obra se cambia a un equipo **propio** o se saca del calendario, el pago desaparece: los equipos propios no se pagan aparte. Lo que ya se le pagó a un instalador no se toca aunque cambie la agenda. Por eso **la obra se agenda con el equipo que de verdad la va a hacer**: es lo que define a quién se le debe.
+
+Quién cobra por cada equipo tercerizado se elige una sola vez, en **Admin → Equipos**.
 
 ![Los pagos a instaladores: por obra, cuánto se pagó, el saldo y el estado.](captura:ops-pagos-instalador)
 
@@ -751,6 +755,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: al agendar una obra con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo; con equipo propio no hay pago aparte. La obra se agenda con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que un feriado corre todo un día. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |
 | 0.5 | 7 de octubre de 2026 | En la pestaña Compras: la lista se ve por secciones, y un material con cantidad en cero es uno que Ingeniería todavía no completó, que no sale en el PDF ni en el consolidado de compras. |

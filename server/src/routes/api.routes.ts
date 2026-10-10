@@ -95,7 +95,10 @@ import {
   deleteObraPhotoFiles,
 } from "../services/file-storage.service.js";
 import { convertirHeicABufferJpeg, esHeic } from "../services/heic.service.js";
-import { createInstallerPaymentForProject } from "../services/installer-payment/installer-payment.service.js";
+import {
+  syncInstallerPaymentForProject,
+  syncInstallerPaymentsForTeam,
+} from "../services/installer-payment/installer-payment.service.js";
 import {
   deleteMaterialPhotoFile,
   materialPhotoAbsolutePath,
@@ -7915,28 +7918,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       request.log.error({ err, leadId: lead.id, projectId: project.id }, "move lead media failed");
     }
 
-    // Deuda de mano de obra con el instalador: se congela acá, al ganarse el
-    // proyecto, con lo que decía la propuesta ganadora más IVA. Nace SIN
-    // instalador — a quién se le paga se decide después, a mano, desde Finanzas.
-    //
-    // Va en su propio try igual que lo de arriba: si esto falla, el proyecto ya
-    // existe y el pago se puede cargar a mano; tirar la conversión entera sería
-    // mucho peor.
-    try {
-      const { created, payment } = await createInstallerPaymentForProject({
-        projectId: project.id,
-        userId: user.id,
-        leadId: lead.id,
-      });
-      if (created && payment.origenManual) {
-        request.log.warn(
-          { leadId: lead.id, projectId: project.id },
-          "installer payment sin monto: la propuesta ganadora no trae mano de obra",
-        );
-      }
-    } catch (err) {
-      request.log.error({ err, leadId: lead.id, projectId: project.id }, "create installer payment failed");
-    }
+    // El pago al instalador ya NO se crea al ganar: lo crea el calendario al
+    // agendar la obra con un equipo tercerizado (syncInstallerPaymentForProject).
+    // Crearlo acá dejaba "sin asignar" también las obras de equipo propio.
 
     // Copia la propuesta comercial (última versión publicada) como adjunto del
     // proyecto. La v2 guarda los PDF sueltos en disco (sin FileAttachment), por
@@ -8234,6 +8218,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         .default("#378ADD"),
       type: z.nativeEnum(TeamType).default(TeamType.PROPIO),
       notes: z.string().trim().nullable().optional(),
+      installerUserId: z.string().min(1).nullable().optional(),
     })
     .strict();
 
@@ -8247,6 +8232,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         .optional(),
       type: z.nativeEnum(TeamType).optional(),
       notes: z.string().trim().nullable().optional(),
+      installerUserId: z.string().min(1).nullable().optional(),
     })
     .strict();
 
@@ -8256,6 +8242,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     color: string;
     type: TeamType;
     notes: string | null;
+    installerUserId: string | null;
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
@@ -8266,10 +8253,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
       color: t.color,
       type: t.type,
       notes: t.notes,
+      installerUserId: t.installerUserId,
       createdAt: serializeDate(t.createdAt),
       updatedAt: serializeDate(t.updatedAt),
       deletedAt: serializeDate(t.deletedAt),
     };
+  }
+
+  // Quién cobra por un equipo tercerizado: tiene que ser un usuario vivo. No se
+  // valida el rol a propósito (la matriz de permisos no está atada a un nombre de
+  // rol); la pantalla ofrece los instaladores tercerizados.
+  async function assertInstallerUser(installerUserId: string | null | undefined) {
+    if (!installerUserId) return;
+    const u = await prisma.user.findFirst({ where: { id: installerUserId, deletedAt: null }, select: { id: true } });
+    if (!u) throw badRequest("INSTALLER_NOT_FOUND", "El instalador elegido no existe.");
   }
 
   // ─── Pipeline template (config del pipeline precargado al crear proyecto) ────
@@ -9207,11 +9204,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializeTeam(reactivated);
     }
 
+    await assertInstallerUser(body.installerUserId);
     const team = await prisma.team.create({
       data: {
         name: body.name,
         color: body.color,
+        type: body.type,
         notes: body.notes ?? null,
+        installerUserId: body.type === TeamType.TERCERIZADO ? (body.installerUserId ?? null) : null,
         createdBy: user.id,
       },
     });
@@ -9243,7 +9243,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     }
 
-    const updated = await prisma.team.update({ where: { id }, data: body });
+    await assertInstallerUser(body.installerUserId);
+    // Un equipo propio no tiene a quién pagarle aparte.
+    const finalType = body.type ?? existing.type;
+    const data = finalType === TeamType.PROPIO ? { ...body, installerUserId: null } : body;
+    const updated = await prisma.team.update({ where: { id }, data });
 
     // Si cambió el name, color o tipo, sincronizar el snapshot en installation_schedules
     const nameChanged = body.name !== undefined && body.name !== existing.name;
@@ -9260,6 +9264,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
+    // Cambió quién cobra o el tipo: los pagos de las obras agendadas con este
+    // equipo se reasignan (los que ya tienen entregas no se tocan).
+    if (updated.installerUserId !== existing.installerUserId || typeChanged) {
+      try {
+        await syncInstallerPaymentsForTeam({ teamId: id, userId: user.id });
+      } catch (err) {
+        request.log.error({ err, teamId: id }, "sync installer payments for team failed");
+      }
+    }
+
     await createAuditEntriesForChanges({
       entityType: AuditEntityType.team,
       entityId: id,
@@ -9267,7 +9281,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       userId: user.id,
       oldData: existing as unknown as Record<string, unknown>,
       newData: updated as unknown as Record<string, unknown>,
-      labels: { name: "nombre", color: "color", notes: "notas" },
+      labels: { name: "nombre", color: "color", notes: "notas", installerUserId: "quién cobra" },
       formatter: ({ label, oldValue, newValue }) =>
         `Actualizó ${label} del equipo ${existing.name} de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
     });
@@ -9612,6 +9626,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return teams.map((t) => ({ id: t.id, teamName: t.name, teamColor: t.color }));
   });
 
+  // El pago al instalador sigue a la agenda de obra: equipo tercerizado → pago
+  // asignado a quien cobra por ese equipo; equipo propio o sin agenda → no hay
+  // pago aparte. Best-effort: si falla, la agenda ya quedó guardada y el pago se
+  // puede corregir desde Pagos a instaladores; tirar el request sería peor.
+  async function syncPagoInstalador(
+    projectId: string,
+    userId: string,
+    log: import("fastify").FastifyRequest["log"],
+    opts: { desagendada?: boolean } = {},
+  ) {
+    try {
+      await syncInstallerPaymentForProject({ projectId, userId, desagendada: opts.desagendada });
+    } catch (err) {
+      log.error({ err, projectId }, "sync installer payment failed");
+    }
+  }
+
   app.post("/calendar", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
     const user = ensureUser(request);
     const body = calendarCreateSchema.parse(request.body);
@@ -9699,6 +9730,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(body.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
+    await syncPagoInstalador(created.projectId, user.id, request.log);
     reply.code(201);
     return { data: serializeSchedule(created), warning: null };
   });
@@ -9792,6 +9824,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
     }
 
+    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return serializeSchedule(updated);
   });
 
@@ -9941,6 +9974,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
+    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return { data: serializeSchedule(updated), warning: null };
   });
 
@@ -10009,6 +10043,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
+    await syncPagoInstalador(updated.projectId, user.id, request.log);
     reply.code(201);
     return serializeSchedule(updated);
   });
@@ -10085,6 +10120,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
     }
 
+    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return serializeSchedule(updated);
   });
 
@@ -10143,6 +10179,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
     }
 
+    await syncPagoInstalador(updated.projectId, user.id, request.log);
     return serializeSchedule(updated);
   });
 
@@ -10181,6 +10218,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, forceRecalculate);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
+    await syncPagoInstalador(existing.projectId, user.id, request.log, { desagendada: true });
     return { success: true };
   });
 

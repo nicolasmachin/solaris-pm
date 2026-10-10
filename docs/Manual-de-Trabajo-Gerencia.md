@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.9 — 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.10 — 10 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -252,6 +252,28 @@ la etapa de cobrar sin que nadie sepa qué cobrar ni cuándo.
 **A qué manuales afecta.** Al PGT y a los manuales de trabajo de Ventas y de
 Finanzas.
 
+### Al instalador tercerizado se le debe la obra que se le agenda
+
+**Qué se decidió.** El pago de la mano de obra a un instalador tercerizado
+nace cuando la obra se agenda en el calendario con su equipo, a nombre de la
+persona que cobra por ese equipo. Las obras de equipos propios no se pagan
+aparte. Si la obra cambia de equipo o se saca del calendario, el pago la sigue,
+salvo que ya se le haya pagado algo.
+
+**Por qué.** Antes el pago se generaba al cerrar la venta, para todas las
+obras, y después alguien tenía que acordarse de asignarlo a mano. Quedaban
+pendientes de asignar obras de equipos propios, que no correspondía pagar, y
+faltaban obras de tercerizados que nadie había cargado. Atarlo al calendario
+hace que lo que se debe sea lo que realmente se agendó.
+
+**Desde cuándo rige.** 10 de octubre de 2026, para las obras de ahí en
+adelante. A las obras tercerizadas anteriores que no tenían pago cargado no se
+les genera: se pagaron por fuera de Voltia PM. Si alguna está pendiente, se
+carga a mano.
+
+**A qué manuales afecta.** A los manuales de trabajo de Operaciones y de
+Finanzas.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -283,6 +305,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |
 | 0.9 | 9 de octubre de 2026 | Se suma a la decisión de control de deudas: el vencimiento sale del plazo negociado con cada proveedor, y ninguna factura recibida entra a la deuda sin revisión. |
 | 0.8 | 9 de octubre de 2026 | Se registra que lo que se debe y lo que nos deben se controla con documentos reales: las compras de materiales no se proyectan (la deuda con un proveedor entra con su factura) y ningún proyecto sale del onboarding sin saber cómo y cuándo paga el cliente. |
 | 0.7 | 9 de octubre de 2026 | Se registra que la fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio deja registrado el motivo, lo explica el área que se atrasó y Gerencia lo revisa una vez por mes. Queda en definición si la fecha lleva un margen. |

@@ -10,6 +10,7 @@ import { apiClient } from "../api/axios";
 import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
 import { getSubcategories, createSubcategory, deleteSubcategory } from "../api/finance.api";
 import { getTeams, createTeam, patchTeam, deleteTeam, type Team } from "../api/teams.api";
+import { getAssignableUsers } from "../api/users.api";
 import {
   getRoles,
   getPermissionsCatalog,
@@ -1843,9 +1844,17 @@ const TEAM_TYPE_OPTIONS: Array<{ value: Team["type"]; label: string }> = [
   { value: "TERCERIZADO", label: "Tercerizado" },
 ];
 
+// Instaladores tercerizados: los que pueden cobrar por un equipo. Mismo criterio
+// que el selector de Pagos a instaladores.
+function useInstaladores() {
+  const { data = [] } = useQuery({ queryKey: ["assignable-users"], queryFn: getAssignableUsers });
+  return useMemo(() => data.filter((u) => u.role === "INSTALADOR_TERCERIZADO"), [data]);
+}
+
 function TabEquipos() {
   const qc = useQueryClient();
   const { data: teams = [], isLoading } = useQuery({ queryKey: ["admin-teams"], queryFn: () => getTeams() });
+  const instaladores = useInstaladores();
   const [editing, setEditing] = useState<Team | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Team | null>(null);
@@ -1920,7 +1929,18 @@ function TabEquipos() {
                     </span>
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
-                    {team.type === "PROPIO" ? "Equipo propio" : "Tercerizado"}
+                    {team.type === "PROPIO" ? (
+                      "Equipo propio"
+                    ) : (
+                      <>
+                        Tercerizado
+                        <span style={{ display: "block", fontSize: 11, color: team.installerUserId ? "var(--color-text-muted)" : "var(--color-warning-text)" }}>
+                          {team.installerUserId
+                            ? `Cobra: ${instaladores.find((u) => u.id === team.installerUserId)?.name ?? "—"}`
+                            : "Sin quién cobra"}
+                        </span>
+                      </>
+                    )}
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
                     {team.notes ?? "—"}
@@ -1981,13 +2001,21 @@ function TeamModal({ team, onClose, onSaved }: { team: Team | null; onClose: () 
   const [color, setColor] = useState(team?.color ?? TEAM_COLORS[0]!);
   const [type, setType] = useState<Team["type"]>(team?.type ?? "PROPIO");
   const [notes, setNotes] = useState(team?.notes ?? "");
+  const [installerUserId, setInstallerUserId] = useState(team?.installerUserId ?? "");
   const [error, setError] = useState<string | null>(null);
+  const instaladores = useInstaladores();
 
   const mut = useMutation({
-    mutationFn: () =>
-      isEdit
-        ? patchTeam(team!.id, { name: name.trim(), color, type, notes: notes.trim() || null })
-        : createTeam({ name: name.trim(), color, type, notes: notes.trim() || null }),
+    mutationFn: () => {
+      const body = {
+        name: name.trim(),
+        color,
+        type,
+        notes: notes.trim() || null,
+        installerUserId: type === "TERCERIZADO" ? installerUserId || null : null,
+      };
+      return isEdit ? patchTeam(team!.id, body) : createTeam(body);
+    },
     onSuccess: () => {
       toast.success(isEdit ? "Equipo actualizado" : "Equipo creado");
       onSaved();
@@ -2062,6 +2090,22 @@ function TeamModal({ team, onClose, onSaved }: { team: Team | null; onClose: () 
               ))}
             </select>
           </div>
+          {type === "TERCERIZADO" && (
+            <div>
+              <label style={labelStyle}>Quién cobra la mano de obra</label>
+              <select value={installerUserId} onChange={(e) => setInstallerUserId(e.target.value)} style={inputStyle}>
+                <option value="">— Sin asignar —</option>
+                {instaladores.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              <p style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4 }}>
+                Al agendar una obra con este equipo, el pago de la mano de obra se le asigna a esta persona en Pagos a instaladores.
+              </p>
+            </div>
+          )}
           <div>
             <label style={labelStyle}>Notas (opcional)</label>
             <textarea

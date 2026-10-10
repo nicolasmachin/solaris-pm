@@ -593,6 +593,7 @@ model User {
   installerPayments              InstallerPayment[]             @relation("InstallerPaymentInstaller")
   agendaEventosCreados           AgendaEvento[]                 @relation("AgendaEventoCreatedBy")
   installerPaymentsCreated       InstallerPayment[]             @relation("InstallerPaymentCreatedBy")
+  teamsComoInstalador            Team[]                         @relation("TeamInstaller")
   traspasosComoModal             Traspaso[]                     @relation("TraspasoModalUsuario")
   traspasosConfirmados           Traspaso[]                     @relation("TraspasoConfirmadoPor")
   traspasosRecibidos             TraspasoDestinatario[]         @relation("TraspasoDestinatarioUsuario")
@@ -2300,6 +2301,13 @@ model Team {
   color     String    @default("#378ADD")
   type      TeamType  @default(PROPIO)
   notes     String?
+
+  // Quién cobra la mano de obra de las obras de este equipo (solo TERCERIZADO).
+  // Es lo que ata el calendario con los pagos a instaladores: al agendar una
+  // obra con este equipo, el pago se crea asignado a este usuario. Antes no
+  // había vínculo entre el equipo y la persona, y el pago se asignaba a mano.
+  installerUserId String?
+  installer       User?   @relation("TeamInstaller", fields: [installerUserId], references: [id], onDelete: SetNull)
   createdBy String?
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)

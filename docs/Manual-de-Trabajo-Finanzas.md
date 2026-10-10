@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.4 — 9 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.5 — 10 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -163,7 +163,13 @@ funciona hoy, porque varios cambiaron desde que se armaron.
 - Facturación al cliente: qué proyectos llevan factura y cuáles quedan pendientes de emitir
 - Facturas y pagos a proveedores, y cómo se aplica un pago a las facturas
 - Comisiones del asesor: cómo se generan al ganar la venta y cómo se pagan
-- Pagos a instaladores
+- Pagos a instaladores. Ya establecido: el pago de la mano de obra **no se
+  asigna a mano**. Lo genera el calendario cuando Operaciones agenda la obra con
+  un equipo tercerizado, a nombre de la persona que cobra por ese equipo (se
+  configura una vez, en Admin → Equipos). Las obras de equipo propio no tienen
+  pago aparte. Finanzas registra lo que se va pagando y, si hace falta, corrige
+  el monto o el instalador. Lo que ya tiene pagos no cambia aunque se mueva la
+  agenda.
 - Estado de resultados (es de caja) y flujo de fondos, con los costos fijos proyectados
 - Indicadores de Finanzas en el reporte semanal
 
@@ -173,6 +179,7 @@ funciona hoy, porque varios cambiaron desde que se armaron.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.5 | 10 de octubre de 2026 | Pagos a instaladores: el pago lo genera el calendario al agendar la obra con un equipo tercerizado, a nombre de quien cobra por ese equipo; las obras de equipo propio no tienen pago aparte. |
 | 0.4 | 9 de octubre de 2026 | Plazo y límite de crédito por proveedor; las facturas de proveedores llegan solas de la facturación electrónica a una bandeja que Finanzas revisa; nuevas pantallas Cuentas por pagar y Facturas de proveedores. |
 | 0.3 | 9 de octubre de 2026 | Dos lineamientos nuevos: las compras de materiales ya no se proyectan (la deuda con un proveedor entra con su factura) y ningún proyecto sale del onboarding sin la modalidad de pago y lo que pide. |
 | 0.2 | 9 de octubre de 2026 | Primer lineamiento: las aprobaciones de gastos no frenan una obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Finanzas, el atraso lo explica Finanzas. La lista de Cobros muestra todos los proyectos vendidos, también los ya habilitados: se filtra solo por cómo está el pago. |

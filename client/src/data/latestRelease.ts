@@ -23,6 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.2",
+  date: "10 de octubre de 2026",
+  sections: [
+    {
+      title: "El pago al instalador se genera al agendar la obra",
+      items: [
+        "Al agendar una obra con un equipo tercerizado, el pago de la mano de obra aparece solo en Pagos a instaladores, a nombre de quien cobra por ese equipo. Ya no hay que asignarlo a mano.",
+        "Las obras de equipos propios ya no quedan como pagos pendientes de asignar.",
+        "Si la obra cambia de equipo, de fecha o sale del calendario, el pago la acompaña; lo ya pagado no se toca.",
+        "En Admin → Equipos, cada equipo tercerizado tiene quién cobra la mano de obra.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_1: Release = {
   version: "12.1",
   date: "9 de octubre de 2026",
   sections: [
@@ -491,6 +507,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.1",
+    shortDate: "9 oct",
+    highlights: RELEASE_12_1.sections.map((sec) => sec.title),
+  },
   {
     version: "12.0",
     shortDate: "8 oct",
