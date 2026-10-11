@@ -59,6 +59,10 @@ herramienta de Artifacts, con `root` en la carpeta generada.
 - `capturas.mjs` saca las pantallas que este manual usa y el de Posventa no (el
   proyecto, el Recorrido, el gabinete). Las demás se copiaron del canvas de
   Posventa.
+- `preparar-capturas-oscuras.mjs` deja las capturas del PGT y de Operaciones
+  (en modo oscuro) con el recorte y la medida de la maqueta. Si se cambia un
+  recorte del capítulo 7 del PGT, hay que revisar dónde caen sus números
+  (`PANTALLAS` en `contenido.py`).
 - `preparar-imagenes.mjs` lleva fotos y capturas a su medida. Usa fotos
   distintas a las del de Posventa (portada, portadillas y cierre) para que no
   se vean iguales.

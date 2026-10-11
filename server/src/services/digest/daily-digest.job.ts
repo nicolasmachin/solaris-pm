@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { prisma } from "../../lib/prisma.js";
 import { sendEmail } from "../email.service.js";
 import { emailDailyDigest, type DigestGroup } from "../email.templates.js";
+import { contratosPendientesPorAsesor } from "./contratos-pendientes.service.js";
 import { getDigestSendHour, getEnabledByRole } from "./digest-config.service.js";
 import { enviarDigestExperiencia } from "./experiencia-digest.service.js";
 
@@ -14,6 +15,11 @@ import { enviarDigestExperiencia } from "./experiencia-digest.service.js";
 // (matriz opt-in): sin config, un rol no recibe nada. La hora de envío también
 // es configurable (una sola para todos). Usuarios sin novedades habilitadas no
 // reciben nada. Los clientes (rol CLIENT) nunca entran al digest.
+//
+// Además, a cada asesor le suma la sección "Contratos pendientes de firma": los
+// proyectos suyos con contrato generado y sin el firmado cargado. Esa sección NO
+// depende de la matriz por rol (es del asesor de la venta, sea cual sea su rol)
+// y alcanza por sí sola para que salga el mail aunque no haya novedades.
 
 function getVentanaHoras(): number {
   const raw = Number(process.env.DIGEST_VENTANA_HORAS);
@@ -47,7 +53,9 @@ export async function enviarDigestDiario(
     orderBy: { createdAt: "asc" },
   });
 
-  if (notifs.length === 0) return { users: 0, emails: 0, notifs: 0 };
+  const contratosPorAsesor = await contratosPendientesPorAsesor(now);
+
+  if (notifs.length === 0 && contratosPorAsesor.size === 0) return { users: 0, emails: 0, notifs: 0 };
 
   // Agrupar por usuario.
   const byUser = new Map<string, typeof notifs>();
@@ -61,7 +69,7 @@ export async function enviarDigestDiario(
   // Traer usuarios internos con email (excluye CLIENT) + su rol.
   const users = await prisma.user.findMany({
     where: {
-      id: { in: [...byUser.keys()] },
+      id: { in: [...new Set([...byUser.keys(), ...contratosPorAsesor.keys()])] },
       deletedAt: null,
       email: { not: null },
       role: { name: { not: "CLIENT" } },
@@ -77,7 +85,8 @@ export async function enviarDigestDiario(
     const enabled = enabledByRole.get(user.role?.name ?? "") ?? new Set();
     // Opt-in: solo los tipos habilitados para el rol de este usuario.
     const items = (byUser.get(user.id) ?? []).filter((n) => enabled.has(n.type));
-    if (items.length === 0) continue;
+    const contratosPendientes = contratosPorAsesor.get(user.id) ?? [];
+    if (items.length === 0 && contratosPendientes.length === 0) continue;
     usersWithDigest++;
 
     // Agrupar por proyecto dentro del usuario.
@@ -103,6 +112,7 @@ export async function enviarDigestDiario(
       userName: user.name,
       groups,
       totalCount: items.length,
+      contratosPendientes,
     });
     if (!user.email) continue; // sin mail no hay a dónde mandarlo
     const ok = await sendEmail({ to: user.email, ...template, type: "internal" });

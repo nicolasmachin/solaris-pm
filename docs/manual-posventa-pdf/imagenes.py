@@ -22,13 +22,13 @@ PORTADILLA_E3 = "/_blob/7a6e4b4dd365df3dec1ddc9ab43b6bc3"     # atardecer, ya ge
 CIERRE = "/_blob/9e1076439b37ecb7e912e7e51fd3241f"            # azotea, banda de cierre
 
 # Capturas de la app.
-FICHA_ENCABEZADO = "/_blob/0668c9715214e19bfb962f90def1e356"  # el recorte que entra en la página 28
-FICHA_CLIENTE = "/_blob/7d12e76a60ddf71686963835eeae7ae9"
-TRAMITE_UTE = "/_blob/c6b293f462d3d2e3272cbbb22cdbcd54"
-PLANTILLAS = "/_blob/0931914e600bb5e58f7a3d18b911eb75"
-PORTAL_CLIENTE = "/_blob/ba28daa6ab82cd96e68263c2429930b5"
-REPORTES_FV = "/_blob/3a4089cd2f312ead916c4184c7c99086"
-LISTADO_CLIENTES = "/_blob/685c0ffbd6517ff5b75a7e65842864c9"
-RECORRIDO_ETAPAS = "/_blob/7e790e097b7b7f2659e88cee1a86f3e6"
-CALENDARIO = "/_blob/5e4bc2b717be45ea55913a98004d51ce"
-PASOS_E2 = "/_blob/f1ee815f7a6797acf2f7d1a3bdc1632e"     # la Regla de Oro, en su paso
+FICHA_ENCABEZADO = "/_blob/4b0e4c73872534bd2d5c0371ae2947b3"  # el recorte que entra en la página 28
+FICHA_CLIENTE = "/_blob/9feab197ce54933b2e9be57dd0d9e33c"
+TRAMITE_UTE = "/_blob/8a9347575a8b4c80a048a70320cb30ef"
+PLANTILLAS = "/_blob/1147f42b1f562d8674c0b804534c5a92"
+PORTAL_CLIENTE = "/_blob/3d9b760e21b780239ba99bc7806e8b1c"
+REPORTES_FV = "/_blob/1a7d22406797c0e5da1d309f7cb4ed42"
+LISTADO_CLIENTES = "/_blob/3e3f15d04e34eceff2402c344251aa2c"
+RECORRIDO_ETAPAS = "/_blob/3ab00a0e1108336f05c53e54570f32f8"
+CALENDARIO = "/_blob/441a3c0aa3e4bcdba002c019e5fb7005"
+PASOS_E2 = "/_blob/960f2d93e35cd66880b05906700cb762"     # la Regla de Oro, en su paso

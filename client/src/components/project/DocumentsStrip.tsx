@@ -41,12 +41,31 @@ function iconFor(mimeType: string): { emoji: string; color: string } {
   return { emoji: "📎", color: "#6B7280" };
 }
 
-type OriginFilter = "todos" | "manual" | "ingenieria" | "lista_materiales" | "presupuesto" | "calculo_triangulos";
+type OriginFilter = "todos" | "manual" | "ingenieria" | "comercial" | "lista_materiales" | "presupuesto" | "calculo_triangulos";
+
+// Documentos comerciales: contrato, proforma y condiciones del Plan de
+// Protección (generados por sus herramientas) y el contrato firmado (subido a
+// mano desde su bloque). Tienen toolSource, pero no son de Ingeniería: se
+// rotulan con el `sourceLabel` del servidor ("Contrato v2", "Proforma v1"…).
+const TOOL_SOURCES_COMERCIALES = new Set(["contrato", "proforma", "plan-granizo", "contrato-firmado"]);
+
+function esComercial(doc: ProjectDocument): boolean {
+  return doc.toolSource != null && TOOL_SOURCES_COMERCIALES.has(doc.toolSource);
+}
+
+/** Rótulo del badge de un documento con toolSource, o null si es un upload. */
+function toolBadge(doc: ProjectDocument): string | null {
+  if (doc.toolSource == null) return null;
+  if (esComercial(doc)) return doc.sourceLabel;
+  const nombre = `${doc.toolSource.charAt(0).toUpperCase()}${doc.toolSource.slice(1)}`;
+  return `Ingeniería · ${nombre}${doc.toolVersion ? ` v${doc.toolVersion}` : ""}`;
+}
 
 const ORIGIN_FILTER_LABEL: Record<OriginFilter, string> = {
   todos: "Todos",
   manual: "Manual",
   ingenieria: "Ingeniería",
+  comercial: "Comercial",
   lista_materiales: "Lista materiales",
   presupuesto: "Presupuesto",
   calculo_triangulos: "Cálculos",
@@ -54,7 +73,8 @@ const ORIGIN_FILTER_LABEL: Record<OriginFilter, string> = {
 
 function matchesOrigin(doc: ProjectDocument, filter: OriginFilter): boolean {
   if (filter === "todos") return true;
-  if (filter === "ingenieria") return doc.toolSource != null;
+  if (filter === "ingenieria") return doc.toolSource != null && !esComercial(doc);
+  if (filter === "comercial") return esComercial(doc);
   if (filter === "manual") return doc.tipo === "UPLOAD_MANUAL" || doc.tipo == null;
   if (filter === "lista_materiales") return doc.tipo === "LISTA_MATERIALES";
   if (filter === "presupuesto") return doc.tipo === "PRESUPUESTO";
@@ -165,12 +185,14 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
       todos: allDocuments.length,
       manual: 0,
       ingenieria: 0,
+      comercial: 0,
       lista_materiales: 0,
       presupuesto: 0,
       calculo_triangulos: 0,
     };
     for (const d of allDocuments) {
-      if (d.toolSource != null) c.ingenieria++;
+      if (esComercial(d)) c.comercial++;
+      else if (d.toolSource != null) c.ingenieria++;
       if (d.tipo === "UPLOAD_MANUAL" || d.tipo == null) c.manual++;
       if (d.tipo === "LISTA_MATERIALES") c.lista_materiales++;
       if (d.tipo === "PRESUPUESTO") c.presupuesto++;
@@ -378,11 +400,7 @@ function DocumentCard({ doc, onClick, canDelete, onDelete, deleting }: {
   const showThumb = isImage(doc.mimeType);
   // Origen tool-generado tiene precedencia sobre `tipo` para el badge.
   const isToolGenerated = doc.toolSource != null;
-  const toolBadgeLabel = isToolGenerated
-    ? `${doc.toolSource!.charAt(0).toUpperCase()}${doc.toolSource!.slice(1)}${
-        doc.toolVersion ? ` v${doc.toolVersion}` : ""
-      }`
-    : null;
+  const toolBadgeLabel = toolBadge(doc);
   const tipoBadge = !isToolGenerated && doc.tipo ? TIPO_BADGE[doc.tipo] : null;
 
   return (
@@ -433,9 +451,9 @@ function DocumentCard({ doc, onClick, canDelete, onDelete, deleting }: {
           <span
             className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
             style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}
-            title={`Generado desde el módulo Ingeniería · ${toolBadgeLabel}`}
+            title={toolBadgeLabel}
           >
-            Ingeniería · {toolBadgeLabel}
+            {toolBadgeLabel}
           </span>
         ) : tipoBadge ? (
           <span
@@ -462,11 +480,7 @@ function DocumentRow({ doc, onClick, canDelete, onDelete, deleting }: {
   const icon = iconFor(doc.mimeType);
   const showThumb = isImage(doc.mimeType);
   const isToolGenerated = doc.toolSource != null;
-  const toolBadgeLabel = isToolGenerated
-    ? `${doc.toolSource!.charAt(0).toUpperCase()}${doc.toolSource!.slice(1)}${
-        doc.toolVersion ? ` v${doc.toolVersion}` : ""
-      }`
-    : null;
+  const toolBadgeLabel = toolBadge(doc);
   const tipoBadge = !isToolGenerated && doc.tipo ? TIPO_BADGE[doc.tipo] : null;
 
   return (
@@ -497,7 +511,7 @@ function DocumentRow({ doc, onClick, canDelete, onDelete, deleting }: {
             className="ml-1 hidden shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider sm:inline-block"
             style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}
           >
-            Ingeniería · {toolBadgeLabel}
+            {toolBadgeLabel}
           </span>
         ) : tipoBadge ? (
           <span

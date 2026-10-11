@@ -26,6 +26,7 @@ import { SolarSystemModal } from "../components/project/SolarSystemModal";
 import { AuditHistory } from "../components/project/AuditHistory";
 import { ProjectGantt } from "../components/project/ProjectGantt";
 import { DocumentsStrip } from "../components/project/DocumentsStrip";
+import { ContratoFirmadoBlock } from "../components/contract/ContratoFirmadoBlock";
 import { MoreDataSection } from "../components/project/MoreDataSection";
 import { PesoObraCard } from "../components/project/PesoObraCard";
 import { ProjectCommissionCard } from "../components/project/ProjectCommissionCard";
@@ -796,6 +797,8 @@ export function ProjectDetail() {
   const canViewMetrics = usePermission("METRICAS", "VIEW");
   const canViewStock = usePermission("STOCK", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
+  const puedeVerOnboarding = usePermission("ONBOARDING", "VIEW");
+  const puedeVerOperaciones = usePermission("OPERACIONES", "VIEW");
   const canCreateUte = usePermission("TRAMITES_UTE", "CREATE");
   const canViewClients = usePermission("USUARIOS", "VIEW");
   const canViewObra = usePermission("OPERACIONES", "VIEW");
@@ -1027,6 +1030,11 @@ export function ProjectDetail() {
         cedulaPath={project.cedulaPath}
         facturaUtePath={project.facturaUtePath}
       />
+
+      {/* Contrato firmado por el cliente: a la vista, no dentro de una subetapa. */}
+      {(puedeVerOnboarding || puedeVerOperaciones) && (
+        <ContratoFirmadoBlock projectId={project.id} />
+      )}
 
       {/* KPIs (avance, días desde venta, etapa actual) */}
       <KpiCards project={project} />

@@ -4,6 +4,21 @@
 
 ### 11 de octubre de 2026
 
+#### Contrato, proforma y Plan de Protección en Documentos del proyecto
+
+- Al generar el **contrato**, la **proforma** o las condiciones del **Plan de Protección contra Granizo**, el PDF aparece también en **Documentos** del proyecto, rotulado "Contrato v2", "Proforma v1" o "Plan de Protección v1". Así lo encuentra cualquiera que vea el proyecto, sin entrar a la herramienta.
+- Queda a la vista la versión vigente: si se genera una nueva, reemplaza a la anterior; si se descarta, vuelve a mostrarse la anterior.
+- En Documentos hay un filtro nuevo, **Comercial**, que junta estos documentos y el contrato firmado.
+
+#### Contrato firmado, a la vista en el proyecto
+
+- En la ficha del proyecto hay un bloque nuevo, **Contrato firmado**, que dice si ya está cargado o si falta. Desde ahí se ve, se sube (PDF o foto, también las del iPhone) y se reemplaza.
+- No frena ninguna etapa. En cambio, el **resumen diario por mail** le suma a cada asesor la sección **Contratos pendientes de firma**: sus clientes con contrato generado y sin el firmado cargado, con cuántos días hace que se mandó el contrato y el link al proyecto. Cuando se sube, el cliente sale de la lista.
+
+#### Presentación de Experiencia Solar
+
+- En el panel del lead ganado hay un mensaje listo para copiar con el que el asesor le presenta al cliente a la persona de **Experiencia Solar**, que desde ahí es su contacto. Ya sale con el nombre del cliente y el de la responsable de Experiencia Solar, y se puede retocar antes de copiar.
+
 #### Arreglos
 
 - En el panel del lead se sacó el botón viejo **Generar propuesta comercial**. Las propuestas se arman con **Armar propuesta** (casas) o **Cotizador B2B** (empresas).

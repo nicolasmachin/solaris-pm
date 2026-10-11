@@ -603,9 +603,32 @@ def construir():
                "más tarde.", "duro", margen=18)],
         p, plazo_rojo=False))
 
+    nueva("E1Contrato.dc.html", "12b · Contrato firmado", lambda p: paso(
+        "ETAPA 1 · PASO 4", "SIN PLAZO FORMAL", "Contrato firmado, recabado y archivado",
+        "Va al principio, no al final.",
+        [ficha([("CUÁNDO", "Apenas el asesor manda el contrato"),
+                ("QUIÉN", "El asesor que cerró la venta hace el intercambio; Experiencia Solar controla que "
+                          "quede archivado"),
+                ("PLAZO", "Sin plazo formal, pero queda pendiente hasta que esté"),
+                ("EN VOLTIA PM", "Ficha del cliente → <strong>E1</strong> → <em>\"Contrato firmado por las dos "
+                                 "partes, recabado y archivado\"</em>")]),
+         parrafo("<strong>El problema que resuelve:</strong> antes el contrato se mandaba y nadie lo recababa "
+                 "firmado, así que <strong>no quedaba en ningún lado</strong>.", margen=18),
+         parrafo("<strong>Cómo se firma.</strong> El asesor se lo manda al cliente cuando paga la seña. El "
+                 "cliente lo firma con firma digital, o a mano y lo escanea (o lo entrega en papel el día de la "
+                 "obra, lo menos cómodo). <strong>Voltia firma último</strong>, con firma digital, y se lo "
+                 "devuelve: si firmara primero, la firma del cliente encima invalidaría la digital. Firma el "
+                 "asesor; hasta que los asesores tengan poder y certificado de firma digital, firma la "
+                 "Dirección.", margen=14, tamano=14),
+         aviso("<strong>Lo que hace Experiencia Solar:</strong> controla que el contrato con las dos firmas "
+               "esté <strong>archivado en la ficha del proyecto</strong>, no en el correo de quien lo recibió. "
+               "Si no está, se lo pide al asesor. Un contrato firmado que vive en la bandeja de entrada de "
+               "una persona no existe para la empresa.", "duro", margen=18)],
+        p, plazo_rojo=False))
+
     nueva("E1Capataz.dc.html", "13 · Presentación del capataz", lambda p: pagina(
         "Presentación del capataz",
-        kicker("ETAPA 1 · PASO 4")
+        kicker("ETAPA 1 · PASO 5")
         + titulo("Presentación del capataz", tamano=34)
         + ficha([("CUÁNDO", "Al arrancar la obra, o junto con la fecha confirmada"),
                  ("QUIÉN", "Experiencia Solar"),
@@ -616,12 +639,14 @@ def construir():
         p))
 
     nueva("E1Fecha.dc.html", "14 · Fecha de obra", lambda p: paso(
-        "ETAPA 1 · PASO 5", "2 DÍAS HÁBILES", "Aviso de fecha de obra",
+        "ETAPA 1 · PASO 6", "2 DÍAS HÁBILES", "Aviso de fecha de obra",
         "Un solo mensaje: cuando la fecha está confirmada.",
         [aviso("<strong>Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.</strong> "
                "La fecha tentativa que agenda Operaciones es interna y no se le comunica: decirle una fecha "
                "y después otra confunde y le saca confianza. La plantilla \"Fecha de obra tentativa\" sigue "
-               "en Voltia PM, pero no se usa.", "duro", margen=26),
+               "en Voltia PM, pero no se usa. Al vender, el asesor le da al cliente solo una <strong>estimación "
+               "por quincena</strong> (por ejemplo, \"la segunda quincena de noviembre\"), para que tenga una "
+               "idea; no es una fecha.", "duro", margen=26),
          aviso("<strong>Cómo arranca el plazo.</strong> El reloj <strong>no</strong> empieza cuando se crea "
                "el proyecto, sino cuando alguien <strong>confirma la fecha en el calendario de obra</strong>. "
                "Ahí el paso pasa a tener vencimiento y aparece en el correo de la mañana si se pasa.",
@@ -634,7 +659,7 @@ def construir():
 
     nueva("E1Reprogramacion.dc.html", "14b · Reprogramación de la obra", lambda p: pagina(
         "Aviso de reprogramación",
-        kicker("ETAPA 1 · PASO 6")
+        kicker("ETAPA 1 · PASO 7")
         + titulo("Aviso de reprogramación", tamano=34)
         + ficha([("CUÁNDO", "<strong>El mismo día</strong> en que se mueve la fecha"),
                  ("QUIÉN", "Experiencia Solar"),
@@ -659,7 +684,7 @@ def construir():
 
     nueva("E1Visita.dc.html", "16 · Visita y encuesta de obra", lambda p: pagina(
         "Visita a la propiedad · Aviso de encuesta",
-        kicker("ETAPA 1 · PASOS 7 Y 9")
+        kicker("ETAPA 1 · PASOS 8 Y 10")
         + titulo("Aviso de visita a la propiedad", tamano=34)
         + ficha([("CUÁNDO", "<strong>Antes de cualquier visita</strong>: materiales, relevamiento o equipo"),
                  ("QUIÉN", "Quien agenda la visita, coordinado con Experiencia Solar"),
@@ -683,7 +708,7 @@ def construir():
         p))
 
     nueva("E1ObraTerminada.dc.html", "17 · Obra terminada", lambda p: paso(
-        "ETAPA 1 · PASO 8", "EL MISMO DÍA", "Aviso de obra terminada y qué sigue",
+        "ETAPA 1 · PASO 9", "EL MISMO DÍA", "Aviso de obra terminada y qué sigue",
         "El mensaje que cierra la obra y abre la espera. Va antes que la encuesta.",
         [ficha([("CUÁNDO", "El mismo día que termina la instalación"),
                 ("QUIÉN", "Experiencia Solar"),
@@ -1329,7 +1354,11 @@ def construir():
         + titulo("Registro de cambios")
         + bajada("Qué se agregó o se modificó en cada versión del manual, la más nueva arriba.")
         + tabla(["VERSIÓN", "FECHA", "QUÉ SE AGREGÓ O MODIFICÓ"],
-                [["1.18", "10 de octubre de 2026",
+                [["1.19", "11 de octubre de 2026",
+                  "El contrato lo intercambia el asesor y Voltia firma último, con firma digital; Experiencia "
+                  "Solar controla que quede archivado. Al vender, el asesor le da al cliente solo una estimación "
+                  "de obra por quincena, que no es una fecha."],
+                 ["1.18", "10 de octubre de 2026",
                   "Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas "
                   "vencidas lo hace Experiencia Solar hasta que pase al área de Administración."],
                  ["1.17", "9 de octubre de 2026",

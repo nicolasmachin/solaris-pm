@@ -779,3 +779,37 @@ sobre cómo funciona hoy**:
 - `docs/features/*/SPEC.md` si existe para este módulo: es diseño previo, puede
   contradecir a la implementación.
 - `docs/pendientes/` para saber qué falta.
+
+---
+
+## Presentación de Experiencia Solar (mensaje para copiar)
+
+### Para qué existe
+
+Al cerrar la venta, el asesor le presenta al cliente a la persona de Experiencia
+Solar, que desde ahí es su contacto para la fecha de obra, la instalación y el
+trámite con UTE. El mensaje se escribía cada vez a mano.
+
+### Cómo funciona
+
+- `components/sales/PresentacionExperienciaSolar.tsx`, en la columna izquierda
+  del panel del lead (`Sales.tsx` → `LeadPanel`), solo con el lead en
+  `CERRADO_GANADO`.
+- Texto fijo (`PLANTILLA_PRESENTACION_ES`): «{nombre}, te presento a
+  {responsable}, de Experiencia Solar. Desde ahora es tu contacto para todo lo que
+  sigue: la fecha de obra, la instalación y el trámite con UTE. Te comparto su
+  contacto; en estos días te va a escribir. Cualquier cosa, seguí con ella.»
+- `{nombre}` = nombre del cliente del lead, completo (no se recorta al nombre de
+  pila: muchos clientes son empresas). `{responsable}` = nombre de pila del
+  usuario activo con rol `EXPERIENCIA_SOLAR`, sacado de `GET /api/users/assignable`
+  (solo pide estar logueado). Si hay varios, aparece un selector; si no hay
+  ninguno, el marcador `{responsable}` queda a la vista para escribirlo a mano.
+- Se puede retocar en el cuadro de texto y **Copiar mensaje** lo pasa al
+  portapapeles. No registra nada en la bitácora del cliente.
+
+### Reglas y decisiones
+
+- No hay un "responsable de Experiencia Solar" configurado en el sistema: se toma
+  del rol. No se dejó "Alejandra" escrito en el código para no tener que tocarlo
+  si cambia la persona.
+

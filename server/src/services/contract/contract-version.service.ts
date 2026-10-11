@@ -9,6 +9,7 @@ import { AuditAction, AuditEntityType, ContractVersionStatus, Prisma } from "@pr
 import { prisma } from "../../lib/prisma.js";
 import { AppError, badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
+import { sincronizarDocumentoGeneradoSeguro, TOOL_SOURCE_CONTRATO } from "../documentos-generados.service.js";
 import {
   cleanupContractVersionDir,
   readContractPdf,
@@ -90,6 +91,9 @@ export async function publishVersion(projectId: string, userId: string) {
           versionId: created.id,
         } as unknown as Prisma.InputJsonValue,
       });
+
+      // Copia del PDF en Documentos del proyecto (queda solo la versión vigente).
+      await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_CONTRATO, projectId, userId);
 
       return created;
     } catch (err) {
@@ -182,6 +186,8 @@ export async function discardVersion(versionId: string, userId: string, reason?:
     metadata: { versionId, reason: reason ?? null } as unknown as Prisma.InputJsonValue,
   });
 
+  await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_CONTRATO, v.projectId, userId);
+
   return updated;
 }
 
@@ -207,6 +213,8 @@ export async function restoreVersion(versionId: string, userId: string) {
     description: `Restauró la versión ${v.versionNumber} del contrato`,
     metadata: { versionId } as unknown as Prisma.InputJsonValue,
   });
+
+  await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_CONTRATO, v.projectId, userId);
 
   return updated;
 }

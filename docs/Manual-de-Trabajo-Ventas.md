@@ -73,7 +73,7 @@ uno tiene su plazo:
 | De la propuesta a la visita agendada | 3 días hábiles |
 | De la visita agendada a la visita | 5 días hábiles |
 | De la visita al cierre | 5 días hábiles |
-| Del cierre al proyecto creado | 2 días hábiles |
+| Del cierre al proyecto creado | 24 horas |
 
 ### La primera respuesta: el speech
 
@@ -225,6 +225,62 @@ que también firma por Voltia.
 > tramite su certificado de firma digital (Abitab o Correo). Hasta entonces firma
 > la Dirección.
 
+## Las reglas de Ventas
+
+> ### 1. Toda consulta se contesta en menos de 24 horas
+> Con el speech.
+
+> ### 2. Todo lead recibe su propuesta
+> Si alguno no la recibe, se mira por qué.
+
+> ### 3. No se cierra una venta sin visita
+> Hay que ver la casa y conocer al cliente en persona.
+
+> ### 4. El markup arranca en 25 % y no baja del 15 % sin autorización
+> Por debajo, autoriza la Dirección.
+
+> ### 5. Sin seña no se avanza
+> Salvo con financiación bancaria, a criterio del asesor.
+
+> ### 6. La consulta a UTE sale enseguida
+> Apenas se cobra la seña.
+
+> ### 7. Al que no contesta se le insiste por lo menos dos veces
+> Y cada intento queda registrado.
+
+> ### 8. Ventas no da fechas de obra
+> Solo una estimación por quincena.
+
+> ### 9. Todo queda en Voltia PM
+> Toda interacción relevante con el cliente (visitas, pagos, contratos, recotizaciones, reclamos) va a los comentarios del lead.
+
+> ### 10. La venta se registra en menos de 24 horas
+> Desde que el cliente confirma: se marca ganada y se crea el proyecto.
+
+> ### 11. El cliente nunca hace de mensajero
+> Después del pase, lo que le escriba al asesor, el asesor se lo pasa a Experiencia Solar.
+
+### A quién se atiende primero
+
+Cuando no da el tiempo para todo, se atiende en este orden. La vista **Priorizada** del pipeline de Ventas, en Voltia PM, muestra los leads justamente así, con los que esperan hace más tiempo arriba:
+
+1. Los clientes que **confirmaron la compra**.
+2. Los clientes **ya visitados**.
+3. Los clientes **con propuesta**, para agendarles la visita.
+4. Los que **mandaron los datos** para cotizar.
+5. Los que **mandaron una consulta** pidiendo información.
+
+Igual, ninguna consulta nueva espera más de 24 horas (regla 1): conviene reservar un rato fijo cada día para contestarlas.
+
+### Las empresas (B2B)
+
+Las propuestas a empresas se arman con el **Cotizador B2B** y siguen las mismas
+reglas. Lo que cambia es **la comisión del asesor**, que es escalonada: además de
+la comisión base (4 % del precio sin IVA), el asesor se lleva el **30 % de lo que
+consiga de markup por encima del 20 %**. Así, en una venta a una empresa, negociar
+un mejor precio también le conviene al asesor. El markup de las empresas arranca
+en 20 %.
+
 ## 3 · Lineamientos
 
 ### Lo que Ventas deja sin hacer le cae a la obra
@@ -356,10 +412,10 @@ escriba: el cliente tiene que saber quién es antes de recibir su primer mensaje
 | 1 | El asesor le presenta a Alejandra al cliente | Al cerrar el onboarding |
 | 2 | Alejandra le escribe | Al día siguiente, máximo |
 
-Algo así:
+El asesor le comparte el contacto de Experiencia Solar y le manda este mensaje,
+que está listo para copiar en el panel del lead cuando la venta está ganada:
 
-> «De acá en adelante vas a seguir en contacto con Alejandra, te paso su
-> contacto.»
+> <small>{nombre}, te presento a {responsable}, de Experiencia Solar. Desde ahora es tu contacto para todo lo que sigue: la fecha de obra, la instalación y el trámite con UTE. Te comparto su contacto; en estos días te va a escribir. Cualquier cosa, seguí con ella.</small>
 
 **Por qué importa el orden:** si Alejandra escribe primero, el cliente recibe un
 mensaje de alguien que no conoce y desconfía. La presentación previa convierte
@@ -409,8 +465,9 @@ Antes de pasar el cliente, el asesor deja cargado en Voltia PM:
 **El contrato firmado no frena el onboarding.** Para cerrar el onboarding alcanza
 con haberle mandado el contrato al cliente: esperar a que lo devuelva firmado
 trancaría el proyecto por algo que depende del cliente. Pero **recabarlo sigue
-siendo responsabilidad del asesor**, aunque el proyecto ya esté más adelante, y
-tiene que estar cargado antes de la obra.
+siendo responsabilidad del asesor**, aunque el proyecto ya esté más adelante. Se
+sube en el bloque **Contrato firmado** del proyecto, y mientras falte, Voltia PM le
+manda al asesor un aviso por mail con todos sus contratos pendientes de firma.
 
 **Si el cliente le sigue escribiendo al asesor después del pase**, el asesor le
 recuerda con quién sigue («te paso con Alejandra, que es la que lleva tu obra»),
@@ -490,7 +547,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.8 | 11 de octubre de 2026 | Lo que el asesor deja cargado antes del pase (factura, cédula, contrato enviado y lo de la visita); el contrato firmado no frena el onboarding pero lo recaba el asesor antes de la obra; si el cliente le sigue escribiendo, le recuerda con quién sigue y le pasa él el mensaje a Experiencia Solar. La consulta inicial a UTE la presenta el asesor enseguida y la sigue Tramitación UTE; sale del onboarding la tarea de la planilla de operaciones. El onboarding: 3 días hábiles, la seña de USD 500 (sin seña no se avanza, salvo financiación bancaria a criterio del asesor) y el contrato (Voltia firma último, con firma digital; lo hace el asesor, pendiente del poder y los certificados). El markup promedio se revisa una vez por mes. La propuesta: con qué datos se arma, el markup (se arranca en 25 %, el asesor baja hasta 15 %, menos con autorización de la Dirección), una versión nueva por cada cambio, y los dos botones (residencial y B2B). El seguimiento: a quien no contesta se le insiste por lo menos dos veces y se registra. La inclinación por defecto es 25 grados al norte, y lo acordado en la visita manda; el 10 % de paneles de regalo no choca con el límite de UTE. La visita de venta: su objetivo más grande es conectar con el cliente, como un técnico que habla como persona común y no como vendedor; antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
+| 0.8 | 11 de octubre de 2026 | La plantilla de presentación de Experiencia Solar, copiable desde el panel del lead. A quién se atiende primero (de la compra confirmada a la consulta nueva; la vista Priorizada de Voltia PM los muestra en ese orden). La venta se registra en menos de 24 horas. Las reglas de Ventas (once, empezando por contestar toda consulta en menos de 24 horas) y las empresas: mismas reglas, comisión escalonada con el markup. Lo que el asesor deja cargado antes del pase (factura, cédula, contrato enviado y lo de la visita); el contrato firmado no frena el onboarding pero lo recaba el asesor, con un aviso por mail de los pendientes; si el cliente le sigue escribiendo, le recuerda con quién sigue y le pasa él el mensaje a Experiencia Solar. La consulta inicial a UTE la presenta el asesor enseguida y la sigue Tramitación UTE; sale del onboarding la tarea de la planilla de operaciones. El onboarding: 3 días hábiles, la seña de USD 500 (sin seña no se avanza, salvo financiación bancaria a criterio del asesor) y el contrato (Voltia firma último, con firma digital; lo hace el asesor, pendiente del poder y los certificados). El markup promedio se revisa una vez por mes. La propuesta: con qué datos se arma, el markup (se arranca en 25 %, el asesor baja hasta 15 %, menos con autorización de la Dirección), una versión nueva por cada cambio, y los dos botones (residencial y B2B). El seguimiento: a quien no contesta se le insiste por lo menos dos veces y se registra. La inclinación por defecto es 25 grados al norte, y lo acordado en la visita manda; el 10 % de paneles de regalo no choca con el límite de UTE. La visita de venta: su objetivo más grande es conectar con el cliente, como un técnico que habla como persona común y no como vendedor; antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |

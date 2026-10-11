@@ -365,6 +365,108 @@ apareciendo, con su plazo vencido en rojo.
 
 ---
 
+## Documentos comerciales en Documentos del proyecto, y el contrato firmado
+
+### Para qué existe
+
+El contrato, la proforma y las condiciones del Plan de Protección contra Granizo
+guardaban su PDF solo en la carpeta de su herramienta (`pdfPath` de
+`ContractVersion`, `ProformaVersion` y `PlanGranizoVersion`) y no creaban un
+`FileAttachment`: quien no entraba a la herramienta no los veía en Documentos del
+proyecto. Y el contrato **firmado** no tenía un lugar propio: quedaba como un
+adjunto suelto dentro de una subetapa, o no se cargaba.
+
+### Cómo se usa
+
+- **Documentos del proyecto** (`DocumentsStrip.tsx`, también la lista "Documentos
+  técnicos generados" del workspace de Ingeniería y su versión compacta en el
+  StageDrawer): aparecen "Contrato v2", "Proforma v1", "Plan de Protección v1" y
+  "Contrato firmado". El filtro **Comercial** los junta; el filtro Ingeniería ya
+  no los cuenta.
+- **Bloque "Contrato firmado"** en la ficha del proyecto (`ProjectDetail.tsx`,
+  debajo de los documentos del cliente; componente
+  `components/contract/ContratoFirmadoBlock.tsx`): dice "Cargado" o "Falta
+  cargarlo", abre el archivo en otra pestaña, y tiene **Subir / Reemplazar** y
+  **Quitar**. Acepta PDF y fotos (JPG, PNG, WEBP, HEIC/HEIF).
+
+### Cómo funciona
+
+- `services/documentos-generados.service.ts` → `sincronizarDocumentoGenerado(kind,
+  projectId)`: deja en Documentos **solo la versión vigente** (última publicada y
+  no descartada) de cada documento. Si ya está adjuntada no hace nada; si no,
+  copia el PDF desde `pdfPath` con `saveBufferAsAttachment()` y crea el
+  `FileAttachment` (`tipo: OTRO`, `toolSource` = `contrato` | `proforma` |
+  `plan-granizo`, `toolVersion` = número de versión, `toolEntityId` = id de la
+  versión) y retira el anterior (soft-delete + borrado del archivo **copiado**; el
+  PDF de la versión en la carpeta de la herramienta no se toca). Sin versión
+  vigente, retira los adjuntos. Si el PDF no está en disco, no toca nada.
+- La llaman (versión "segura", que no tira abajo la operación si falla)
+  `publishVersion()`, `discardVersion()` y `restoreVersion()` de
+  `contract/contract-version.service.ts` y `proforma/proforma-version.service.ts`,
+  y `publishVersion()` / `setVersionStatus()` de
+  `seguro-granizo/documento/documento.service.ts`. Descartar la vigente hace
+  volver a Documentos la anterior.
+- Rótulos: `etiquetaDocumentoComercial()` del mismo servicio, usada por
+  `GET /api/projects/:projectId/documents` (`sourceLabel`) y por
+  `buildToolSourceLabel()` de `ingenieria.routes.ts`. En el cliente,
+  `toolBadge()` de `DocumentsStrip.tsx` usa ese `sourceLabel` para los comerciales
+  (los de Ingeniería siguen con su "Ingeniería · …").
+- Contrato firmado: `routes/contrato-firmado.routes.ts`
+  (`GET`, `POST` multipart y `DELETE` en `/api/projects/:projectId/contrato-firmado`).
+  Se guarda con `saveUploadedFile()` (que convierte HEIC a JPEG) como
+  `FileAttachment` `tipo: UPLOAD_MANUAL`, `toolSource: "contrato-firmado"`, sin
+  etapa ni subetapa. Subir otro **reemplaza** al vigente (soft-delete + borrado
+  del archivo). Audita `file_uploaded` / `deleted` y aparece en la línea de tiempo
+  del cliente como documento (`MODULO_POR_TOOL` en `clientes/index.ts`).
+- **Aviso al asesor**: el resumen diario por mail le suma a cada asesor la sección
+  "Contratos pendientes de firma" (ver capítulo 12,
+  `digest/contratos-pendientes.service.ts`).
+
+### Permisos
+
+- Ver Documentos: `OPERACIONES:VIEW` (igual que la descarga de archivos).
+- Ver el bloque **Contrato firmado**: `ONBOARDING:VIEW` **u** `OPERACIONES:VIEW`
+  (`authorizeAny(PUEDE_VER)` en `contrato-firmado.routes.ts`; en la pantalla,
+  `usePermission` de cualquiera de los dos). Se abrió a ONBOARDING:VIEW para que
+  lo vea Experiencia Solar, que controla que el contrato quede archivado.
+- Subir y quitar el contrato firmado: `ONBOARDING:EDIT` **u** `OPERACIONES:EDIT`
+  (`authorizeAny(PUEDE_EDITAR)`).
+- Según la matriz de producción al 11-oct-2026: suben ADMIN, ASESOR_COMERCIAL,
+  CAPATAZ, COMPRAS, EXPERIENCIA_SOLAR, GERENTE_COMERCIAL, GERENTE_INGENIERIA,
+  GERENTE_OPERACIONES, INGENIERIA, INSTALADOR_TERCERIZADO, LOGISTICA,
+  OPERACIONES y POSTVENTA; FINANZAS y TRAMITACION_UTE no ven el bloque. Que
+  INSTALADOR_TERCERIZADO pueda subir sale de la matriz (tiene ONBOARDING:EDIT),
+  no de una decisión de esta feature.
+
+### Reglas y decisiones
+
+- **El contrato firmado no bloquea ninguna subetapa** (decisión de Nicolás,
+  11-oct-2026). Se pensó como ítem obligatorio de "Planificación y logística" de
+  Ejecución de Obra y se descartó: en su lugar se le recuerda al asesor por mail
+  todos los días hasta que lo sube.
+- En Documentos queda solo la versión vigente de cada documento, mismo criterio
+  que Unifilar, Pre-ingeniería y Justificación de potencia. Las demás se bajan
+  desde la herramienta.
+- `tipo` es `OTRO`: no se agregó un valor al enum `FileAttachmentTipo` (pediría
+  migración y no aporta; el origen fino es `toolSource`).
+- Los documentos generados son inmutables en Documentos (no tienen papelera): se
+  cambian publicando o descartando versiones en la herramienta. El contrato
+  firmado se cambia desde su bloque.
+
+### Casos borde
+
+- Versiones publicadas antes del 11-oct-2026 no tienen adjunto: se crean con
+  `prisma/scripts/backfill-documentos-generados.ts` (sin `--apply` muestra cuántos
+  crearía, cuántos ya estaban y los PDF que no encuentra en disco; con `--apply`
+  los crea). Es idempotente. Los que reporta sin PDF hay que regenerarlos desde la
+  herramienta.
+- Si falla la copia al publicar, la versión queda publicada igual (se loguea un
+  warning) y se arregla corriendo de nuevo el backfill.
+- El contrato firmado es uno por proyecto, aunque el proyecto tenga varios
+  suministros.
+
+---
+
 ## Qué tiene que cubrir este capítulo
 
 - Estructura Proyecto → Etapa → Subetapa → Checklist

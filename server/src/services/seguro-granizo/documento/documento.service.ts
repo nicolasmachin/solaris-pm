@@ -13,6 +13,7 @@ import { AuditAction, AuditEntityType, PlanGranizoVersionStatus, Prisma } from "
 import { prisma } from "../../../lib/prisma.js";
 import { AppError, badRequest, notFound } from "../../../utils/errors.js";
 import { createAuditEntry } from "../../audit.service.js";
+import { sincronizarDocumentoGeneradoSeguro, TOOL_SOURCE_PLAN_GRANIZO } from "../../documentos-generados.service.js";
 import { renderHtmlToPdf } from "../../efpPdf/v2/pdfRenderer.js";
 import { getStoredFilePath } from "../../file-storage.service.js";
 import {
@@ -118,6 +119,8 @@ export async function publishVersion(projectId: string, userId: string) {
         action: AuditAction.plan_granizo_version_published,
         description: `Generó la versión ${created.versionNumber} de las condiciones del plan de granizo${data.plan.incluyeVandalismo ? " con vandalismo" : ""} (${data.plan.cantidadPaneles} paneles, USD ${data.plan.anualidadUsd}/año)`,
       });
+      // Copia del PDF en Documentos del proyecto (queda solo la versión vigente).
+      await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_PLAN_GRANIZO, projectId, userId);
       return toLightDto(created);
     } catch (err) {
       await fsPromises.rm(getStoredFilePath(versionDir(projectId, versionId)), { recursive: true, force: true }).catch(() => undefined);
@@ -192,5 +195,6 @@ export async function setVersionStatus(versionId: string, userId: string, descar
     description: `${descartar ? "Descartó" : "Restauró"} la versión ${v.versionNumber} de las condiciones del plan de granizo`,
     metadata: { reason: reason ?? null },
   });
+  await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_PLAN_GRANIZO, v.projectId, userId);
   return toLightDto(updated);
 }

@@ -41,6 +41,7 @@ import { getLeadCommission } from "../api/comisiones.api";
 import { LeadProposalsList } from "../components/sales/LeadProposalsList";
 import { LeadTasks } from "../components/sales/LeadTasks";
 import { LargeModal } from "../components/ui/LargeModal";
+import { PresentacionExperienciaSolar } from "../components/sales/PresentacionExperienciaSolar";
 import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
 import type { ProposalVariante } from "../types/proposals-v2";
@@ -706,6 +707,13 @@ function LeadPanel({
 
         <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-2">
         <div className="min-h-0 overflow-y-auto border-b border-[var(--color-border)] p-5 lg:border-b-0 lg:border-r">
+
+        {/* Al ganar: el mensaje para presentarle Experiencia Solar al cliente. */}
+        {lead.stage === WON_STAGE && (
+          <div className="mb-5">
+            <PresentacionExperienciaSolar clientName={lead.clientName} />
+          </div>
+        )}
 
         <section className="mb-5 space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="grid gap-3">

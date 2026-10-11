@@ -94,8 +94,10 @@ docker compose exec -T -w /app -e CAPTURA_FRONT="$IP:5173" server node capturas.
 Dos cosas que cuestan de adivinar y están resueltas ahí adentro: al front **no se
 le puede pegar por su IP** (Vite rechaza el Host y el CORS del server solo admite
 localhost y 127.0.0.1, así que el script levanta un proxy TCP y entra por
-127.0.0.1), y la app **arranca en modo oscuro**, que en papel es ilegible, así
-que fuerza el tema claro en el localStorage antes de navegar.
+127.0.0.1), y fuerza el **modo oscuro** en el localStorage antes de navegar.
+Las capturas de los manuales van en modo oscuro desde el 11-oct-2026 (decisión
+de Nicolás: así se ve Voltia PM en el día a día), aunque gasten más tinta al
+imprimir.
 
 Después se las lleva a la medida con `preparar-imagenes.mjs` (usa sharp, que está
 en el contenedor) y se suben como assets del canvas. **La subida devuelve una URL

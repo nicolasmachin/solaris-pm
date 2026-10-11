@@ -375,26 +375,6 @@ esté **archivado en la ficha del proyecto**, no en el correo de quien lo recibi
 Si no está, se lo pide al asesor. Un contrato firmado que vive en la bandeja de
 entrada de una persona no existe para la empresa.
 
----|---|
-| **Cuándo** | Apenas el asesor manda el contrato. **Va al principio, no al final.** |
-| **Quién** | Experiencia Solar coordina; el asesor es quien lo envía |
-| **Plazo** | Sin plazo formal, pero queda pendiente hasta que esté |
-| **En Voltia PM** | Ficha del cliente → **E1** → *"Contrato firmado por las dos partes, recabado y archivado"* |
-
-**El problema que resuelve:** hoy el contrato se manda y nadie lo recaba firmado,
-así que **no queda en ningún lado**. El asesor lo envía en PDF desde el onboarding
-y ahí se corta: no hay un paso que diga quién junta la versión con las dos firmas.
-
-**Cómo se coordina, según dónde esté el cliente:**
-
-- **En Montevideo** → se coordina para que pase a firmarlo por la empresa.
-- **En el interior** → por correo: va el nuestro ya firmado y vuelve la versión
-  que él también firmó.
-
-**Se archiva en la ficha del proyecto**, no en el correo de quien lo recibió. Un
-contrato firmado que vive en la bandeja de entrada de una persona no existe para
-la empresa.
-
 ---
 
 ### 5.5 · Presentación del capataz

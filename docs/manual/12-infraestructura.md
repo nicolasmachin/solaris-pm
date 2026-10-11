@@ -29,7 +29,19 @@ resumen diario por persona**.
   `DIGEST_VENTANA_HORAS` horas (default 24) de cada **usuario interno**, las
   agrupa por proyecto y manda **un** mail `internal` con la plantilla
   `emailDailyDigest` (`email.templates.ts`). Quien no tuvo novedades no recibe
-  nada.
+  nada (salvo que sea asesor con contratos pendientes, ver abajo).
+- **Contratos pendientes de firma**: `contratosPendientesPorAsesor()`
+  (`digest/contratos-pendientes.service.ts`) arma, por asesor, los proyectos con
+  al menos una `ContractVersion` publicada y **sin** `FileAttachment` vigente con
+  `toolSource: "contrato-firmado"`, excluyendo borrados, archivados (`ARCHIVED`)
+  e importados por CSV. El asesor es `Project.salespersonId` o, si está vacío, el
+  asignado del lead convertido. Cada renglón: cliente, días desde la última
+  versión publicada del contrato ("contrato enviado hace N días") y link al
+  proyecto; lo más viejo primero. La sección va arriba de las novedades, alcanza
+  sola para que salga el mail, y si el asesor no tiene pendientes no aparece.
+  **No depende de la matriz por rol** de Administración: le llega al asesor de la
+  venta sea cual sea su rol. Los completados (`COMPLETED`) sí cuentan: si falta el
+  firmado, falta.
 - Los **clientes (rol CLIENT) nunca entran** al digest: el job los excluye por
   rol y, como segunda red, el guardrail de `sendEmail({ type: "internal" })`
   bloquea cualquier destinatario que no sea un `User` interno.

@@ -52,7 +52,8 @@ sys.path.insert(1, POSVENTA)
 import imagenes as IMG  # noqa: E402
 import generar  # noqa: E402
 from generar import (  # noqa: E402
-    AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, SANS, SERIF, TEXTO,
+    AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, ROJO_BORDE, ROJO_FONDO, SANS, SERIF, TEXTO,
+    VERDE, VERDE_FONDO, VERDE_TEXTO,
     ANCHO, ALTO, FUENTES, altura_estimada, numerados, pagina,
 )
 
@@ -827,27 +828,27 @@ def cliente_burbujas(items):
 # posiciones. La clave es cómo empieza el párrafo del .md que la presenta.
 PANTALLAS = {
     "**El proyecto.**": ("PROYECTO_PANTALLA", [
-        (1, 21.5, 2.3, "El menú, con una sección por área"),
+        (1, 9, 6.5, "El menú, con una sección por área"),
         (2, 12, 46, "La lista de clientes, para elegir con cuál trabajar"),
-        (3, 58, 20.8, "Los botones que llevan al mismo cliente en otras secciones"),
-        (4, 76.5, 7.5, "El plazo de la etapa en curso, en cuenta regresiva"),
-        (5, 56, 66, "El recorrido del proyecto, etapa por etapa"),
+        (3, 59, 20.8, "Los botones que llevan al mismo cliente en otras secciones"),
+        (4, 73.5, 15, "El plazo de la etapa en curso, en cuenta regresiva"),
+        (5, 78, 72, "El recorrido del proyecto, etapa por etapa"),
     ]),
     "**La ficha del cliente.**": ("FICHA_ENCABEZADO", [
-        (1, 60.5, 12, "Los datos del cliente y cuántos días hace que no se lo contacta"),
+        (1, 93, 12, "Los datos del cliente y cuántos días hace que no se lo contacta"),
         (2, 58.5, 30.4, "Los botones que llevan al mismo cliente en otras secciones"),
-        (3, 33, 38.5, "Sus tres etapas, con los pasos de cada una"),
+        (3, 31, 36.5, "Sus tres etapas, con los pasos de cada una"),
         (4, 86, 60, "Para registrar un contacto; debajo, todo el historial"),
     ]),
     "**El calendario.**": ("CALENDARIO_OBRAS", [
-        (1, 13, 10.5, "El mes, con flechas para ir y venir"),
+        (1, 26, 9.8, "El mes, con flechas para ir y venir"),
         (2, 63, 14.6, "Qué mostrar: obras, mantenimientos, visitas…"),
-        (3, 53.5, 21.2, "Rayado, fecha tentativa; lleno, fecha confirmada"),
+        (3, 56.5, 21.2, "Rayado, fecha tentativa; lleno, fecha confirmada"),
         (4, 36, 59, "Cada obra agendada, del color de su equipo"),
-        (5, 83, 11.8, "Para agendar una obra u otra cosa"),
+        (5, 83, 13, "Para agendar una obra u otra cosa"),
     ]),
     "**El portal de Voltia.**": ("PORTAL_RECORTE", [
-        (1, 57.5, 8.8, "Lo que el cliente puede abrir: proyectos, reportes, reclamos y encuestas"),
+        (1, 59, 8.8, "Lo que el cliente puede abrir: proyectos, reportes, reclamos y encuestas"),
         (2, 49.5, 34.5, "En qué está su trámite"),
         (3, 26, 56, "Cada paso del trámite, con su fecha"),
     ]),
@@ -1052,6 +1053,865 @@ def linea_tiempo():
     return "  " + "".join(s) + "\n"
 
 
+# ── Los dibujos del Manual de Operaciones ─────────────────────────────────────
+#
+# Pedido del 11-oct-2026: menos texto corrido y más gráficos. El texto sigue
+# saliendo del .md, sin tocarlo: acá se reconocen pasajes (un párrafo que
+# empieza con un rótulo en negrita, una lista con rótulos, los casos de "Cuando
+# algo sale mal", frases puntuales) y se dibujan en tarjetas, esquemas y
+# diagramas. Si el .md cambia una de esas frases, el pasaje vuelve a salir como
+# texto: no se pierde nada, solo el dibujo.
+
+OP, OP_F = COLOR_AREA["Operaciones"]
+NARANJA_BORDE = "#efc9ad"
+
+# Íconos de trazo, 24×24, para tarjetas y diagramas.
+ICONOS = {
+    "techo": '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>',
+    "rayo": '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    "escudo": '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    "wifi": '<path d="M2 9a15 15 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/>',
+    "reloj": '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/>',
+    "medidor": '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8"/><path d="M12 17l3-5"/><circle cx="12" cy="17" r="1"/>',
+    "camara": '<path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/>',
+    "video": '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
+    "doc": '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/>',
+    "firma": '<path d="M6 3h8l4 4v14H6z"/><path d="M8 17c2-3 3 1 4-1s2-1 3 0"/>',
+    "check": '<path d="M5 12l5 5 9-10"/>',
+    "alerta": '<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5h.01"/>',
+    "calendario": '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    "camion": '<path d="M2 6h12v10H2z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+    "caja": '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+    "persona": '<circle cx="12" cy="7" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+    "equipo": '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c.5-3 3-5 6-5s5.5 2 6 5"/><path d="M14 15c3 0 5.5 2 6 5"/>',
+    "llave": '<path d="M14 7a4 4 0 1 0-5 5L3 18v3h3l6-6a4 4 0 0 0 2-8z"/>',
+    "lupa": '<circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/>',
+    "plata": '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9v6M18 9v6"/>',
+    "lluvia": '<path d="M7 15a5 5 0 1 1 2-9.6A6 6 0 0 1 20 9a4 4 0 0 1-2 6z"/><path d="M8 19l-1 2M12 19l-1 2M16 19l-1 2"/>',
+    "no": '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    "cruz": '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+    "puerta": '<path d="M5 21V3h12v18"/><path d="M3 21h18"/><circle cx="14" cy="12" r="1"/>',
+    "tierra": '<path d="M12 2v10"/><path d="M5 12h14M7 16h10M10 20h4"/>',
+    "libro": '<path d="M4 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3"/><path d="M20 4v15h-6"/>',
+    "mapa": '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+    "chat": '<path d="M4 5h16v11H9l-5 4z"/>',
+    "lista": '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+    "engranaje": '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+}
+
+# Qué ícono le toca a un rótulo, por la primera palabra clave que aparezca.
+ICONO_DE = [
+    ("techo", "techo"), ("altura", "techo"), ("eléctric", "rayo"), ("siempre", "escudo"),
+    ("seguridad", "escudo"), ("protección", "escudo"), ("datalogger", "wifi"), ("180", "reloj"),
+    ("reconexión", "reloj"), ("smartmeter", "medidor"), ("foto", "camara"), ("video", "video"),
+    ("ensayo", "video"), ("firm", "firma"), ("document", "doc"), ("informe", "doc"),
+    ("capacitación", "libro"), ("librillo", "libro"), ("manual", "libro"), ("lee", "libro"),
+    ("entrega", "camion"), ("flete", "camion"), ("material", "caja"), ("stock", "caja"),
+    ("estructura", "llave"), ("paneles", "caja"), ("compra", "caja"), ("import", "camion"),
+    ("cliente", "persona"), ("capataz", "persona"), ("cuadrilla", "equipo"), ("tercerizad", "equipo"),
+    ("gerente", "persona"), ("paga", "plata"), ("presupuesto", "plata"), ("costo", "plata"),
+    ("calidad", "lupa"), ("plazo", "reloj"), ("cuándo", "calendario"), ("día", "calendario"),
+    ("semana", "calendario"), ("mes", "calendario"), ("tres meses", "calendario"), ("planific", "calendario"),
+    ("mantenimiento", "llave"), ("soporte", "alerta"), ("qué no es", "no"), ("qué es", "libro"),
+    ("quién", "persona"), ("cómo", "engranaje"), ("dónde termina", "check"), ("dónde empieza", "mapa"),
+    ("anota", "chat"), ("habla", "chat"), ("estudiar", "libro"), ("herramientas", "llave"),
+    ("prepara", "caja"), ("revisa", "lupa"), ("tierra", "tierra"), ("montaje", "llave"),
+    ("anclaje", "llave"), ("módulo", "caja"), ("isopanel", "techo"), ("teja", "techo"), ("chapa", "techo"),
+    ("azotea", "techo"),
+]
+
+
+def icono(nombre, color, tam=18, grueso=2):
+    return (f'<svg width="{tam}" height="{tam}" viewBox="0 0 24 24" fill="none" stroke="{color}" '
+            f'stroke-width="{grueso}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '
+            f'style="flex-shrink: 0; display: block">{ICONOS[nombre]}</svg>')
+
+
+def icono_para(texto, defecto="lista"):
+    t = texto.lower()
+    for clave, nombre in ICONO_DE:
+        if clave in t:
+            return nombre
+    return defecto
+
+
+def _sin_md(t):
+    return re.sub(r"\*+", "", t)
+
+
+def partir_rotulo(texto):
+    """'**Rótulo.** resto' → ('Rótulo', 'resto'). None si no empieza así."""
+    m = re.match(r"^\*\*([^*]{2,70}?)([.:])?\*\*\s*(.*)$", texto.strip(), re.S)
+    if not m:
+        return None
+    return m.group(1).strip().rstrip(".:"), m.group(3).strip().lstrip(":,;").strip()
+
+
+def burbuja_icono(nombre, color, fondo, tam=34, icono_tam=18):
+    return (f'<div style="flex-shrink: 0; width: {tam}px; height: {tam}px; border-radius: 9px; background: {fondo}; '
+            f'display: flex; align-items: center; justify-content: center">{icono(nombre, color, icono_tam)}</div>')
+
+
+# ── Tarjetas genéricas ────────────────────────────────────────────────────────
+
+def tarjetas_rotulo(items, columnas=None):
+    """Párrafos seguidos que arrancan con un rótulo en negrita ('**Qué es.**
+    …'): una tarjeta por rótulo, con su ícono. En dos columnas si son cortos."""
+    if columnas is None:
+        columnas = 2 if all(len(t) <= 330 for _, t in items) and len(items) % 2 == 0 else 1
+    cajas = ""
+    for rot, txt in items:
+        cajas += (f'<div style="display: flex; gap: 12px; padding: 13px 15px; border: 1px solid {BORDE}; '
+                  f'border-radius: 10px; background: #ffffff">'
+                  f'{burbuja_icono(icono_para(rot), OP, OP_F)}'
+                  f'<div><div style="font-family: {SANS}; font-size: 15px; font-weight: 700; color: {NEGRO}; '
+                  f'line-height: 1.25">{en_linea(rot)}</div>'
+                  f'<div style="margin-top: 4px; font-size: 13.5px; line-height: 1.48; color: {TEXTO}">{en_linea(txt)}</div>'
+                  f'</div></div>')
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: repeat({columnas}, minmax(0, 1fr)); '
+            f'gap: 10px">{cajas}</div>\n')
+
+
+def filas_rotulo(items):
+    """Una lista cuyos ítems arrancan con un rótulo en negrita: cada ítem en una
+    fila, el rótulo en una pastilla a la izquierda."""
+    largo = max(len(_sin_md(r)) for r, _ in items)
+    ancho = min(200, max(110, largo * 8))
+    filas = ""
+    for k, (rot, txt) in enumerate(items):
+        filas += (f'<div style="display: flex; gap: 14px; align-items: flex-start; padding: 10px 0; '
+                  f'{"" if k == 0 else f"border-top: 1px solid {BORDE};"}">'
+                  f'<div style="flex-shrink: 0; width: {ancho}px; display: flex; gap: 8px; align-items: flex-start">'
+                  f'{icono(icono_para(rot), OP, 17)}'
+                  f'<span style="font-family: {SANS}; font-size: 14px; font-weight: 700; line-height: 1.25; '
+                  f'color: {NEGRO}">{en_linea(rot)}</span></div>'
+                  f'<div style="font-size: 14px; line-height: 1.48; color: {TEXTO}">{en_linea(txt)}</div></div>')
+    return (f'  <div style="margin-top: 12px; padding: 4px 16px; border-left: 3px solid {OP}; '
+            f'background: #fffaf6; border-radius: 0 10px 10px 0">{filas}</div>\n')
+
+
+def tarjeta_lista(rotulo, items):
+    """Un rótulo solo ('**En el techo** (…):') seguido de una lista: una
+    tarjeta con encabezado de color y la lista adentro."""
+    lis = "".join(f'<div style="display: flex; gap: 10px; padding: 6px 0">'
+                  f'<span style="flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; background: {OP}; '
+                  f'margin-top: 8px"></span><span style="font-size: 14px; line-height: 1.48; color: {TEXTO}">'
+                  f'{en_linea(x)}</span></div>' for x in items)
+    return (f'  <div style="margin-top: 14px; border: 1.5px solid {NARANJA_BORDE}; border-radius: 12px; overflow: hidden">'
+            f'<div style="display: flex; gap: 10px; align-items: center; padding: 10px 16px; background: {OP_F}">'
+            f'{icono(icono_para(rotulo), OP, 20)}<span style="font-family: {SANS}; font-size: 16px; font-weight: 700; '
+            f'color: {NEGRO}">{en_linea(rotulo)}</span></div>'
+            f'<div style="padding: 6px 16px 10px">{lis}</div></div>\n')
+
+
+def baldosas(items):
+    """Una lista de cosas cortas: baldosas numeradas en dos columnas."""
+    cols = 3 if len(items) in (3, 6) and all(len(x) < 70 for x in items) else 2
+    cajas = "".join(
+        f'<div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 13px; background: {OP_F}; '
+        f'border-radius: 10px"><div style="flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; '
+        f'background: {OP}; color: #ffffff; font-family: {SANS}; font-size: 13px; font-weight: 700; '
+        f'text-align: center; line-height: 24px">{k}</div><div style="font-size: 13.5px; line-height: 1.42; '
+        f'color: {NEGRO}">{en_linea(x)}</div></div>' for k, x in enumerate(items, 1))
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: repeat({cols}, minmax(0, 1fr)); '
+            f'gap: 8px">{cajas}</div>\n')
+
+
+def pasos_horizontales(items):
+    """Una lista numerada corta: pasos en fila, con flechas."""
+    n = len(items)
+    cajas = ""
+    for k, x in enumerate(items, 1):
+        cajas += (f'<div style="flex: 1; min-width: 0; padding: 12px 12px 14px; border: 1.5px solid {NARANJA_BORDE}; '
+                  f'border-radius: 10px; background: #ffffff"><div style="font-family: {SANS}; font-size: 24px; '
+                  f'font-weight: 700; color: {OP}; line-height: 1">{k}</div><div style="margin-top: 6px; '
+                  f'font-size: 13px; line-height: 1.42; color: {NEGRO}">{en_linea(x)}</div></div>')
+        if k < n:
+            cajas += (f'<div style="flex-shrink: 0; align-self: center; width: 14px">'
+                      f'<svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><polygon points="0,0 14,8 0,16" '
+                      f'fill="{OP}"/></svg></div>')
+    return f'  <div style="margin-top: 14px; display: flex; gap: 6px">{cajas}</div>\n'
+
+
+def caso(titulo, bloques):
+    """Un caso de 'Cuando algo sale mal': el problema en la franja de arriba y
+    qué hacer debajo."""
+    cuerpo = ""
+    for t, c in bloques:
+        if t == "p":
+            cuerpo += f'<p style="margin: 6px 0 0; font-size: 13.8px; line-height: 1.5; color: {TEXTO}">{en_linea(c)}</p>'
+        elif t in ("lista", "numerada"):
+            cuerpo += "".join(f'<div style="display: flex; gap: 9px; margin-top: 6px"><span style="flex-shrink: 0; '
+                              f'width: 6px; height: 6px; border-radius: 50%; background: #8a5a10; margin-top: 8px"></span>'
+                              f'<span style="font-size: 13.8px; line-height: 1.48; color: {TEXTO}">{en_linea(x)}</span></div>'
+                              for x in c)
+        elif t == "cita":
+            cuerpo += (f'<p style="margin: 8px 0 0; font-size: 13.8px; line-height: 1.5; color: {NEGRO}; '
+                       f'font-weight: 600">{en_linea(" ".join(c))}</p>')
+    return (f'  <div style="margin-top: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #f0dcb4">'
+            f'<div style="padding: 10px 14px; background: #8a5a10; display: flex; gap: 9px; align-items: center">'
+            f'{icono(icono_para(titulo, "alerta"), "#ffffff", 17)}<span style="font-family: {SANS}; font-size: 15px; '
+            f'font-weight: 700; color: #ffffff">{en_linea(titulo)}</span></div>'
+            f'<div style="padding: 6px 14px 13px; background: #fdf8ec">{cuerpo}</div></div>\n')
+
+
+def causa_efecto(cab, filas):
+    """Tabla 'Si falla… | Lo que le pasa': cada fila, causa → consecuencia."""
+    out = ""
+    for f in filas:
+        causa, efecto = f[0], f[1]
+        area = causa.split(":")[0].strip()
+        color, fondo = COLOR_AREA.get(area, (GRIS, "#f3f4f8"))
+        resto = causa.split(":", 1)[1].strip() if ":" in causa else causa
+        out += (f'<div style="display: grid; grid-template-columns: 1fr 26px 1fr; gap: 8px; align-items: stretch; '
+                f'margin-top: 8px"><div style="padding: 9px 12px; border-radius: 8px; background: {fondo}; '
+                f'border-left: 4px solid {color}"><div style="font-family: {SANS}; font-size: 11px; font-weight: 700; '
+                f'letter-spacing: 1.2px; color: {color}">{en_linea(area).upper()}</div><div style="margin-top: 2px; '
+                f'font-size: 13.5px; line-height: 1.4; color: {NEGRO}">{en_linea(resto)}</div></div>'
+                f'<div style="align-self: center"><svg width="26" height="16" '
+                f'viewBox="0 0 26 16" aria-hidden="true"><line x1="0" y1="8" x2="18" y2="8" stroke="{ROJO}" '
+                f'stroke-width="2.5"/><polygon points="16,1 26,8 16,15" fill="{ROJO}"/></svg></div>'
+                f'<div style="padding: 9px 12px; border-radius: 8px; background: {ROJO_FONDO}; display: flex; '
+                f'align-items: center; font-size: 13.5px; line-height: 1.4; font-weight: 600; color: {ROJO}">'
+                f'{en_linea(efecto)}</div></div>')
+    return f'  <div style="margin-top: 12px">{out}</div>\n'
+
+
+def preguntas(filas):
+    """Tabla 'Necesita saber… | Le pregunta a…': la duda y a quién."""
+    out = ""
+    for f in filas:
+        out += (f'<div style="display: flex; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid {BORDE}">'
+                f'{icono("chat", OP, 18)}<div style="flex: 1; font-size: 14px; line-height: 1.4; color: {TEXTO}">'
+                f'{en_linea(f[0])}</div><div style="flex-shrink: 0; padding: 4px 12px; border-radius: 99px; '
+                f'background: {OP_F}; font-family: {SANS}; font-size: 13px; font-weight: 700; color: {OP}; '
+                f'max-width: 260px">{en_linea(f[1])}</div></div>')
+    return f'  <div style="margin-top: 12px">{out}</div>\n'
+
+
+def areas_tarjetas(filas):
+    """Tabla 'Área | Qué hace | Qué le importa a Operaciones': una tarjeta por
+    área, con su color."""
+    cajas = ""
+    for f in filas:
+        area, hace, importa = (f + ["", "", ""])[:3]
+        color, fondo = COLOR_AREA.get(_sin_md(area), (GRIS, "#f3f4f8"))
+        cajas += (f'<div style="border-radius: 10px; overflow: hidden; border: 1px solid {fondo}">'
+                  f'<div style="padding: 8px 13px; background: {color}; font-family: {SANS}; font-size: 14.5px; '
+                  f'font-weight: 700; color: #ffffff">{en_linea(area)}<span style="font-weight: 500; opacity: .85"> · '
+                  f'{en_linea(hace)}</span></div><div style="padding: 9px 13px 11px; background: {fondo}; '
+                  f'font-size: 13.5px; line-height: 1.45; color: {NEGRO}">{en_linea(importa)}</div></div>')
+    return f'  <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px">{cajas}</div>\n'
+
+
+# ── Diagramas propios ─────────────────────────────────────────────────────────
+
+def _svg(ancho, alto, etiqueta, cuerpo, margen=14):
+    return (f'  <svg viewBox="0 0 {ancho} {alto}" width="100%" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; margin-top: {margen}px">{cuerpo}</svg>\n')
+
+
+def _caja(x, y, w, h, fondo, borde, rx=10, grueso=1.5, extra=""):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fondo}" stroke="{borde}" stroke-width="{grueso}" {extra}/>'
+
+
+def _flecha(x1, y1, x2, y2, color, grueso=2):
+    import math
+    a = math.atan2(y2 - y1, x2 - x1)
+    p1 = (x2 - 9 * math.cos(a) + 5 * math.sin(a), y2 - 9 * math.sin(a) - 5 * math.cos(a))
+    p2 = (x2 - 9 * math.cos(a) - 5 * math.sin(a), y2 - 9 * math.sin(a) + 5 * math.cos(a))
+    return (f'<line x1="{x1}" y1="{y1}" x2="{x2 - 7 * math.cos(a):.1f}" y2="{y2 - 7 * math.sin(a):.1f}" '
+            f'stroke="{color}" stroke-width="{grueso}"/>'
+            f'<polygon points="{x2},{y2} {p1[0]:.1f},{p1[1]:.1f} {p2[0]:.1f},{p2[1]:.1f}" fill="{color}"/>')
+
+
+def _icono_svg(nombre, x, y, color, tam=22):
+    return (f'<g transform="translate({x},{y}) scale({tam / 24})" fill="none" stroke="{color}" stroke-width="2" '
+            f'stroke-linecap="round" stroke-linejoin="round">{ICONOS[nombre]}</g>')
+
+
+def centro_cadena():
+    """Operaciones en el centro: las otras áreas alrededor, cada una con lo que
+    le aporta (o le pide) a la obra."""
+    W, H = 650, 330
+    cx, cy = W / 2, 160
+    s = []
+    alrededor = [
+        ("Ventas", "vende la instalación", 95, 60),
+        ("Ingeniería", "la diseña", 555, 60),
+        ("Logística", "compra lo que lleva", 95, 260),
+        ("Tramitación UTE", "la habilita", 555, 260),
+        ("Experiencia Solar", "acompaña al cliente", 325, 295),
+    ]
+    for area, que, x, y in alrededor:
+        base = "Operaciones" if area == "Logística" else area
+        color, fondo = COLOR_AREA[base]
+        s.append(f'<line x1="{cx}" y1="{cy}" x2="{x}" y2="{y}" stroke="{color}" stroke-width="2" stroke-dasharray="5 4"/>')
+    s.append(f'<circle cx="{cx}" cy="{cy}" r="78" fill="{OP}"/>')
+    s.append(_icono_svg("llave", cx - 14, cy - 52, "#ffffff", 28))
+    s.append(_txt(cx, cy + 4, "Operaciones", 19, 700, "#ffffff", anchor="middle"))
+    s.append(_txt(cx, cy + 26, "la obra", 14, 600, "#ffe2cc", anchor="middle"))
+    for area, que, x, y in alrededor:
+        base = "Operaciones" if area == "Logística" else area
+        color, fondo = COLOR_AREA[base]
+        w = 168
+        s.append(_caja(x - w / 2, y - 26, w, 52, fondo, color))
+        s.append(_txt(x, y - 4, area, 14, 700, color, anchor="middle"))
+        s.append(_txt(x, y + 15, que, 12.5, 500, NEGRO, anchor="middle"))
+    return _svg(W, H, "Operaciones en el centro de la cadena: las demás áreas giran alrededor de la obra", "".join(s))
+
+
+def requisitos_fecha(texto):
+    """Lo que tiene que estar para confirmar una fecha de obra: cuatro casillas
+    y la fecha confirmada recién cuando están todas."""
+    reqs = [("doc", "La respuesta de UTE a la consulta inicial"),
+            ("check", "La ingeniería hecha y validada por Operaciones"),
+            ("calendario", "La fecha en el calendario"),
+            ("plata", "La seña cobrada (pago directo) o el crédito aprobado (financiación del banco)")]
+    W, H = 650, 248
+    s = []
+    for k, (ic, t) in enumerate(reqs):
+        y = 6 + k * 58
+        s.append(_caja(0, y, 380, 48, "#ffffff", BORDE, rx=9))
+        s.append(f'<rect x="12" y="{y + 12}" width="24" height="24" rx="5" fill="{VERDE_FONDO}" stroke="{VERDE}" stroke-width="1.5"/>')
+        s.append(_icono_svg("check", 15, y + 15, VERDE, 18))
+        s.append(_txt(48, y + 21 if len(t) > 46 else y + 29, t, 13.5, 600, NEGRO, max_chars=46, salto=15))
+        s.append(f'<path d="M380 {y + 24} H420 V122 H446" fill="none" stroke="{GRIS_CLARO}" stroke-width="1.5"/>')
+    s.append(_flecha(420, 122, 458, 122, OP, 2.5))
+    s.append(_caja(462, 72, 188, 100, OP, OP, rx=12))
+    s.append(_icono_svg("calendario", 543, 84, "#ffffff", 26))
+    s.append(_txt(556, 132, "Fecha de obra", 16, 700, "#ffffff", anchor="middle"))
+    s.append(_txt(556, 152, "confirmada", 16, 700, "#ffffff", anchor="middle"))
+    s.append(_txt(556, 200, "Si falta una, la fecha", 13, 700, ROJO, anchor="middle"))
+    s.append(_txt(556, 217, "no se confirma.", 13, 700, ROJO, anchor="middle"))
+    return _svg(W, H, "Para confirmar una fecha de obra tienen que estar las cuatro cosas", "".join(s))
+
+
+def comparar_visitas(a, b):
+    """Mantenimiento y soporte, lado a lado: qué los dispara y qué deja cada uno."""
+    def col(rot, txt, items, ic, color, fondo):
+        disparo = re.search(r"\*\*(Lo dispara[^*]+)\*\*", txt)
+        resto = re.sub(r"\*\*Lo dispara[^*]+\*\*\s*", "", txt)
+        filas = "".join(
+            f'<div style="padding: 7px 0; border-top: 1px solid {BORDE}; font-size: 13px; line-height: 1.42; '
+            f'color: {TEXTO}">{en_linea(x)}</div>' for x in items)
+        return (f'<div style="border: 1.5px solid {color}; border-radius: 12px; overflow: hidden; background: #ffffff">'
+                f'<div style="padding: 10px 14px; background: {color}; display: flex; gap: 10px; align-items: center">'
+                f'{icono(ic, "#ffffff", 20)}<span style="font-family: {SANS}; font-size: 17px; font-weight: 700; '
+                f'color: #ffffff">{en_linea(rot)}</span></div>'
+                + (f'<div style="padding: 9px 14px; background: {fondo}; font-family: {SANS}; font-size: 15px; '
+                   f'font-weight: 700; color: {color}">{en_linea(disparo.group(1))}</div>' if disparo else "")
+                + f'<div style="padding: 8px 14px 4px; font-size: 13px; line-height: 1.48; color: {TEXTO}">'
+                f'{en_linea(resto)}</div><div style="padding: 0 14px 8px">{filas}</div></div>')
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px">'
+            f'{col(a[0], a[1], a[2], "calendario", VERDE, VERDE_FONDO)}'
+            f'{col(b[0], b[1], b[2], "alerta", ROJO, ROJO_FONDO)}</div>\n')
+
+
+def dos_fechas(items):
+    """La fecha tentativa (con rayas) y la confirmada (sólida), como se ven en el
+    calendario."""
+    def chip(rayada):
+        if rayada:
+            return (f'<div style="height: 30px; border-radius: 6px; border: 1.5px dashed {OP}; background: '
+                    f'repeating-linear-gradient(135deg, {OP_F} 0 7px, #f4c9a8 7px 14px)"></div>')
+        return f'<div style="height: 30px; border-radius: 6px; background: {OP}"></div>'
+    def caja(k, x):
+        nombre = _sin_md(x.split(":")[0]).strip()
+        resto = x.split(":", 1)[1].strip() if ":" in x else ""
+        return (f'<div style="padding: 12px 14px; border: 1px solid {BORDE}; border-radius: 12px; background: #ffffff">'
+                f'{chip(k == 0)}<div style="margin-top: 9px; font-family: {SANS}; font-size: 16px; font-weight: 700; '
+                f'color: {NEGRO}">{en_linea(nombre)}</div><div style="margin-top: 4px; font-size: 13.3px; '
+                f'line-height: 1.48; color: {TEXTO}">{en_linea(resto)}</div></div>')
+    flecha = (f'<div style="align-self: center"><svg width="30" height="18" viewBox="0 0 30 18" aria-hidden="true">'
+              f'<line x1="0" y1="9" x2="21" y2="9" stroke="{OP}" stroke-width="2.5"/><polygon points="19,2 30,9 19,16" '
+              f'fill="{OP}"/></svg></div>')
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 30px 1fr; gap: 8px">'
+            f'{caja(0, items[0])}{flecha}{caja(1, items[1])}</div>\n')
+
+
+def decision_cuadrilla(items):
+    """A quién le toca la obra: la cuadrilla propia o la tercerizada de la zona."""
+    propia = [x for x in items if "cuadrilla propia" in x and "grandes" in x.lower()]
+    resto = [x for x in items if x not in propia and "depende" not in x]
+    final = [x for x in items if "depende" in x]
+    def caja(titulo, sub, cosas, color, fondo, ic):
+        lis = "".join(f'<div style="display: flex; gap: 9px; padding: 6px 0; border-top: 1px solid {fondo}">'
+                      f'{icono("check", color, 15)}<span style="font-size: 13.5px; line-height: 1.45; color: {NEGRO}">'
+                      f'{en_linea(c)}</span></div>' for c in cosas)
+        return (f'<div style="border: 1.5px solid {color}; border-radius: 12px; overflow: hidden">'
+                f'<div style="padding: 10px 14px; background: {color}; display: flex; gap: 10px; align-items: center">'
+                f'{icono(ic, "#ffffff", 20)}<div><div style="font-family: {SANS}; font-size: 16px; font-weight: 700; '
+                f'color: #ffffff">{titulo}</div><div style="font-size: 12px; color: #ffffffcc">{sub}</div></div></div>'
+                f'<div style="padding: 4px 14px 8px; background: #ffffff">{lis}</div></div>')
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px">'
+            f'{caja("Cuadrilla propia", "un capataz y sus peones", propia, OP, OP_F, "equipo")}'
+            f'{caja("Tercerizada de la zona", "Montevideo y Canelones · litoral oeste", resto, "#5b6278", "#eef0f5", "mapa")}'
+            f'</div>\n'
+            + (f'  <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; padding: 10px 14px; '
+               f'background: {AZUL_FONDO}; border-radius: 10px">{icono("calendario", AZUL, 18)}<span style="font-size: '
+               f'14px; line-height: 1.45; color: {NEGRO}">{en_linea(final[0])}</span></div>\n' if final else ""))
+
+
+def pago_50_50():
+    """El pago al tercerizado: la mitad al arrancar, la mitad al terminar."""
+    W, H = 650, 104
+    s = [_caja(0, 22, 323, 36, OP, OP, rx=8), _caja(327, 22, 323, 36, "#f4c9a8", "#f4c9a8", rx=8),
+         _txt(161, 46, "50 % al arrancar la obra", 15, 700, "#ffffff", anchor="middle"),
+         _txt(488, 46, "50 % al terminarla", 15, 700, OP, anchor="middle"),
+         _txt(0, 14, "EL PAGO AL INSTALADOR TERCERIZADO", 11, 700, GRIS_CLARO),
+         _txt(0, 80, "La orden la da Administración y Finanzas o Gerencia, con la Ejecución de obra terminada "
+              "en Voltia PM.", 12.5, 500, TEXTO, max_chars=95, salto=16)]
+    return _svg(W, H, "El pago al tercerizado: la mitad al arrancar y la mitad al terminar", "".join(s))
+
+
+def escalera_aprobacion(items):
+    """Quién aprueba una compra, de menos a más: tres escalones."""
+    esc = [("En la lista de materiales de Ingeniería", "Sin aprobación", "La compra el encargado de compras", VERDE, VERDE_FONDO),
+           ("Fuera de la lista, hasta USD 200 cada gasto", "Gerente de Operaciones",
+            "Sin tope total. Cada gasto, en Finanzas con la obra y el motivo, y rendido los viernes con Gerencia", OP, OP_F),
+           ("Fuera de la lista, más de USD 200", "Finanzas o Gerencia", "", ROJO, ROJO_FONDO)]
+    W, H = 650, 232
+    s = []
+    for k, (que, quien, nota, color, fondo) in enumerate(esc):
+        x, y = k * 64, 164 - k * 74
+        w = W - x
+        s.append(_caja(x, y, w, 66, fondo, color, rx=9))
+        s.append(_txt(x + 14, y + 22, que, 13.5, 700, NEGRO))
+        s.append(_txt(x + 14, y + 42, nota, 11.8, 500, TEXTO, max_chars=int((w - 210) / 6.2), salto=13) if nota else "")
+        s.append(f'<rect x="{W - 196}" y="{y + 19}" width="184" height="28" rx="14" fill="{color}"/>')
+        s.append(_txt(W - 104, y + 38, quien, 13, 700, "#ffffff", anchor="middle"))
+    return _svg(W, H, "Quién aprueba una compra, según si está en la lista y cuánto sale", "".join(s))
+
+
+def estados_informe():
+    """Los estados del informe del capataz: el camino normal y el bloqueo."""
+    W, H = 650, 150
+    s = []
+    est = [("Pendiente", 10, "#eef0f5", GRIS), ("En progreso", 175, OP_F, OP), ("Completado", 470, VERDE_FONDO, VERDE)]
+    for nombre, x, fondo, color in est:
+        s.append(_caja(x, 20, 160 if nombre != "Completado" else 170, 44, fondo, color, rx=22))
+        s.append(_txt(x + (80 if nombre != "Completado" else 85), 47, nombre, 15, 700, color, anchor="middle"))
+    s.append(_flecha(170, 42, 175, 42, GRIS))
+    s.append(_flecha(335, 42, 466, 42, OP, 2.5))
+    s.append(_txt(400, 34, "el proyecto avanza", 11.5, 600, OP, anchor="middle"))
+    s.append(_caja(270, 100, 170, 40, ROJO_FONDO, ROJO, rx=20))
+    s.append(_txt(355, 125, "Bloqueado", 15, 700, ROJO, anchor="middle"))
+    s.append(f'<path d="M255 64 Q255 120 268 120" fill="none" stroke="{ROJO}" stroke-width="1.8" stroke-dasharray="4 3"/>')
+    s.append(_txt(448, 114, "falta algo del relevamiento:", 11.5, 600, ROJO))
+    s.append(_txt(448, 129, "avisa a quien hizo la visita", 11.5, 500, TEXTO))
+    s.append(_txt(448, 143, "y al gerente de Operaciones", 11.5, 500, TEXTO))
+    return _svg(W, H, "Los estados del informe del capataz", "".join(s))
+
+
+def cadena_seguridad(filas):
+    """Quién responde por la seguridad: una cadena de cuatro eslabones, de
+    abajo (el operario) hacia arriba (Gerencia)."""
+    out = ""
+    n = len(filas)
+    for k, f in enumerate(reversed(filas)):
+        quien, que = f[0], f[1]
+        margen = (n - 1 - k) * 0
+        ancho = 62 + k * 0
+        out += (f'<div style="display: flex; gap: 12px; align-items: center; margin-top: {0 if k == 0 else 6}px">'
+                f'<div style="flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: '
+                f'{OP if k == n - 1 else "#ffffff"}; border: 2px solid {OP}; color: {"#ffffff" if k == n - 1 else OP}; '
+                f'font-family: {SANS}; font-size: 15px; font-weight: 700; text-align: center; line-height: 30px">'
+                f'{n - k}</div><div style="flex: 1; padding: 9px 13px; border-radius: 9px; background: '
+                f'{OP_F if k == n - 1 else "#fffaf6"}; border: 1px solid {NARANJA_BORDE}"><span style="font-family: '
+                f'{SANS}; font-size: 14.5px; font-weight: 700; color: {NEGRO}">{en_linea(quien)}</span>'
+                f'<span style="font-size: 13.5px; color: {TEXTO}"> · {en_linea(que)}</span></div></div>')
+        if k < n - 1:
+            out += (f'<div style="margin-left: 16px; height: 10px; border-left: 2px solid {OP}"></div>')
+    return (f'  <div style="margin-top: 14px">{out}<div style="margin-top: 8px; font-family: {SANS}; font-size: 12px; '
+            f'color: {GRIS}">De abajo hacia arriba: cada uno responde por lo suyo y por el que tiene a cargo.</div></div>\n')
+
+
+def matriz_sancion(items):
+    """Si se encuentra a alguien sin las medidas de seguridad: quién lo
+    encuentra y a quién se sanciona."""
+    roles = ["Operario", "Capataz", "Gerente de Operaciones"]
+    filas = [("El capataz", ["corrige", "", ""]),
+             ("El gerente de Operaciones", ["s", "s", ""]),
+             ("Gerencia", ["s", "s", "s"])]
+    th = "".join(f'<th style="padding: 8px 6px; font-family: {SANS}; font-size: 11.5px; font-weight: 700; '
+                 f'letter-spacing: .8px; color: {GRIS}; text-align: center">{r.upper()}</th>' for r in roles)
+    trs = ""
+    for quien, marcas in filas:
+        tds = ""
+        for m in marcas:
+            if m == "s":
+                c = (f'<span style="display: inline-block; padding: 4px 10px; border-radius: 99px; background: {ROJO}; '
+                     f'color: #ffffff; font-family: {SANS}; font-size: 12px; font-weight: 700">sanción</span>')
+            elif m:
+                c = (f'<span style="display: inline-block; padding: 4px 10px; border-radius: 99px; background: {OP_F}; '
+                     f'color: {OP}; font-family: {SANS}; font-size: 12px; font-weight: 700">lo corrige en el momento</span>')
+            else:
+                c = f'<span style="color: {GRIS_CLARO}">—</span>'
+            tds += f'<td style="padding: 10px 6px; text-align: center; border-top: 1px solid {BORDE}">{c}</td>'
+        trs += (f'<tr><td style="padding: 10px 6px 10px 0; border-top: 1px solid {BORDE}; font-family: {SANS}; '
+                f'font-size: 14px; font-weight: 700; color: {NEGRO}">Si lo encuentra {en_linea(quien.lower() if quien != "Gerencia" else quien)}</td>{tds}</tr>')
+    return (f'  <table style="width: 100%; border-collapse: collapse; margin-top: 14px"><thead><tr>'
+            f'<th style="text-align: left; padding: 8px 6px 8px 0; font-family: {SANS}; font-size: 11.5px; '
+            f'font-weight: 700; letter-spacing: .8px; color: {GRIS}">QUIÉN LO ENCUENTRA</th>{th}</tr></thead>'
+            f'<tbody>{trs}</tbody></table>\n')
+
+
+def panel_montaje():
+    """El montaje: el panel en vertical a 25° mirando al norte, y las grampas
+    a 456 mm de cada punta, nunca en la punta."""
+    W, H = 650, 250
+    s = []
+    # Vista de frente del panel, con las dos grampas a cada lado.
+    px, py, pw, ph = 40, 20, 120, 210
+    s.append(_caja(px, py, pw, ph, "#1b2a5c", NEGRO, rx=3))
+    for i in range(1, 6):
+        s.append(f'<line x1="{px}" y1="{py + i * ph / 6}" x2="{px + pw}" y2="{py + i * ph / 6}" stroke="#3a4f94" stroke-width="1"/>')
+    s.append(f'<line x1="{px + pw / 2}" y1="{py}" x2="{px + pw / 2}" y2="{py + ph}" stroke="#3a4f94" stroke-width="1"/>')
+    for gy in (py + 46, py + ph - 46):
+        for gx in (px - 8, px + pw - 4):
+            s.append(f'<rect x="{gx}" y="{gy - 6}" width="12" height="12" rx="2" fill="{OP}"/>')
+    s.append(f'<line x1="{px + pw + 22}" y1="{py}" x2="{px + pw + 22}" y2="{py + 46}" stroke="{NEGRO}" stroke-width="1.3"/>')
+    s.append(f'<line x1="{px + pw + 16}" y1="{py}" x2="{px + pw + 28}" y2="{py}" stroke="{NEGRO}" stroke-width="1.3"/>')
+    s.append(f'<line x1="{px + pw + 16}" y1="{py + 46}" x2="{px + pw + 28}" y2="{py + 46}" stroke="{NEGRO}" stroke-width="1.3"/>')
+    s.append(_txt(px + pw + 32, py + 28, "456 mm", 13, 700, NEGRO))
+    s.append(f'<line x1="{px + pw + 22}" y1="{py + ph - 46}" x2="{px + pw + 22}" y2="{py + ph}" stroke="{NEGRO}" stroke-width="1.3"/>')
+    s.append(f'<line x1="{px + pw + 16}" y1="{py + ph}" x2="{px + pw + 28}" y2="{py + ph}" stroke="{NEGRO}" stroke-width="1.3"/>')
+    s.append(f'<line x1="{px + pw + 16}" y1="{py + ph - 46}" x2="{px + pw + 28}" y2="{py + ph - 46}" stroke="{NEGRO}" stroke-width="1.3"/>')
+    s.append(_txt(px + pw + 32, py + ph - 18, "456 mm", 13, 700, NEGRO))
+    s.append(_txt(px - 30, py + ph + 18, "", 1, 400, NEGRO))
+    s.append(_txt(250, 40, "Las grampas, a 456 mm", 15, 700, NEGRO))
+    s.append(_txt(250, 58, "de cada punta del panel.", 15, 700, NEGRO))
+    s.append(_txt(250, 80, "Nunca en la punta: el vidrio", 13, 500, ROJO))
+    s.append(_txt(250, 96, "se comba y se pierde la garantía.", 13, 500, ROJO))
+    # Vista de costado: 25° y el norte.
+    import math
+    ox, oy, L = 420, 220, 140
+    a = math.radians(25)
+    s.append(_txt(ox - 10, 118, "Inclinación 25°, mirando al", 13, 600, NEGRO))
+    s.append(_txt(ox - 10, 134, "norte, con los paneles en vertical", 13, 600, NEGRO))
+    s.append(f'<line x1="{ox - 20}" y1="{oy}" x2="{ox + L + 30}" y2="{oy}" stroke="{GRIS_CLARO}" stroke-width="1.5"/>')
+    s.append(f'<line x1="{ox}" y1="{oy}" x2="{ox + L * math.cos(a):.1f}" y2="{oy - L * math.sin(a):.1f}" '
+             f'stroke="#1b2a5c" stroke-width="9" stroke-linecap="round"/>')
+    s.append(f'<path d="M{ox + 55} {oy} A55 55 0 0 0 {ox + 55 * math.cos(a):.1f} {oy - 55 * math.sin(a):.1f}" '
+             f'fill="none" stroke="{OP}" stroke-width="2"/>')
+    s.append(_txt(ox + 62, oy - 8, "25°", 16, 700, OP))
+    s.append(_flecha(ox + L + 2, oy - 22, ox + L + 52, oy - 22, VERDE, 2.5))
+    s.append(_txt(ox + L + 27, oy - 32, "NORTE", 12, 700, VERDE, anchor="middle"))
+    return _svg(W, H, "El montaje: grampas a 456 mm de cada punta y el panel a 25° mirando al norte", "".join(s))
+
+
+def puesta_tierra():
+    """La puesta a tierra: la jabalina propia, hasta tres, a 5 m o más entre sí,
+    con el cable de 6 mm² a la bornera; el objetivo, menos de 10 Ω."""
+    W, H = 650, 250
+    s = []
+    suelo = 92
+    s.append(f'<rect x="0" y="{suelo}" width="{W}" height="{H - suelo}" fill="#f3ece2"/>')
+    s.append(f'<line x1="0" y1="{suelo}" x2="{W}" y2="{suelo}" stroke="#a88b63" stroke-width="2"/>')
+    # Bornera / tablero
+    s.append(_caja(20, 20, 96, 58, "#ffffff", NEGRO, rx=6))
+    s.append(_txt(68, 44, "Tablero", 13, 700, NEGRO, anchor="middle"))
+    s.append(_txt(68, 62, "bornera", 12, 500, TEXTO, anchor="middle"))
+    xs = [190, 360, 530]
+    for k, x in enumerate(xs):
+        prof = 120 if k == 0 else 100
+        s.append(_caja(x - 22, suelo - 4, 44, 18, "#d9cbb4", "#a88b63", rx=3))
+        s.append(f'<line x1="{x}" y1="{suelo + 10}" x2="{x}" y2="{suelo + prof}" stroke="{OP}" stroke-width="6" stroke-linecap="round"/>')
+        if k == 0:
+            s.append(f'<line x1="{x}" y1="{suelo + prof - 30}" x2="{x}" y2="{suelo + prof + 26}" stroke="{OP}" '
+                     f'stroke-width="6" stroke-linecap="round" stroke-dasharray="2 5"/>')
+            s.append(_txt(x + 12, suelo + prof + 18, "1º: profundizar", 12, 700, OP))
+            s.append(_txt(x + 12, suelo + prof + 33, "(otra encima)", 11.5, 500, TEXTO))
+        if k == 0:
+            s.append(_txt(x - 12, suelo + 60, "jabalina 1", 12, 700, NEGRO, anchor="end"))
+        else:
+            s.append(_txt(x, suelo + prof + 22, f"jabalina {k + 1}", 12, 700, NEGRO, anchor="middle"))
+    s.append(f'<path d="M116 50 H{xs[0]} V{suelo - 4}" fill="none" stroke="{VERDE}" stroke-width="4"/>')
+    s.append(_txt(150, 40, "6 mm² (lo exige UTE)", 12.5, 700, VERDE))
+    for a, b in ((xs[0], xs[1]), (xs[1], xs[2])):
+        s.append(f'<path d="M{a} {suelo + 4} H{b}" fill="none" stroke="{VERDE}" stroke-width="2.5" stroke-dasharray="6 4"/>')
+        s.append(_txt((a + b) / 2, suelo - 10, "5 m o más", 12.5, 700, NEGRO, anchor="middle"))
+    s.append(_caja(400, 14, 236, 54, VERDE, VERDE, rx=10))
+    s.append(_txt(518, 38, "Objetivo: menos de 10 Ω", 15, 700, "#ffffff", anchor="middle"))
+    s.append(_txt(518, 57, "hasta 3 jabalinas; si no baja, se anota", 11.5, 500, "#e7f3e9", anchor="middle"))
+    return _svg(W, H, "La puesta a tierra: hasta tres jabalinas para bajar de 10 ohm", "".join(s))
+
+
+def cuatro_cosas(items):
+    """Las cuatro cosas de la puesta en marcha (o del cierre), en baldosas con
+    ícono."""
+    cajas = ""
+    for k, x in enumerate(items, 1):
+        r = partir_rotulo(x)
+        rot, txt = r if r else (x, "")
+        cajas += (f'<div style="padding: 13px 14px; border-radius: 12px; background: {OP_F}; border: 1px solid {NARANJA_BORDE}">'
+                  f'<div style="display: flex; gap: 10px; align-items: center">'
+                  f'<div style="flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; background: {OP}; display: flex; '
+                  f'align-items: center; justify-content: center">{icono(icono_para(rot + " " + txt[:40]), "#ffffff", 20)}</div>'
+                  f'<div style="font-family: {SANS}; font-size: 15.5px; font-weight: 700; line-height: 1.2; color: {NEGRO}">'
+                  f'<span style="color: {OP}">{k} · </span>{en_linea(rot)}</div></div>'
+                  f'<div style="margin-top: 8px; font-size: 13.2px; line-height: 1.45; color: {TEXTO}">{en_linea(txt)}</div></div>')
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px">{cajas}</div>\n')
+
+
+def ensayo_antiisla():
+    """El ensayo anti-isla en el tiempo: se corta, deja de inyectar, se sube la
+    llave y a los 180 segundos vuelve a inyectar."""
+    W, H = 650, 170
+    s = []
+    y = 92
+    s.append(f'<line x1="20" y1="{y}" x2="630" y2="{y}" stroke="{BORDE}" stroke-width="2"/>')
+    # Potencia: arriba, cae a cero al cortar, vuelve a los 180 s.
+    s.append(f'<path d="M20 50 H150 V{y} H460 V50 H630" fill="none" stroke="{OP}" stroke-width="3"/>')
+    s.append(_txt(20, 40, "inyectando", 12, 700, OP))
+    s.append(_txt(630, 40, "vuelve a inyectar", 12, 700, OP, anchor="end"))
+    for x, t1, t2, ic in ((150, "1 · Se corta la llave", "de entrada de UTE", "rayo"),
+                          (230, "2 · El inversor", "deja de inyectar", "alerta"),
+                          (300, "3 · Se sube la llave", "y arranca el cronómetro", "reloj")):
+        s.append(f'<circle cx="{x}" cy="{y}" r="5" fill="{NEGRO}"/>')
+    s.append(_txt(150, y + 26, "1 · Se corta la llave", 12, 700, NEGRO, anchor="middle"))
+    s.append(_txt(150, y + 41, "de entrada de UTE", 11.5, 500, TEXTO, anchor="middle"))
+    s.append(_txt(300, y + 26, "2 · Se vuelve a subir", 12, 700, NEGRO, anchor="middle"))
+    s.append(_txt(300, y + 41, "y arranca el cronómetro", 11.5, 500, TEXTO, anchor="middle"))
+    s.append(f'<path d="M300 {y - 16} v-8 H460 v8" fill="none" stroke="{VERDE}" stroke-width="2"/>')
+    s.append(_txt(380, y - 30, "180 segundos", 16, 700, VERDE, anchor="middle"))
+    s.append(_txt(460, y + 26, "3 · Vuelve a inyectar", 12, 700, NEGRO, anchor="middle"))
+    s.append(_txt(460, y + 41, "a los 180 s: quedó bien", 11.5, 500, TEXTO, anchor="middle"))
+    s.append(_icono_svg("video", 540, 118, GRIS, 20))
+    s.append(_txt(566, 133, "se filma todo", 11.5, 600, GRIS))
+    return _svg(W, H, "El ensayo anti-isla: corte, reconexión y 180 segundos hasta volver a inyectar", "".join(s))
+
+
+def chips_dia(items):
+    """Las respuestas al '¿Qué le decimos al cliente si pregunta hoy?'."""
+    chips = ""
+    for x in items:
+        alerta = "imprevisto" in x.lower()
+        chips += (f'<div style="display: flex; gap: 8px; align-items: center; padding: 9px 14px; border-radius: 18px 18px 18px 4px; '
+                  f'background: {ROJO_FONDO if alerta else VERDE_FONDO}; border: 1px solid {ROJO_BORDE if alerta else "#cfe3d2"}">'
+                  f'{icono("alerta" if alerta else "chat", ROJO if alerta else VERDE, 16)}<span style="font-size: 14px; '
+                  f'line-height: 1.35; color: {ROJO if alerta else VERDE_TEXTO}; font-weight: 600">{en_linea(x)}</span></div>')
+    return f'  <div style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px">{chips}</div>\n'
+
+
+def documentos_ute(items):
+    """Los 7 documentos de UTE que firma el cliente, en el orden del PDF."""
+    cajas = "".join(
+        f'<div style="display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid {BORDE}; '
+        f'border-radius: 10px; background: #ffffff"><div style="position: relative; flex-shrink: 0">'
+        f'{icono("firma", COLOR_AREA["Tramitación UTE"][0], 26, 1.7)}</div><div><div style="font-family: {SANS}; '
+        f'font-size: 11px; font-weight: 700; letter-spacing: 1px; color: {COLOR_AREA["Tramitación UTE"][0]}">'
+        f'HOJA {k}</div><div style="font-size: 13.5px; line-height: 1.3; color: {NEGRO}; font-weight: 600">{en_linea(x)}'
+        f'</div></div><div style="margin-left: auto; width: 18px; height: 18px; border: 1.8px solid {NEGRO}; '
+        f'border-radius: 4px; flex-shrink: 0"></div></div>' for k, x in enumerate(items, 1))
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px">{cajas}</div>\n')
+
+
+def rutina(bloques):
+    """La rutina de Logística: una columna por frecuencia."""
+    cajas = ""
+    colores = [OP, "#9a4a0e", "#7a3a0b", "#5a2a08"]
+    for k, (rot, items) in enumerate(bloques):
+        lis = "".join(f'<div style="padding: 6px 0; border-top: 1px solid {NARANJA_BORDE}; font-size: 12.8px; '
+                      f'line-height: 1.42; color: {NEGRO}">{en_linea(x)}</div>' for x in items)
+        cajas += (f'<div style="border-radius: 12px; overflow: hidden; background: {OP_F}">'
+                  f'<div style="padding: 9px 13px; background: {colores[k % 4]}; display: flex; gap: 8px; align-items: center">'
+                  f'{icono("calendario", "#ffffff", 17)}<span style="font-family: {SANS}; font-size: 15px; font-weight: 700; '
+                  f'color: #ffffff">{en_linea(rot)}</span></div><div style="padding: 2px 13px 8px">{lis}</div></div>')
+    return (f'  <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px">{cajas}</div>\n')
+
+
+def visualizar_operaciones(crudos, num):
+    """Recorre los bloques de un capítulo del Manual de Operaciones y cambia
+    los pasajes que se pueden dibujar."""
+    out = []
+    i = 0
+    n = len(crudos)
+    casos = num in (8, 16, 20)
+    while i < n:
+        t, c = crudos[i]
+        txt = c if t == "p" else ""
+        # Los casos de "Cuando algo sale mal": el título y todo lo que sigue
+        # hasta el próximo título, en una tarjeta.
+        if casos and t == "h3":
+            j = i + 1
+            while j < n and crudos[j][0] != "h3":
+                j += 1
+            out.append(("vo_caso", (c, crudos[i + 1:j])))
+            i = j
+            continue
+        # Diagramas puntuales, por la frase que los presenta.
+        if t == "p" and "el centro de la cadena" in txt:
+            out.append((t, c))
+            out.append(("vo_centro", None))
+            i += 1
+            continue
+        if t == "p" and txt.startswith("Por eso, para **confirmar una fecha de obra**"):
+            out.append(("vo_requisitos", c))
+            i += 1
+            continue
+        if t == "tabla" and [x.lower() for x in c[0]][:1] == ["si falla…"]:
+            out.append(("vo_causa", c))
+            i += 1
+            continue
+        if t == "tabla" and [x.lower() for x in c[0]] == ["área", "qué hace, en una línea", "qué le importa a operaciones"]:
+            out.append(("vo_areas", c[1]))
+            i += 1
+            continue
+        if t == "tabla" and [x.lower() for x in c[0]] == ["necesita saber…", "le pregunta a…"]:
+            out.append(("vo_preguntas", c[1]))
+            i += 1
+            continue
+        if t == "tabla" and [x.lower() for x in c[0]] == ["quién", "de qué responde"]:
+            out.append(("vo_cadena", c[1]))
+            i += 1
+            continue
+        # Mantenimiento y soporte, lado a lado.
+        if (t == "p" and txt.startswith("**El mantenimiento.**") and i + 3 < n and crudos[i + 1][0] == "lista"
+                and crudos[i + 2][0] == "p" and crudos[i + 2][1].startswith("**El soporte.**") and crudos[i + 3][0] == "lista"):
+            a = partir_rotulo(txt)
+            b = partir_rotulo(crudos[i + 2][1])
+            out.append(("vo_visitas", ((a[0], a[1], crudos[i + 1][1]), (b[0], b[1], crudos[i + 3][1]))))
+            i += 4
+            continue
+        if t == "lista" and c and c[0].startswith("**La fecha tentativa**"):
+            out.append(("vo_fechas", c))
+            i += 1
+            continue
+        if t == "lista" and c and c[0].startswith("**Las obras grandes o complejas**"):
+            out.append(("vo_cuadrilla", c))
+            i += 1
+            continue
+        if t == "lista" and c and c[0].startswith("**Lo que está en la lista de materiales de Ingeniería**"):
+            out.append(("vo_escalera", c))
+            i += 1
+            continue
+        if t == "lista" and c and c[0].startswith("Si **el capataz** encuentra"):
+            out.append(("vo_sancion", c))
+            i += 1
+            continue
+        if t == "lista" and c and c[0].startswith("Arrancamos, todo en orden"):
+            out.append(("vo_chips", c))
+            i += 1
+            continue
+        if t == "numerada" and c and c[0].startswith("Solicitud de Conexión IMG"):
+            out.append(("vo_documentos", c))
+            i += 1
+            continue
+        if t == "numerada" and c and (c[0].startswith("**El datalogger y la planta:**") or c[0].startswith("**La configuración:**")):
+            out.append(("vo_cuatro", c))
+            i += 1
+            continue
+        # La rutina de Logística: rótulos de frecuencia, cada uno con su lista.
+        if t == "p" and re.fullmatch(r"\*\*(Todos los días)\*\*", txt.strip()):
+            bloques_r, j = [], i
+            while j + 1 < n and crudos[j][0] == "p" and re.fullmatch(r"\*\*[^*]+\*\*", crudos[j][1].strip()) \
+                    and crudos[j + 1][0] == "lista":
+                bloques_r.append((crudos[j][1].strip().strip("*"), crudos[j + 1][1]))
+                j += 2
+            out.append(("vo_rutina", bloques_r))
+            i = j
+            continue
+        # Un rótulo solo ('**En el techo** (…):') seguido de una lista.
+        if (t == "p" and i + 1 < n and crudos[i + 1][0] == "lista"
+                and not crudos[i + 1][1][0].startswith("**Lo que está en la lista")
+                and (re.fullmatch(r"\*\*[^*]{2,60}\*\*[^*]{0,60}:", txt.strip())
+                     or re.fullmatch(r"\*\*[^*]{2,60}:\*\*", txt.strip()))):
+            rot = _sin_md(txt.strip().rstrip(":"))
+            out.append(("vo_tarjeta_lista", (rot, crudos[i + 1][1])))
+            i += 2
+            continue
+        # Párrafos seguidos que empiezan con un rótulo: tarjetas.
+        if t == "p" and partir_rotulo(txt) and partir_rotulo(txt)[1] and not txt.rstrip().endswith(":"):
+            grupo, j = [], i
+            while (j < n and crudos[j][0] == "p" and partir_rotulo(crudos[j][1])
+                   and partir_rotulo(crudos[j][1])[1] and len(crudos[j][1]) < 700
+                   and not crudos[j][1].rstrip().endswith(":")):
+                grupo.append(partir_rotulo(crudos[j][1]))
+                j += 1
+            if len(grupo) >= 2:
+                # De a dos o tres por bloque, para que se puedan repartir entre hojas.
+                for k in range(0, len(grupo), 2):
+                    out.append(("vo_tarjetas", grupo[k:k + 2]))
+                i = j
+                continue
+        # Una lista cuyos ítems arrancan con un rótulo en negrita.
+        if t == "lista" and len(c) >= 2 and sum(1 for x in c if partir_rotulo(x) and partir_rotulo(x)[1]) >= len(c) - 0:
+            out.append(("vo_filas", [partir_rotulo(x) for x in c]))
+            i += 1
+            continue
+        # Una lista de cosas cortas: baldosas.
+        if t == "lista" and 3 <= len(c) <= 6 and all(len(_sin_md(x)) <= 95 and not x.startswith("[ ]") for x in c):
+            out.append(("vo_baldosas", c))
+            i += 1
+            continue
+        # Una lista numerada corta: pasos en fila.
+        if t == "numerada" and 3 <= len(c) <= 4 and all(len(_sin_md(x)) <= 120 for x in c):
+            out.append(("vo_pasos", c))
+            i += 1
+            continue
+        out.append((t, c))
+        # Los dibujos que van después de un pasaje, sin reemplazarlo.
+        if t == "h3" and c == "El montaje":
+            pass
+        if t == "lista" and c and c[0].startswith("**Inclinación 25°"):
+            out.append(("vo_montaje", None))
+        if t == "p" and txt.startswith("**Video 2 · El ensayo anti-isla.**"):
+            out.append(("vo_antiisla", None))
+        if t == "p" and txt.startswith("**Los estados del informe:**"):
+            out.append(("vo_estados", None))
+        i += 1
+    # Dibujos que se enganchan a la lista ya transformada.
+    final = []
+    for t, c in out:
+        final.append((t, c))
+        if t == "vo_filas" and c and c[0][0].startswith("Inclinación 25°"):
+            final.append(("vo_montaje", None))
+        if t == "vo_filas" and c and c[0][0].startswith("Siempre"):
+            pass
+    tierra = []
+    for t, c in final:
+        tierra.append((t, c))
+        if t == "h3" and c == "La puesta a tierra":
+            tierra.append(("vo_tierra", None))
+        if t == "vo_tarjetas" and any(r.startswith("Cómo se le paga") for r, _ in c):
+            tierra.append(("vo_pago", None))
+        if t == "vo_tarjetas" and any(r.startswith("Video 2") for r, _ in c):
+            tierra.append(("vo_antiisla", None))
+    return tierra
+
+
+VISUALES = {
+    "vo_caso": lambda c: caso(*c),
+    "vo_centro": lambda c: centro_cadena(),
+    "vo_requisitos": requisitos_fecha,
+    "vo_causa": lambda c: causa_efecto(*c),
+    "vo_areas": areas_tarjetas,
+    "vo_preguntas": preguntas,
+    "vo_cadena": cadena_seguridad,
+    "vo_visitas": lambda c: comparar_visitas(*c),
+    "vo_fechas": dos_fechas,
+    "vo_cuadrilla": decision_cuadrilla,
+    "vo_escalera": escalera_aprobacion,
+    "vo_sancion": matriz_sancion,
+    "vo_chips": chips_dia,
+    "vo_documentos": documentos_ute,
+    "vo_cuatro": cuatro_cosas,
+    "vo_rutina": rutina,
+    "vo_tarjeta_lista": lambda c: tarjeta_lista(*c),
+    "vo_tarjetas": tarjetas_rotulo,
+    "vo_filas": filas_rotulo,
+    "vo_baldosas": baldosas,
+    "vo_pasos": pasos_horizontales,
+    "vo_montaje": lambda c: panel_montaje(),
+    "vo_antiisla": lambda c: ensayo_antiisla(),
+    "vo_estados": lambda c: estados_informe(),
+    "vo_tierra": lambda c: puesta_tierra(),
+    "vo_pago": lambda c: pago_50_50(),
+}
+
+
 CAPTURAS = json.load(open(os.path.join(AQUI, "capturas-operaciones.json")))
 
 
@@ -1068,6 +1928,8 @@ def captura(nombre, epigrafe):
 
 
 def html_de(tipo, c):
+    if tipo in VISUALES:
+        return VISUALES[tipo](c)
     if tipo == "captura":
         return captura(*c)
     if tipo == "etapas_io":
@@ -1380,6 +2242,7 @@ def construir():
             crudos = juntar_cliente_pm_casos(crudos, cap["num"])
         else:
             crudos = juntar_operaciones(crudos)
+            crudos = visualizar_operaciones(crudos, cap["num"])
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1
@@ -1408,12 +2271,12 @@ def construir():
             rotulo = t == "p" and re.fullmatch(r"\*\*[^*]{1,60}\*\*", c.strip()) is not None
             sid, st, sc = items[k + 1]
             presenta = t == "p" and st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente",
-                                           "pantalla", "etapas_io", "tiempo", "captura")
+                                           "pantalla", "etapas_io", "tiempo", "captura") or (t == "p" and st in VISUALES)
             if not (t == "h3" or rotulo or presenta or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
                 return 0
             # Un párrafo que presenta un dibujo viaja con el dibujo.
             if st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente", "etapas_io",
-                      "tiempo", "captura"):
+                      "tiempo", "captura") or st in VISUALES:
                 return alto(sid, BLOQUES[sid])
             if st == "tabla" and "cab" in ALTURAS.get(sid, {}):
                 return 16 + ALTURAS[sid]["cab"] + ALTURAS[sid]["filas"][0]

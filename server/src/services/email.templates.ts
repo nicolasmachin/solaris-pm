@@ -54,11 +54,25 @@ export interface DigestGroup {
   items: Array<{ title: string; message: string }>;
 }
 
+export interface DigestContratoPendiente {
+  projectId: string;
+  cliente: string;
+  /** Días desde que se generó el último contrato. */
+  dias: number;
+}
+
 export function emailDailyDigest(params: {
   userName: string;
   groups: DigestGroup[];
   totalCount: number;
+  /**
+   * Contratos de este asesor ya generados que todavía no tienen el firmado
+   * cargado (ver `digest/contratos-pendientes.service.ts`). Vacío = la sección
+   * no aparece.
+   */
+  contratosPendientes?: DigestContratoPendiente[];
 }) {
+  const contratos = params.contratosPendientes ?? [];
   const groupsHtml = params.groups
     .map((g) => {
       const header = g.projectName
@@ -75,23 +89,55 @@ export function emailDailyDigest(params: {
     })
     .join("");
 
+  const diasTxt = (d: number) => (d === 0 ? "hoy" : d === 1 ? "hace 1 día" : `hace ${d} días`);
+  const contratosHtml =
+    contratos.length === 0
+      ? ""
+      : `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#12151c;">Contratos pendientes de firma (${contratos.length})</div>` +
+        `<p style="margin:0 0 8px;color:#5a616b;font-size:13px;">Ya se generó el contrato pero todavía no se cargó el firmado. Se sube desde el bloque "Contrato firmado" de la ficha del proyecto.</p>` +
+        `<ul style="margin:0;padding-left:18px;">` +
+        contratos
+          .map(
+            (c) =>
+              `<li style="margin:0 0 6px;"><a href="${projectLink(c.projectId)}" style="color:#12151c;font-weight:600;">${escapeHtml(c.cliente)}</a>` +
+              ` <span style="color:#5a616b;font-size:13px;">· contrato enviado ${diasTxt(c.dias)}</span></li>`,
+          )
+          .join("") +
+        `</ul>`;
+
+  const hayNovedades = params.totalCount > 0;
+  const intro = hayNovedades
+    ? `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que pasó en tus proyectos en las últimas 24 horas ` +
+      `(<strong>${params.totalCount}</strong> novedad${params.totalCount === 1 ? "" : "es"}):</p>`
+    : `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que tenés pendiente:</p>`;
+
   const contentHtml =
-    `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que pasó en tus proyectos en las últimas 24 horas ` +
-    `(<strong>${params.totalCount}</strong> novedad${params.totalCount === 1 ? "" : "es"}):</p>` +
+    intro +
+    contratosHtml +
     groupsHtml +
     `<p style="margin:18px 0 0;color:#8a9099;font-size:12px;">Ves este resumen una vez al día. Cada novedad ya está también en la campana de Voltia PM apenas ocurre.</p>`;
 
   const plural = params.totalCount === 1 ? "novedad" : "novedades";
+  const partes: string[] = [];
+  if (hayNovedades) partes.push(`${params.totalCount} ${plural}`);
+  if (contratos.length > 0) {
+    partes.push(`${contratos.length} contrato${contratos.length === 1 ? "" : "s"} sin firmar`);
+  }
+  const resumen = partes.join(" · ");
+  const textoContratos = contratos.length
+    ? `\nContratos pendientes de firma:\n` +
+      contratos.map((c) => `- ${c.cliente} (contrato enviado ${diasTxt(c.dias)}): ${projectLink(c.projectId)}`).join("\n")
+    : "";
   return {
-    subject: `[Voltia PM] Resumen del día — ${params.totalCount} ${plural}`,
+    subject: `[Voltia PM] Resumen del día — ${resumen}`,
     html: renderEmailLayout({
       title: "Resumen del día",
       kicker: "Digest diario",
-      preheader: `${params.totalCount} ${plural} en tus proyectos.`,
+      preheader: `${resumen} en tus proyectos.`,
       contentHtml,
       cta: { label: "Abrir Voltia PM", url: BASE_URL },
     }),
-    text: `Resumen del día: ${params.totalCount} ${plural} en tus proyectos. Entrá a ${BASE_URL} para el detalle.`,
+    text: `Resumen del día: ${resumen}. Entrá a ${BASE_URL} para el detalle.${textoContratos}`,
   };
 }
 

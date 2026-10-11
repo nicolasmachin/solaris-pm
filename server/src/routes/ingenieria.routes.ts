@@ -15,6 +15,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { notFound } from "../utils/errors.js";
 import { serializeDate, serializeDateOnly } from "../utils/serialization.js";
+import { etiquetaDocumentoComercial } from "../services/documentos-generados.service.js";
 
 type EngineeringStageSlim = {
   id: string;
@@ -91,6 +92,9 @@ function countCompletedSubstages(substages: { status: string }[]) {
  * sincronizado entre ambos endpoints.
  */
 function buildToolSourceLabel(toolSource: string | null, toolVersion: number | null): string | null {
+  // Contrato / proforma / Plan de Protección / contrato firmado.
+  const comercial = etiquetaDocumentoComercial(toolSource, toolVersion);
+  if (comercial) return comercial;
   if (toolSource === "unifilar") {
     return toolVersion ? `Ingeniería · Unifilar v${toolVersion}` : "Ingeniería · Unifilar";
   }

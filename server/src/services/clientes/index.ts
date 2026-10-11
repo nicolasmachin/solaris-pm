@@ -859,6 +859,10 @@ const MODULO_POR_TOOL: Record<string, TimelineItem["source"]> = {
   PropuestaComercial: "docs",
   "proposal-v2-cover": "docs",
   "reporte-fv": "client",
+  contrato: "docs",
+  proforma: "docs",
+  "plan-granizo": "docs",
+  "contrato-firmado": "docs",
 };
 
 /** Acciones que producen un documento entregable, no un avance de obra. */

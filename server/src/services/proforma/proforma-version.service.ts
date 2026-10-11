@@ -8,6 +8,7 @@ import { AuditAction, AuditEntityType, Prisma, ProformaVersionStatus } from "@pr
 import { prisma } from "../../lib/prisma.js";
 import { AppError, badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
+import { sincronizarDocumentoGeneradoSeguro, TOOL_SOURCE_PROFORMA } from "../documentos-generados.service.js";
 import { completarPorEvidencia, EVIDENCIA_PROFORMA } from "../checklist-evidencias.js";
 import {
   cleanupProformaVersionDir,
@@ -90,6 +91,9 @@ export async function publishVersion(projectId: string, userId: string) {
       // El ítem "Proforma generada" de la subetapa de modalidad de pago se marca
       // solo: el asesor ya hizo el trabajo, no hace falta que además lo tilde.
       await completarPorEvidencia(projectId, EVIDENCIA_PROFORMA, userId).catch(() => undefined);
+
+      // Copia del PDF en Documentos del proyecto (queda solo la versión vigente).
+      await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_PROFORMA, projectId, userId);
 
       return created;
     } catch (err) {
@@ -177,6 +181,8 @@ export async function discardVersion(versionId: string, userId: string, reason?:
     metadata: { versionId, reason: reason ?? null } as unknown as Prisma.InputJsonValue,
   });
 
+  await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_PROFORMA, v.projectId, userId);
+
   return updated;
 }
 
@@ -202,6 +208,8 @@ export async function restoreVersion(versionId: string, userId: string) {
     description: `Restauró la versión ${v.versionNumber} de la proforma`,
     metadata: { versionId } as unknown as Prisma.InputJsonValue,
   });
+
+  await sincronizarDocumentoGeneradoSeguro(TOOL_SOURCE_PROFORMA, v.projectId, userId);
 
   return updated;
 }

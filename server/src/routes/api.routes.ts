@@ -80,6 +80,7 @@ import {
   definicionesPendientesOnboarding,
 } from "../services/checklist-evidencias.js";
 import { syncCommissionFromMovement } from "../services/commission/sync-commission-status.js";
+import { etiquetaDocumentoComercial } from "../services/documentos-generados.service.js";
 import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
@@ -4271,7 +4272,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // Documentos generados por herramientas del módulo Ingeniería (toolSource).
       // Tienen prioridad sobre el match por stage/substage para que el badge
       // "Ingeniería · Unifilar v3" se muestre coherente.
-      if (file.toolSource === "unifilar") {
+      const etiquetaComercial = etiquetaDocumentoComercial(file.toolSource, file.toolVersion);
+      if (etiquetaComercial) {
+        // Contrato / proforma / Plan de Protección (generados) y contrato firmado.
+        source = "generated";
+        sourceLabel = etiquetaComercial;
+      } else if (file.toolSource === "unifilar") {
         source = "generated";
         sourceLabel = file.toolVersion
           ? `Ingeniería · Unifilar v${file.toolVersion}`
