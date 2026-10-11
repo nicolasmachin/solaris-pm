@@ -146,3 +146,32 @@ comparte.
 - **Una decisión**: dónde viven las contraseñas (§2).
 - Después de cargar los videos, sumar la sección Operaciones al manual de
   trabajo, capítulo de Operaciones.
+
+---
+
+## Respuestas de Nicolás (5 de octubre de 2026)
+
+Se respondió con un PDF de 8 páginas para el gerente de Operaciones
+(`Respuestas-Nico-Operaciones-2026-10-05.pdf`, en la Mac de Nicolás). El
+contenido técnico se pasó al **Manual de trabajo de Operaciones, capítulo 14**
+(11-oct-2026). Resumen del estado:
+
+- **Credenciales:** en el documento "Credenciales" de Drive. Sí hay claves en el
+  display (Fronius: menús ocultos; Growatt: contraseña de instalador). La clave
+  de servicio del Datamanager de Fronius es siempre la estándar de Voltia. ✅
+- **Growatt (G1–G3):** orden en 5 pasos; 180 s en OSS, registros 18 y 19. ✅
+  El smartmeter que se usa siempre es **Eastron**, no Chint.
+- **Huawei:** H2 datalogger externo ✅. H1 puesta en servicio 🟡 (borrador; se
+  valida con el video nuevo). 180 s: parámetro "Grid connected recovery time from
+  grid faults"; video "Tiempos 180 Huawei" subido ✅; falta confirmar si se hace
+  desde la PC o la aplicación ⬜.
+- **Fronius:** F1 reemplazado: los 180 s van en el **menú profesional del
+  display** (tercer botón 5 veces + código). Puesta en marcha en 3 pasos (país
+  Argentina; 192.168.250.181). Pedir siempre la versión completa (con
+  datalogger). ⬜ IP fija en la red de la casa y validación de smartmeter +
+  Solar.web.
+- **Videos:** subidos los 2 de Growatt (planta, 180 s) + "PE Abnormal", y el de
+  180 s de Huawei. Faltan: Huawei puesta en servicio (con datalogger), los 3 de
+  Fronius, y los de smartmeter Eastron, Chint y Huawei. Ensayos de arranque y
+  anti-isla: ya están en cada proyecto habilitado; Operaciones elige uno por
+  marca para capacitación.

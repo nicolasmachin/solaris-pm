@@ -657,25 +657,50 @@ Después de instalar hay **cuatro cosas** que tienen que quedar resueltas. Las t
 
 **Video 2 · El ensayo anti-isla.** Con la instalación generando, se corta la llave térmica de entrada de UTE y se filma cómo el inversor deja de inyectar. Se vuelve a subir la llave y se arranca un cronómetro que se vea en cámara. Se filma hasta que el inversor vuelve a inyectar: **tienen que ser 180 segundos**. Es la prueba de que quedó bien configurado.
 
-### Por marca
+### Las claves
 
-| | Growatt | Huawei | Fronius |
-|---|---|---|---|
-| Aplicaciones | ShinePhone (planta y datalogger) y el portal OSS (los 180 segundos) | FusionSolar (aplicación en iPhone, web en Android) | Solar.start y Solar.web |
-| Datalogger | Aparte (ShineWiFi-X o ShineLan-X) | Aparte | Ya viene en el inversor |
-| En qué orden | Datalogger → planta → 180 segundos en OSS | Datalogger → planta → 180 segundos | Solar.start en 3 pasos → 180 segundos en el inversor |
-| Dónde se ponen los 180 segundos | En el portal OSS | En FusionSolar *(a completar)* | En el inversor, en Grid settings (son dos valores) |
-| Smartmeter | Chint DTSU666 (trifásico) o DDSU666 (monofásico), por RS485 | DTSU666-H o DDSU666-H, por RS485 (trae 3 transformadores y 10 m de cable) | Fronius Smart Meter TS |
+Las contraseñas y los códigos **no van en este manual**: están en el documento **Credenciales** de Voltia, que se le pide al gerente de Operaciones. Ahí están las cuentas de Voltia en cada aplicación, la contraseña de instalador de Growatt y los códigos de los menús ocultos de Fronius. La clave de servicio del Datamanager de Fronius es **siempre la misma**, la estándar de Voltia.
 
-**Growatt.** En ShinePhone: Planta → "+" → Añadir Datalogger. Se escanea el código QR (o se escriben el número de serie y el Check Code) y se elige el WiFi del cliente, que **tiene que ser de 2,4 GHz**. El smartmeter: RS485 A al pin 10, RS485 B al pin 9; dirección 003 en monofásico y 004 en trifásico; 9600 baudios.
+### Growatt
 
-**Huawei.** Primero el datalogger y después la planta. El inversor tiene su propio WiFi (se llama SUN2000- y unos números) para conectarse directo.
+1. **El datalogger** se enchufa al USB del inversor.
+2. **La planta** se crea en ShinePhone.
+3. **Dentro de la planta, "Agregar datalogger":** se escanea el código QR. El celular se conecta al WiFi que genera el datalogger (se llama como su número de serie) y se le carga el WiFi de la casa, que **tiene que ser de 2,4 GHz**. Queda asociado.
+4. **En el portal OSS** (oss.growatt.com) se verifica que la planta figure **conectada**. Puede tardar horas en aparecer.
+5. **Los 180 segundos, en OSS:** doble clic en la planta → la ruedita del inversor → Configuración avanzada → se leen los registros **18 y 19**. Si no están en 180, se escribe 18 = 180, se espera la confirmación, y después 19 = 180. El 18 es la espera para arrancar; el 19, para reconectar después de un corte. **Si no aparece la ruedita**, la cuenta no tiene permiso de instalador.
 
-**Fronius.** Es el más sencillo. El inversor tiene su propio WiFi (Fronius_ y unos números). Desde Solar.start: la red (el WiFi del cliente) → el producto → la conexión a Solar.web. Los 180 segundos se ponen en el propio inversor, en Grid settings: son dos valores y los dos van en 180.
+**El smartmeter:** el que se usa siempre es **Eastron**. Del lado del inversor: RS485 A al pin 10 y RS485 B al pin 9; dirección 003 en monofásico y 004 en trifásico; 9600 baudios. El resto se conecta según el diagrama de la ingeniería de la obra.
 
-**Las cuentas de Voltia en cada aplicación** se le piden al gerente de Operaciones. Las contraseñas no van en este manual.
+Videos en Capacitación: **Creación de planta**, **Tiempos 180** y **PE Abnormal** (un error frecuente).
 
-*A completar: dónde se ponen los 180 segundos en OSS y en FusionSolar, los pasos para conectar el datalogger de Huawei y los videos de capacitación de cada marca.*
+### Huawei
+
+1. **El datalogger es externo** y va al USB del inversor. Hay dos modelos: WiFi (que también admite cable) y 4G, con chip.
+2. **La puesta en servicio** se hace con FusionSolar (aplicación en iPhone, web en Android). El inversor tiene su propio WiFi (SUN2000- y unos números) para conectarse directo. Primero el datalogger y después la planta.
+3. **Los 180 segundos:** según los manuales de Huawei, el parámetro es **"Grid connected recovery time from grid faults"**, en los parámetros de red. Hay video en Capacitación: **Tiempos 180 Huawei**.
+
+**El smartmeter:** DTSU666-H o DDSU666-H, por RS485. Trae 3 transformadores y 10 m de cable. Se conecta según el diagrama de la ingeniería de la obra.
+
+> *A completar con el video nuevo de la puesta en servicio:* el paso a paso de Huawei (incluido si el código QR se escanea) y si los 180 segundos se ponen desde la computadora o desde la aplicación.
+
+### Fronius (Symo y Primo, con botones)
+
+- **El datalogger viene integrado.** Al comprar, se pide la **versión completa**: hay una versión "light" que no lo trae.
+- **La puesta en marcha:**
+  1. **Primer encendido:** idioma, país (**Argentina**), hora, fecha y el segundo MPPT.
+  2. **Setup → Punto de acceso inalámbrico.** El celular se conecta a la red FRONIUS_… y se entra a **192.168.250.181** (por cable, a 169.254.0.180).
+  3. **El asistente técnico** (con la clave de servicio estándar) y **el de Solar.web**, donde se carga el WiFi de la casa.
+- **Los 180 segundos, en el display, en el menú profesional:** se aprieta el tercer botón 5 veces rápido hasta que pide el código. Ahí también están las protecciones (tensión y frecuencia mínimas y máximas, y sus tiempos). Con otro código se entra al menú de inicio, que vuelve a abrir la configuración del primer encendido.
+- **El smartmeter:** Fronius Smart Meter TS.
+- **Los GEN24** no tienen display: todo se hace desde la web del inversor.
+
+> *A completar:* la IP fija del inversor en la red de la casa, y cómo se valida que el smartmeter y Solar.web quedaron funcionando.
+
+### Los videos de capacitación
+
+Están en **Capacitación** de Voltia PM, por marca. Los ensayos de arranque y anti-isla ya están en cada proyecto habilitado, de todas las marcas: para capacitación se elige uno claro por marca.
+
+> *Faltan grabar:* la puesta en servicio de Huawei (con la conexión del datalogger), los tres de Fronius (puesta en marcha, 180 segundos y smartmeter) y los de los smartmeters Eastron, Chint y Huawei. Mientras tanto, cada smartmeter se conecta según el diagrama de la ingeniería de la obra.
 
 ## 15 · El día de obra y el cierre
 
@@ -912,7 +937,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.10 | 11 de octubre de 2026 | Criterios técnicos: Operaciones ejecuta lo que proyectó Ingeniería; el criterio del instalador es para los casos excepcionales. La seguridad: las medidas que no pueden faltar en una obra (equipo de protección, techo, eléctrico, terceros, parar el trabajo), tomadas del Reglamento interno; y qué hacer ante un accidente, con el reporte el mismo día y la denuncia al BSE. En las obras tercerizadas, el kit de materiales va directo a la casa del cliente y el instalador tiene que estar para recibirlo; se coordina entre Logística, el instalador y el cliente. Antes de salir a la obra: el capataz estudia el proyecto y planifica, y compartirlo con su equipo es opcional; cada operario es responsable de su equipo y su kit de seguridad, y el capataz controla que se use bien; el tercerizado pone su propio equipo de seguridad y Voltia le exige usarlo. En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
+| 0.10 | 11 de octubre de 2026 | La puesta en marcha se completa con las respuestas de Gerencia del 5 de octubre: los pasos de Growatt y los 180 segundos en el portal OSS (registros 18 y 19); el smartmeter de Growatt es Eastron; Huawei con el datalogger externo, el parámetro de los 180 segundos y su video; Fronius con la versión completa, la puesta en marcha en 3 pasos y los 180 segundos en el menú profesional del display; las claves están en el documento Credenciales. Criterios técnicos: Operaciones ejecuta lo que proyectó Ingeniería; el criterio del instalador es para los casos excepcionales. La seguridad: las medidas que no pueden faltar en una obra (equipo de protección, techo, eléctrico, terceros, parar el trabajo), tomadas del Reglamento interno; y qué hacer ante un accidente, con el reporte el mismo día y la denuncia al BSE. En las obras tercerizadas, el kit de materiales va directo a la casa del cliente y el instalador tiene que estar para recibirlo; se coordina entre Logística, el instalador y el cliente. Antes de salir a la obra: el capataz estudia el proyecto y planifica, y compartirlo con su equipo es opcional; cada operario es responsable de su equipo y su kit de seguridad, y el capataz controla que se use bien; el tercerizado pone su propio equipo de seguridad y Voltia le exige usarlo. En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
 | 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. En las herramientas, la subetapa nueva Presupuesto al instalador tercerizado y el estado No aplica. Ejecución de Obra pasa a tener cuatro subetapas (Planificación y logística, Realización de la obra y Retiro de sobrantes, del capataz, y Control de obra, del gerente de Operaciones, que es quien cierra la etapa); se saca Control de costos. Logística de envío se marca No aplica con cuadrilla propia. En Logística, lo que se viene: los vales de salida y de devolución y el consumo de cada obra. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
