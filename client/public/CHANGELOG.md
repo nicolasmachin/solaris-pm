@@ -54,6 +54,19 @@
 - Muestra el **monto de mano de obra** de la propuesta ganadora, con IVA, que es lo que el gerente de Operaciones le ofrece al instalador antes de agendar la obra. Si la obra ya se agendó con un tercerizado, muestra el monto del pago que se generó.
 - El gerente lo tilda cuando se lo informó y cuando el instalador aceptó. Si la obra va con el equipo propio, la subetapa se marca **No aplica**, una opción nueva en el estado de las subetapas.
 
+#### Ejecución de Obra, en cuatro pasos
+
+- Las **obras nuevas** tienen cuatro subetapas en Ejecución de Obra: **Planificación y logística**, **Realización de la obra** y **Retiro de sobrantes**, a cargo del capataz, y **Control de obra**, a cargo del gerente de Operaciones, que revisa los entregables sin haber ido a la obra y con eso cierra la etapa.
+- La obra no se cierra con materiales olvidados en la casa del cliente: el retiro de sobrantes tiene que estar hecho o coordinado.
+- Sale **Control de costos** de la etapa. Las obras que ya estaban en curso siguen como estaban.
+- En Compras, **Logística de envío** se marca **No aplica** cuando la obra la hace la cuadrilla propia.
+
+#### Vales de salida y de devolución de materiales
+
+- En la pestaña **Materiales** del proyecto se puede registrar un **vale de salida** (lo que se carga en el local para la obra; viene propuesto lo que falta según la lista) y un **vale de devolución** (lo que vuelve sobrante).
+- Una tabla muestra por material lo **planificado**, lo que **salió**, lo que **volvió** y el **consumo**, y marca en naranja lo que se aparta de la lista.
+- Por ahora es **opcional**: ninguna etapa lo exige.
+
 ## v12.1
 
 ### 9 de octubre de 2026

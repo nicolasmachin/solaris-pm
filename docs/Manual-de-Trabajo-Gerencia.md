@@ -115,6 +115,31 @@ técnico prevencionista) y el contrato con cada tercerizado.
 
 **A qué manuales afecta.** Al de Operaciones y al de Finanzas.
 
+### La obra la cierra el gerente de Operaciones, controlándola desde los entregables
+
+**Qué se decidió.** El capataz planifica la obra, la hace y retira los
+sobrantes, y completa esas subetapas, no la etapa. La etapa la cierra el gerente
+de Operaciones con el **control de obra**: alguien que no estuvo en la obra
+verifica, con las fotos, los videos y los documentos, que se hizo según el
+proyecto y con el estándar de calidad, y que están todos los entregables. La
+obra no se cierra con materiales sobrantes en la casa del cliente: el retiro
+tiene que estar hecho o, por lo menos, coordinado por el capataz, dentro del
+plazo de la etapa. El control de costos de obra sale de la etapa.
+
+**Lo que se viene, sin exigirse todavía:** registrar lo que sale del local para
+cada obra y lo que vuelve sobrante, para saber el consumo real de materiales y
+compararlo con lo planificado. Voltia PM ya lo permite; por ahora no se exige,
+para no sumar burocracia.
+
+**Por qué.** Sobre todo con los tercerizados, alguien tiene que verificar que
+la obra quedó como se planteó, y se puede hacer desde los entregables sin ir.
+Los sobrantes olvidados en la casa del cliente se pierden: han quedado más de un
+mes sin que nadie los fuera a buscar.
+
+**Desde cuándo rige.** 10 de octubre de 2026, para las obras nuevas.
+
+**A qué manuales afecta.** Al de Operaciones (Obra y Logística).
+
 ### Los mantenimientos y el soporte son de Operaciones
 
 **Qué se decidió.** El trabajo de Operaciones no es solo la obra: los

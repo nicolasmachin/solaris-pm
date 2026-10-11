@@ -32,7 +32,7 @@
 
 **Qué hace.** Valida lo que proyectó Ingeniería, **confirma la fecha de obra**, compra y prepara los materiales, hace la instalación y la deja funcionando y documentada. Y después, durante toda la vida de la instalación, hace los **mantenimientos** y las **visitas de soporte** cuando algo falla en la casa del cliente.
 
-**Dónde termina su trabajo.** Cuando la obra está terminada, la instalación quedó funcionando y **toda la documentación de obra está cargada en Voltia PM**. Ahí el gerente de Operaciones marca la obra como pronta: el proyecto pasa a Tramitación UTE, y Experiencia Solar le cuenta al cliente qué sigue.
+**Dónde termina su trabajo.** Cuando la obra está terminada, la instalación quedó funcionando, **toda la documentación de obra está cargada en Voltia PM** y los sobrantes están retirados o su retiro está coordinado. Ahí el gerente de Operaciones hace el **control de obra** y la marca como pronta: el proyecto pasa a Tramitación UTE, y Experiencia Solar le cuenta al cliente qué sigue.
 
 Con la obra termina el trabajo de Operaciones **en el recorrido del proyecto**, no con la instalación: los mantenimientos y las visitas de soporte los coordina Experiencia Solar con el cliente, y los hace Operaciones.
 
@@ -74,7 +74,7 @@ Operaciones es dueña de **tres etapas** del recorrido del proyecto: **Validaci�
 |---|---|---|---|---|
 | Validación de Operaciones | Ingeniería termina la pre-ingeniería | La pre-ingeniería, los planos, la lista de materiales preliminar y el resumen de la visita | La **fecha de obra confirmada** en el calendario y el **informe del capataz** | El informe del capataz está **Completado** y la fecha está confirmada. El proyecto vuelve a Ingeniería |
 | Compras | Ingeniería Final cierra la lista de materiales definitiva | La **lista de materiales definitiva**, ya revisada por el capataz | **Todo el material en el local** para el día de preparación o, si la obra es tercerizada, **el kit enviado** | El material está listo para salir a obra y la entrega está coordinada |
-| Obra | El material está listo y la fecha está confirmada | Los materiales preparados, los planos finales y los documentos de UTE impresos | La instalación funcionando, **las fotos, los 2 videos de los ensayos y los documentos de UTE firmados**, y el lugar limpio | El gerente de Operaciones marca la obra como pronta |
+| Obra | El material está listo y la fecha está confirmada | Los materiales preparados, los planos finales y los documentos de UTE impresos | La instalación funcionando, **las fotos, los 2 videos de los ensayos y los documentos de UTE firmados**, los sobrantes retirados (o su retiro coordinado) y el lugar limpio | El gerente de Operaciones hace el control de obra y la marca como pronta |
 
 ### Fuera del recorrido: mantenimientos y soporte
 
@@ -333,8 +333,8 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 Se abre tocando una tarjeta del recorrido. Tiene:
 
 - **Las fechas:** la fecha límite (la que aparece en *Mis tareas*), cuándo empezó y terminó de verdad, y el **responsable**.
-- **Las subetapas.** Cada una con su responsable, su vencimiento y su estado: **Pendiente**, **En progreso**, **Completado** o **Bloqueado**. Se completa tocando el círculo o cambiando el estado. Al abrirla, sus notas, su **checklist** y sus comentarios. Si el checklist tiene puntos obligatorios (marcados con *) sin tildar, no deja completarla.
-- **La etapa se completa sola** cuando todas sus subetapas están completas. Ahí aparece el aviso de **traspaso**: un cartel con a quién le pasa el trabajo, para confirmar con **Confirmar y notificar** (y una nota opcional para quien lo recibe).
+- **Las subetapas.** Cada una con su responsable, su vencimiento y su estado: **Pendiente**, **En progreso**, **Completado**, **Bloqueado** o **No aplica** (para la que no corresponde en ese proyecto, que cuenta como resuelta). Se completa tocando el círculo o cambiando el estado. Al abrirla, sus notas, su **checklist** y sus comentarios. Si el checklist tiene puntos obligatorios (marcados con *) sin tildar, no deja completarla.
+- **La etapa se completa sola** cuando todas sus subetapas están completas o marcadas **No aplica**. Ahí aparece el aviso de **traspaso**: un cartel con a quién le pasa el trabajo, para confirmar con **Confirmar y notificar** (y una nota opcional para quien lo recibe).
 - Al pie, notas, comentarios y archivos de la etapa.
 
 ![El panel de una etapa: las fechas, el responsable y las subetapas, cada una con su estado.](captura:ops-panel-compras)
@@ -344,26 +344,31 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 **Validación de Operaciones** (dueño: gerente de Operaciones):
 
 - **Informe del capataz.** Su checklist: la visita técnica del capataz hecha (o que no hace falta), la lista de materiales validada y el informe cargado. El informe se carga desde el mismo panel con **Foto**, **Video** y **Nota**, y el audio con el **botón amarillo**; Voltia PM arma con eso un informe ordenado (datos generales, acometida, techo, espacio del inversor, canalizaciones, observaciones y próximos pasos). El estado del informe es el de esta subetapa.
+- **Presupuesto al instalador tercerizado.** Muestra el monto de mano de obra de la propuesta ganadora, con IVA, que el gerente le informa al tercerizado antes de agendar la obra. Su checklist: el presupuesto informado y el instalador que aceptó. Si la obra va con la cuadrilla propia, se marca **No aplica**. El monto lo ven solo el gerente de Operaciones, Finanzas y Admin.
 - **Fecha de obra confirmada.** Su checklist: la fecha confirmada y el evento del calendario marcado como confirmado. **Se completa a mano**: confirmar la fecha en el calendario no la completa sola.
-- Cuando las dos están completas, el proyecto vuelve a Ingeniería para la Ingeniería Final, y a Experiencia Solar le llega el aviso.
+- Cuando las tres están resueltas, el proyecto vuelve a Ingeniería para la Ingeniería Final, y a Experiencia Solar le llega el aviso.
 
-![El panel de Validación de Operaciones: las dos subetapas y, debajo, donde se carga el informe del capataz con foto, video y nota.](captura:ops-panel-validacion)
+![El panel de Validación de Operaciones: las subetapas y, debajo, donde se carga el informe del capataz con foto, video y nota.](captura:ops-panel-validacion)
 
 **Compras** (dueño: Logística):
 
 - **Materiales listos:** la lista definitiva recibida de Ingeniería, con la documentación para UTE, el stock controlado y lo que faltaba, comprado.
-- **Logística de envío:** el envío coordinado, si la obra es tercerizada. Si no lo es, se completa igual.
+- **Logística de envío:** si la obra es tercerizada, Compras coordina el flete y el envío del kit. Si la obra la hace la cuadrilla propia, se marca **No aplica**.
 - **Materiales recibidos en depósito:** recibidos y **verificados en cantidad y estado** (obligatorio).
 - Ninguna se completa sola: marcar los materiales como *Recibido* en la pestaña Compras no completa estas subetapas.
 
 ![El panel de Compras, con sus tres subetapas.](captura:ops-panel-compras)
 
-**Ejecución de Obra** (dueño: gerente de Operaciones):
+**Ejecución de Obra** (dueño: gerente de Operaciones). El capataz completa sus tres subetapas, no la etapa: la etapa la cierra el gerente con el control de obra.
 
-- **Planificación y logística.**
-- **Control de costos**, que incluye registrar el material sobrante.
+- **Planificación y logística** (capataz). Antes de salir: estudia el proyecto (planos, unifilar, informe del capataz y lista de materiales), planifica el trabajo (tareas, equipo y herramientas) y apronta los materiales contra la lista definitiva, con las herramientas y los elementos de seguridad. **Nadie llega a una obra sin saber con qué se va a encontrar.**
+- **Realización de la obra** (capataz). La obra hecha según el proyecto (lo que cambió, anotado con su motivo y una foto), la puesta en marcha y los ensayos, el video del ensayo anti-isla (sin él no se puede completar), las fotos, los documentos de UTE firmados y el recorrido con el cliente. La **planilla de materiales usados** es opcional por ahora.
+- **Retiro de sobrantes** (capataz). Lo que sobró se retira de la casa del cliente, o por lo menos el retiro queda **coordinado con el cliente**, y el lugar queda limpio. Lo coordina el capataz, dentro del plazo de la etapa. **La etapa no se cierra con materiales olvidados en la casa del cliente.**
+- **Control de obra** (gerente de Operaciones). Alguien que no estuvo en la obra verifica, con las fotos, los videos y los documentos, que se hizo según el proyecto y con el estándar de calidad, y que están todos los entregables. Si algo no está como se espera, pide las correcciones. Con esta subetapa completa, la etapa se cierra.
 
-![El panel de Ejecución de Obra: el botón para cargar las fotos y sus dos subetapas.](captura:ops-panel-obra)
+> Las obras que ya estaban en curso al 10 de octubre de 2026 conservan las subetapas de antes (Planificación y Logística, Validación de Obra terminada). Las nuevas subetapas rigen para las obras nuevas.
+
+![El panel de Ejecución de Obra: el botón para cargar las fotos y sus subetapas.](captura:ops-panel-obra)
 
 ### El calendario
 
@@ -645,7 +650,7 @@ El cliente tiene que firmar **los 7**. Es donde más se escapan cosas: se revisa
 
 > **Se cuentan las firmas antes de escanear.** Si falta una, UTE devuelve el trámite y la conexión se demora.
 
-Con todo eso cargado, el gerente de Operaciones marca la obra como pronta: el proyecto pasa a Tramitación UTE y Experiencia Solar le cuenta al cliente qué sigue. Si después Tramitación UTE descubre que faltó una firma, el reclamo le llega al gerente de Operaciones.
+Con todo eso cargado y los sobrantes retirados (o su retiro coordinado), el gerente de Operaciones hace el **control de obra**: revisa, sin haber ido, que la obra se hizo según el proyecto y que están todos los entregables, y la marca como pronta: el proyecto pasa a Tramitación UTE y Experiencia Solar le cuenta al cliente qué sigue. Si después Tramitación UTE descubre que faltó una firma, el reclamo le llega al gerente de Operaciones.
 
 ## 16 · Cuando algo sale mal en obra
 
@@ -689,7 +694,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 - [ ] El cliente firmó los 7 documentos de UTE y el PDF está subido
 - [ ] Le expliqué la instalación al cliente
 - [ ] Anoté lo que se resolvió distinto al proyecto
-- [ ] Retiré los sobrantes y dejé el lugar limpio
+- [ ] Retiré los sobrantes, o coordiné con el cliente cuándo se retiran, y dejé el lugar limpio
 
 # Parte C · Logística
 
@@ -733,6 +738,16 @@ compra en la ferretería más cercana.
 3. El capataz le avisa al cliente el día, la franja horaria y que alguien tiene que estar para recibirlo.
 
 *A completar con Logística:* cómo se compra (proveedores y pedidos; quién aprueba cada compra está en el capítulo 5, y todo gasto queda registrado y auditable), cómo se sigue un pedido, cómo se recibe en el local y cómo se maneja el stock en Voltia PM.
+
+### Lo que se viene: salida y devolución de materiales
+
+Hoy no se exige, pero Voltia PM ya lo permite, en la pestaña **Materiales** del proyecto:
+
+- **Vale de salida:** lo que se carga en el local para una obra. Viene propuesto lo que falta sacar según la lista definitiva, y se corrige lo que haga falta.
+- **Vale de devolución:** lo que vuelve de la obra al local, sobrante.
+- **Consumo:** lo que salió menos lo que volvió, al lado de lo planificado. Muestra dónde se pierde material sin pedirle al capataz que cuente cable en el techo.
+
+Si el material gestiona stock, el vale lo descuenta o lo reingresa; si no, igual queda registrado para el consumo de la obra. No frena si el stock no alcanza. Cuando se empiece a exigir, la idea es sumar un **conteo periódico** de unos pocos materiales caros (inversores, paneles, cable), en vez de un inventario completo.
 
 ### A quién le pregunta qué
 
@@ -811,7 +826,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes); por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. |
+| 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes); por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. En las herramientas, la subetapa nueva Presupuesto al instalador tercerizado y el estado No aplica. Ejecución de Obra pasa a tener cuatro subetapas (Planificación y logística, Realización de la obra y Retiro de sobrantes, del capataz, y Control de obra, del gerente de Operaciones, que es quien cierra la etapa); se saca Control de costos. Logística de envío se marca No aplica con cuadrilla propia. En Logística, lo que se viene: los vales de salida y de devolución y el consumo de cada obra. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |

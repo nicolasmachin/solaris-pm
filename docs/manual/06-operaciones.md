@@ -148,6 +148,57 @@ Caso hecho: el equipo **Leo** (septiembre de 2026), con
 
 ---
 
+## Ejecución de Obra: subetapas (10-oct-2026)
+
+Rediseñada por decisión de Nicolás. `PIPELINE_DEFINITIONS` (etapa
+`EJECUCION_OBRA`) tiene cuatro subetapas: **Planificación y logística**,
+**Realización de la obra** y **Retiro de sobrantes** (responsable: capataz) y
+**Control de obra** (gerente de Operaciones). La etapa se completa sola cuando
+las cuatro están resueltas, así que en la práctica la cierra el gerente al
+completar el control. "Ensayo anti-isla realizado y grabado" y "Videos de
+ensayos subidos" siguen con `evidenceKind: "ensayo-video"`. La planilla de
+materiales usados es un ítem **no obligatorio**.
+
+- **Solo proyectos nuevos.** Las obras existentes conservan su mezcla de
+  subetapas viejas (O2P/O2T inactivas, Control de Costos, "Validación de Obra
+  terminada", etc.); no se migraron. Ningún código depende de los nombres de
+  estas subetapas (verificado con grep), salvo comentarios.
+- **La plantilla guardada en settings le gana al código**: en prod hay que
+  correr `prisma/scripts/sync-plantilla-ejecucion-obra.ts --apply`, que
+  reemplaza las subetapas de Ejecución de Obra de `PIPELINE_TEMPLATE` por las
+  del código.
+- En Compras, "Logística de envío" se marca **No aplica** con cuadrilla propia
+  (el estado `NO_APLICA` se ofrece en el cliente desde el mismo día).
+
+## Vales de obra: salida, devolución y consumo (10-oct-2026)
+
+Desarrollado pero **no exigido** ("lo que se viene"). En la pestaña
+**Materiales** del proyecto (`MaterialesTab` en `ProjectDetail.tsx`) está
+`ValesObraPanel`: una tabla por material con planificado (lista de materiales,
+`ProjectMaterial.quantity > 0`), lo que salió, lo que volvió y el consumo
+(salió − volvió), y los botones **Vale de salida** y **Vale de devolución**.
+
+- Backend: `services/stock/vales-obra.service.ts` → `registrarValeObra()` y
+  `consumoDeObra()`; rutas en `routes/vales-obra.routes.ts`:
+  `POST /projects/:projectId/vales-obra` (**STOCK:CREATE**) y
+  `GET /projects/:projectId/consumo-obra` (**STOCK:VIEW**).
+- **Sin modelo nuevo**: cada renglón es un `StockMovement` con el `projectId`.
+  Salida = EGRESO; devolución = INGRESO con `causaIngreso = OTRO`. Lo que los
+  identifica es la `referencia`, que empieza con `VALE_SALIDA` o
+  `VALE_DEVOLUCION` + fecha y hora de Uruguay (todos los renglones de un vale
+  comparten la referencia). El consumo solo cuenta movimientos de vales, no los
+  egresos sueltos de la pantalla Stock ni ingresos por factura imputados a la
+  obra.
+- **Diferencias deliberadas con `POST /stock/movements`**: acepta materiales con
+  `gestionaStock=false` (registra el movimiento para el consumo pero no toca
+  `stockActual`), acepta decimales y **no bloquea** si el stock no alcanza
+  (puede quedar negativo). Hoy el stock del local no está al día y bloquear
+  sería burocracia.
+- **Limitación conocida:** el "real" de la pestaña Costos
+  (`GET /projects/:id/cost-summary`) cuenta los EGRESO del proyecto y no resta
+  las devoluciones. Si los vales se empiezan a usar en serio, hay que restar
+  los INGRESO con referencia `VALE_DEVOLUCION`.
+
 ## Qué tiene que cubrir este capítulo
 
 - Fotos de obra y el checklist de 23 fotos obligatorias

@@ -67,3 +67,33 @@ export const getStockAlerts = () =>
     moneda: Moneda;
     ratio: number;
   }[]>('/api/stock/alerts').then(r => r.data);
+
+// ─── Vales de obra (salida al local → obra y devolución de sobrantes) ─────────
+
+export interface FilaConsumoObra {
+  materialItemId: string;
+  nombre: string;
+  unidad: string;
+  planificado: number;
+  salio: number;
+  volvio: number;
+  consumo: number;
+}
+
+export async function getConsumoObra(projectId: string): Promise<FilaConsumoObra[]> {
+  const { data } = await apiClient.get<{ filas: FilaConsumoObra[] }>(`/projects/${projectId}/consumo-obra`);
+  return data.filas;
+}
+
+export async function registrarValeObra(
+  projectId: string,
+  body: {
+    tipo: 'SALIDA' | 'DEVOLUCION';
+    fecha: string;
+    renglones: { materialItemId: string; cantidad: number }[];
+    observaciones?: string;
+  },
+): Promise<{ referencia: string; renglones: number }> {
+  const { data } = await apiClient.post(`/projects/${projectId}/vales-obra`, body);
+  return data;
+}

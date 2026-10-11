@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ValesObraPanel } from '../components/project/ValesObraPanel';
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -520,6 +521,7 @@ function MaterialesTab({ projectId }: { projectId: string }) {
 
   return (
     <div className="space-y-4">
+      <ValesObraPanel projectId={projectId} />
       <div className="flex items-center justify-between">
         <p className="text-sm text-[var(--color-text-muted)]">
           Movimientos de stock asociados a este proyecto
