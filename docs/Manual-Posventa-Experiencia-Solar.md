@@ -356,6 +356,27 @@ reclamo por ahí** en vez de por WhatsApp.
 | | |
 |---|---|
 | **Cuándo** | Apenas el asesor manda el contrato. **Va al principio, no al final.** |
+| **Quién** | El asesor que cerró la venta hace el intercambio; Experiencia Solar controla que quede archivado |
+| **Plazo** | Sin plazo formal, pero queda pendiente hasta que esté |
+| **En Voltia PM** | Ficha del cliente → **E1** → *"Contrato firmado por las dos partes, recabado y archivado"* |
+
+**El problema que resuelve:** antes el contrato se mandaba y nadie lo recababa
+firmado, así que **no quedaba en ningún lado**.
+
+**Cómo se firma.** El asesor se lo manda al cliente cuando paga la seña. El
+cliente lo firma con firma digital, o a mano y lo escanea (o lo entrega en papel
+el día de la obra, lo menos cómodo). **Voltia firma último**, con firma digital,
+y se lo devuelve: si firmara primero, la firma del cliente encima invalidaría la
+digital. Firma el asesor; hasta que los asesores tengan poder y certificado de
+firma digital, firma la Dirección.
+
+**Lo que hace Experiencia Solar:** controla que el contrato con las dos firmas
+esté **archivado en la ficha del proyecto**, no en el correo de quien lo recibió.
+Si no está, se lo pide al asesor. Un contrato firmado que vive en la bandeja de
+entrada de una persona no existe para la empresa.
+
+---|---|
+| **Cuándo** | Apenas el asesor manda el contrato. **Va al principio, no al final.** |
 | **Quién** | Experiencia Solar coordina; el asesor es quien lo envía |
 | **Plazo** | Sin plazo formal, pero queda pendiente hasta que esté |
 | **En Voltia PM** | Ficha del cliente → **E1** → *"Contrato firmado por las dos partes, recabado y archivado"* |
@@ -1874,7 +1895,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.19 | 11 de octubre de 2026 | Al vender, el asesor le da al cliente solo una estimación de obra por quincena, que no es una fecha. |
+| 1.19 | 11 de octubre de 2026 | El contrato lo intercambia el asesor y Voltia firma último, con firma digital; Experiencia Solar controla que quede archivado. Al vender, el asesor le da al cliente solo una estimación de obra por quincena, que no es una fecha. |
 | 1.18 | 10 de octubre de 2026 | Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas vencidas lo hace Experiencia Solar hasta que pase al área de Administración. |
 | 1.17 | 9 de octubre de 2026 | Mover una fecha de obra confirmada es la excepción y cada cambio rinde cuentas. Si la mueve un pedido del cliente, Experiencia Solar lo deja escrito en el motivo; al cliente se le explica sin nombrar áreas. |
 | 1.16 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte los hace Operaciones; Experiencia Solar los coordina con el cliente. |
