@@ -23,11 +23,8 @@ import {
   addReclamo,
   createLead,
   deleteLead,
-  downloadProposal,
-  generateProposal,
   getLead,
   getLeads,
-  getProposal,
   patchLead,
   patchLeadStage,
 } from "../api/leads.api";
@@ -47,7 +44,6 @@ import { LargeModal } from "../components/ui/LargeModal";
 import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
 import type { ProposalVariante } from "../types/proposals-v2";
-import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
 import { diaUruguay, inicioDiaUruguayIso } from "../utils/date";
@@ -59,7 +55,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Spinner } from "../components/ui/Spinner";
 import { useAuthStore } from "../store/auth.store";
 import type { User } from "../types/api.types";
-import type { LeadDetail, LeadListItem, LeadStageGroup, SalesStage } from "../types/leads.types";
+import type { LeadListItem, LeadStageGroup, SalesStage } from "../types/leads.types";
 import { KANBAN_COLUMNS, STAGE_COLORS, STAGE_LABELS } from "../types/leads.types";
 import { LeadsListView } from "../components/sales/LeadsListView";
 import { SalesViewToggle, useSalesView } from "../components/sales/SalesViewToggle";
@@ -408,122 +404,6 @@ function ClosedColumn({
   );
 }
 
-function proposalFilename(clientName: string, version: number): string {
-  const name = clientName.trim() || "Cliente";
-  return `Propuesta Comercial Voltia - ${name} v${version}.pdf`;
-}
-
-function ProposalModal({
-  leadId,
-  clientName,
-  onClose,
-}: {
-  leadId: string;
-  clientName: string;
-  onClose: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const [file, setFile] = useState<File | null>(null);
-  const [proposalId, setProposalId] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-
-  const proposalQuery = useQuery({
-    queryKey: ["proposal-status", proposalId],
-    queryFn: () => getProposal(proposalId!),
-    enabled: Boolean(proposalId),
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return status === "COMPLETED" || status === "FAILED" ? false : 2000;
-    },
-  });
-
-  const generateMutation = useMutation({
-    mutationFn: async () => {
-      if (!file) throw new Error("FILE_REQUIRED");
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("leadId", leadId);
-      return generateProposal(formData);
-    },
-    onSuccess: (data) => {
-      setProposalId(data.id);
-      toast.success("Generación iniciada");
-      queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
-    },
-    onError: () => toast.error("No se pudo iniciar la generación"),
-  });
-
-  return (
-    <>
-      <Sheet
-        open
-        onClose={onClose}
-        title="Generar propuesta desde Excel"
-        footer={
-          <>
-            <Button variant="ghost" onClick={onClose}>Cerrar</Button>
-            <Button onClick={() => generateMutation.mutate()} disabled={!file} loading={generateMutation.isPending}>
-              Generar propuesta
-            </Button>
-          </>
-        }
-      >
-        <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] p-6 text-center">
-          <input
-            className="hidden"
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-          <p className="text-sm text-[var(--color-text-primary)]">{file ? file.name : "Arrastrá o seleccioná un Excel"}</p>
-          <p className="mt-2 text-xs text-[var(--color-text-muted)]">Formatos permitidos: .xlsx y .xls</p>
-        </label>
-
-        <div className="mt-4">
-          {proposalQuery.data?.status === "PROCESSING" || proposalQuery.data?.status === "PENDING" ? (
-            <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-              <Spinner size={16} />
-              Generando propuesta...
-            </div>
-          ) : null}
-          {proposalQuery.data?.status === "FAILED" ? (
-            <div className="rounded-md border border-red-900/60 bg-red-950/20 p-3 text-sm text-red-300">
-              {proposalQuery.data.errorMessage ?? "La generación falló"}
-            </div>
-          ) : null}
-          {proposalQuery.data?.status === "COMPLETED" ? (
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => setShowPreview(true)}>
-                Previsualizar
-              </Button>
-              <Button
-                onClick={() => {
-                  if (!proposalQuery.data) return;
-                  void downloadProposal(
-                    proposalQuery.data.id,
-                    proposalFilename(clientName, proposalQuery.data.version),
-                  ).catch(() => toast.error("No se pudo descargar el PDF"));
-                }}
-              >
-                Descargar PDF
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      </Sheet>
-
-      {proposalQuery.data?.status === "COMPLETED" ? (
-        <ProposalPreviewModal
-          open={showPreview}
-          onClose={() => setShowPreview(false)}
-          pdfUrl={`/api/proposals/${proposalQuery.data.id}/download`}
-          title={proposalFilename(clientName, proposalQuery.data.version)}
-        />
-      ) : null}
-    </>
-  );
-}
-
 function LeadPanel({
   leadId,
   onClose,
@@ -550,7 +430,6 @@ function LeadPanel({
     },
     onError: () => toast.error("No se pudo eliminar el lead"),
   });
-  const [showProposalModal, setShowProposalModal] = useState(false);
   const [showDeleteLead, setShowDeleteLead] = useState(false);
   // Qué cotizador está abierto: null, el residencial o el B2B. Son dos botones
   // distintos y cada uno tiene su propio borrador.
@@ -963,7 +842,6 @@ function LeadPanel({
                   </Button>
                 </>
               )}
-              <Button size="sm" onClick={() => setShowProposalModal(true)}>Generar propuesta comercial</Button>
             </div>
           </div>
           <LeadProposalsList leadId={leadId} clientName={lead.clientName} />
@@ -1081,14 +959,6 @@ function LeadPanel({
         <LeadToProjectModal
           leadId={lead.id}
           onClose={() => setShowConversionModal(false)}
-        />
-      ) : null}
-
-      {showProposalModal ? (
-        <ProposalModal
-          leadId={lead.id}
-          clientName={lead.clientName}
-          onClose={() => setShowProposalModal(false)}
         />
       ) : null}
 
