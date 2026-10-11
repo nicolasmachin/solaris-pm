@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.3",
+  date: "11 de octubre de 2026",
+  sections: [
+    {
+      title: "Arreglos",
+      items: [
+        "En el panel del lead se sacó el botón viejo Generar propuesta comercial. Las propuestas se arman con Armar propuesta (casas) o Cotizador B2B (empresas).",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_2: Release = {
   version: "12.2",
   date: "10 de octubre de 2026",
   sections: [
@@ -507,6 +520,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.2",
+    shortDate: "10 oct",
+    highlights: RELEASE_12_2.sections.map((sec) => sec.title),
+  },
   {
     version: "12.1",
     shortDate: "9 oct",

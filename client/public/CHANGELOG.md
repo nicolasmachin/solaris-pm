@@ -1,12 +1,14 @@
 # Novedades
 
-## v12.2
+## v12.3
 
 ### 11 de octubre de 2026
 
 #### Arreglos
 
 - En el panel del lead se sacó el botón viejo **Generar propuesta comercial**. Las propuestas se arman con **Armar propuesta** (casas) o **Cotizador B2B** (empresas).
+
+## v12.2
 
 ### 10 de octubre de 2026
 
