@@ -53,7 +53,8 @@ await sharp(cap("ficha-cliente"))
 // 5. El portal se mira en modo previsualización, y eso deja una banda de aviso
 //    arriba que en el manual solo confunde: se recorta.
 const portalMeta = await sharp(cap("portal-cliente")).metadata();
-const bandaAviso = Math.round(portalMeta.height * 0.043);
+// En modo oscuro el aviso ocupa dos renglones: 7 % del alto.
+const bandaAviso = Math.round(portalMeta.height * 0.07);
 await sharp(cap("portal-cliente"))
   .extract({ left: 0, top: bandaAviso, width: portalMeta.width, height: portalMeta.height - bandaAviso })
   .resize(1400, null, { withoutEnlargement: true })

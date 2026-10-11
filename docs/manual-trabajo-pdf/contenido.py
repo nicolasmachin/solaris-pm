@@ -827,29 +827,29 @@ def cliente_burbujas(items):
 # posiciones. La clave es cómo empieza el párrafo del .md que la presenta.
 PANTALLAS = {
     "**El proyecto.**": ("PROYECTO_PANTALLA", [
-        (1, 46, 2.5, "El menú, con una sección por área"),
-        (2, 7, 45, "La lista de clientes, para elegir con cuál trabajar"),
-        (3, 57, 21, "Los botones que llevan al mismo cliente en otras secciones"),
-        (4, 69.5, 10, "El plazo de la etapa en curso, en cuenta regresiva"),
+        (1, 21.5, 2.3, "El menú, con una sección por área"),
+        (2, 12, 46, "La lista de clientes, para elegir con cuál trabajar"),
+        (3, 58, 20.8, "Los botones que llevan al mismo cliente en otras secciones"),
+        (4, 76.5, 7.5, "El plazo de la etapa en curso, en cuenta regresiva"),
         (5, 56, 66, "El recorrido del proyecto, etapa por etapa"),
     ]),
     "**La ficha del cliente.**": ("FICHA_ENCABEZADO", [
-        (1, 56, 17, "Los datos del cliente y cuántos días hace que no se lo contacta"),
-        (2, 59, 30.5, "Los botones que llevan al mismo cliente en otras secciones"),
-        (3, 37, 50, "Sus tres etapas, con los pasos de cada una"),
-        (4, 77, 55, "Para registrar un contacto; debajo, todo el historial"),
+        (1, 60.5, 12, "Los datos del cliente y cuántos días hace que no se lo contacta"),
+        (2, 58.5, 30.4, "Los botones que llevan al mismo cliente en otras secciones"),
+        (3, 33, 38.5, "Sus tres etapas, con los pasos de cada una"),
+        (4, 86, 60, "Para registrar un contacto; debajo, todo el historial"),
     ]),
     "**El calendario.**": ("CALENDARIO_OBRAS", [
-        (1, 13, 10.6, "El mes, con flechas para ir y venir"),
-        (2, 63, 14.7, "Qué mostrar: obras, mantenimientos, visitas…"),
-        (3, 53, 21, "Rayado, fecha tentativa; lleno, fecha confirmada"),
+        (1, 13, 10.5, "El mes, con flechas para ir y venir"),
+        (2, 63, 14.6, "Qué mostrar: obras, mantenimientos, visitas…"),
+        (3, 53.5, 21.2, "Rayado, fecha tentativa; lleno, fecha confirmada"),
         (4, 36, 59, "Cada obra agendada, del color de su equipo"),
-        (5, 70, 7.8, "Para agendar una obra u otra cosa"),
+        (5, 83, 11.8, "Para agendar una obra u otra cosa"),
     ]),
     "**El portal de Voltia.**": ("PORTAL_RECORTE", [
-        (1, 57, 9.4, "Lo que el cliente puede abrir: proyectos, reportes, reclamos y encuestas"),
-        (2, 49, 35, "En qué está su trámite"),
-        (3, 26.5, 55, "Cada paso del trámite, con su fecha"),
+        (1, 57.5, 8.8, "Lo que el cliente puede abrir: proyectos, reportes, reclamos y encuestas"),
+        (2, 49.5, 34.5, "En qué está su trámite"),
+        (3, 26, 56, "Cada paso del trámite, con su fecha"),
     ]),
 }
 
