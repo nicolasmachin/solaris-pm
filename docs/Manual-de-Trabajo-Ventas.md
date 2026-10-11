@@ -107,6 +107,43 @@ factura de UTE y las fotos del techo, que es lo que lo convierte en lead.
 > Quedo a las órdenes.<br>
 > Saludos!</small>
 
+### La visita de venta
+
+> **Quien acepta una visita con el precio en la mano ya aceptó el precio. Lo que le falta es confiar en Voltia.** La visita está para eso.
+
+Voltia no cierra ninguna venta sin haber visto la casa y sin haber tenido contacto personal con el cliente. Hoy las visitas las hace la Dirección.
+
+#### Antes de la visita
+
+- **Los días de visita.** Quien visita marca con una semana de anticipación, en el calendario compartido de visitas, qué días va a visitar y en qué zona (por ejemplo, "Visitas Maldonado"). Los asesores agendan ahí las visitas de esa zona. Lo que importa no es qué día de la semana, sino que los días estén marcados con tiempo.
+- **Lo que el asesor deja cargado en el lead**, para que quien visita llegue sabiendo todo: el **teléfono** (obligatorio), el nombre y la dirección, la **factura de UTE** adjunta, la propuesta, y en los comentarios **todo lo que se habló** con el cliente.
+- **La ficha del cliente.** El día de la visita, quien visita repasa la ficha de cada cliente con los datos de Voltia PM: la propuesta, los paneles, el precio, el techo, lo que paga de UTE, el retorno y la tarifa.
+- **La presentación por WhatsApp.** Esa mañana le escribe al cliente para presentarse, confirmar la hora y pedirle la ubicación:
+
+> <small>{nombre}, qué tal? Me presento, soy Nicolás Machín, ingeniero de Voltia. Hablaste con {asesor}, nuestro asesor comercial.<br><br>
+> Tenemos una visita agendada para hoy a las {hora}. Simplemente para confirmar que me esperás. Aprovecho también para pedirte la ubicación para el GPS. Nos vemos en un rato</small>
+
+#### En la casa del cliente
+
+1. **Se presenta y le cuenta los dos objetivos de la visita:** ver en persona si la instalación es viable en lo que hay (en los papeles puede estar todo bien, pero Voltia no cierra sin verlo), y que el cliente se saque todas las dudas.
+2. **Sube al techo primero:** mide, mira el tipo de techo y busca lo que pueda complicar la instalación, como sombras o poco espacio.
+3. **Se adelanta a las preocupaciones de siempre:**
+   - **Techo de hormigón:** que se le perfore la losa y se filtre agua. Voltia evita perforar: usa contrapesos o una estructura de acero galvanizado anclada de costado a los pretiles.
+   - **Isopanel:** no se perfora; la estructura se agarra del engrafado.
+4. **Explica la inclinación de los paneles.** Lo ideal es mirando al norte, a 25 o 30 grados, pero en la mayoría de los casos se ponen **coplanares**, pegados al techo:
+   - **Contra:** se pierde alrededor de un 10 % de generación.
+   - **A favor:** casi no se ven, que para este tipo de cliente importa mucho; y no quedan como una vela contra el viento del sur, que es el más fuerte en Uruguay.
+   - **Para compensar el 10 %, Voltia le regala un 10 % más de paneles.** Al cliente le genera lo mismo y a Voltia también le conviene: la estructura inclinada sale más cara que esos paneles, y el montaje lleva más tiempo y es más complejo. Decírselo así, con sinceridad, es parte de lo que genera confianza.
+5. **Le cuenta lo negativo antes de que compre.** Sobre todo, los plazos: alrededor de un mes y medio desde la compra hasta la obra; la obra, 2 o 3 días; un mes más hasta que UTE habilita; y después hasta un mes más hasta la primera factura con la microgeneración, que marca la energía vendida pero la paga al mes siguiente. **Puede llevar hasta 4 meses ver el ahorro completo.** Es mejor que lo sepa ahora, antes de comprar, y no que se sorprenda con el sistema andando.
+6. **Registra todo:** fotos del techo y de dónde iría cada cosa; un video arriba y otro abajo del techo, marcando los puntos cardinales y por dónde irían las canalizaciones; y al final, **fotos aéreas con dron**, que sirven para los planos. Al cliente se le cuenta para qué es cada cosa: también le da confianza.
+7. **Antes de irse, le avisa que ese mismo día le llega el resumen de la visita.**
+
+#### El resumen de la visita
+
+Ese mismo día, el cliente recibe en PDF el **resumen de la visita**: los datos generales, el contexto (la propuesta que tenía y quién se la armó), los objetivos, el relevamiento técnico del techo y de la instalación eléctrica, un resumen ejecutivo, los pendientes y todas las fotos. Le sirve a Ingeniería para el proyecto y al cliente le muestra profesionalismo.
+
+Se arma con el **bot de minutas de Telegram**: quien visita le habla (audios, textos, fotos y videos) y el bot arma el resumen con el formato de Voltia. Con el comando **/ok** lo sube al lead en Voltia PM: el PDF a los adjuntos y las fotos y los videos a la galería de la visita. Telegram no deja pasar videos de más de 20 MB; los más pesados se suben a mano.
+
 ### Los resultados que se esperan
 
 **Cada canal tiene su embudo.** Los números de acá son los del canal que hoy trae
@@ -372,7 +409,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.8 | 11 de octubre de 2026 | La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
+| 0.8 | 11 de octubre de 2026 | La visita de venta: antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |
