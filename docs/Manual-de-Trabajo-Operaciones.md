@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.9 · del 10/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.10 · del 11/10/26 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -420,21 +420,54 @@ Quién cobra por cada equipo tercerizado se elige una sola vez, en **Admin → E
 
 ## 8 · Cuando algo sale mal
 
-### Llueve o no se puede trabajar el día de obra
+> **Ante un imprevisto, primero se busca resolverlo en el momento para no perder el día.**
 
-Se reprograma en el calendario con el motivo ese mismo día. Experiencia Solar recibe el aviso y se lo explica al cliente. **No se le avisa al cliente directamente desde la obra** salvo para lo del día (que el equipo no va a llegar).
+Siempre hay imprevistos, por más que se quiera prever todo. La regla es la misma para todos: se intenta resolver ahí, y **solo si no hay forma**, se reagenda la obra en el calendario, con su motivo, y se corre la agenda.
+
+Pesa distinto según quién hace la obra. **Los tercerizados** suelen tener varios días reservados para una obra que les lleva menos, y manejan su tiempo dentro de esos días. **La cuadrilla propia**, no: su agenda la manejan el capataz y el gerente de Operaciones, y un día perdido corre todas las obras que vienen detrás.
+
+### Llueve, hay viento o no se puede trabajar el día de obra
+
+**La decisión de suspender la toma el gerente de Operaciones.** Con lluvia, viento u otra condición que pone en riesgo la seguridad, no se trabaja en el techo.
+
+- **Al cliente le avisa el capataz** que ese día el equipo no va, porque es lo del día.
+- La obra se reprograma en el calendario, con el motivo, ese mismo día. Es una causa ajena: no cuenta como atraso de un área.
+- **La fecha nueva se la confirma Experiencia Solar**, como cualquier fecha de obra.
+
+### Falta un material en la obra
+
+Es de lo más común: casi siempre falta algo. **Se resuelve en el lugar** si se puede; si no, se sale a comprarlo a una ferretería cercana o se trae del local. Un gasto puntual de hasta USD 200 lo aprueba el gerente de Operaciones (capítulo 5). Si eso hace perder el día, el capataz avisa al gerente de Operaciones, que decide si se vuelve otro día por lo que falta o se reprograma.
 
 ### Falta material el día de la preparación
 
 Logística avisa en cuanto lo sabe, no el día de la obra. El gerente de Operaciones decide si la obra se hace igual (y se vuelve por lo que falta) o se reprograma. Si se reprograma, va con su motivo.
 
+### Un operario se enferma o falta
+
+El capataz avisa al gerente de Operaciones en cuanto lo sabe. El gerente decide si la obra sigue con menos gente, si suma a alguien o si se reprograma.
+
+### La obra no se termina en el día
+
+El capataz avisa al gerente de Operaciones y al cliente le avisa él mismo, porque es lo del día. Se agrega un **tramo** más a la obra en el calendario, con su motivo, y se corre lo que venía detrás.
+
+### Un accidente en la obra
+
+**Primero se atiende a la persona**: se para el trabajo y, si hace falta, se llama a emergencias. Después, el capataz avisa de inmediato al gerente de Operaciones. Si la obra es de un tercerizado, el tercerizado le avisa a Voltia en el momento.
+
+> *En definición:* el procedimiento completo ante un accidente, que va a ser parte del plan de seguridad que se está armando con el técnico prevencionista.
+
 ### El informe del capataz no se puede hacer con lo que hay
 
 Si al relevamiento le falta algo para poder opinar (una foto, una medida), el capataz marca el informe como **Bloqueado** y avisa a quien hizo la visita y al gerente de Operaciones. **No se vuelve a la casa del cliente** sin que Experiencia Solar lo coordine.
 
-### El cliente no puede en la fecha confirmada
+### El cliente no puede en la fecha
 
-Se reprograma en el calendario, con el motivo, y Experiencia Solar le confirma la nueva. Si la fecha nueva corre todo el camino, Ingeniería y Logística tienen que saberlo.
+Son dos casos distintos:
+
+- **No puede cuando se le pide la confirmación.** Todavía no hay fecha confirmada: se busca otra antes de confirmarla.
+- **Le surge un imprevisto después de haber dicho que sí.** La fecha ya estaba confirmada y hay que moverla.
+
+En los dos casos, **quien habló con el cliente** (el capataz o Experiencia Solar) **lo coordina con el gerente de Operaciones** para buscar la fecha nueva. Se deja registrado en Voltia PM, con el motivo: es un pedido del cliente, no cuenta como atraso de un área. La fecha nueva se la confirma Experiencia Solar. Si corre todo el camino, Ingeniería y Logística tienen que saberlo.
 
 # Parte B · Obra
 
@@ -825,6 +858,8 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.10 | 11 de octubre de 2026 | Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
+| 0.10 | 11 de octubre de 2026 | Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Con lluvia o viento, la suspensión la decide el gerente de Operaciones y al cliente le avisa el capataz. Si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
 | 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. En las herramientas, la subetapa nueva Presupuesto al instalador tercerizado y el estado No aplica. Ejecución de Obra pasa a tener cuatro subetapas (Planificación y logística, Realización de la obra y Retiro de sobrantes, del capataz, y Control de obra, del gerente de Operaciones, que es quien cierra la etapa); se saca Control de costos. Logística de envío se marca No aplica con cuadrilla propia. En Logística, lo que se viene: los vales de salida y de devolución y el consumo de cada obra. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
