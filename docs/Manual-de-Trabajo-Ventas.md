@@ -206,6 +206,26 @@ general):
 - Fecha tentativa de obra
 - Comunicación al cliente (la presentación del responsable de Experiencia Solar)
 
+**El plazo:** 3 días hábiles para completar el onboarding.
+
+**La seña: USD 500, y sin seña no se avanza.** El onboarding arranca cuando el
+cliente paga la seña. La única excepción es cuando el cliente paga con
+**financiación bancaria**: ahí el asesor puede no cobrarla, a su criterio, como
+argumento de venta. Lo ideal igual es cobrarla, y mandar la proforma al banco
+por el total menos la seña, como dice el contrato.
+
+**El contrato.** Se le manda al cliente cuando paga la seña. El cliente lo firma
+con firma digital, o a mano y lo escanea (también lo puede entregar en papel el
+día de la obra, pero es lo menos cómodo). **Voltia firma último**, con firma
+digital, y se lo devuelve: si firmara primero, la firma del cliente encima
+invalidaría la digital. El intercambio lo hace **el asesor que cerró la venta**,
+que también firma por Voltia.
+
+> *Pendiente:* para que los asesores firmen por Voltia SAS hace falta darles un
+> poder (o el mecanismo que indiquen el escribano o el contador) y que cada uno
+> tramite su certificado de firma digital (Abitab o Correo). Hasta entonces firma
+> la Dirección.
+
 ## 3 · Lineamientos
 
 ### Lo que Ventas deja sin hacer le cae a la obra
@@ -394,6 +414,10 @@ se puede deducir, se le pide al cliente antes de mandar la propuesta.
 - El asesor lo puede bajar **hasta el 15 %** por su cuenta, para cerrar una venta.
 - **Por debajo del 15 % necesita la autorización de la Dirección.**
 
+El markup promedio de las ventas cerradas se revisa una vez por mes, en la
+reunión de coordinación con Ventas. No hay un control automático: la regla se
+cumple porque se mira.
+
 **Las versiones.** Si el cliente pide un cambio (más paneles, otra marca, otro
 montaje) y el asesor lo puede hacer, lo consulta si hace falta y **arma una
 versión nueva** de la propuesta. Las versiones anteriores quedan guardadas en el
@@ -447,7 +471,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.8 | 11 de octubre de 2026 | La propuesta: con qué datos se arma, el markup (se arranca en 25 %, el asesor baja hasta 15 %, menos con autorización de la Dirección), una versión nueva por cada cambio, y los dos botones (residencial y B2B). El seguimiento: a quien no contesta se le insiste por lo menos dos veces y se registra. La inclinación por defecto es 25 grados al norte, y lo acordado en la visita manda; el 10 % de paneles de regalo no choca con el límite de UTE. La visita de venta: su objetivo más grande es conectar con el cliente, como un técnico que habla como persona común y no como vendedor; antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
+| 0.8 | 11 de octubre de 2026 | El onboarding: 3 días hábiles, la seña de USD 500 (sin seña no se avanza, salvo financiación bancaria a criterio del asesor) y el contrato (Voltia firma último, con firma digital; lo hace el asesor, pendiente del poder y los certificados). El markup promedio se revisa una vez por mes. La propuesta: con qué datos se arma, el markup (se arranca en 25 %, el asesor baja hasta 15 %, menos con autorización de la Dirección), una versión nueva por cada cambio, y los dos botones (residencial y B2B). El seguimiento: a quien no contesta se le insiste por lo menos dos veces y se registra. La inclinación por defecto es 25 grados al norte, y lo acordado en la visita manda; el 10 % de paneles de regalo no choca con el límite de UTE. La visita de venta: su objetivo más grande es conectar con el cliente, como un técnico que habla como persona común y no como vendedor; antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |
