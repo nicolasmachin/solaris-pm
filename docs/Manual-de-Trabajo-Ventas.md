@@ -49,10 +49,10 @@ ahora está lo que venía del manual de trabajo (abajo).*
 
 ### El embudo, paso a paso
 
-
-1. **Consulta.** El asesor responde con el *speech*: un mensaje con un orden de
-   precio e información general, que dice qué mandar para avanzar, como la
-   factura de UTE. Muchos quedan acá, al ver el precio.
+1. **Consulta.** El asesor responde con el **speech**, la primera respuesta: un
+   mensaje con cómo funciona el sistema, un orden de precio y qué mandar para
+   avanzar (la factura de UTE y fotos del techo). Muchos quedan acá, al ver el
+   precio, y está bien: el speech también filtra.
 2. **Lead.** Quien manda su factura de UTE pasa a ser un **lead**, un cliente
    potencial, y recién ahí se registra en Voltia PM.
 3. **Propuesta.** Se arma la propuesta comercial y se le envía.
@@ -74,6 +74,38 @@ uno tiene su plazo:
 | De la visita agendada a la visita | 5 días hábiles |
 | De la visita al cierre | 5 días hábiles |
 | Del cierre al proyecto creado | 2 días hábiles |
+
+### La primera respuesta: el speech
+
+Es el mensaje con el que se contesta toda consulta nueva. Busca tres cosas: que
+el cliente entienda qué se le ofrece, que sepa desde el principio un orden de
+precio (para que siga solo quien puede y quiere invertir), y que mande la
+factura de UTE y las fotos del techo, que es lo que lo convierte en lead.
+
+> <small>Hola {nombre}, qué tal?<br>
+> Mi nombre es Nicolás Machín, ingeniero eléctrico y fundador de Voltia.<br>
+> Me pongo en contacto en respuesta a tu consulta.<br>
+> Te comento un poco del sistema que ofrecemos y por último te comento que info necesitamos para avanzar, sin compromiso.<br>
+> Instalamos paneles solares para suministrar energía a la vivienda, sin baterías. El sistema queda conectado con UTE y se intercambia energía en tiempo real:<br>
+> Si la energía de los paneles no es suficiente (por ejemplo de noche), la casa consume de UTE, como siempre.<br>
+> Si los paneles están generando mucha energía, se vende a UTE el sobrante, que después la descuenta de la factura.<br>
+> La ventaja del sistema está en el ahorro que se genera en la factura de UTE que baja mucho, se puede llevar casi a cero en algunos meses.<br>
+> Esto sirve para casas que gastan mucho en UTE, de $5.000 para arriba. Para que valga la pena.<br>
+> La instalación que hacemos es llave en mano; ponemos todos los equipos, los instalamos, lo dejamos andando y tramitamos todo frente a UTE.<br>
+> El precio depende del tamaño de la instalación, pero para una casa normal está entre 8.000 y 10.000 dólares.<br>
+> Con el ahorro que se da en la factura de UTE se recupera la inversión en 5-7 años. Después de eso la vida útil de la instalación es de 25 años por lo menos.<br>
+> Respecto a la forma de pago tenemos financiación por medio de BBVA hasta en 5 años, o también puede ser contado 50% antes y 50% al terminar.<br>
+> Para avanzar con más detalles y valores mas concretos nos podes pasar una factura de UTE y algunas fotos del lugar disponible en el techo de la casa.<br>
+> Además, te hago algunas consultas para ver la viabilidad de realizar la instalación:<br>
+> * Donde es la casa?<br>
+> * Que tamaño tiene el techo disponible?<br>
+> * Tiene inclinación? Orientado hacia donde?<br>
+> * Recibe sol directo todo el día? Algo le da sombra en algún momento del día? (Ej. Árbol)<br>
+> * De que material es el techo?<br>
+> Con eso tenemos la info mínima necesaria para ir validando y podemos armar una propuesta comercial específica, todo sin compromiso.<br>
+> Luego de la propuesta comercial, si queres avanzar podemos coordinar un relevamiento en el lugar, y aprovechar la instancia para sacarte todas las dudas.<br>
+> Quedo a las órdenes.<br>
+> Saludos!</small>
 
 ### Los resultados que se esperan
 
@@ -340,7 +372,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.8 | 11 de octubre de 2026 | Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
+| 0.8 | 11 de octubre de 2026 | La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |
