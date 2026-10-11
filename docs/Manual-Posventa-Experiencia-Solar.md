@@ -1884,4 +1884,4 @@ sacar y se suben, no se retocan a mano.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.14 · 2 de octubre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.18 · 10 de octubre de 2026*

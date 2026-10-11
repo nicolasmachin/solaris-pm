@@ -181,7 +181,13 @@ TEMAS_FAQ = [
       "qué queda previsto."],
      "los montos y las fechas se sacan del <strong>plan de pagos</strong> del proyecto, no de memoria. Si no "
      "está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más "
-     "cuesta arreglar.",
+     "cuesta arreglar.<span style=\"display: block; height: 7px\"></span><strong>Cuando el cliente paga</strong>, Experiencia Solar lo marca en la "
+     "pestaña <strong>Cobros</strong> con <strong>Marcar pagado</strong>, confirmando <strong>la fecha en que "
+     "entró la plata y el monto</strong> (Voltia PM propone la fecha de hoy y el monto previsto; se corrigen si "
+     "fue otro día u otro monto). Nadie lo revisa después: lo que se carga ahí es lo que queda.<span style=\"display: block; height: 7px\"></span>"
+     "<strong>Si una cuota vence y el cliente no pagó</strong>, el reclamo lo hace Experiencia Solar, que es "
+     "quien habla con él. Está decidido que esto pase al área de Administración (la contadora) cuando esa área "
+     "se haga cargo de Finanzas en Voltia PM.",
      "cualquier duda de montos, al asesor comercial."),
 
     (6, "E1", "El portal y la aplicación del inversor",
@@ -597,28 +603,16 @@ def construir():
                "más tarde.", "duro", margen=18)],
         p, plazo_rojo=False))
 
-    nueva("E1Capataz.dc.html", "13 · Capataz y reprogramación", lambda p: pagina(
-        "Presentación del capataz · Reprogramación",
-        kicker("ETAPA 1 · PASOS 4 Y 6")
+    nueva("E1Capataz.dc.html", "13 · Presentación del capataz", lambda p: pagina(
+        "Presentación del capataz",
+        kicker("ETAPA 1 · PASO 4")
         + titulo("Presentación del capataz", tamano=34)
         + ficha([("CUÁNDO", "Al arrancar la obra, o junto con la fecha confirmada"),
                  ("QUIÉN", "Experiencia Solar"),
                  ("QUÉ DECIR", "Plantilla <strong>\"Presentación del capataz\"</strong>")], margen=20)
         + cita("capataz", margen=16)
         + aviso("<strong>Con el alcance explícito</strong>: obra con él, todo lo demás conmigo. Sin esa "
-                "frase, el cliente asume que el capataz reemplazó a Experiencia Solar.", "clave", margen=16)
-        + f'  <div style="margin-top: 24px; padding-top: 20px; border-top: 2px solid {BORDE}"></div>\n'
-        + titulo("Aviso de reprogramación", tamano=34)
-        + ficha([("CUÁNDO", "<strong>El mismo día</strong> en que se mueve la fecha"),
-                 ("QUIÉN", "Experiencia Solar"),
-                 ("PLAZO", "<strong>1 día hábil</strong>"),
-                 ("QUÉ DECIR", "Plantilla <strong>\"Reprogramación de la obra\"</strong>")], margen=20)
-        + parrafo("<strong>Mover una obra ya confirmada exige el motivo en el sistema</strong>: quien le "
-                  "avisa al cliente necesita saber qué decirle. Si era tentativa no se pide motivo — nadie "
-                  "prometió nada.", margen=16)
-        + cita("reagenda", margen=16)
-        + aviso("<strong>Cada reprogramación genera su propio pendiente</strong>, con el motivo adentro. Si "
-                "a un cliente le mueven la fecha tres veces, quedan tres avisos, no uno.", "ojo", margen=16),
+                "frase, el cliente asume que el capataz reemplazó a Experiencia Solar.", "clave", margen=16),
         p))
 
     nueva("E1Fecha.dc.html", "14 · Fecha de obra", lambda p: paso(
@@ -636,6 +630,29 @@ def construir():
                "venta</strong>: entre una cosa y la otra pasan onboarding, pre-ingeniería y la "
                "validación de Operaciones.", "ojo", margen=16),
          cita("confirmada", margen=18)],
+        p))
+
+    nueva("E1Reprogramacion.dc.html", "14b · Reprogramación de la obra", lambda p: pagina(
+        "Aviso de reprogramación",
+        kicker("ETAPA 1 · PASO 6")
+        + titulo("Aviso de reprogramación", tamano=34)
+        + ficha([("CUÁNDO", "<strong>El mismo día</strong> en que se mueve la fecha"),
+                 ("QUIÉN", "Experiencia Solar"),
+                 ("PLAZO", "<strong>1 día hábil</strong>"),
+                 ("QUÉ DECIR", "Plantilla <strong>\"Reprogramación de la obra\"</strong>")], margen=20)
+        + parrafo("<strong>Mover una obra ya confirmada exige el motivo en el sistema</strong>: quien le "
+                  "avisa al cliente necesita saber qué decirle. Si era tentativa no se pide motivo — nadie "
+                  "prometió nada.", margen=16)
+        + aviso("<strong>Mover una fecha confirmada es la excepción.</strong> Antes de moverla, las áreas "
+                "buscan cómo recuperar el tiempo, y cada cambio rinde cuentas: el motivo dice qué etapa se "
+                "atrasó, de qué área y qué se intentó, o qué causa ajena la movió (la lluvia, un cambio que "
+                "pidió el cliente). Si la fecha se mueve por un pedido del cliente, Experiencia Solar lo deja "
+                "así en el motivo, para que no cuente como atraso de un área. <strong>Al cliente se le da el "
+                "motivo sin nombrar áreas</strong> (regla 1): «tuvimos una demora con un material», no "
+                "«Logística se atrasó».", "duro", margen=18)
+        + cita("reagenda", margen=18)
+        + aviso("<strong>Cada reprogramación genera su propio pendiente</strong>, con el motivo adentro. Si "
+                "a un cliente le mueven la fecha tres veces, quedan tres avisos, no uno.", "ojo", margen=16),
         p))
 
     existente("ReglaAgenda.dc.html", "15 · Regla dura: si no está agendado")
@@ -984,7 +1001,8 @@ def construir():
         + titulo("Mantenimientos y el acompañamiento largo")
         + bajada("El contrato incluye <strong>mantenimiento anual sin cargo los primeros 2 años</strong>.")
         + aviso("<strong>Los dos gratis los propone Voltia</strong>, sin esperar a que el cliente los pida: "
-                "se le ofrece una fecha y se confirma con él, como cualquier visita. Y antes de que venza el "
+                "se le ofrece una fecha y se confirma con él, como cualquier visita. Experiencia Solar la coordina con el cliente y la visita la hace "
+                "<strong>Operaciones</strong>, igual que las de soporte cuando algo falla. Y antes de que venza el "
                 "segundo año se le recuerda la condición de la voladura: sin un mantenimiento en el último "
                 "año, no hay cobertura.", "clave", margen=22)
         + subtitulo("Cómo funciona hoy", margen=26)
@@ -1299,7 +1317,7 @@ def construir():
                    "<strong>el plazo de avisar la fecha empieza a correr cuando la fecha se confirma acá</strong>.",
             url=IMG.CALENDARIO,
             epigrafe="La leyenda distingue la <strong>fecha tentativa</strong> de la <strong>confirmada</strong>. "
-                     "Hasta que no está confirmada, al cliente se le avisa como tentativa.")),
+                     "La tentativa es interna: al cliente la fecha se le avisa recién cuando está confirmada.")),
     ]:
         nueva(archivo, titulo_board, lambda p, a=args: pagina_captura(numero=p, **a))
 
@@ -1311,7 +1329,20 @@ def construir():
         + titulo("Registro de cambios")
         + bajada("Qué se agregó o se modificó en cada versión del manual, la más nueva arriba.")
         + tabla(["VERSIÓN", "FECHA", "QUÉ SE AGREGÓ O MODIFICÓ"],
-                [["1.14", "2 de octubre de 2026",
+                [["1.18", "10 de octubre de 2026",
+                  "Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas "
+                  "vencidas lo hace Experiencia Solar hasta que pase al área de Administración."],
+                 ["1.17", "9 de octubre de 2026",
+                  "Mover una fecha de obra confirmada es la excepción y cada cambio rinde cuentas. Si la mueve "
+                  "un pedido del cliente, Experiencia Solar lo deja escrito en el motivo; al cliente se le "
+                  "explica sin nombrar áreas."],
+                 ["1.16", "8 de octubre de 2026",
+                  "Los mantenimientos y las visitas de soporte los hace Operaciones; Experiencia Solar los "
+                  "coordina con el cliente."],
+                 ["1.15", "5 de octubre de 2026",
+                  "Al cliente la fecha de obra se le dice una sola vez, cuando está confirmada: la fecha "
+                  "tentativa es interna y no se le comunica."],
+                 ["1.14", "2 de octubre de 2026",
                   "El Plan de Protección puede incluir vandalismo, al mismo precio."],
                  ["1.13", "30 de septiembre de 2026",
                   "Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la "
