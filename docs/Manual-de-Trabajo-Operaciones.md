@@ -253,7 +253,7 @@ En Voltia PM el monto está en la subetapa **Presupuesto al instalador terceriza
 > Los sobrantes se retiran. Vale igual para la cuadrilla propia y para la tercerizada.
 
 > ### 8. Con la seguridad no hay flexibilidad
-> Si alguien trabaja sin las medidas de seguridad, la sanción alcanza a toda la cadena, hasta quien lo detectó.
+> Si alguien trabaja sin las medidas de seguridad, se sanciona a él y a su capataz. Si quien lo encuentra es Gerencia, también al gerente de Operaciones.
 
 ## 7 · Las herramientas y cómo se usan
 
@@ -720,6 +720,12 @@ para comprar algo que frena una obra: se compra con lo que haya. Es lo mismo que
 cuando en la obra falta un tornillo: no se sale a comparar proveedores, se
 compra en la ferretería más cercana.
 
+**Quién aprueba una compra.**
+
+- **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
+- **Lo que no está en la lista** (cosas puntuales que aparecen): cada ítem de **hasta USD 200** lo aprueba el gerente de Operaciones, sin pasar de **USD 600 en total** por obra en una obra de 5 kW. En obras más grandes el total puede crecer, con un máximo de **USD 2.000**.
+- **Por encima de eso**, lo aprueba Finanzas o Gerencia.
+
 **La entrega, en este orden:**
 
 1. Logística confirma qué día va a estar todo el material.
@@ -734,6 +740,7 @@ compra en la ferretería más cercana.
 |---|---|
 | Si la lista está cerrada de verdad | Ingeniería |
 | Cómo se registra un gasto o una factura de proveedor | Finanzas |
+| Si una compra fuera de la lista está aprobada | Al gerente de Operaciones, o a Finanzas si pasa sus topes |
 | Qué hacer si un material demora | Gerente de Operaciones |
 
 ## 20 · Cuando algo sale mal en Logística
@@ -770,7 +777,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 > Con cuadrilla propia o tercerizada.
 
 > ### 8. Con la seguridad no hay flexibilidad
-> Responden el operario, el capataz y el gerente de Operaciones.
+> Si alguien trabaja sin las medidas de seguridad, se sanciona a él y a su capataz. Si quien lo encuentra es Gerencia, también al gerente de Operaciones.
 
 ## Anexo · Glosario
 
@@ -804,7 +811,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes); por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende. |
+| 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes); por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |
