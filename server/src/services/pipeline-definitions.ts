@@ -173,10 +173,12 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
             isRequired: true,
             appliesWhenModalidadPago: ModalidadPago.FINANCIACION_BANCARIA,
           },
+          // No frena el onboarding (11-oct-2026): cierra con la proforma enviada y
+          // el asesor le sigue la gestión al banco aparte. La aprobación sigue
+          // siendo condición para la fecha de obra (eso lo controla Operaciones).
           {
             label: "Crédito aprobado",
-            isRequired: true,
-            isBlocker: true,
+            isRequired: false,
             appliesWhenModalidadPago: ModalidadPago.FINANCIACION_BANCARIA,
           },
           {

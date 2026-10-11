@@ -4,12 +4,12 @@
  *   docker compose exec server npx tsx prisma/scripts/contrato-firmado-no-bloquea.ts          # muestra qué haría
  *   docker compose exec server npx tsx prisma/scripts/contrato-firmado-no-bloquea.ts --apply  # aplica
  *
- * 1. En la plantilla guardada (settings → PIPELINE_TEMPLATE), el ítem "Recibido
- *    firmado" de la subetapa Contrato del Onboarding pasa a no obligatorio ni
- *    bloqueante, y se saca la subetapa "Registro en planilla de operaciones" si
+ * 1. En la plantilla guardada (settings → PIPELINE_TEMPLATE), los ítems "Recibido
+ *    firmado" (Contrato) y "Crédito aprobado" (Modalidad de pago) del Onboarding
+ *    pasan a no obligatorios ni bloqueantes, y se saca la subetapa "Registro en planilla de operaciones" si
  *    sigue ahí.
- * 2. En los proyectos con el Onboarding sin completar, el mismo ítem pasa a no
- *    obligatorio ni bloqueante.
+ * 2. En los proyectos con el Onboarding sin completar, los mismos ítems pasan a
+ *    no obligatorios ni bloqueantes.
  * Idempotente.
  */
 
@@ -17,7 +17,9 @@ import { PrismaClient, SettingKey, SettingLevel, StageStatus, StageType } from "
 
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes("--apply");
-const LABEL = "Recibido firmado";
+// Ítems del Onboarding que dejaron de frenarlo: el contrato firmado y la
+// aprobación del crédito bancario (los sigue el asesor aparte).
+const LABELS = ["Recibido firmado", "Crédito aprobado"];
 
 type Item = { label: string; isRequired?: boolean; isBlocker?: boolean };
 type Sub = { name: string; checklist?: Item[] };
@@ -38,7 +40,7 @@ async function main() {
       if (etapa.substages.length !== antes) cambios++;
       for (const sub of etapa.substages) {
         for (const it of sub.checklist ?? []) {
-          if (it.label === LABEL && (it.isRequired || it.isBlocker)) {
+          if (LABELS.includes(it.label) && (it.isRequired || it.isBlocker)) {
             it.isRequired = false;
             it.isBlocker = false;
             cambios++;
@@ -56,7 +58,7 @@ async function main() {
 
   const items = await prisma.checklistItem.findMany({
     where: {
-      label: LABEL,
+      label: { in: LABELS },
       OR: [{ isRequired: true }, { isBlocker: true }],
       substage: {
         stage: { name: StageType.ONBOARDING, status: { not: StageStatus.COMPLETED } },
