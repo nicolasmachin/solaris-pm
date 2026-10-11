@@ -401,7 +401,7 @@ el cliente asume que el capataz reemplazó a Experiencia Solar y deja de escribi
 **Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.** La
 fecha tentativa que Operaciones agenda al entrar a Validación es interna y **no
 se le comunica**: decirle una fecha y después otra confunde y le saca confianza.
-La plantilla **"Fecha de obra tentativa"** sigue en Voltia PM, pero no se usa.
+La plantilla **"Fecha de obra tentativa"** sigue en Voltia PM, pero no se usa. Al vender, el asesor le da al cliente solo una **estimación por quincena** (por ejemplo, "la segunda quincena de noviembre"), para que tenga una idea; no es una fecha.
 
 **La fecha confirmada:**
 

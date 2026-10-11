@@ -173,7 +173,8 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
    la proforma; con **otro**, la explicación. Sin eso el proyecto no avanza.
 3. **Se cobra la seña** y, con pago directo, **el 50 % entre 10 y 15 días antes
    de la obra**. **Sin el 50 % pago no se da fecha de obra.** Con financiación
-   bancaria, la condición es el crédito aprobado.
+   bancaria, la condición es el crédito aprobado. La gestión con el banco la sigue
+   el asesor hasta que termina.
 4. **Logística compra**; Finanzas aprueba lo que pasa los topes y, cuando llegan, revisa
    las facturas de los proveedores en la bandeja.
 5. **Operaciones agenda la obra.** Si es con un equipo tercerizado, aparece solo

@@ -14,12 +14,28 @@
 
 ## 1 · Qué hace y dónde termina su trabajo
 
-**Qué hace.** Vende, cierra, cobra la seña, firma el contrato, junta los datos
-administrativos y arma la carpeta. Presenta la consulta inicial a UTE y da la
-fecha tentativa.
+**Qué hace.** Atiende las consultas, convierte a los interesados en leads, arma y
+manda las propuestas, hace la visita de venta y cierra la venta. Después hace el
+onboarding: confirma la venta por escrito, cobra la seña, firma el contrato,
+junta los datos administrativos, define la modalidad de pago, arma la carpeta y
+presenta la consulta inicial a UTE.
+
+**El equipo.** Los asesores comerciales, que llevan cada lead de punta a punta.
+Hoy las visitas de venta las hace la Dirección, que en algunos casos también
+recibe la confirmación de la venta; está previsto delegarlas (ver «Delegar» en el
+Manual de trabajo de Gerencia).
+
+**La fecha de obra.** Ventas no da fechas. Al vender, le da al cliente solo una
+**estimación por quincena** (por ejemplo, "la segunda quincena de noviembre")
+para que tenga una idea. La fecha la agenda Operaciones y, cuando está
+confirmada, se la dice Experiencia Solar, una sola vez.
 
 **Dónde termina su trabajo.** Cuando el onboarding está completo y el cliente
-sabe cómo sigue.
+sabe cómo sigue. Lo único que sigue después es **la modalidad de pago**:
+
+- **Pago directo:** termina cuando el plan de pagos está creado.
+- **Financiación bancaria:** el asesor le sigue la gestión al banco, desde que
+  manda la proforma hasta que la gestión termina.
 
 ## 2 · Procedimiento
 
@@ -324,7 +340,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.8 | 11 de octubre de 2026 | Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
+| 0.8 | 11 de octubre de 2026 | Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |

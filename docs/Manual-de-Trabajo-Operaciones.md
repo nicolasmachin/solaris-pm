@@ -134,7 +134,7 @@ Hay dos fechas, y en el calendario de Voltia PM se ven distinto:
 
 > **Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.**
 
-Decirle una fecha y después otra confunde y le saca confianza. El mensaje que le manda Experiencia Solar es este:
+Decirle una fecha y después otra confunde y le saca confianza. Al vender, el asesor le da al cliente solo una **estimación por quincena** (por ejemplo, "la segunda quincena de noviembre"), para que tenga una idea; no es una fecha. El mensaje que le manda Experiencia Solar es este:
 
 > **Plantilla «Fecha de obra confirmada».** «Hola {nombre}, te confirmo la instalación para el {fecha}. El equipo llega cerca de las {hora}. Durante la obra te va a coordinar {capataz} para horarios y accesos, te paso su contacto: {teléfono}. Cualquier otra cosa seguí conmigo.»
 

@@ -224,7 +224,8 @@ Ingeniería.
 
 **Qué se decidió.** La fecha tentativa que agenda Operaciones es interna. Al
 cliente se le comunica la fecha de obra una sola vez, cuando el gerente de
-Operaciones la confirma.
+Operaciones la confirma. Al vender, el asesor le da solo una estimación por
+quincena, para que tenga una idea aproximada: no es una fecha.
 
 **Por qué.** Decirle una fecha y después otra confunde al cliente y le saca
 confianza.

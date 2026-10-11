@@ -330,7 +330,8 @@ problemas. Validan dos personas, en este orden:
    hábiles más. Recién ahí **Experiencia Solar se la avisa al cliente**.
 
 **Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.**
-Decirle una fecha y después otra confunde y le saca confianza.
+Decirle una fecha y después otra confunde y le saca confianza. Al vender, Ventas
+le da solo una estimación por quincena, que no es una fecha.
 
 Lo que deja la Validación es **la fecha de obra confirmada** y, si hace falta,
 **el informe del capataz**. Después el proyecto **vuelve a Ingeniería** para la
