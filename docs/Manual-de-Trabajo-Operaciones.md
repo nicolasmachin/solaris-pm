@@ -16,7 +16,7 @@
 
 **Quién lo lee.** Toda el área de Operaciones: el gerente de Operaciones, los capataces, los operarios y Logística. Todos lo leen entero, porque el trabajo de cada uno depende del de los otros. **El gerente de Operaciones lo tiene que saber de memoria.** Gerencia también lo lee entero.
 
-**Cómo está armado.** Tiene tres partes: la **Parte A · Operaciones**, cómo funciona el área entera; la **Parte B · Obra**, el trabajo en la propiedad del cliente; y la **Parte C · Logística**, las compras y la entrega de materiales. Las Partes B y C se imprimen también por separado, como **librillos independientes**: el capataz recibe solo el de Obra. Al final hay un glosario con las palabras propias de Voltia y el registro de cambios del manual.
+**Cómo está armado.** Tiene tres partes: la **Parte A · Operaciones**, cómo funciona el área entera; la **Parte B · Obra**, el trabajo en la propiedad del cliente; y la **Parte C · Logística**, las compras y la entrega de materiales. Las Partes B y C están armadas para entregarse por separado, como **librillos independientes**, impresos o en digital: a cada uno se le entrega lo que le corresponde. El capataz recibe el de Obra. Al final hay un glosario con las palabras propias de Voltia y el registro de cambios del manual.
 
 ### Lo que Operaciones tiene que saber de las otras áreas
 
@@ -473,11 +473,13 @@ En los dos casos, **quien habló con el cliente** (el capataz o Experiencia Sola
 
 ## 9 · El librillo de obra
 
-**Para quién es.** Para todos los que trabajan en la obra: el capataz, los operarios y el instalador tercerizado cuando la obra no la hace una cuadrilla propia. El resto del área también lo conoce, porque es lo que se le promete al cliente.
+**Para quién es.** Para todos los que trabajan en la obra: el capataz, los operarios y el instalador tercerizado cuando la obra no la hace una cuadrilla propia. El resto del área también lo conoce, porque es lo que se le promete al cliente. Se entrega impreso o en digital; al tercerizado, lo que le corresponde.
 
-**Qué hace el capataz.** Revisa cada proyecto antes de la obra (el informe del capataz), prepara los materiales, lleva adelante la instalación en la casa del cliente, la deja funcionando y deja cargado todo lo necesario para cerrarla.
+**En las obras tercerizadas, el capataz es el instalador tercerizado.** Hace todo lo que este librillo dice del capataz, el informe incluido, y para eso tiene acceso a Voltia PM.
 
-**Dónde termina su trabajo.** Cuando la instalación quedó funcionando, el lugar quedó limpio y **las fotos, los 2 videos de los ensayos y los documentos de UTE firmados** están cargados en Voltia PM.
+**Qué hace el capataz.** Revisa cada proyecto antes de la obra (el informe del capataz). Antes de salir, estudia el proyecto, planifica el trabajo y prepara los materiales: **nadie llega a una obra sin saber con qué se va a encontrar**. Lleva adelante la instalación en la casa del cliente, la deja funcionando, deja cargado todo lo necesario para cerrarla y se ocupa de que los sobrantes se retiren.
+
+**Dónde termina su trabajo.** Cuando la instalación quedó funcionando, **las fotos, los 2 videos de los ensayos y los documentos de UTE firmados** están cargados en Voltia PM, los sobrantes están retirados (o su retiro está coordinado con el cliente) y el lugar quedó limpio. El capataz completa sus subetapas; la obra la cierra el gerente de Operaciones con el control de obra, revisando lo que el capataz dejó cargado.
 
 > **En obra, el criterio del instalador le gana al del proyectista.**
 
@@ -487,7 +489,9 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 
 **Cuándo.** En los **2 días hábiles** después de que el proyecto entra a Validación de Operaciones.
 
-**Qué es.** El capataz **no va a la casa del cliente** para esto: trabaja con lo que se relevó en la visita de venta. Revisa las fotos, los videos y la lista de materiales preliminar, y cuenta lo que ve. Lo que diga es lo que usa Ingeniería para la Ingeniería Final.
+**Qué es.** El capataz trabaja con lo que se relevó en la visita de venta: revisa las fotos, los videos y la lista de materiales preliminar, y cuenta lo que ve. Lo que diga es lo que usa Ingeniería para la Ingeniería Final. En las obras tercerizadas lo hace el instalador tercerizado.
+
+**Si la información no alcanza, puede ir.** Si el capataz entiende que lo relevado es insuficiente o le quedan dudas, va a la casa del cliente a verlo, **a su criterio**. Vale igual para la cuadrilla propia y para el tercerizado. Como toda visita, se agenda y se coordina con el cliente antes: no se va sin aviso.
 
 **Qué revisa y cuenta:**
 
@@ -858,8 +862,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.10 | 11 de octubre de 2026 | Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
-| 0.10 | 11 de octubre de 2026 | Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Con lluvia o viento, la suspensión la decide el gerente de Operaciones y al cliente le avisa el capataz. Si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
+| 0.10 | 11 de octubre de 2026 | En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
 | 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. En las herramientas, la subetapa nueva Presupuesto al instalador tercerizado y el estado No aplica. Ejecución de Obra pasa a tener cuatro subetapas (Planificación y logística, Realización de la obra y Retiro de sobrantes, del capataz, y Control de obra, del gerente de Operaciones, que es quien cierra la etapa); se saca Control de costos. Logística de envío se marca No aplica con cuadrilla propia. En Logística, lo que se viene: los vales de salida y de devolución y el consumo de cada obra. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
