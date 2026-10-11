@@ -10,8 +10,9 @@
 //     rechaza el Host y el CORS del server solo admite localhost y 127.0.0.1.
 //     El proxy TCP de abajo deja al navegador entrar por 127.0.0.1, que las dos
 //     cosas aceptan, mientras la API le queda en localhost:4000.
-//   · La app arranca en modo oscuro y el manual se imprime en papel, así que se
-//     fuerza el tema claro en el localStorage antes de navegar.
+//   · Las capturas van en modo oscuro (pedido de Nicolás, 11-oct-2026: así se
+//     ve Voltia PM en el día a día). Se fuerza en el localStorage antes de
+//     navegar para no depender de lo que haya quedado guardado.
 import fs from "node:fs";
 import net from "node:net";
 import puppeteer from "puppeteer";
@@ -57,8 +58,8 @@ if (page.url().includes("/login")) {
   proxy.close();
   process.exit(1);
 }
-await page.evaluate(() => localStorage.setItem("voltia-theme", "light"));
-console.log("login ok, tema claro →", page.url());
+await page.evaluate(() => localStorage.setItem("voltia-theme", "dark"));
+console.log("login ok, tema oscuro →", page.url());
 
 // Devuelve el rectángulo de la tarjeta que contiene un texto: sube por los
 // padres hasta dar con uno lo bastante alto como para ser la tarjeta entera.

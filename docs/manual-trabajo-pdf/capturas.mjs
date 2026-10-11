@@ -7,8 +7,8 @@
 //   docker compose cp docs/manual-trabajo-pdf/capturas.mjs server:/app/capturas-trabajo.mjs
 //   docker compose exec -T -w /app -e CAPTURA_FRONT="$IP:5173" server node capturas-trabajo.mjs /tmp/capturas-trabajo
 //
-// El proxy TCP y el tema claro forzado están explicados en
-// docs/manual-posventa-pdf/capturas.mjs: sin ellos no entra o sale en oscuro.
+// El proxy TCP y el tema oscuro forzado están explicados en
+// docs/manual-posventa-pdf/capturas.mjs.
 import fs from "node:fs";
 import net from "node:net";
 import puppeteer from "puppeteer";
@@ -56,7 +56,7 @@ if (page.url().includes("/login")) {
   proxy.close();
   process.exit(1);
 }
-await page.evaluate(() => localStorage.setItem("voltia-theme", "light"));
+await page.evaluate(() => localStorage.setItem("voltia-theme", "dark"));
 
 async function abrir(url, espera = 4000) {
   await page.goto(`${BASE}${url}`, { waitUntil: "networkidle2", timeout: 60000 });

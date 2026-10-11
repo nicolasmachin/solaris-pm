@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.5 · del 07/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.6 · del 11/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -16,6 +16,10 @@
 **Qué hace.** Los hitos del trámite: consulta, apertura del caso, aprobación de
 la consulta, solicitud, aprobación del proyecto, documentos de obra, ensayos,
 documentos finales y habilitación.
+
+**Dónde empieza su trabajo.** La consulta inicial la presenta el asesor
+comercial, apenas se cobra la seña, desde Voltia PM. Desde ahí, **el seguimiento
+lo hace Tramitación UTE**, hasta que UTE contesta y en todo lo que sigue.
 
 **Dónde termina su trabajo.** Cuando UTE habilita.
 
@@ -147,6 +151,7 @@ Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos camino
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.6 | 11 de octubre de 2026 | La consulta inicial la presenta el asesor apenas se cobra la seña, y el seguimiento lo hace Tramitación UTE desde ahí. |
 | 0.5 | 7 de octubre de 2026 | Se agrega qué pasa cuando UTE contesta la consulta con menos potencia que la pedida: lo contesta Ingeniería con el informe de justificación de potencia, y el caso abierto se marca cuando UTE lo abre. |
 | 0.4 | 5 de octubre de 2026 | Para cerrar un trámite hay que tener todos los pasos cargados, o decir por qué se cierra sin ellos; y lo que avisa al cliente es la fecha de habilitación, no el selector de etapa. |
 | 0.3 | 1 de octubre de 2026 | Se agregan los once hitos del trámite tal como se marcan en Voltia PM (salen del PGT, que queda en cuatro pasos generales). |

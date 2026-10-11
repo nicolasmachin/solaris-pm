@@ -54,7 +54,7 @@ if (page.url().includes("/login")) {
   proxy.close();
   process.exit(1);
 }
-await page.evaluate(() => localStorage.setItem("voltia-theme", "light"));
+await page.evaluate(() => localStorage.setItem("voltia-theme", "dark"));
 
 async function cerrarAvisos() {
   // Un traspaso pendiente abre un aviso encima de todo: "Cancelar" no confirma nada.
