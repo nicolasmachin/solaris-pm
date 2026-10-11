@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.18 · del 10/10/26
+**Voltia · Uruguay** · Versión 1.19 · del 11/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1874,6 +1874,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.19 | 11 de octubre de 2026 | Al vender, el asesor le da al cliente solo una estimación de obra por quincena, que no es una fecha. |
 | 1.18 | 10 de octubre de 2026 | Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas vencidas lo hace Experiencia Solar hasta que pase al área de Administración. |
 | 1.17 | 9 de octubre de 2026 | Mover una fecha de obra confirmada es la excepción y cada cambio rinde cuentas. Si la mueve un pedido del cliente, Experiencia Solar lo deja escrito en el motivo; al cliente se le explica sin nombrar áreas. |
 | 1.16 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte los hace Operaciones; Experiencia Solar los coordina con el cliente. |
@@ -1884,4 +1885,4 @@ sacar y se suben, no se retocan a mano.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.18 · 10 de octubre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.19 · 11 de octubre de 2026*
