@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.7 · del 09/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.8 · del 11/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -33,7 +33,6 @@ ahora está lo que venía del manual de trabajo (abajo).*
 
 ### El embudo, paso a paso
 
-De cada 100 consultas que llegan se cierran, más o menos, 2 ventas.
 
 1. **Consulta.** El asesor responde con el *speech*: un mensaje con un orden de
    precio e información general, que dice qué mandar para avanzar, como la
@@ -59,6 +58,38 @@ uno tiene su plazo:
 | De la visita agendada a la visita | 5 días hábiles |
 | De la visita al cierre | 5 días hábiles |
 | Del cierre al proyecto creado | 2 días hábiles |
+
+### Los resultados que se esperan
+
+**Cada canal tiene su embudo.** Los números de acá son los del canal que hoy trae
+casi todas las ventas: las consultas por WhatsApp e Instagram que llegan por la
+publicidad en Meta. Un canal o un modelo de negocio nuevo tiene sus propias
+conversiones, y se miden aparte.
+
+| Paso | Qué se espera | Por qué importa |
+|---|---|---|
+| De consulta a lead | **25 % o más, siempre** | Lo normal en el mercado ronda el 5 %. Que uno de cada cuatro que consulta mande su factura habla de una buena primera respuesta |
+| De lead a propuesta | **Todos** | Todo lead recibe su propuesta. Si alguno no la recibe, se mira por qué |
+| De propuesta a visita | **27 % o más** | Es el paso más angosto del embudo y el que más mueve el resultado |
+| De visita a venta | **75 %** (3 de cada 4) | Quien acepta una visita con el precio en la mano ya aceptó el precio: lo que le falta es confiar en Voltia, y eso es lo que da la visita |
+| De lead a venta | **10 %** este año; **20 %** como aspiración | Es el resultado de los pasos anteriores |
+
+Las metas son aspiraciones alcanzables: están puestas para que se puedan
+lograr. La de visita a venta (75 %) se mantiene aunque, cuando las visitas pasen
+del dueño a otra persona, al principio baje: es esperable, y a mediano plazo
+quien visita tiene que lograrla igual o mejor.
+
+**La cantidad de ventas y el ticket promedio** no tienen una meta fija en este
+manual: se definen cada año o cada trimestre, según el contexto. Lo que no
+cambia es que **tienen que crecer siempre**, y el ticket promedio, **por encima de
+la inflación**.
+
+**Dónde se miran los números del momento:** en el tablero de indicadores y en el
+reporte semanal. El manual dice qué se espera; cómo se viene, se mira ahí.
+
+> *Para tener una referencia:* en 2025, de 3.552 consultas salieron 577 leads
+> (16 %), 516 propuestas, 64 visitas (12 % de las propuestas) y 40 ventas (62 % de
+> las visitas, 7 % de los leads).
 
 ### Las tareas del onboarding
 
@@ -293,6 +324,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.8 | 11 de octubre de 2026 | Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |

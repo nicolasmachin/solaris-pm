@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.13 — 11 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.14 — 11 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -26,6 +26,35 @@
 
 Cada decisión se anota con **qué se decidió, por qué, desde cuándo rige** y a
 qué manual afecta.
+
+### Delegar: al principio baja, a mediano plazo tiene que ser mejor
+
+**Qué se decidió.** Son dos principios de cómo se emprende en Voltia:
+
+1. **Al principio, nadie lo hace tan bien como el dueño.** Es esperable y se
+   asume: cuando una tarea pasa del dueño a otra persona, los resultados bajan
+   al principio. No es un motivo para no delegar.
+2. **A mediano y largo plazo, la persona en la que se delega tiene que ser mejor
+   que el dueño en su área.** El dueño hace de todo y lo hace más o menos bien; el
+   especialista hace una sola cosa y tiene que hacerla mejor. El vendedor tiene
+   que vender mejor que el dueño, y el gerente de Operaciones, operar mejor.
+
+**Cómo se aplica.** Al delegar se dice de entrada qué se espera los primeros
+meses: cuánto puede bajar el resultado, en cuánto tiempo se tiene que recuperar
+y con qué apoyo. Lo que el especialista no trae (la credibilidad del dueño ante
+el cliente y el criterio del negocio) se le da por escrito, como método y como
+lineamientos en el manual de su área. Si a mediano plazo la persona no supera al
+dueño, el problema no es delegar: es la persona elegida o el método que se le
+dio.
+
+**Por qué.** Creer que nadie lo va a hacer tan bien como uno es la trampa que
+frena a la empresa: todo queda en el dueño y no se puede crecer.
+
+**Desde cuándo rige.** 11 de octubre de 2026.
+
+**A qué manuales afecta.** A todos los manuales de área. En el de Ventas, la
+meta de visita a venta (75 %) se mantiene aunque al delegar las visitas baje al
+principio.
 
 ### Operaciones es el área más crítica: los plazos de las demás áreas se cumplen
 
@@ -425,6 +454,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.14 | 11 de octubre de 2026 | Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
 | 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo (revisado cada tres meses), compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. Las compras en plaza de más de USD 100 van con tres cotizaciones y se hacen con anticipación; reemplaza la decisión de los tres presupuestos solo si había tiempo. |
 | 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
