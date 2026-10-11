@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.10 · del 09/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.11 · del 11/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -27,6 +27,14 @@ toca más. A partir de ahí Logística compra sobre esa lista.
 ingeniería final.*
 
 ## 3 · Lineamientos
+
+### La inclinación de los paneles
+
+Si no se dice otra cosa, se diseña con los paneles **a 25 grados, mirando al
+norte**. Si en la visita de venta se acordó otra cosa con el cliente (por
+ejemplo, paneles coplanares, con un 10 % más de paneles para compensar), queda en
+el resumen de la visita y el proyecto lo sigue. Si ese 10 % hace pasar la
+potencia en verano de lo que da UTE, se justifica con el informe de potencia.
 
 ### La fecha de obra depende de la Ingeniería Final
 
@@ -377,6 +385,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.11 | 11 de octubre de 2026 | Nuevo lineamiento: si no se dice otra cosa, los paneles se diseñan a 25 grados mirando al norte; lo acordado en la visita de venta (por ejemplo, coplanar con un 10 % más de paneles) manda. |
 | 0.10 | 9 de octubre de 2026 | Nuevo lineamiento: la fecha de obra confirmada se defiende. Si la Ingeniería Final se va a atrasar, se avisa y se busca recuperar el tiempo; si igual se mueve, el atraso lo explica Ingeniería. |
 | 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae. Si no se carga, se deduce de la potencia que dijo UTE; si tampoco hay, se trata como cuenta nueva. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. Al cargar cantidades, Enter pasa a la siguiente. |
 | 0.8 | 7 de octubre de 2026 | La lista de materiales se arma desde una sola plantilla, Base, con las cantidades en cero: se agrega cómo se arma la lista paso a paso, el cambio de variante en el mismo renglón, por qué no hay una plantilla por tipo de conexión y que un material en cero no sale para compras. En el catálogo se suma el rubro Monitoreo y medición. |
