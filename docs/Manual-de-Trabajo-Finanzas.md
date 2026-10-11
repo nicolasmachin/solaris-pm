@@ -77,7 +77,7 @@ las cuentas y los resultados se llevan todos los meses.
 | **Ventas** (el asesor comercial) | Cada proyecto vendido llega con su **modalidad de pago** y lo que esa modalidad pide: el plan de pagos, la proforma para el banco o la explicación escrita de lo acordado. También indica si el proyecto **lleva factura** | Finanzas → Cobros; Finanzas → Facturación |
 | **Ventas** (al ganar la venta) | La **comisión del asesor**, que se registra sola con el precio de la última propuesta publicada | Comisiones; Finanzas → Pendientes |
 | **Operaciones** (al agendar la obra con un equipo tercerizado) | El **pago de la mano de obra** al instalador, a nombre de quien cobra por ese equipo | Finanzas → Instaladores |
-| **Logística** | Las **compras fuera de la lista de materiales** que pasan los topes del gerente de Operaciones (USD 200 por ítem, USD 600 por obra) | Las aprueba Finanzas o Gerencia. Lo de la lista lo compra directo el encargado de compras. Todo gasto queda **auditable**: ver 5.19 |
+| **Logística** | Las **compras fuera de la lista de materiales** de más de USD 200 por gasto (hasta ese monto las aprueba el gerente de Operaciones, con rendición de cuentas) | Las aprueba Finanzas o Gerencia. Lo de la lista lo compra directo el encargado de compras. Todo gasto queda **auditable**: ver 5.19 |
 | **Proveedores** (por la facturación electrónica) | Las **facturas** que le emiten a Voltia | Finanzas → Cuentas por pagar → Facturas recibidas |
 | **Experiencia Solar** | Los cobros que registra o marca pagados en su propia pestaña, y las anualidades del **Plan de Protección contra Granizo** | Finanzas → Cobros y Movimientos (es la misma información) |
 
@@ -119,9 +119,10 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
    revisarlas: *pendiente de definir*.
 2. **Aprobar las compras que le tocan.** Lo que está en la lista de materiales
    de Ingeniería lo compra directo el encargado de compras. Lo que no está en
-   la lista lo aprueba el gerente de Operaciones hasta USD 200 por ítem y USD
-   600 en total por obra (en obras grandes, hasta USD 2.000). **Lo que pasa esos
-   topes lo aprueba Finanzas o Gerencia**, y rápido: Logística tiene 5 días
+   la lista lo aprueba el gerente de Operaciones hasta USD 200 por gasto, en
+   cualquier obra y sin tope total, con rendición de cuentas: cada gasto queda
+   cargado asignado a la obra y con su motivo. **Lo que pasa ese monto lo
+   aprueba Finanzas o Gerencia**, y rápido: Logística tiene 5 días
    hábiles para comprar y recibir el material de una obra con fecha confirmada,
    y cada día que demora una aprobación es un día menos. Cada gasto queda
    registrado con quién lo cargó, cuándo y cada cambio que se le hizo (ver
@@ -1035,7 +1036,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Quién aprueba las compras: lo de la lista de materiales, nadie (lo compra directo el encargado de compras); lo de fuera, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes), y por encima Finanzas o Gerencia. |
+| 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Quién aprueba las compras: lo de la lista de materiales, nadie (lo compra directo el encargado de compras); lo de fuera, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas, y por encima Finanzas o Gerencia. |
 | 0.8 | 10 de octubre de 2026 | Las facturas recibidas también se cargan a mano, con el mismo control para no cargar dos veces la misma; cada factura tiene su PDF (de la facturación electrónica o subido a mano). |
 | 0.7 | 10 de octubre de 2026 | Se responden las dudas de Gerencia: los gastos de compras no se aprueban por ahora pero quedan auditables, con la pantalla nueva Historial; el reclamo de pagos atrasados lo hace Experiencia Solar y pasará a Administración; las cuentas bancarias se concilian una vez por mes; los costos fijos los carga Finanzas desde su propia pestaña; las facturas de proveedores se cargan con IVA incluido; al marcar pagado un cobro se confirman la fecha y el monto.; la conciliación con cada proveedor se hace una vez por mes, a mano |
 | 0.6 | 10 de octubre de 2026 | Se revisa todo el manual contra Voltia PM: qué muestra cada pestaña, cómo se pagan los costos fijos y las comisiones, cómo se aplica el saldo a favor de un proveedor, la nueva conciliación con el estado de cuenta del proveedor, cómo se concilian las cuentas, de dónde sale la cotización del dólar y qué abarca el flujo de fondos. Se citan enteros los resúmenes de WhatsApp de cobros y de instaladores. Se aclara que no hay un circuito de aprobación de gastos en Voltia PM. |

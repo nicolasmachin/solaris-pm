@@ -338,10 +338,9 @@ Finanzas.
 **Qué se decidió.**
 
 - **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
-- **Lo que no está en la lista** (cosas puntuales que aparecen): cada ítem de **hasta USD 200** lo aprueba el gerente de Operaciones, sin pasar de **USD 600 en total** por obra en una obra de 5 kW. En obras más grandes el total puede crecer, con un máximo de **USD 2.000**.
+- **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la coordinación de los viernes con Gerencia.
 - **Por encima de eso**, lo aprueba Finanzas o Gerencia.
 
-> *A confirmar:* cómo crece el total de USD 600 en las obras de más de 5 kW.
 
 Además, **todo lo que se carga en Finanzas se puede auditar**: quién cargó,
 cambió o borró cada cosa, cuándo, y en cada cambio el valor anterior y el nuevo.
@@ -403,7 +402,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes); por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
+| 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
 | 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |
 | 0.9 | 9 de octubre de 2026 | Se suma a la decisión de control de deudas: el vencimiento sale del plazo negociado con cada proveedor, y ninguna factura recibida entra a la deuda sin revisión. |
