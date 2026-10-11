@@ -48,7 +48,7 @@ UTE, etapa, E1— están explicadas en el **glosario**, al final del PGT.
 | **Manual de trabajo de Experiencia Solar** — *Manual de Posventa* | Cómo se acompaña al cliente de punta a punta: qué se le avisa, cuándo y con qué mensaje | Experiencia Solar |
 | **Manual de trabajo de Finanzas** | Cómo se cobra, se paga y se factura | Finanzas |
 | **Manual de trabajo de Gerencia** | Las decisiones de fondo de la empresa y por qué se tomaron | Gerencia |
-| **Reglamento interno** | El horario, las horas extras, el uso de las medidas de seguridad y las sanciones | Todo el equipo |
+| **Reglamento interno del Área Operaciones** | El horario, las horas extra, la conducta, la seguridad, los vehículos y las sanciones. Cada trabajador de Operaciones lo firma | Operaciones; los tercerizados, en lo que les toca |
 
 ### Si dos documentos dicen cosas distintas
 

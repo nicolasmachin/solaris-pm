@@ -454,7 +454,10 @@ El capataz avisa al gerente de Operaciones y al cliente le avisa él mismo, porq
 
 **Primero se atiende a la persona**: se para el trabajo y, si hace falta, se llama a emergencias. Después, el capataz avisa de inmediato al gerente de Operaciones. Si la obra es de un tercerizado, el tercerizado le avisa a Voltia en el momento.
 
-> *En definición:* el procedimiento completo ante un accidente, que va a ser parte del plan de seguridad que se está armando con el técnico prevencionista.
+- El accidente se reporta por escrito **el mismo día**: qué pasó y qué se va a hacer para que no se repita, quién y para cuándo.
+- Si hubo una lesión, **Voltia la denuncia al BSE dentro de las 72 horas**. Si es grave, el informe va a la Inspección del Trabajo dentro de los 10 días hábiles.
+- Lo que pudo terminar en accidente y no terminó también se reporta: sirve para prevenir.
+- Ocultar o demorar un reporte es falta grave.
 
 ### El informe del capataz no se puede hacer con lo que hay
 
@@ -563,9 +566,44 @@ Controlar es parte de su trabajo, y el gerente responde por sus capataces.
 
 ### Las medidas de seguridad
 
-*A completar con el Reglamento interno*, que es donde están las medidas de
-seguridad una por una (equipo de protección, trabajo en altura, trabajo
-eléctrico) y las sanciones.
+El detalle completo, con las sanciones, está en el **Reglamento interno del Área
+Operaciones**, que cada trabajador firma. Lo que no puede faltar en ninguna obra:
+
+> **Si no es seguro, no se empieza.**
+
+**El equipo de protección.** Cada operario tiene el suyo, lo cuida, lo lleva y
+lo usa todo el tiempo que está en la obra: **el equipo no sirve "en la obra",
+tiene que estar puesto**. Si algo se rompe o se gasta, lo avisa y se repone
+antes de seguir. En las obras tercerizadas, el equipo lo pone el tercerizado y
+Voltia le exige usarlo.
+
+**En el techo** (todo trabajo a 2 metros o más):
+
+- Nadie sube sin la capacitación vigente y sin arnés de cuerpo completo, cabo de
+  vida con amortiguador y un punto de anclaje firme.
+- Antes de subir, el capataz revisa el acceso: la superficie, el clima, los
+  anclajes, las escaleras y cómo se rescataría a alguien.
+- **Nadie trabaja solo en altura.**
+- Con lluvia, viento fuerte, superficie resbaladiza o tormenta eléctrica, nadie
+  se queda en el techo.
+
+**En lo eléctrico:**
+
+- Solo interviene quien está autorizado y capacitado.
+- Antes de tocar: se aísla, se bloquea y **se mide que no haya tensión**. Todo
+  tiene tensión hasta medir lo contrario.
+- **Los paneles generan tensión mientras les da la luz, aunque el inversor esté
+  apagado.**
+- Herramientas aisladas e instrumentos con la categoría adecuada.
+
+**Siempre:**
+
+- Herramientas en buen estado; la que falla se saca de uso.
+- Si la tarea pone en riesgo a otros (el cliente, niños, mascotas, vecinos), se
+  delimita y se señaliza la zona.
+- Nada de celular trabajando en altura o en un tablero.
+- **Cualquiera puede y debe parar una tarea si ve un riesgo grave**, y avisa al
+  capataz y al gerente de Operaciones. Nadie es sancionado por parar de buena fe.
 
 ## 13 · Los criterios técnicos de obra
 
@@ -870,7 +908,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.10 | 11 de octubre de 2026 | En las obras tercerizadas, el kit de materiales va directo a la casa del cliente y el instalador tiene que estar para recibirlo; se coordina entre Logística, el instalador y el cliente. Antes de salir a la obra: el capataz estudia el proyecto y planifica, y compartirlo con su equipo es opcional; cada operario es responsable de su equipo y su kit de seguridad, y el capataz controla que se use bien; el tercerizado pone su propio equipo de seguridad y Voltia le exige usarlo. En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
+| 0.10 | 11 de octubre de 2026 | La seguridad: las medidas que no pueden faltar en una obra (equipo de protección, techo, eléctrico, terceros, parar el trabajo), tomadas del Reglamento interno; y qué hacer ante un accidente, con el reporte el mismo día y la denuncia al BSE. En las obras tercerizadas, el kit de materiales va directo a la casa del cliente y el instalador tiene que estar para recibirlo; se coordina entre Logística, el instalador y el cliente. Antes de salir a la obra: el capataz estudia el proyecto y planifica, y compartirlo con su equipo es opcional; cada operario es responsable de su equipo y su kit de seguridad, y el capataz controla que se use bien; el tercerizado pone su propio equipo de seguridad y Voltia le exige usarlo. En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
 | 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. En las herramientas, la subetapa nueva Presupuesto al instalador tercerizado y el estado No aplica. Ejecución de Obra pasa a tener cuatro subetapas (Planificación y logística, Realización de la obra y Retiro de sobrantes, del capataz, y Control de obra, del gerente de Operaciones, que es quien cierra la etapa); se saca Control de costos. Logística de envío se marca No aplica con cuadrilla propia. En Logística, lo que se viene: los vales de salida y de devolución y el consumo de cada obra. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
