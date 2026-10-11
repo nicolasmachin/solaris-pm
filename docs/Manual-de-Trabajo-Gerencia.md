@@ -146,7 +146,9 @@ mes sin que nadie los fuera a buscar.
 local, cada uno con su mínimo, y se compra para reponerlo. Las compras se
 juntan en un día fijo por semana, con un solo pedido por proveedor. Lo que se
 pueda se importa directamente, planificado con meses de anticipación. Lo que se
-compra se recibe en el local; ir a buscarlo es la excepción.
+compra se recibe en el local; ir a buscarlo es la excepción. Los mínimos se
+revisan cada tres meses, porque la empresa crece rápido y un mínimo que hoy
+alcanza para un mes de obras puede alcanzar para una semana en unos meses.
 
 **Por qué.** Comprar obra por obra no escala: ocho obras son ocho pedidos a cada
 proveedor. Con stock y compras agrupadas, cuando llega la lista de una obra solo
@@ -219,17 +221,21 @@ capataz.
 **A qué manuales afecta.** Al Manual de trabajo de Operaciones (Obra) y al
 Reglamento interno.
 
-### Compras en plaza: tres presupuestos, pero la obra va primero
+### Compras en plaza: tres cotizaciones desde USD 100, y con tiempo
 
-**Qué se decidió.** Lo ideal, para lo que se compra en plaza, es pedir al menos
-tres presupuestos. Pero si los plazos están apretados o vencidos, no se espera
-el tercero para comprar algo que frena una obra: la ejecución va primero que el
-procedimiento. Las importaciones pueden tener otro camino.
+**Qué se decidió.** Toda compra en plaza de más de USD 100 —material, un
+servicio, un flete— se hace con al menos tres cotizaciones de proveedores
+distintos. Las compras se hacen con mucha anticipación, siendo muy estrictos con
+los plazos. La excepción es lo urgente que frena una obra en el día (un material
+que falta en la obra se compra en la ferretería más cercana). Las importaciones
+pueden tener otro camino.
 
-**Por qué.** Lo que se ahorra con un tercer presupuesto se pierde varias veces
-con una obra que se mueve y arrastra toda la agenda.
+**Por qué.** Las compras son lo que más está demorando poder salir a obra en
+tiempo y forma. Comprar con tiempo evita las obras que se mueven y es lo que
+permite comparar precios.
 
-**Desde cuándo rige.** 5 de octubre de 2026.
+**Desde cuándo rige.** 11 de octubre de 2026. Reemplaza la decisión del 5 de
+octubre, que pedía tres presupuestos solo si había tiempo.
 
 **A qué manuales afecta.** Al Manual de trabajo de Operaciones (Logística).
 
@@ -419,7 +425,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo, compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. |
+| 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo (revisado cada tres meses), compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. Las compras en plaza de más de USD 100 van con tres cotizaciones y se hacen con anticipación; reemplaza la decisión de los tres presupuestos solo si había tiempo. |
 | 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
 | 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |
