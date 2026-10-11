@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.12 — 10 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.13 — 11 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -139,6 +139,23 @@ mes sin que nadie los fuera a buscar.
 **Desde cuándo rige.** 10 de octubre de 2026, para las obras nuevas.
 
 **A qué manuales afecta.** Al de Operaciones (Obra y Logística).
+
+### Se compra para mantener el stock, no para cada obra
+
+**Qué se decidió.** Los materiales que se usan siempre se tienen en stock en el
+local, cada uno con su mínimo, y se compra para reponerlo. Las compras se
+juntan en un día fijo por semana, con un solo pedido por proveedor. Lo que se
+pueda se importa directamente, planificado con meses de anticipación. Lo que se
+compra se recibe en el local; ir a buscarlo es la excepción.
+
+**Por qué.** Comprar obra por obra no escala: ocho obras son ocho pedidos a cada
+proveedor. Con stock y compras agrupadas, cuando llega la lista de una obra solo
+se compra lo que falta. Importar es menos compras y más margen.
+
+**Desde cuándo rige.** 11 de octubre de 2026, como forma de trabajo a la que se
+va; hoy todavía se compra en buena parte obra por obra.
+
+**A qué manuales afecta.** Al de Operaciones (Logística).
 
 ### Los mantenimientos y el soporte son de Operaciones
 
@@ -402,6 +419,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo, compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. |
 | 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
 | 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |

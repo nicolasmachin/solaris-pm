@@ -838,7 +838,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 
 **Para quién es.** Para quien hace las compras y la entrega de materiales.
 
-**Qué hace.** Compra los materiales de la lista definitiva, sigue los pedidos, los recibe en el local y coordina la entrega. Si la obra la hace un instalador tercerizado, arma el kit de materiales, coordina el flete y lo manda.
+**Qué hace.** Mantiene el stock del local de los materiales que se usan siempre y compra lo que falta para cada obra. Sigue los pedidos, los recibe en el local y les da ingreso al stock, y coordina la entrega. Si la obra la hace un instalador tercerizado, arma el kit de materiales, coordina el flete y lo manda.
 
 **Dónde empieza su trabajo.** Cuando Ingeniería Final cierra la **lista de materiales definitiva**, que ya pasó por la revisión del capataz. Es su único punto de partida.
 
@@ -875,11 +875,23 @@ compra en la ferretería más cercana.
 
 **Si la obra es tercerizada**, el kit va **directo a la casa del cliente**, y el instalador tercerizado tiene que estar ahí para recibirlo. Logística coordina el flete y el día con el instalador, y el instalador lo coordina con el cliente. Al recibirlo, el instalador lo revisa contra la lista y avisa en el momento si falta algo.
 
-### Cómo se compra hoy
+### Cómo se compra
 
-Cuando llega la lista de materiales de la Ingeniería Final, Logística se asegura de que todo esté en el local dentro del plazo. Hoy se compra **a medida que cada obra lo necesita**: se hacen los pedidos para las obras que vienen.
+> **Se compra para mantener el stock, no para cada obra.**
 
-**Los proveedores habituales**, todos locales, con varios de ellos en cuenta corriente:
+Comprar obra por obra no escala: con ocho obras en el mes, son ocho pedidos a cada proveedor. Por eso los materiales se manejan en tres grupos:
+
+- **Los de siempre** (cable, conectores, protecciones, tornillería, caños): **se tienen en stock en el local.** Cada uno tiene su **stock mínimo**, que se fija con el gerente de Operaciones según lo que se usa por semana y lo que tarda el proveedor en entregar. Cuando baja del mínimo, se repone.
+- **La estructura:** también de stock, con importaciones que alcanzan para varios meses.
+- **Paneles e inversores**, que cambian según la obra: se compran para las obras que vienen, en un solo pedido para varias obras cuando se puede.
+
+**Cuando llega la lista de una obra**, Logística verifica que todo esté en el local y **compra solo lo que falta**, si falta algo.
+
+**Un día fijo de compras por semana.** Logística junta en el **consolidado de materiales** de Voltia PM todo lo que piden las obras de las próximas 2 o 3 semanas, le resta lo que hay en stock, suma lo que bajó del mínimo y hace **un solo pedido por proveedor**. Fuera de ese día se compra solo lo urgente.
+
+**Importar.** Lo que se pueda se importa directamente (de China, de Brasil y de otros países): son menos compras y más margen. Las importaciones tardan, así que se planifican con meses de anticipación, mirando las ventas ganadas y las obras que vienen.
+
+**Los proveedores habituales**, todos locales, varios con cuenta corriente:
 
 | Qué | A quién |
 |---|---|
@@ -889,13 +901,40 @@ Cuando llega la lista de materiales de la Ingeniería Final, Logística se asegu
 
 **Lo que se compra se recibe en el local.** Ir a buscarlo es la excepción: los proveedores suelen demorar en entregar en su propio local, y por el volumen que se les compra conviene que lo traigan.
 
-> *En definición:* cómo se sigue un pedido, quién controla lo que llega al local y dónde se registra en Voltia PM.
+**Recibir es controlar.** Lo que llega se revisa contra lo que se pidió, en cantidad y en estado, y se le da **ingreso al stock en Voltia PM**. Lo que falta o llegó mal se le reclama al proveedor en el momento.
 
-### Hacia dónde vamos: comprar para el stock, no para cada obra
+> *Hoy todavía se compra en buena parte obra por obra. Esto es cómo se quiere trabajar, y hacia ahí se va.*
 
-Comprar obra por obra no escala: con ocho obras en el mes, son ocho pedidos a cada proveedor. **La idea es tener en el local el stock de lo que se usa siempre**, y comprar para mantener ese stock. Cuando llega la lista de una obra, Logística verifica que esté todo y compra solo lo que falta, si falta algo.
+### La rutina de Compras y Logística
 
-Con más capital, buena parte se puede **importar directamente** (de China y de otros países): menos compras y más margen. Ya se está importando estructura de Brasil, que deja stock para un par de meses y reemplaza lo que se le compraba a proveedores locales. La tendencia es que cada vez haya más stock en el local.
+*Propuesta, a validar con quien ocupe el puesto y el gerente de Operaciones.*
+
+**Todos los días**
+
+- Revisar en Voltia PM los proyectos que entraron a Compras: verificar su lista contra el stock y anotar lo que falta.
+- Recibir lo que llega: controlarlo contra el pedido y darle ingreso al stock.
+- Preparar con el capataz el material de las obras próximas (el **vale de salida** cuando se use).
+- Coordinar los fletes y las entregas, y con los tercerizados, el día que reciben el kit en la casa del cliente.
+- Avisar al gerente de Operaciones en cuanto algo se demora y puede mover una fecha de obra.
+
+**Una vez por semana, el día de compras**
+
+- Armar el consolidado de las obras de las próximas 2 o 3 semanas y restarle el stock.
+- Reponer lo que bajó del mínimo.
+- Hacer **un pedido por proveedor** y confirmar la fecha de entrega de cada uno.
+- Revisar los pedidos que siguen pendientes y reclamar los atrasados.
+- Confirmar que cada obra de la semana siguiente tiene todo en el local para su día de preparación.
+
+**Una vez por mes**
+
+- Contar en el local los materiales caros: inversores, paneles, cable y estructura. Si no coincide con Voltia PM, se ajusta y se busca por qué.
+- Revisar los mínimos según lo que se usó en el mes.
+- Repasar con Finanzas las cuentas corrientes con los proveedores y lo que se les debe.
+- Revisar los precios y los plazos de entrega de los proveedores.
+
+**Cada tres meses**
+
+- Planificar las importaciones con el gerente de Operaciones y Gerencia, según las ventas y las obras que vienen.
 
 ### Lo que se viene: salida y devolución de materiales
 
@@ -984,7 +1023,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.10 | 11 de octubre de 2026 | Logística: cómo se compra hoy, los proveedores habituales, que las compras se reciben en el local y hacia dónde se va (comprar para el stock y no obra por obra, e importar). Las hojas para llevar a la obra suman estudiar y planificar, el equipo de seguridad, el kit del tercerizado y el cierre de cada día. En la parte de Obra, Cuando algo sale mal repite lo del capítulo 8: la regla de resolver en el momento, la lluvia, un operario que falta, la obra que no se termina en el día, el accidente y el material que falta. El cierre de cada día de obra en los Comentarios es obligatorio y se escribe a mano. Si falta una firma de UTE después de la obra, se la pide Experiencia Solar al cliente. La puesta en marcha se completa con las respuestas de Gerencia del 5 de octubre: los pasos de Growatt y los 180 segundos en el portal OSS (registros 18 y 19); el smartmeter de Growatt es Eastron; Huawei con el datalogger externo, el parámetro de los 180 segundos y su video; Fronius con la versión completa, la puesta en marcha en 3 pasos y los 180 segundos en el menú profesional del display; las claves están en el documento Credenciales. Criterios técnicos: Operaciones ejecuta lo que proyectó Ingeniería; el criterio del instalador es para los casos excepcionales. La seguridad: las medidas que no pueden faltar en una obra (equipo de protección, techo, eléctrico, terceros, parar el trabajo), tomadas del Reglamento interno; y qué hacer ante un accidente, con el reporte el mismo día y la denuncia al BSE. En las obras tercerizadas, el kit de materiales va directo a la casa del cliente y el instalador tiene que estar para recibirlo; se coordina entre Logística, el instalador y el cliente. Antes de salir a la obra: el capataz estudia el proyecto y planifica, y compartirlo con su equipo es opcional; cada operario es responsable de su equipo y su kit de seguridad, y el capataz controla que se use bien; el tercerizado pone su propio equipo de seguridad y Voltia le exige usarlo. En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
+| 0.10 | 11 de octubre de 2026 | Logística: se compra para mantener el stock y no para cada obra (materiales de siempre con su mínimo, estructura importada, paneles e inversores por obra), un día fijo de compras por semana con el consolidado, importar, los proveedores habituales, las compras se reciben en el local y se controlan, y una rutina propuesta de Compras y Logística (diaria, semanal, mensual y trimestral). Las hojas para llevar a la obra suman estudiar y planificar, el equipo de seguridad, el kit del tercerizado y el cierre de cada día. En la parte de Obra, Cuando algo sale mal repite lo del capítulo 8: la regla de resolver en el momento, la lluvia, un operario que falta, la obra que no se termina en el día, el accidente y el material que falta. El cierre de cada día de obra en los Comentarios es obligatorio y se escribe a mano. Si falta una firma de UTE después de la obra, se la pide Experiencia Solar al cliente. La puesta en marcha se completa con las respuestas de Gerencia del 5 de octubre: los pasos de Growatt y los 180 segundos en el portal OSS (registros 18 y 19); el smartmeter de Growatt es Eastron; Huawei con el datalogger externo, el parámetro de los 180 segundos y su video; Fronius con la versión completa, la puesta en marcha en 3 pasos y los 180 segundos en el menú profesional del display; las claves están en el documento Credenciales. Criterios técnicos: Operaciones ejecuta lo que proyectó Ingeniería; el criterio del instalador es para los casos excepcionales. La seguridad: las medidas que no pueden faltar en una obra (equipo de protección, techo, eléctrico, terceros, parar el trabajo), tomadas del Reglamento interno; y qué hacer ante un accidente, con el reporte el mismo día y la denuncia al BSE. En las obras tercerizadas, el kit de materiales va directo a la casa del cliente y el instalador tiene que estar para recibirlo; se coordina entre Logística, el instalador y el cliente. Antes de salir a la obra: el capataz estudia el proyecto y planifica, y compartirlo con su equipo es opcional; cada operario es responsable de su equipo y su kit de seguridad, y el capataz controla que se use bien; el tercerizado pone su propio equipo de seguridad y Voltia le exige usarlo. En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
 | 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. En las herramientas, la subetapa nueva Presupuesto al instalador tercerizado y el estado No aplica. Ejecución de Obra pasa a tener cuatro subetapas (Planificación y logística, Realización de la obra y Retiro de sobrantes, del capataz, y Control de obra, del gerente de Operaciones, que es quien cierra la etapa); se saca Control de costos. Logística de envío se marca No aplica con cuadrilla propia. En Logística, lo que se viene: los vales de salida y de devolución y el consumo de cada obra. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
