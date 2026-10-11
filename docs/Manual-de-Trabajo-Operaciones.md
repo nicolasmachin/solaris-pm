@@ -575,7 +575,9 @@ Operaciones**, que cada trabajador firma. Lo que no puede faltar en ninguna obra
 lo usa todo el tiempo que está en la obra: **el equipo no sirve "en la obra",
 tiene que estar puesto**. Si algo se rompe o se gasta, lo avisa y se repone
 antes de seguir. En las obras tercerizadas, el equipo lo pone el tercerizado y
-Voltia le exige usarlo.
+Voltia le exige usarlo. Si alguien de su personal trabaja sin protección, quien
+lo vea para la tarea hasta que se lo ponga, y se le llama la atención **al
+tercerizado**, que es el responsable de su gente.
 
 **En el techo** (todo trabajo a 2 metros o más):
 

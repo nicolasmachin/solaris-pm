@@ -356,7 +356,9 @@ o desgaste se avisa en el momento al capataz, y se repone antes de seguir
 trabajando.
 
 Los instaladores tercerizados ponen el equipo de protección de su personal;
-Voltia les exige que lo usen.
+Voltia les exige que lo usen. Si alguien de su personal trabaja sin protección,
+quien lo vea para la tarea hasta que se lo ponga (sección 10), y se le llama la
+atención al tercerizado, que es el responsable de su gente.
 
 ### 9.2 Trabajo en altura
 
