@@ -38,6 +38,9 @@ qué manual afecta.
    que el dueño en su área.** El dueño hace de todo y lo hace más o menos bien; el
    especialista hace una sola cosa y tiene que hacerla mejor. El vendedor tiene
    que vender mejor que el dueño, y el gerente de Operaciones, operar mejor.
+   **"Mejor" lo dicen los resultados**, no el perfil: para vender en Voltia, la
+   experiencia dice que funciona mejor un técnico que se dedica a vender y se
+   perfecciona en eso que un vendedor con algo de conocimiento técnico.
 
 **Cómo se aplica.** Al delegar se dice de entrada qué se espera los primeros
 meses: cuánto puede bajar el resultado, en cuánto tiempo se tiene que recuperar
@@ -455,7 +458,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.14 | 11 de octubre de 2026 | Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
+| 0.14 | 11 de octubre de 2026 | Que alguien sea mejor lo dicen los resultados, no el perfil; para vender, mejor un técnico que vende que un vendedor con algo de técnica. Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
 | 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo (revisado cada tres meses), compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. Las compras en plaza de más de USD 100 van con tres cotizaciones y se hacen con anticipación; reemplaza la decisión de los tres presupuestos solo si había tiempo. |
 | 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |

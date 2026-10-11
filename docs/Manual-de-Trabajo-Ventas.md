@@ -118,7 +118,9 @@ el cliente arranca tenso, a la defensiva, y la confianza se va armando durante l
 visita. Quien visita **no va a vender**: va como un técnico que sabe de lo suyo y
 habla como una persona común, sin tecnicismos y sin discurso de vendedor. Escucha,
 explica con sinceridad, también lo malo, y genera empatía. Es lo que se busca en
-cualquier persona que haga las visitas.
+cualquier persona que haga las visitas: **un técnico con habilidades de venta, no
+un vendedor con algo de técnica**. Que sea mejor que quien visita hoy lo van a
+decir los resultados.
 
 #### Antes de la visita
 
