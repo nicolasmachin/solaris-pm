@@ -59,6 +59,28 @@ frena a la empresa: todo queda en el dueño y no se puede crecer.
 meta de visita a venta (75 %) se mantiene aunque al delegar las visitas baje al
 principio.
 
+### El precio y el contrato los maneja el asesor, con límites
+
+**Qué se decidió.**
+
+- **El markup** (el margen sobre los costos) arranca en 25 %. El asesor lo puede
+  bajar hasta el 15 % por su cuenta; por debajo, autoriza la Dirección. Voltia PM
+  no lo controla: el markup promedio de las ventas cerradas se revisa una vez por
+  mes en la coordinación con Ventas.
+- **La seña** es de USD 500 y sin ella no se avanza, salvo con financiación
+  bancaria, a criterio del asesor.
+- **El contrato** lo firma por Voltia el asesor que cerró la venta, con firma
+  digital y último, después del cliente. Hasta que los asesores tengan poder y
+  certificado de firma digital, firma la Dirección.
+
+**Por qué.** Que la Dirección firme cada contrato la vuelve un cuello de botella
+en un onboarding de 3 días hábiles. El margen se cuida mirándolo, sin sumar
+controles que frenen la venta.
+
+**Desde cuándo rige.** 11 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Ventas.
+
 ### Operaciones es el área más crítica: los plazos de las demás áreas se cumplen
 
 **Qué se decidió.** Operaciones se considera el área más crítica de Voltia,
@@ -458,7 +480,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.14 | 11 de octubre de 2026 | Que alguien sea mejor lo dicen los resultados, no el perfil; para vender, mejor un técnico que vende que un vendedor con algo de técnica. Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
+| 0.14 | 11 de octubre de 2026 | El precio y el contrato: markup de 25 % a 15 % sin autorización y revisado una vez por mes, seña de USD 500, el asesor firma el contrato último con firma digital. Que alguien sea mejor lo dicen los resultados, no el perfil; para vender, mejor un técnico que vende que un vendedor con algo de técnica. Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
 | 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo (revisado cada tres meses), compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. Las compras en plaza de más de USD 100 van con tres cotizaciones y se hacen con anticipación; reemplaza la decisión de los tres presupuestos solo si había tiempo. |
 | 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
