@@ -26,7 +26,7 @@
 | Ingeniería | Diseña la instalación, en la oficina | Le entrega la pre-ingeniería para validar y, después de la validación, la lista de materiales definitiva |
 | Experiencia Solar | Es el referente del cliente desde que termina el onboarding | **Es quien le habla al cliente** de fechas y de cómo sigue todo. Operaciones no le comunica la fecha al cliente |
 | Tramitación UTE | Hace el trámite para que UTE habilite la instalación | Necesita los documentos firmados, las fotos y los videos de los ensayos que deja la obra |
-| Finanzas | Cobra, paga y controla | Aprueba los gastos de compras |
+| Finanzas | Cobra, paga y controla | Aprueba las compras fuera de la lista de materiales que pasan los topes del gerente de Operaciones |
 
 ## 1 · Qué hace Operaciones y dónde termina su trabajo
 
@@ -221,10 +221,13 @@ En Voltia PM el monto está en la subetapa **Presupuesto al instalador terceriza
 
 **Los controla Finanzas.** Los costos de cada obra quedan definidos cuando se presupuesta la venta, en el costeo. Si después aparece un gasto variable de esa obra, se carga en Finanzas asignado a la obra y se suma a su costeo. Lo que se compra a los proveedores habituales va por el camino normal de las compras.
 
-**Un gasto que no estaba previsto:**
+**Quién aprueba una compra:**
 
-- **Hasta USD 200** lo autoriza el gerente de Operaciones.
-- **Más de USD 200** lo autoriza Gerencia.
+- **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
+- **Lo que no está en la lista** (cosas puntuales que aparecen): cada ítem de **hasta USD 200** lo aprueba el gerente de Operaciones, sin pasar de **USD 600 en total** por obra en una obra de 5 kW. En obras más grandes el total puede crecer, con un máximo de **USD 2.000**.
+- **Por encima de eso**, lo aprueba Finanzas o Gerencia.
+
+> *A confirmar:* cómo crece el total de USD 600 en las obras de más de 5 kW.
 
 ## 6 · Las reglas de Operaciones
 
@@ -237,8 +240,8 @@ En Voltia PM el monto está en la subetapa **Presupuesto al instalador terceriza
 > ### 3. Operaciones no le comunica la fecha al cliente
 > La agenda y la confirma en el calendario; se la cuenta Experiencia Solar.
 
-> ### 4. Toda fecha que se mueve se reprograma en Voltia PM, con su motivo
-> Así Experiencia Solar se entera el mismo día y sabe qué decirle al cliente.
+> ### 4. La fecha confirmada se defiende
+> Ante un atraso, primero se busca recuperar el tiempo. Si igual se mueve, se reprograma en Voltia PM con su motivo, el mismo día, y lo explica el área que se atrasó.
 
 > ### 5. Sin el informe del capataz completado, el proyecto no avanza
 > Aunque no haya nada que cambiar, el capataz lo deja dicho y lo marca completado.
@@ -723,7 +726,7 @@ compra en la ferretería más cercana.
 2. El capataz define si el material va a la casa del cliente el mismo día de la obra o el día anterior.
 3. El capataz le avisa al cliente el día, la franja horaria y que alguien tiene que estar para recibirlo.
 
-*A completar con Logística:* cómo se compra (proveedores, pedidos; por ahora las compras no pasan por una aprobación de Finanzas, pero todo gasto queda registrado y auditable), cómo se sigue un pedido, cómo se recibe en el local y cómo se maneja el stock en Voltia PM.
+*A completar con Logística:* cómo se compra (proveedores y pedidos; quién aprueba cada compra está en el capítulo 5, y todo gasto queda registrado y auditable), cómo se sigue un pedido, cómo se recibe en el local y cómo se maneja el stock en Voltia PM.
 
 ### A quién le pregunta qué
 
@@ -801,7 +804,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 10 de octubre de 2026 | Las compras no pasan por una aprobación de Finanzas por ahora; todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. |
+| 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes); por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |

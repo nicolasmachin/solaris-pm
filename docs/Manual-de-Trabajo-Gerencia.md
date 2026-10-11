@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.8 — 10 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.12 — 10 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -96,8 +96,8 @@ Ingeniería, al de Ventas, al de Experiencia Solar y al de Finanzas.
   tercerizado acepta o no. Pagar más lo autoriza solo Gerencia.
 - **Se le paga el 50 % al arrancar la obra y el 50 % al terminarla.** La orden la
   da el responsable de Administración y Finanzas o Gerencia.
-- **Un gasto de obra no previsto** lo autoriza el gerente de Operaciones hasta
-  USD 200; por encima, Gerencia.
+- **Lo que se compra fuera de la lista de materiales** sigue la regla de
+  «Quién aprueba las compras».
 - **Voltia contrata a la empresa, no a su gente**, pero le exige el estándar de
   calidad y el de seguridad, y todos los meses la documentación que demuestra que
   tiene a su gente en regla.
@@ -308,22 +308,29 @@ octubre de 2026), a nombre de Fernando Leal.
 **A qué manuales afecta.** A los manuales de trabajo de Operaciones y de
 Finanzas.
 
-### Los gastos de compras no se aprueban por ahora, pero todo queda auditable
+### Quién aprueba las compras
 
-**Qué se decidió.** Por ahora los gastos de compras **no pasan por una
-aprobación** de Finanzas: el circuito de aprobación queda para más adelante.
-Lo que sí se exige desde ya es que **todo lo que se carga en Finanzas se pueda
-auditar**: quién cargó, cambió o borró cada cosa, cuándo, y en cada cambio el
-valor anterior y el nuevo.
+**Qué se decidió.**
 
-**Por qué.** Una aprobación agrega un paso que hoy frenaría las compras de obra
-sin que haya quién la sostenga todos los días. La auditoría permite revisar
-después sin frenar antes.
+- **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
+- **Lo que no está en la lista** (cosas puntuales que aparecen): cada ítem de **hasta USD 200** lo aprueba el gerente de Operaciones, sin pasar de **USD 600 en total** por obra en una obra de 5 kW. En obras más grandes el total puede crecer, con un máximo de **USD 2.000**.
+- **Por encima de eso**, lo aprueba Finanzas o Gerencia.
 
-**Desde cuándo rige.** 10 de octubre de 2026.
+> *A confirmar:* cómo crece el total de USD 600 en las obras de más de 5 kW.
 
-**A qué manuales afecta.** A los manuales de trabajo de Finanzas y de
-Operaciones (Logística).
+Además, **todo lo que se carga en Finanzas se puede auditar**: quién cargó,
+cambió o borró cada cosa, cuándo, y en cada cambio el valor anterior y el nuevo.
+
+**Por qué.** Lo que Ingeniería ya puso en la lista está presupuestado: pedir una
+aprobación para comprarlo solo frenaría la obra. Lo que aparece fuera de la
+lista se aprueba cerca de la obra, con topes que alcanzan para lo chico, y lo
+grande sube a quien maneja la plata. La auditoría permite revisar después sin
+frenar antes.
+
+**Desde cuándo rige.** 10 de octubre de 2026. Reemplaza lo que se había
+decidido ese mismo día: que las compras no pasaban por ninguna aprobación.
+
+**A qué manuales afecta.** A los de Operaciones (con Logística) y Finanzas.
 
 ### El reclamo de los pagos atrasados pasa a Administración
 
@@ -371,7 +378,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.8 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia, se paga 50 % y 50 %, y un gasto no previsto lo autoriza el gerente de Operaciones hasta USD 200. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
+| 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes); por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |
 | 0.10 | 10 de octubre de 2026 | Se registra que al instalador tercerizado se le debe la obra que se le agenda en el calendario: el pago nace al agendar con su equipo, y las obras de equipos propios no se pagan aparte. |
 | 0.9 | 9 de octubre de 2026 | Se suma a la decisión de control de deudas: el vencimiento sale del plazo negociado con cada proveedor, y ninguna factura recibida entra a la deuda sin revisión. |

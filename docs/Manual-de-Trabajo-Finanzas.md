@@ -77,7 +77,7 @@ las cuentas y los resultados se llevan todos los meses.
 | **Ventas** (el asesor comercial) | Cada proyecto vendido llega con su **modalidad de pago** y lo que esa modalidad pide: el plan de pagos, la proforma para el banco o la explicación escrita de lo acordado. También indica si el proyecto **lleva factura** | Finanzas → Cobros; Finanzas → Facturación |
 | **Ventas** (al ganar la venta) | La **comisión del asesor**, que se registra sola con el precio de la última propuesta publicada | Comisiones; Finanzas → Pendientes |
 | **Operaciones** (al agendar la obra con un equipo tercerizado) | El **pago de la mano de obra** al instalador, a nombre de quien cobra por ese equipo | Finanzas → Instaladores |
-| **Logística** | Los **gastos de compras** para aprobar | En ninguna: **los gastos de compras no se aprueban** por ahora (es una decisión de Gerencia, que lo deja para más adelante). Lo que sí se exige es que todo gasto quede **auditable**: ver 5.19 |
+| **Logística** | Las **compras fuera de la lista de materiales** que pasan los topes del gerente de Operaciones (USD 200 por ítem, USD 600 por obra) | Las aprueba Finanzas o Gerencia. Lo de la lista lo compra directo el encargado de compras. Todo gasto queda **auditable**: ver 5.19 |
 | **Proveedores** (por la facturación electrónica) | Las **facturas** que le emiten a Voltia | Finanzas → Cuentas por pagar → Facturas recibidas |
 | **Experiencia Solar** | Los cobros que registra o marca pagados en su propia pestaña, y las anualidades del **Plan de Protección contra Granizo** | Finanzas → Cobros y Movimientos (es la misma información) |
 
@@ -117,12 +117,15 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
    Facturas recibidas). Voltia PM trae las facturas solas cada hora, de lunes a
    sábado; ninguna suma a la deuda hasta que Finanzas la revisa. Plazo para
    revisarlas: *pendiente de definir*.
-2. **Aprobar los gastos de compras** que pide Logística. Logística tiene 5 días
-   hábiles para comprar y recibir el material de una obra con fecha confirmada:
-   cada día que demora una aprobación es un día menos. **Por ahora los gastos
-   de compras no pasan por una aprobación**: Gerencia lo dejó para más
-   adelante. Mientras tanto, cada gasto queda registrado con quién lo cargó,
-   cuándo y cada cambio que se le hizo (ver 5.19, Historial).
+2. **Aprobar las compras que le tocan.** Lo que está en la lista de materiales
+   de Ingeniería lo compra directo el encargado de compras. Lo que no está en
+   la lista lo aprueba el gerente de Operaciones hasta USD 200 por ítem y USD
+   600 en total por obra (en obras grandes, hasta USD 2.000). **Lo que pasa esos
+   topes lo aprueba Finanzas o Gerencia**, y rápido: Logística tiene 5 días
+   hábiles para comprar y recibir el material de una obra con fecha confirmada,
+   y cada día que demora una aprobación es un día menos. Cada gasto queda
+   registrado con quién lo cargó, cuándo y cada cambio que se le hizo (ver
+   5.19, Historial).
 3. **Registrar lo que entró y lo que salió**: cada cobro que entra se marca
    pagado con **la fecha real** del pago; cada pago a un proveedor, a un
    instalador o de una comisión se registra cuando sale la plata.
@@ -170,7 +173,7 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
 3. **Se cobra la seña** y, con pago directo, **el 50 % entre 10 y 15 días antes
    de la obra**. **Sin el 50 % pago no se da fecha de obra.** Con financiación
    bancaria, la condición es el crédito aprobado.
-4. **Logística compra**; Finanzas aprueba los gastos y, cuando llegan, revisa
+4. **Logística compra**; Finanzas aprueba lo que pasa los topes y, cuando llegan, revisa
    las facturas de los proveedores en la bandeja.
 5. **Operaciones agenda la obra.** Si es con un equipo tercerizado, aparece solo
    el pago de la mano de obra al instalador.
@@ -186,7 +189,7 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
 
 ### Las aprobaciones de gastos no frenan una obra
 
-Finanzas aprueba los gastos de las compras. Logística tiene 5 días hábiles para
+Finanzas aprueba las compras que pasan los topes del gerente de Operaciones. Logística tiene 5 días hábiles para
 comprar y recibir todo el material de una obra cuya fecha ya está confirmada y
 que el cliente ya sabe. Esa fecha **se defiende**: moverla es la excepción. Por
 eso una aprobación que demora es un día menos para comprar, y puede terminar en
@@ -714,9 +717,9 @@ o Gerencia, cuando en Voltia PM la etapa de Ejecución de obra figura terminada.
 El monto no se negocia: el gerente de Operaciones se lo informa al tercerizado
 antes de agendar, y pagar más lo autoriza solo Gerencia.
 
-**Un gasto de obra que no estaba previsto:** hasta **USD 200** lo autoriza el
-gerente de Operaciones; más, Gerencia. Se carga en Finanzas asignado a la obra,
-y se suma a su costeo.
+**Un gasto de obra que no estaba previsto** se carga en Finanzas asignado a la
+obra y se suma a su costeo. Quién lo aprueba está en el paso 2 del
+procedimiento.
 
 Finanzas:
 
@@ -1032,7 +1035,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Un gasto de obra no previsto lo autoriza el gerente de Operaciones hasta USD 200, y Gerencia por encima. |
+| 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Quién aprueba las compras: lo de la lista de materiales, nadie (lo compra directo el encargado de compras); lo de fuera, el gerente de Operaciones hasta USD 200 por ítem y USD 600 por obra (hasta USD 2.000 en obras grandes), y por encima Finanzas o Gerencia. |
 | 0.8 | 10 de octubre de 2026 | Las facturas recibidas también se cargan a mano, con el mismo control para no cargar dos veces la misma; cada factura tiene su PDF (de la facturación electrónica o subido a mano). |
 | 0.7 | 10 de octubre de 2026 | Se responden las dudas de Gerencia: los gastos de compras no se aprueban por ahora pero quedan auditables, con la pantalla nueva Historial; el reclamo de pagos atrasados lo hace Experiencia Solar y pasará a Administración; las cuentas bancarias se concilian una vez por mes; los costos fijos los carga Finanzas desde su propia pestaña; las facturas de proveedores se cargan con IVA incluido; al marcar pagado un cobro se confirman la fecha y el monto.; la conciliación con cada proveedor se hace una vez por mes, a mano |
 | 0.6 | 10 de octubre de 2026 | Se revisa todo el manual contra Voltia PM: qué muestra cada pestaña, cómo se pagan los costos fijos y las comisiones, cómo se aplica el saldo a favor de un proveedor, la nueva conciliación con el estado de cuenta del proveedor, cómo se concilian las cuentas, de dónde sale la cotización del dólar y qué abarca el flujo de fondos. Se citan enteros los resúmenes de WhatsApp de cobros y de instaladores. Se aclara que no hay un circuito de aprobación de gastos en Voltia PM. |
