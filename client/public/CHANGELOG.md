@@ -4,6 +4,10 @@
 
 ### 11 de octubre de 2026
 
+#### La seña, más clara en el contrato
+
+- Los contratos nuevos dicen que la seña **no se devuelve si el cliente desiste por decisión propia** (compensa el trabajo de ingeniería y la reserva de fecha), y que **sí se devuelve** si el banco no aprueba el crédito o si UTE no aprueba la instalación. Los contratos ya generados no cambian.
+
 #### Contrato, proforma y Plan de Protección en Documentos del proyecto
 
 - Al generar el **contrato**, la **proforma** o las condiciones del **Plan de Protección contra Granizo**, el PDF aparece también en **Documentos** del proyecto, rotulado "Contrato v2", "Proforma v1" o "Plan de Protección v1". Así lo encuentra cualquiera que vea el proyecto, sin entrar a la herramienta.

@@ -174,7 +174,10 @@ export function renderContractHtml(data: ContractDataPublish): string {
   </table>
   <p><strong>5.1 Seña de confirmación.</strong> Al momento de confirmar la contratación, el Cliente deberá abonar
   una seña mínima de USD 500 (quinientos dólares estadounidenses). Dicha seña tiene como finalidad reservar la
-  fecha de instalación y aplica tanto a pagos directos como a operaciones con financiamiento.</p>
+  fecha de instalación y aplica tanto a pagos directos como a operaciones con financiamiento. Si el Cliente
+  desiste de la contratación por decisión propia, la seña no será reintegrada, en compensación por el trabajo de
+  ingeniería realizado y la reserva de la fecha de instalación. La seña será reintegrada, sin penalidad alguna,
+  si el crédito bancario no es aprobado (cláusula 5.2) o si UTE no aprueba la instalación.</p>
   <p><strong>5.2 Modalidad con financiamiento bancario.</strong> En caso de que el Cliente opte por financiamiento
   bancario, el monto a solicitar al banco será el total del valor acordado menos la seña abonada. En caso de que
   el crédito no sea aprobado por la entidad financiera, la seña abonada será reintegrada al Cliente, sin penalidad alguna.</p>

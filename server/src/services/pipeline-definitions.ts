@@ -125,7 +125,9 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
         checklist: [
           { label: "Contrato completado con datos del cliente", isRequired: true },
           { label: "Enviado al cliente", isRequired: true },
-          { label: "Recibido firmado", isRequired: true, isBlocker: true },
+          // No frena el onboarding (decisión del 11-oct-2026): el firmado se sube en el
+          // bloque "Contrato firmado" del proyecto y el asesor recibe un aviso diario.
+          { label: "Recibido firmado", isRequired: false },
           { label: "Guardado en carpeta", isRequired: true },
         ],
       },
@@ -208,23 +210,6 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
           { label: "Datos del cliente guardados", isRequired: true },
           { label: "Comprobante de seña guardado", isRequired: true },
           { label: "Minuta de visita guardada", isRequired: true },
-        ],
-      },
-      {
-        order: 7,
-        name: "Registro en planilla de operaciones",
-        sopCode: "V3",
-        responsableRol: "Asesor Comercial",
-        responsible: "Asesor Comercial",
-        isSystem: true,
-        checklist: [
-          { label: "Datos cliente cargados", isRequired: true },
-          { label: "Sistema vendido registrado", isRequired: true },
-          { label: "Fecha de venta registrada", isRequired: true },
-          { label: "Fecha tentativa de obra registrada", isRequired: true },
-          { label: "Modalidad de pago registrada", isRequired: true },
-          { label: "Margen esperado registrado", isRequired: true },
-          { label: "Estado del proyecto registrado", isRequired: true },
         ],
       },
       {

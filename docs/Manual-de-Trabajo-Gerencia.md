@@ -69,6 +69,10 @@ principio.
   mes en la coordinación con Ventas.
 - **La seña** es de USD 500 y sin ella no se avanza, salvo con financiación
   bancaria, a criterio del asesor.
+  **No se devuelve si el cliente desiste por decisión propia**: compensa el
+  trabajo de ingeniería y la reserva de fecha. Se devuelve solo si pasa algo que
+  no depende de ninguna de las partes: el banco no aprueba el crédito o UTE no
+  aprueba la instalación. Así lo dice el contrato desde el 11 de octubre de 2026.
 - **El contrato** lo firma por Voltia el asesor que cerró la venta, con firma
   digital y último, después del cliente. Hasta que los asesores tengan poder y
   certificado de firma digital, firma la Dirección.
@@ -480,7 +484,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.14 | 11 de octubre de 2026 | El precio y el contrato: markup de 25 % a 15 % sin autorización y revisado una vez por mes, seña de USD 500, el asesor firma el contrato último con firma digital. Que alguien sea mejor lo dicen los resultados, no el perfil; para vender, mejor un técnico que vende que un vendedor con algo de técnica. Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
+| 0.14 | 11 de octubre de 2026 | La seña no se devuelve si el cliente desiste; sí si el banco o UTE no aprueban. El precio y el contrato: markup de 25 % a 15 % sin autorización y revisado una vez por mes, seña de USD 500, el asesor firma el contrato último con firma digital. Que alguien sea mejor lo dicen los resultados, no el perfil; para vender, mejor un técnico que vende que un vendedor con algo de técnica. Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
 | 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo (revisado cada tres meses), compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. Las compras en plaza de más de USD 100 van con tres cotizaciones y se hacen con anticipación; reemplaza la decisión de los tres presupuestos solo si había tiempo. |
 | 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |
 | 0.11 | 10 de octubre de 2026 | Se registran dos decisiones: los gastos de compras no se aprueban por ahora pero todo lo de Finanzas queda auditable, y el reclamo de pagos atrasados pasa de Experiencia Solar al área de Administración cuando esta tome el módulo de Finanzas. |

@@ -813,3 +813,14 @@ trámite con UTE. El mensaje se escribía cada vez a mano.
   del rol. No se dejó "Alejandra" escrito en el código para no tener que tocarlo
   si cambia la persona.
 
+
+
+## Contrato firmado: no frena el onboarding (11-oct-2026)
+
+En la subetapa **Contrato** del Onboarding, el ítem "Recibido firmado" dejó de ser
+obligatorio y bloqueante (`pipeline-definitions.ts`). El firmado se sube en el
+bloque **Contrato firmado** del proyecto y el asesor recibe la lista de
+pendientes en el resumen diario. También se sacó del código la subetapa
+"Registro en planilla de operaciones", que Nicolás ya había borrado de la
+plantilla en producción. Para la plantilla guardada y los proyectos con
+Onboarding abierto: `prisma/scripts/contrato-firmado-no-bloquea.ts` (`--apply`).
