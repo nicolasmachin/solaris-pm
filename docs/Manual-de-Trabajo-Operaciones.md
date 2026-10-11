@@ -965,40 +965,40 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 ## Anexo · Las reglas en una página
 
 > ### 1. En obra, el criterio del instalador le gana al del proyectista
-> Se resuelve ahí y se anota qué cambió y por qué. No aplica a lo que pide UTE ni a la seguridad.
+> Se resuelve ahí y se anota. No aplica a lo que pide UTE ni a la seguridad.
 
 > ### 2. La fecha tentativa nunca queda a menos de 12 días hábiles de la Validación
-> Validación 4, Ingeniería Final 3 y Compras 5, una detrás de otra.
+> Validación 4, Ingeniería Final 3 y Compras 5.
 
 > ### 3. Operaciones no le comunica la fecha al cliente
 > Se la cuenta Experiencia Solar.
 
 > ### 4. La fecha confirmada se defiende
-> Ante un atraso, primero se busca recuperar el tiempo. Si igual se mueve, se reprograma en Voltia PM con su motivo, y lo explica el área que se atrasó.
+> Primero se busca recuperar el tiempo. Si se mueve, va con su motivo y lo explica el área que se atrasó.
 
 > ### 5. Sin el informe del capataz completado, el proyecto no avanza
 > Aunque no haya nada que cambiar.
 
 > ### 6. La obra no se da por terminada sin la documentación completa
-> Las 23 fotos, los 2 videos y los 7 documentos de UTE firmados. La cierra el gerente de Operaciones con el control de obra.
+> Las 23 fotos, los 2 videos y las 7 firmas de UTE. La cierra el gerente con el control de obra.
 
 > ### 7. Se deja el lugar limpio, y los sobrantes no se olvidan
-> Con cuadrilla propia o tercerizada. La obra no se cierra con materiales en la casa del cliente, salvo que el retiro esté coordinado.
+> Ni con materiales en la casa del cliente, salvo que el retiro esté coordinado.
 
 > ### 8. Con la seguridad no hay flexibilidad
-> Si alguien trabaja sin las medidas de seguridad, se sanciona a él y a su capataz. Si quien lo encuentra es Gerencia, también al gerente de Operaciones.
+> Se sanciona a quien no la usa y a su capataz; si lo ve Gerencia, también al gerente.
 
 > ### 9. Ante un imprevisto, primero se busca no perder el día
 > Solo si no hay forma, se reagenda.
 
 > ### 10. Primero se llena la agenda de la cuadrilla propia
-> Y al tercerizado se le informa el presupuesto antes de agendar: no se negocia.
+> Al tercerizado, el presupuesto no se negocia.
 
 > ### 11. Las compras se hacen con tiempo
 > Y todo lo que pase de USD 100 en plaza, con tres cotizaciones.
 
 > ### 12. Cada día de obra cierra con un registro
-> En los Comentarios: qué le decimos al cliente si pregunta hoy.
+> Qué le decimos al cliente si pregunta hoy.
 
 ## Anexo · Glosario
 
@@ -1040,8 +1040,8 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.10 | 11 de octubre de 2026 | Las reglas en una página suman: la obra la cierra el control de obra, los sobrantes no se olvidan, ante un imprevisto no perder el día, primero la cuadrilla propia, las compras con tiempo y tres cotizaciones, y el cierre de cada día. El glosario suma instalador tercerizado, presupuesto de mano de obra, control de obra, No aplica, stock mínimo, consolidado, vales y Credenciales. Logística: se compra para mantener el stock y no para cada obra (materiales de siempre con su mínimo, estructura importada, paneles e inversores por obra), un día fijo de compras por semana con el consolidado, importar, los proveedores habituales, las compras se reciben en el local y se controlan, y una rutina propuesta de Compras y Logística (diaria, semanal, mensual y trimestral). Las compras se hacen con mucha anticipación; toda compra en plaza de más de USD 100, también servicios y fletes, con al menos tres cotizaciones; los mínimos de stock se revisan cada tres meses. Las hojas para llevar a la obra suman estudiar y planificar, el equipo de seguridad, el kit del tercerizado y el cierre de cada día. En la parte de Obra, Cuando algo sale mal repite lo del capítulo 8: la regla de resolver en el momento, la lluvia, un operario que falta, la obra que no se termina en el día, el accidente y el material que falta. El cierre de cada día de obra en los Comentarios es obligatorio y se escribe a mano. Si falta una firma de UTE después de la obra, se la pide Experiencia Solar al cliente. La puesta en marcha se completa con las respuestas de Gerencia del 5 de octubre: los pasos de Growatt y los 180 segundos en el portal OSS (registros 18 y 19); el smartmeter de Growatt es Eastron; Huawei con el datalogger externo, el parámetro de los 180 segundos y su video; Fronius con la versión completa, la puesta en marcha en 3 pasos y los 180 segundos en el menú profesional del display; las claves están en el documento Credenciales. Criterios técnicos: Operaciones ejecuta lo que proyectó Ingeniería; el criterio del instalador es para los casos excepcionales. La seguridad: las medidas que no pueden faltar en una obra (equipo de protección, techo, eléctrico, terceros, parar el trabajo), tomadas del Reglamento interno; y qué hacer ante un accidente, con el reporte el mismo día y la denuncia al BSE. En las obras tercerizadas, el kit de materiales va directo a la casa del cliente y el instalador tiene que estar para recibirlo; se coordina entre Logística, el instalador y el cliente. Antes de salir a la obra: el capataz estudia el proyecto y planifica, y compartirlo con su equipo es opcional; cada operario es responsable de su equipo y su kit de seguridad, y el capataz controla que se use bien; el tercerizado pone su propio equipo de seguridad y Voltia le exige usarlo. En las obras tercerizadas, el capataz es el instalador tercerizado, que hace el informe y tiene acceso a Voltia PM. El capataz puede ir a la casa del cliente para el informe si lo relevado no le alcanza, a su criterio. Los librillos se entregan impresos o en digital, a cada uno lo que le corresponde. Quién aprueba un gasto fuera de la lista: el gerente de Operaciones, hasta USD 200 por gasto, sin tope total y con rendición de cuentas. Cuando algo sale mal: la regla general ante un imprevisto (resolverlo en el momento para no perder el día y, si no se puede, reagendar); con lluvia o viento suspende el gerente de Operaciones y al cliente le avisa el capataz; qué hacer si falta un material en la obra, si un operario falta, si la obra no se termina en el día y si hay un accidente; si el cliente no puede en la fecha, quien habló con él lo coordina con el gerente de Operaciones y queda registrado como pedido del cliente. |
-| 0.9 | 10 de octubre de 2026 | Quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Todo gasto queda registrado y auditable. Se escribe el capítulo 5: la semana del gerente de Operaciones (la fecha tentativa el mismo día, la coordinación con los capataces y la rendición de cuentas de los viernes), las cuadrillas, cuándo una obra va a la cuadrilla propia o a una tercerizada (primero se llena la agenda de la propia), cómo se trabaja con un tercerizado (presupuesto sin negociación, pago 50 % y 50 %, calidad, seguridad y documentación mensual) y quién autoriza un gasto no previsto. Se saca la nota que decía que Voltia PM todavía no pedía el motivo al reprogramar. En las reglas del área, la 4 pasa a ser que la fecha confirmada se defiende, y la 8 dice a quién se sanciona si alguien trabaja sin seguridad. En Logística se agrega quién aprueba cada compra. En las herramientas, la subetapa nueva Presupuesto al instalador tercerizado y el estado No aplica. Ejecución de Obra pasa a tener cuatro subetapas (Planificación y logística, Realización de la obra y Retiro de sobrantes, del capataz, y Control de obra, del gerente de Operaciones, que es quien cierra la etapa); se saca Control de costos. Logística de envío se marca No aplica con cuadrilla propia. En Logística, lo que se viene: los vales de salida y de devolución y el consumo de cada obra. |
+| 0.10 | 11 de octubre de 2026 | Se completan los capítulos que faltaban. **Planificación:** la semana del gerente de Operaciones, las cuadrillas y cuándo va la propia o una tercerizada. **Tercerizados:** presupuesto que no se negocia, pago 50 % y 50 %, documentación mensual; en sus obras el instalador es el capataz. **Imprevistos:** la regla de no perder el día, la lluvia, el operario que falta, la obra que no termina, el accidente y el cliente que no puede. **Obra:** el capataz estudia y planifica antes de salir, puede ir a ver la casa si lo relevado no alcanza, cierra cada día con un registro, y la obra la cierra el gerente con el control de obra. **Seguridad:** las medidas que no pueden faltar, tomadas del Reglamento interno. **Puesta en marcha:** Growatt, Huawei y Fronius con las respuestas del 5 de octubre. **Logística:** se compra para el stock, con un día fijo de compras, tres cotizaciones desde USD 100 y una rutina de trabajo. **Gastos:** el gerente aprueba hasta USD 200 por gasto. Se suman reglas y palabras al glosario. |
+| 0.9 | 10 de octubre de 2026 | Se escribe el capítulo 5 (la semana del gerente de Operaciones, las cuadrillas y cómo se trabaja con un tercerizado). Las reglas 4 y 8 del área se actualizan (la fecha confirmada se defiende; a quién se sanciona sin seguridad). La subetapa nueva del presupuesto al tercerizado, el estado No aplica y las cuatro subetapas nuevas de Ejecución de Obra. Logística: quién aprueba cada compra y los vales de salida y devolución como lo que se viene. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |
 | 0.7 | 9 de octubre de 2026 | Los plazos hasta la obra se cuentan en días hábiles (día 0, día 2, día 4…), sin días de la semana. Los días de la semana quedan solo en un ejemplo aparte. Se aclara que los feriados no laborables no son días hábiles. La fecha de obra confirmada se defiende: antes de moverla se busca recuperar el tiempo, y cada cambio rinde cuentas (lo explica el área que se atrasó y Gerencia lo revisa una vez por mes); también en Logística, cuando un material demora. En la lista de proyectos, los archivados ya no se muestran: se ven y se restauran desde el botón Archivados. |
 | 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |
