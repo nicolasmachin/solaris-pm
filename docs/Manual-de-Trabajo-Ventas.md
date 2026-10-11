@@ -113,6 +113,13 @@ factura de UTE y las fotos del techo, que es lo que lo convierte en lead.
 
 Voltia no cierra ninguna venta sin haber visto la casa y sin haber tenido contacto personal con el cliente. Hoy las visitas las hace la Dirección.
 
+**El objetivo más grande de la visita es conectar con el cliente.** Casi siempre
+el cliente arranca tenso, a la defensiva, y la confianza se va armando durante la
+visita. Quien visita **no va a vender**: va como un técnico que sabe de lo suyo y
+habla como una persona común, sin tecnicismos y sin discurso de vendedor. Escucha,
+explica con sinceridad, también lo malo, y genera empatía. Es lo que se busca en
+cualquier persona que haga las visitas.
+
 #### Antes de la visita
 
 - **Los días de visita.** Quien visita marca con una semana de anticipación, en el calendario compartido de visitas, qué días va a visitar y en qué zona (por ejemplo, "Visitas Maldonado"). Los asesores agendan ahí las visitas de esa zona. Lo que importa no es qué día de la semana, sino que los días estén marcados con tiempo.
@@ -409,7 +416,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.8 | 11 de octubre de 2026 | La visita de venta: antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
+| 0.8 | 11 de octubre de 2026 | La visita de venta: su objetivo más grande es conectar con el cliente, como un técnico que habla como persona común y no como vendedor; antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |
 | 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |
