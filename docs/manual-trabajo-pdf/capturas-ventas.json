@@ -1,0 +1,15 @@
+{
+ "_comentario": "Capturas del manual de Ventas: nombre que usa el .md (captura:nombre) → id del asset. Las saca capturas-ventas.mjs y las recorta preparar-capturas-ventas.mjs. Los ids son el md5 del archivo: todavía no se subieron a ningún canvas; al publicar, se suben y se pasa REMAP_ASSETS con las URLs nuevas.",
+ "ventas-armar-propuesta": "5bde6dd6940bd890eb0ad6b9262fa9c0",
+ "ventas-consulta-ute": "5c7767a9e05ad3b5b399561b060d106c",
+ "ventas-contrato-firmado": "962839928c5c579f7185aed74b988158",
+ "ventas-crear-proyecto": "06e3efa8910368747d73d54c55650f8a",
+ "ventas-lista-propuestas": "ac92cead88ea878814ebe864bb22349e",
+ "ventas-modalidad-pago": "9f9e032caeb738f2e378c59103c7fbe3",
+ "ventas-onboarding-subetapas": "d16d1fd60d2d3bb9a5ef13268c0523ad",
+ "ventas-panel-lead": "6883215c48a7b1df572bb447b556a61f",
+ "ventas-pipeline-kanban": "301fa48410599de2607df8a1d3e3154b",
+ "ventas-pipeline-priorizada": "aa5a43e3ad7aee6c7ead852297829669",
+ "ventas-presentacion-es": "28579471883ac33f63bccf47dd56f733",
+ "ventas-tarjeta-lead": "011ab801473c1e97f5be32c4aad0f254"
+}

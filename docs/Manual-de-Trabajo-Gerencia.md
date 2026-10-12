@@ -96,8 +96,7 @@ agenda. Por eso el cumplimiento de los plazos de las demás áreas no es opciona
 
 **Por qué.** No es por prolijidad: cada atraso es plata. Lo que cuesta la vuelta
 de más, y lo que se dejó de hacer mientras tanto —la obra de otro cliente que se
-podría haber hecho en ese lugar—. De que cada obra salga en su fecha vive
-Voltia.
+podría haber hecho en ese lugar—. Voltia vive de que cada obra salga en su fecha.
 
 **Desde cuándo rige.** 5 de octubre de 2026.
 

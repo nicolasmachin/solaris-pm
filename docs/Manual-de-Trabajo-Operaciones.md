@@ -50,7 +50,7 @@ Operaciones es **el centro de la cadena**: todo gira alrededor de la obra. Venta
 
 > **Operaciones necesita, sí o sí, que todas las demás áreas cumplan sus plazos.**
 
-No es por prolijidad. **Cada atraso es plata.** Una obra que se corre es una cuadrilla que estaba organizada para ese día, una vuelta más a la casa del cliente, y la obra de otro cliente que se podría haber hecho en ese lugar y no se hizo. La obra que se mueve no se pierde; lo que se dejó de hacer mientras tanto, sí. Y de que cada obra salga en su fecha vive Voltia.
+No es por prolijidad. **Cada atraso es plata.** Una obra que se corre es una cuadrilla que estaba organizada para ese día, una vuelta más a la casa del cliente, y la obra de otro cliente que se podría haber hecho en ese lugar y no se hizo. La obra que se mueve no se pierde; lo que se dejó de hacer mientras tanto, sí. Voltia vive de que cada obra salga en su fecha.
 
 Por eso, para **confirmar una fecha de obra** tienen que estar todas estas cosas: la respuesta de UTE a la consulta inicial, la ingeniería hecha y validada por Operaciones, la fecha en el calendario, y **la seña cobrada** si el cliente paga directo o **el crédito aprobado** si paga con financiación del banco. Si falta una, la fecha no se confirma.
 

@@ -54,6 +54,18 @@ Se copian a `/tmp` del contenedor y no a `/app`, porque `/app` es la carpeta
 Para publicar: las 40 hojas y `canvas.json` en una sola llamada de la
 herramienta de Artifacts, con `root` en la carpeta generada.
 
+## Manual de Ventas (`MANUAL=ventas`)
+
+Sin partes ni portadillas: los capítulos van seguidos. La sección sin número
+"## Las reglas de Ventas" sale en hoja oscura (como "Las reglas en una página")
+y lo que trae además de las reglas sigue en hojas comunes. Los mensajes al
+cliente en `<small>` van como cita en letra chica; el registro de cambios, si
+una versión no entra en una fila, se pasa a bloques por versión. Las notas de
+armado del .md (*Por ordenar…*, la cita con la ruta del material de base) no van
+al maquetado. Capturas: `capturas-ventas.mjs` + `preparar-capturas-ventas.mjs`,
+registradas en `capturas-ventas.json` (ids = md5, todavía sin canvas: al
+publicar se suben y se pasa `REMAP_ASSETS`).
+
 ## Imágenes
 
 - `capturas.mjs` saca las pantallas que este manual usa y el de Posventa no (el

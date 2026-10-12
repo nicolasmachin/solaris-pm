@@ -69,13 +69,6 @@ sabe cómo sigue. Lo único que sigue después es **la modalidad de pago**:
 
 ## 2 · Procedimiento
 
-*Por ordenar: del lead a la venta, y de la venta al onboarding completo.*
-
-> **Material de base:** `docs/pendientes/material-manual-ventas.md` tiene el
-> relevamiento completo del proceso comercial (24-09-2026, verificado contra el
-> código): el pipeline de 7 etapas, los reclamos, las propuestas, el panel del
-> lead. Antes de usarlo, reverificar lo que haya cambiado desde esa fecha.
-
 ### El embudo, paso a paso
 
 1. **Consulta.** El asesor responde con el **speech**, la primera respuesta: un
