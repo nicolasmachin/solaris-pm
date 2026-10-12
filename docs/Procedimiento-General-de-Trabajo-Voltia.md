@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Borrador en revisión — 9 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.0 — 12 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -640,5 +640,6 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 ## Anexo · Registro de cambios
 
-Este documento todavía es un borrador. Los cambios se empiezan a registrar desde
-la versión 1.0, cuando quede aprobado.
+| Versión | Fecha | Qué se agregó o modificó |
+|---|---|---|
+| 1.0 | 12 de octubre de 2026 | Primera versión aprobada. De los borradores anteriores no hay registro de cambios. |

@@ -64,6 +64,9 @@ if MANUAL == "operaciones":
         _v = getattr(IMG, _k)
         if isinstance(_v, str) and _v.startswith("/_blob/") and _v[7:] in _MAPA_OPS:
             setattr(IMG, _k, _MAPA_OPS[_v[7:]])
+# Cada manual con su foto de portada: si no, todos salen con la misma.
+if MANUAL == "ventas":
+    IMG.PORTADA = "/_blob/c41de33a7f6be025d3e530d01a15874d"  # casa con paneles en la azotea, al atardecer
 import generar  # noqa: E402
 from generar import (  # noqa: E402
     AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, ROJO_BORDE, ROJO_FONDO, SANS, SERIF, TEXTO,
@@ -2410,11 +2413,14 @@ def _techo_svg(coplanar):
         panel = '<polygon points="40,63.9 128,41.6 128,37.6 40,59.9" fill="#1836b2"/>'
         extra = ""
     else:
-        panel = '<polygon points="50,61.4 118,28 119.5,31.5 51.5,64.9" fill="#1836b2"/>'
-        extra = ('<line x1="117" y1="31" x2="117" y2="44.4" stroke="#5b6278" stroke-width="2.5"/>'
-                 '<line x1="84" y1="46.5" x2="84" y2="52.8" stroke="#5b6278" stroke-width="2.5"/>'
-                 '<path d="M156 12 L134 19 M134 19 l6 -6 M134 19 l8 3" stroke="#5b6278" stroke-width="2" fill="none"/>'
-                 '<text x="118" y="8" font-size="9" font-family="sans-serif" fill="#5b6278">viento sur</text>')
+        # Techo horizontal (una azotea) y el panel levantado a unos 25 grados.
+        techo = '<rect x="8" y="66" width="144" height="7" fill="#9aa3b8"/>'
+        panel = '<polygon points="38,58 112,23.5 114,27.5 40,62" fill="#1836b2"/>'
+        extra = ('<line x1="42" y1="60" x2="42" y2="66" stroke="#5b6278" stroke-width="2.5"/>'
+                 '<line x1="110" y1="27" x2="110" y2="66" stroke="#5b6278" stroke-width="2.5"/>'
+                 '<line x1="42" y1="64" x2="110" y2="31" stroke="#5b6278" stroke-width="1.5"/>'
+                 '<path d="M156 30 L128 30 M128 30 l7 -5 M128 30 l7 5" stroke="#5b6278" stroke-width="2" fill="none"/>'
+                 '<text x="124" y="20" font-size="9" font-family="sans-serif" fill="#5b6278">viento sur</text>')
     return (f'<svg viewBox="0 0 160 84" width="150" height="79" aria-hidden="true">{techo}{panel}{extra}</svg>')
 
 
