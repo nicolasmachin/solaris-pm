@@ -179,9 +179,14 @@ decir los resultados.
 Pasa seguido: en la visita, negociando en persona, cambia lo que se había
 cotizado (más o menos paneles, otro montaje, otro precio). En ese caso, quien
 visita **arma la propuesta nueva ahí mismo, junto con el resumen de la visita**,
-con Voltia PM conectado al chat de Claude. Queda como una versión nueva en el
-lead, y el resumen de la visita dice qué cambió y por qué. El asesor la ve en el
-lead y sigue desde esa versión.
+con Voltia PM conectado al chat de Claude. El asesor se entera por cuatro lados:
+
+- el resumen de la visita le llega a él al mismo tiempo que al cliente;
+- la versión nueva queda adjunta en el lead;
+- al recotizar se deja sola en el lead un comentario con qué cambió;
+- y en los pendientes del resumen de la visita queda anotado.
+
+El asesor sigue desde esa versión.
 
 #### El resumen de la visita
 
