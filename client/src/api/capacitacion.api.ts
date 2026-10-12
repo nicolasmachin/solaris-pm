@@ -76,7 +76,8 @@ export interface ListaDetalle {
   id: string;
   titulo: string;
   descripcion: string | null;
-  seccion: { id: string; nombre: string };
+  // `paraClientes`: el área está habilitada para el portal (rol CLIENT).
+  seccion: { id: string; nombre: string; paraClientes: boolean };
   videos: VideoItem[];
   documentos: DocumentoItem[];
   mediaToken: string;
@@ -349,5 +350,40 @@ export async function getSeguimiento(seccionId?: string) {
   const { data } = await apiClient.get<SeguimientoSeccion[]>("/api/capacitacion/seguimiento", {
     params: { seccionId },
   });
+  return data;
+}
+
+// ─── Portal del cliente (Videos) ────────────────────────────────────────────
+// Mismo contenido, otros endpoints: los del portal piden PORTAL_CLIENTE y
+// muestran solo las áreas habilitadas para clientes.
+
+export interface PortalSeccionVideos {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  listas: ListaConVideos[];
+  documentos: DocumentoItem[];
+}
+
+export async function getPortalVideos() {
+  const { data } = await apiClient.get<{ secciones: PortalSeccionVideos[]; mediaToken: string }>(
+    "/api/client/videos",
+  );
+  return data;
+}
+
+export async function getPortalEmbed(videoId: string) {
+  const { data } = await apiClient.get<{ embedUrl: string; expiresAt: string | null }>(
+    `/api/client/videos/${videoId}/embed`,
+  );
+  return data;
+}
+
+export async function savePortalProgreso(videoId: string, body: { segundos: number; completado?: boolean }) {
+  const { data } = await apiClient.put<{ videoId: string; segundosVistos: number; visto: boolean }>(
+    `/api/client/videos/${videoId}/progreso`,
+    body,
+    { skipAuthRedirect: true },
+  );
   return data;
 }

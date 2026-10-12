@@ -1,5 +1,5 @@
 {
- "_comentario": "Capturas del manual de Ventas: nombre que usa el .md (captura:nombre) → id del asset. Las saca capturas-ventas.mjs y las recorta preparar-capturas-ventas.mjs. Los ids son el md5 del archivo: todavía no se subieron a ningún canvas; al publicar, se suben y se pasa REMAP_ASSETS con las URLs nuevas.",
+ "_comentario": "Capturas del manual de Ventas: nombre que usa el .md (captura:nombre) → id del asset. Las saca capturas-ventas.mjs y las recorta preparar-capturas-ventas.mjs. Los ids son el md5 del archivo; en el canvas de Ventas tienen otra dirección, que está en assets-ventas.json (se aplica con REMAP_ASSETS).",
  "ventas-armar-propuesta": "5bde6dd6940bd890eb0ad6b9262fa9c0",
  "ventas-consulta-ute": "5c7767a9e05ad3b5b399561b060d106c",
  "ventas-contrato-firmado": "962839928c5c579f7185aed74b988158",

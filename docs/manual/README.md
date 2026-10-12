@@ -44,11 +44,11 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 07 | [Habilitación UTE](07-ute.md) | Trámite, subetapas dinámicas, formularios, documentos firmados | 🟡 Parcial (aumento de potencia contratada; varios suministros por proyecto) |
 | 08 | [Finanzas](08-finanzas.md) | Movimientos, cobros, pagos a proveedores, facturación, flujo de fondos, estado de resultados | 🟡 Parcial (pagos a instaladores tercerizados · cobros y plan de pagos · estado de resultados · cuentas por pagar y facturas recibidas · conciliación con proveedores · posición) |
 | 09 | [Experiencia del cliente](09-experiencia-cliente.md) | Proceso de posventa, interacciones, encuestas, mantenimientos, reportes fotovoltaicos, monitoreo diario de plantas, Plan de Protección contra Granizo | 🟡 Parcial (proceso de posventa · monitoreo diario · reportes FV: período y envío · plan de granizo) |
-| 10 | [Portal del cliente](10-portal-cliente.md) | Acceso, proyectos, tickets, encuestas, reportes, notificaciones | 🟡 Parcial (generación diaria, vista como cliente) |
+| 10 | [Portal del cliente](10-portal-cliente.md) | Acceso, proyectos, tickets, encuestas, reportes, notificaciones | 🟡 Parcial (generación diaria, videos, vista como cliente) |
 | 11 | [Métricas](11-metricas.md) | Dashboard, metas, reportes semanal y mensual, indicadores | 🟡 Parcial (panel de operaciones · reportes semanal y mensual por correo · definiciones compartidas de indicadores) |
 | 12 | [Infraestructura](12-infraestructura.md) | Docker, base de datos, storage, jobs, correo, IA, respaldos | 🟡 Parcial (resumen diario por correo, con contratos pendientes de firma · gasto de IA) |
 | 13 | [Conector MCP](13-conector-mcp.md) | Voltia PM dentro del chat de Claude: autorización, herramientas, permisos | ✅ Completo |
-| 14 | [Capacitación](14-capacitacion.md) | Videos (Bunny Stream) y documentos por área, permisos por sección, progreso y seguimiento | ✅ Completo |
+| 14 | [Capacitación](14-capacitacion.md) | Videos (Bunny Stream) y documentos por área, permisos por sección, progreso y seguimiento; videos para clientes en el portal | ✅ Completo |
 
 Los capítulos pendientes existen con su esqueleto y se completan a medida que se
 trabaja sobre cada módulo. Un capítulo marcado ⬜ **no significa que la

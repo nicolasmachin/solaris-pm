@@ -32,6 +32,10 @@ export function urlCompartir(videoId: string) {
   return `${env.baseUrl}/api/capacitacion/compartir/${videoId}`;
 }
 
+// "equipo": al reproductor interno de Capacitación. "portal": al video dentro
+// del portal del cliente, con textos pensados para él.
+export type DestinoCompartir = "equipo" | "portal";
+
 export function paginaCompartir(video: {
   id: string;
   titulo: string;
@@ -39,12 +43,18 @@ export function paginaCompartir(video: {
   duracionSeg: number | null;
   thumbnailFileName: string | null;
   lista: { id: string; titulo: string; seccion: { nombre: string } };
-}) {
-  const destino = `${env.baseUrl}/capacitacion/lista/${video.lista.id}?v=${video.id}`;
+}, para: DestinoCompartir = "equipo") {
+  const portal = para === "portal";
+  const destino = portal
+    ? `${env.baseUrl}/portal/videos?v=${video.id}`
+    : `${env.baseUrl}/capacitacion/lista/${video.lista.id}?v=${video.id}`;
   const duracion = fmtDuracion(video.duracionSeg);
   const descripcion =
     video.descripcion?.trim() ||
-    [`Capacitación · ${video.lista.seccion.nombre}`, video.lista.titulo, duracion].filter(Boolean).join(" · ");
+    [portal ? "Videos de Voltia" : `Capacitación · ${video.lista.seccion.nombre}`, video.lista.titulo, duracion]
+      .filter(Boolean)
+      .join(" · ");
+  const urlEsta = portal ? `${urlCompartir(video.id)}?para=cliente` : urlCompartir(video.id);
   const imagen = video.thumbnailFileName ? `${urlCompartir(video.id)}/miniatura.jpg` : null;
 
   const t = escaparHtml(video.titulo);
@@ -56,12 +66,12 @@ export function paginaCompartir(video: {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${t} · Capacitación Voltia</title>
-<meta property="og:site_name" content="Voltia PM">
+<title>${t} · ${portal ? "Voltia" : "Capacitación Voltia"}</title>
+<meta property="og:site_name" content="${portal ? "Voltia" : "Voltia PM"}">
 <meta property="og:type" content="video.other">
 <meta property="og:title" content="${t}">
 <meta property="og:description" content="${d}">
-<meta property="og:url" content="${escaparHtml(urlCompartir(video.id))}">
+<meta property="og:url" content="${escaparHtml(urlEsta)}">
 ${imagen ? `<meta property="og:image" content="${escaparHtml(imagen)}">` : ""}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${t}">
@@ -83,7 +93,7 @@ a{color:#fbbf24}
 ${imagen ? `<img src="${escaparHtml(imagen)}" alt="">` : ""}
 <h1 style="font-size:18px;margin:0 0 8px">${t}</h1>
 <p style="font-size:14px;color:#9ca3af;margin:0 0 16px">${d}</p>
-<p style="font-size:14px">Te estamos llevando al video… <a href="${u}">Abrir en Voltia PM</a></p>
+<p style="font-size:14px">Te estamos llevando al video… <a href="${u}">${portal ? "Abrir en el portal de Voltia" : "Abrir en Voltia PM"}</a></p>
 </div>
 </body>
 </html>`;

@@ -248,7 +248,7 @@ los archivos adjuntos.
 **El onboarding.** Es la primera etapa del proyecto, y también la hace el asesor:
 confirma la venta por escrito, firma el contrato, cobra la seña, define con el
 cliente cómo va a pagar, junta los datos para empezar, presenta la consulta
-inicial a UTE y da una fecha tentativa de obra. Las tareas una por una están en
+inicial a UTE y le da al cliente una estimación de obra por quincena, que no es una fecha. Las tareas una por una están en
 el Manual de trabajo de Ventas.
 
 La última tarea del onboarding es **presentarle al cliente a quien va a ser su
@@ -318,16 +318,14 @@ plazos.**
 
 **La Validación de Operaciones.** Recibe la pre-ingeniería con los planos y la
 lista de materiales, y revisa si falta algo para poder hacer la obra sin
-problemas. Validan dos personas, en este orden:
+problemas. Validan dos personas, en este orden, apenas el proyecto llega de
+Ingeniería:
 
-1. **El gerente de Operaciones** agenda una **fecha tentativa** de obra en el
-   calendario, el mismo día que el proyecto entra a la etapa. Es interna: **al
-   cliente no se le dice**.
-2. **El capataz** revisa la pre-ingeniería, en 2 días hábiles. Si hay algo que
-   cambiar, deja un **informe**, que es lo que usa Ingeniería en la Ingeniería
-   Final.
-3. **El gerente de Operaciones** confirma la **fecha definitiva**, en 2 días
-   hábiles más. Recién ahí **Experiencia Solar se la avisa al cliente**.
+1. **El gerente de Operaciones** confirma la **fecha de obra** en el calendario.
+   Recién ahí **Experiencia Solar se la avisa al cliente**.
+2. **El capataz** del equipo que tiene la obra revisa la pre-ingeniería, en 2
+   días hábiles, y deja su **informe**, que es lo que usa Ingeniería en la
+   Ingeniería Final.
 
 **Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.**
 Decirle una fecha y después otra confunde y le saca confianza. Al vender, Ventas
@@ -339,7 +337,7 @@ Ingeniería Final.
 
 **Desde que el proyecto entra a Validación hasta la obra pasan, como mínimo,
 12 días hábiles**, porque cada área trabaja después de la otra: Validación 4,
-Ingeniería Final 3 y Compras 5. Por eso la fecha tentativa nunca puede quedar
+Ingeniería Final 3 y Compras 5. Por eso la fecha de obra nunca puede quedar
 antes, y **un día de atraso en cualquiera de esas etapas es un día más de
 obra**. Por eso también, **una vez confirmada, la fecha de obra se defiende**
 (regla 4): ante un atraso, primero se busca recuperar el tiempo, y moverla
@@ -360,6 +358,11 @@ instalación. Lo que entrega es **la obra terminada**, con todo lo necesario par
 darla por cerrada: los controles de obra finalizada cumplidos y los documentos
 firmados, cargados en Voltia PM. El detalle de qué hace falta para cerrar una
 obra está en el Manual de trabajo de Operaciones.
+
+Al terminar cada obra, el gerente de Operaciones hace el **informe post-obra**:
+evalúa cómo trabajó cada área que intervino (Ingeniería, Compras y Logística,
+Operaciones), con sus errores, sus aciertos y qué se corrige, y se lo notifica a
+cada responsable, que lo firma. Lo recibe el CEO.
 
 ### Tramitación UTE
 
@@ -481,7 +484,7 @@ Y en ningún caso el cliente hace de mensajero.
 |---|---|
 | Qué se le prometió al cliente en la venta: alcance, plazos, condiciones | Al **asesor comercial** del proyecto. No hay responsable de ventas: cada proyecto tiene el suyo |
 | Si entró la seña, cómo se le cobra, cómo se registra un gasto | Finanzas |
-| Qué fecha tentativa se puede prometer, cuándo se puede ir a relevar | Gerente de Operaciones |
+| Qué quincena de obra se le puede estimar al cliente, cuándo se puede ir a relevar | Gerente de Operaciones |
 | Algo del plano o del paquete técnico | Ingeniería |
 | Si hay stock, si está el material en depósito, si la lista está cerrada | Logística (y la lista, a Ingeniería) |
 | Que se corrija algo de la instalación, o documentación de obra que falta | **Gerente de Operaciones — nunca al capataz** |

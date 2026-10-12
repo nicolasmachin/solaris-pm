@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.8 · del 11/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.9 · del 11/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -266,7 +266,7 @@ general):
 - Modalidad de pago definida
 - Organización de la carpeta digital
 - Consulta inicial a UTE
-- Fecha tentativa de obra
+- Fecha tentativa de obra (en Voltia PM sigue llamándose así: el asesor registra la quincena estimada que le dio al cliente, no una fecha)
 - Comunicación al cliente (la presentación del responsable de Experiencia Solar)
 
 **El plazo:** 3 días hábiles para completar el onboarding.
@@ -1000,7 +1000,7 @@ manda: el asesor lo pega en su conversación con el cliente.
 | Necesita saber… | Le pregunta a… |
 |---|---|
 | Si entró la seña, cómo se le cobra | Finanzas |
-| Qué fecha tentativa puede prometer | Operaciones |
+| Qué quincena de obra le puede estimar al cliente | Operaciones |
 
 **Y al asesor, ¿quién le pregunta?** No tenemos un responsable de ventas: cada
 proyecto tiene su asesor asignado, así que cualquier duda de cualquier área sobre
@@ -1044,6 +1044,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.9 | 11 de octubre de 2026 | La fecha tentativa ya no la agenda nadie como parte del procedimiento: al vender, el asesor le da al cliente solo la quincena estimada, y en la tarea de Voltia PM que todavía se llama «Fecha tentativa de obra» registra esa quincena. |
 | 0.8 | 11 de octubre de 2026 | Se agrega qué es el manual, quién lo lee (los asesores y la Dirección), cómo está armado y lo que Ventas tiene que saber de las otras áreas. Cuando algo sale mal: la seña ante un arrepentimiento, la visita que muestra que no se puede (o que da para menos) y el reclamo comercial. Con financiación bancaria, el onboarding cierra con la proforma enviada y el asesor sigue el crédito aparte. La propuesta y el contrato se mandan por WhatsApp (o por mail si el cliente consultó por mail). Cuando en la visita cambia la propuesta, se arma la nueva ahí mismo con el resumen. A cada insistencia, si se puede, un comentario. Se escribe el capítulo de las herramientas de Voltia PM, pantalla por pantalla: el pipeline comercial (las etapas, las tres vistas, los reclamos, cómo se mueve, se gana y se pierde un lead), el panel del lead, cómo se arma, se publica y se manda la propuesta, ganar la venta y crear el proyecto, el onboarding en el proyecto (contrato, modalidad de pago y consulta a UTE), el bloque del contrato firmado y la presentación de Experiencia Solar. Se ordena el material suelto que había quedado del manual de trabajo: la propuesta pasa al procedimiento, antes de la visita; la consulta a UTE, la modalidad de pago, el Plan de Protección, lo que se deja cargado y el pase a Experiencia Solar, al onboarding; el cotizador, a las herramientas; y «A quién le pregunta qué» queda como capítulo propio. La plantilla de presentación de Experiencia Solar, copiable desde el panel del lead. A quién se atiende primero (de la compra confirmada a la consulta nueva; la vista Priorizada de Voltia PM los muestra en ese orden). La venta se registra en menos de 24 horas. Las reglas de Ventas (once, empezando por contestar toda consulta en menos de 24 horas) y las empresas: mismas reglas, comisión escalonada con el markup. Lo que el asesor deja cargado antes del pase (factura, cédula, contrato enviado y lo de la visita); el contrato firmado no frena el onboarding pero lo recaba el asesor, con un aviso por mail de los pendientes; si el cliente le sigue escribiendo, le recuerda con quién sigue y le pasa él el mensaje a Experiencia Solar. La consulta inicial a UTE la presenta el asesor enseguida y la sigue Tramitación UTE; sale del onboarding la tarea de la planilla de operaciones. El onboarding: 3 días hábiles, la seña de USD 500 (sin seña no se avanza, salvo financiación bancaria a criterio del asesor) y el contrato (Voltia firma último, con firma digital; lo hace el asesor, pendiente del poder y los certificados). El markup promedio se revisa una vez por mes. La propuesta: con qué datos se arma, el markup (se arranca en 25 %, el asesor baja hasta 15 %, menos con autorización de la Dirección), una versión nueva por cada cambio, y los dos botones (residencial y B2B). El seguimiento: a quien no contesta se le insiste por lo menos dos veces y se registra. La inclinación por defecto es 25 grados al norte, y lo acordado en la visita manda; el 10 % de paneles de regalo no choca con el límite de UTE. La visita de venta: su objetivo más grande es conectar con el cliente, como un técnico que habla como persona común y no como vendedor; antes (los días de visita en el calendario, lo que el asesor deja cargado en el lead, la ficha y el mensaje de presentación), en la casa (los objetivos, el techo, las preocupaciones de siempre, coplanar con un 10 % más de paneles, lo negativo primero y el registro) y el resumen de la visita con el bot de minutas. La primera respuesta (el speech), con su texto completo y qué busca. Qué hace Ventas, quiénes son, que al vender da solo una estimación de obra por quincena, y que termina con el onboarding salvo la modalidad de pago (con financiación bancaria sigue la gestión con el banco hasta que termina). Los resultados que se esperan del embudo: las conversiones esperadas en cada paso y por qué importan, que cada canal tiene su embudo, que la cantidad de ventas y el ticket promedio tienen que crecer siempre, y los números de 2025 como referencia. Se saca la cifra de "2 ventas cada 100 consultas", que no era la real. |
 | 0.7 | 9 de octubre de 2026 | El onboarding no se cierra sin la modalidad de pago y lo que pide, tampoco por los atajos (completar todo, marcar la subetapa desde la lista o desde «Mis tareas»): Voltia PM abre una ventana que lo pide. Vale también para los proyectos que ya estaban en onboarding. |
 | 0.6 | 9 de octubre de 2026 | Nuevo lineamiento: lo que queda sin hacer en el onboarding le cae a la obra. La fecha de obra confirmada se defiende, y si se mueve por algo de Ventas, el atraso lo explica Ventas. |

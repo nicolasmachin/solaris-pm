@@ -1,5 +1,17 @@
 # Novedades
 
+## v12.4
+
+### 12 de octubre de 2026
+
+#### Videos para clientes en el portal
+
+- El portal de Voltia tiene una pestaña nueva, **Videos**: el cliente encuentra ahí los videos que le vamos mandando durante el proceso, para volver a verlos cuando quiera, con su material de apoyo. Puede marcarlos como vistos y, al terminar uno, pasa solo al siguiente.
+- Se cargan desde **Capacitación → Gestionar**, igual que los del equipo: se crea un área y se le tilda **Clientes (portal de Voltia)**. Los clientes ven solo esas áreas, nunca las del equipo.
+- En el reproductor de Capacitación, los videos de esas áreas tienen un botón nuevo, **Enlace para el cliente**: copia un enlace que abre el video en su portal, para mandárselo por WhatsApp (la tarjeta muestra el título y la miniatura).
+- En **Seguimiento** se ve qué clientes vieron cada video.
+- Al **ver el portal como lo ve el cliente**, la pestaña también aparece y los videos se reproducen, pero no se le marca nada como visto.
+
 ## v12.3
 
 ### 11 de octubre de 2026

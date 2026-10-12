@@ -23,6 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.4",
+  date: "12 de octubre de 2026",
+  sections: [
+    {
+      title: "Videos para clientes en el portal",
+      items: [
+        "El portal de Voltia tiene una pestaña nueva, Videos: el cliente encuentra ahí los videos que le vamos mandando durante el proceso, para volver a verlos cuando quiera, con su material de apoyo.",
+        "Se cargan desde Capacitación → Gestionar, igual que los del equipo: se crea un área y se le tilda \"Clientes (portal de Voltia)\".",
+        "En el reproductor de Capacitación, los videos de esas áreas tienen un botón nuevo, Enlace para el cliente: copia un enlace que abre el video en su portal, para mandárselo por WhatsApp.",
+        "En Seguimiento se ve qué clientes vieron cada video.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_3: Release = {
   version: "12.3",
   date: "11 de octubre de 2026",
   sections: [
@@ -547,6 +563,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.3",
+    shortDate: "11 oct",
+    highlights: RELEASE_12_3.sections.map((sec) => sec.title),
+  },
   {
     version: "12.2",
     shortDate: "10 oct",

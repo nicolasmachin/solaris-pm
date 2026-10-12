@@ -63,8 +63,35 @@ cliente en `<small>` van como cita en letra chica; el registro de cambios, si
 una versión no entra en una fila, se pasa a bloques por versión. Las notas de
 armado del .md (*Por ordenar…*, la cita con la ruta del material de base) no van
 al maquetado. Capturas: `capturas-ventas.mjs` + `preparar-capturas-ventas.mjs`,
-registradas en `capturas-ventas.json` (ids = md5, todavía sin canvas: al
-publicar se suben y se pasa `REMAP_ASSETS`).
+registradas en `capturas-ventas.json` (ids = md5 del archivo).
+
+Canvas: **https://claude.ai/artifact/UjhgT77p9FM673J787WFc2** (46 hojas, creado
+el 12-oct-2026). Sus imágenes tienen otra dirección que las del PGT:
+`assets-ventas.json` dice cuál es cada una, y se generan las hojas con
+`MANUAL=ventas REMAP_ASSETS=docs/manual-trabajo-pdf/assets-ventas.json`. Una
+imagen nueva hay que subirla a este canvas y sumarla a ese archivo.
+
+**Los cuadros siguen el criterio del de Operaciones** (pedido del 12-oct-2026):
+primero la captura y después lo que la explica (`foto_primero`), las capturas
+con números rojos sobre lo que describe la lista que las acompaña
+(`MARCAS_CAPTURA_VENTAS`, ubicados mirando la imagen: si cambia la pantalla,
+hay que volver a ubicarlos) y las tablas que cuentan un recorrido o un reparto
+dibujadas (`cuadros_ventas`: el embudo con sus plazos, los resultados
+esperados, la modalidad de pago, las cuotas, el pase a Experiencia Solar y las
+etapas del pipeline). Las reconoce por la cabecera de la tabla: si se cambia
+una cabecera en el .md, vuelve a salir como tabla común.
+
+Además, `mas_cuadros_ventas` engancha dibujos a frases del .md, sin cambiar
+el texto: el embudo dibujado, la cadena de la fecha de obra, la escala del
+markup, los pasos de la visita en tarjetas (con coplanar contra inclinado y la
+línea de tiempo hasta el ahorro), el resumen de la visita, las insistencias,
+el embudo de 2025, el checklist del onboarding, el orden de firma del
+contrato, una consulta por cuenta UTE, la potencia menor, el asesor entre
+cliente y banco, las casillas de la financiación, el Plan de Protección, lo que
+deja cargado, lo que le cae a la obra, la etapa contra el contador de reclamos
+y las tres ventanas de ganar la venta. Cada regla busca cómo **empieza** un
+párrafo o una lista: si se reescribe ese comienzo, el dibujo deja de salir sin
+romper nada, y hay que ajustar la regla.
 
 ## Imágenes
 

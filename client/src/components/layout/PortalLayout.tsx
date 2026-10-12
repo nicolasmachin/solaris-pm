@@ -1,5 +1,5 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Eye, KeyRound, LogOut, X } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { usePortalPreviewStore } from '../../store/portalPreview.store';
@@ -10,6 +10,16 @@ export function PortalLayout() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { preview, salir } = usePortalPreviewStore();
+  const location = useLocation();
+  const navRef = useRef<HTMLElement>(null);
+
+  // En el celular las pestañas no entran todas: que la activa quede a la vista
+  // (si no, quien llega por un enlace a "Videos" no ve en qué pestaña está).
+  useEffect(() => {
+    navRef.current
+      ?.querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [location.pathname]);
 
   function logout() {
     clearAuth();
@@ -119,12 +129,14 @@ export function PortalLayout() {
             </div>
           </div>
         </div>
-        <nav className="max-w-3xl mx-auto flex items-center gap-1 px-4">
+        {/* Con cinco pestañas no entran en un celular angosto: se desliza. */}
+        <nav ref={navRef} className="max-w-3xl mx-auto flex items-center gap-1 px-4 overflow-x-auto">
           {[
             { to: "/portal", label: "Mis proyectos", end: true },
             { to: "/portal/reportes", label: "Reportes", end: false },
             { to: "/portal/tickets", label: "Mis tickets", end: false },
             { to: "/portal/encuestas", label: "Encuestas", end: false },
+            { to: "/portal/videos", label: "Videos", end: false },
           ].map((item) => (
             <NavLink
               key={item.to}
@@ -132,7 +144,7 @@ export function PortalLayout() {
               end={item.end}
               className={({ isActive }) =>
                 [
-                  "px-3 py-2 text-sm border-b-2 -mb-[1px] transition-colors",
+                  "px-3 py-2 text-sm border-b-2 -mb-[1px] transition-colors whitespace-nowrap shrink-0",
                   isActive
                     ? "border-[var(--color-accent)] text-[var(--color-text-primary)] font-medium"
                     : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",

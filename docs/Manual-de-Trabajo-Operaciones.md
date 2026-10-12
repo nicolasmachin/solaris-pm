@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.10 · del 11/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.11 · del 11/10/26 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -14,7 +14,7 @@
 
 **Qué no es.** No es un manual de electricidad ni de montaje: quien instala ya sabe instalar. Tampoco explica cómo trabajan las otras áreas: eso está en el PGT y en el manual de cada una. Acá está solo lo que Operaciones tiene que saber de ellas.
 
-**Quién lo lee.** Toda el área de Operaciones: el gerente de Operaciones, los capataces, los operarios y Logística. Todos lo leen entero, porque el trabajo de cada uno depende del de los otros. **El gerente de Operaciones lo tiene que saber de memoria.** Gerencia también lo lee entero.
+**Quién lo lee.** Toda el área de Operaciones: el gerente de Operaciones, los capataces, los operarios y Logística. Todos lo leen entero, porque el trabajo de cada uno depende del de los otros. **El gerente de Operaciones lo tiene que saber de memoria.** El CEO también lo lee entero.
 
 **Cómo está armado.** Tiene tres partes: la **Parte A · Operaciones**, cómo funciona el área entera; la **Parte B · Obra**, el trabajo en la propiedad del cliente; y la **Parte C · Logística**, las compras y la entrega de materiales. Las Partes B y C están armadas para entregarse por separado, como **librillos independientes**, impresos o en digital: a cada uno se le entrega lo que le corresponde. El capataz recibe el de Obra. Al final hay un glosario con las palabras propias de Voltia y el registro de cambios del manual.
 
@@ -73,7 +73,7 @@ Operaciones es dueña de **tres etapas** del recorrido del proyecto: **Validaci�
 | Etapa | Arranca cuando | Recibe | Entrega | Termina cuando |
 |---|---|---|---|---|
 | Validación de Operaciones | Ingeniería termina la pre-ingeniería | La pre-ingeniería, los planos, la lista de materiales preliminar y el resumen de la visita | La **fecha de obra confirmada** en el calendario y el **informe del capataz** | El informe del capataz está **Completado** y la fecha está confirmada. El proyecto vuelve a Ingeniería |
-| Compras | Ingeniería Final cierra la lista de materiales definitiva | La **lista de materiales definitiva**, ya revisada por el capataz | **Todo el material en el local** para el día de preparación o, si la obra es tercerizada, **el kit enviado** | El material está listo para salir a obra y la entrega está coordinada |
+| Compras | Ingeniería Final cierra la lista de materiales definitiva | La **lista de materiales definitiva**, ya revisada por el capataz | **Todo el material en el local** para el día de preparación o, si la obra es tercerizada, **el kit enviado** | El material está listo para salir a obra o, si es tercerizada, el envío del kit está coordinado |
 | Obra | El material está listo y la fecha está confirmada | Los materiales preparados, los planos finales y los documentos de UTE impresos | La instalación funcionando, **las fotos, los 2 videos de los ensayos y los documentos de UTE firmados**, los sobrantes retirados (o su retiro coordinado) y el lugar limpio | El gerente de Operaciones hace el control de obra y la marca como pronta |
 
 ### Fuera del recorrido: mantenimientos y soporte
@@ -95,11 +95,11 @@ Después de la obra, Operaciones vuelve a la casa del cliente por dos motivos di
 
 > *En definición:* cómo se agendan los mantenimientos y dónde se carga cada informe en Voltia PM todavía no está definido. Se completa cuando quede resuelto.
 
-## 3 · Del proyecto a la obra: los 12 días
+## 3 · Del proyecto a la obra: plazos
 
-**Cuánto tarda.** El reloj arranca cuando el proyecto entra a Validación de Operaciones y se agenda la **fecha tentativa**. Desde ahí hasta la obra pasan, **como mínimo, 12 días hábiles**, porque cada etapa trabaja después de la otra: Validación 4, Ingeniería Final 3 y Compras 5.
+**Cuánto tarda.** El reloj arranca cuando el proyecto llega de Ingeniería, con la pre-ingeniería hecha, y entra a Validación de Operaciones. Desde ahí hasta la obra pasan, **como mínimo, 12 días hábiles**, porque cada etapa trabaja después de la otra: Validación 4, Ingeniería Final 3 y Compras 5.
 
-La obra se puede hacer, como muy temprano, el **día hábil 13**, el siguiente al último de Compras. Por eso **la fecha tentativa nunca puede quedar antes de ese día**. Los días hábiles se cuentan de lunes a viernes, sin contar los feriados no laborables.
+La obra se puede hacer, como muy temprano, el **día hábil 13**, el siguiente al último de Compras. Por eso **la fecha de obra nunca puede quedar antes de ese día**. Los días hábiles se cuentan de lunes a viernes, sin contar los feriados no laborables.
 
 > **Un día de atraso es un día más de obra.**
 
@@ -111,15 +111,13 @@ Si el informe del capataz sale dos días hábiles tarde, la obra se corre dos d�
 |---|---|---|---|---|
 | 1 · Visita de venta | Gerente Comercial | Visita la casa del cliente y hace el relevamiento técnico | — | Antes |
 | 2 · Pre-ingeniería | Ingeniería | Sube a Voltia PM la pre-ingeniería y la lista de materiales preliminar | — | Antes |
-| 3 · Validación de Operaciones | Gerente de Operaciones | Agenda la fecha tentativa de obra en el calendario | — | Día 0 |
-| 4 · Informe del capataz | Capataz | Revisa lo relevado y carga su informe | 2 días hábiles | Día 2 |
-| 5 · Fecha definitiva | Gerente de Operaciones · Experiencia Solar | El gerente confirma la fecha en el calendario; recién ahí Experiencia Solar se la avisa al cliente | 2 días hábiles | Día 4 |
-| 6 · Ingeniería Final | Ingeniería | Hace los cambios del informe del capataz y cierra la lista de materiales definitiva | 3 días hábiles | Día 7 |
-| 7 · Compras | Logística | Compra y recibe todo el material, y coordina la entrega | 5 días hábiles | Día 12 |
-| 8 · Obra | Capataz y su equipo · Gerente de Operaciones | Se hace la obra; al terminar, el gerente de Operaciones la marca como pronta | — | Día 13, como muy temprano |
-| 9 · Después de la obra | Experiencia Solar | Le cuenta al cliente qué sigue y lo acompaña hasta la habilitación | — | Después |
+| 3 · Validación de Operaciones | Gerente de Operaciones · Experiencia Solar · Capataz | Primero el gerente confirma la fecha de obra (con un tercerizado, cuando acepta su presupuesto) y Experiencia Solar se la avisa al cliente. Después el capataz revisa la pre-ingeniería y carga su informe | 4 días hábiles: la fecha en 2 y el informe en los 2 siguientes | Día 4 |
+| 4 · Ingeniería Final | Ingeniería | Hace los cambios del informe del capataz y cierra la lista de materiales definitiva | 3 días hábiles | Día 7 |
+| 5 · Compras | Logística | Compra y recibe todo el material; si la obra es tercerizada, coordina el envío del kit | 5 días hábiles | Día 12 |
+| 6 · Obra | Capataz y su equipo · Gerente de Operaciones | Se hace la obra; al terminar, el gerente de Operaciones la marca como pronta | — | Día 13, como muy temprano |
+| 7 · Después de la obra | Experiencia Solar | Le cuenta al cliente qué sigue y lo acompaña hasta la habilitación | — | Después |
 
-**Un ejemplo.** Un proyecto entra a Validación un lunes (día 0) y no hay feriados. El informe del capataz vence el miércoles; la fecha definitiva, el viernes; la Ingeniería Final, el miércoles de la semana siguiente; las Compras, el miércoles de la otra semana, y la obra puede hacerse, como muy temprano, el jueves de esa tercera semana.
+**Un ejemplo.** Un proyecto entra a Validación un lunes (día 0) y no hay feriados. La fecha de obra se confirma, como mucho, el miércoles; el informe del capataz vence el viernes; la Ingeniería Final, el miércoles de la semana siguiente; las Compras, el miércoles de la otra semana, y la obra puede hacerse, como muy temprano, el jueves de esa tercera semana.
 
 ## 4 · La fecha de obra
 
@@ -127,8 +125,8 @@ Si el informe del capataz sale dos días hábiles tarde, la obra se corre dos d�
 
 Hay dos fechas, y en el calendario de Voltia PM se ven distinto:
 
-- **La fecha tentativa** (con **rayas**): la agenda el gerente de Operaciones el mismo día que el proyecto entra a Validación. **Es interna: al cliente no se le dice.**
-- **La fecha confirmada** (en **color sólido**): la confirma el gerente de Operaciones, como mucho 2 días hábiles después del informe del capataz. Al confirmarla, **Voltia PM le avisa solo a Experiencia Solar** y le abre el pendiente de comunicársela al cliente. No hace falta mandarle un mensaje.
+- **La fecha tentativa** (con **rayas**): **no es un paso obligatorio.** El gerente de Operaciones la puede usar cuando el proyecto llega a Validación, sobre todo con un tercerizado: marca la obra como tentativa mientras le propone la obra con su presupuesto, y cuando el tercerizado acepta, la confirma. **Es interna: al cliente no se le dice.**
+- **La fecha confirmada** (en **color sólido**): la confirma el gerente de Operaciones al empezar la Validación, como mucho en 2 días hábiles. **No espera el informe del capataz:** nada de lo que diga el informe cambia la agenda. Al revés: el informe lo hace el capataz del equipo que ya tiene la obra, y un tercerizado no lo hace antes de aceptarla. Al confirmarla, **Voltia PM le avisa solo a Experiencia Solar** y le abre el pendiente de comunicársela al cliente. No hace falta mandarle un mensaje.
 
 ![El calendario: las obras con rayas tienen la fecha tentativa; las de color sólido, la fecha confirmada.](captura:ops-calendario-mes)
 
@@ -151,11 +149,11 @@ Para el gerente de Operaciones, reprogramar es mover una obra en el calendario. 
 
 La fecha se mueve solo cuando no hay forma. Y buscarle la vuelta **nunca** es saltarse un ensayo, un control de calidad o una medida de seguridad.
 
-**Cada fecha que se mueve rinde cuentas.** Lo explica el área que se atrasó, no Operaciones, que es la que recibe el atraso. Lo que no depende de Voltia (la lluvia, un cambio que pide el cliente, una demora de UTE) se registra igual, pero no cuenta como atraso de un área. Gerencia revisa una vez por mes cuántas fechas se movieron, por qué área y cuántos días de obra se perdieron. No es para buscar culpables: es para que mover una fecha no se vuelva algo de todos los días.
+**Cada fecha que se mueve rinde cuentas.** Lo explica el área que se atrasó, no Operaciones, que es la que recibe el atraso. Lo que no depende de Voltia (la lluvia, un cambio que pide el cliente, una demora de UTE) se registra igual, pero no cuenta como atraso de un área. El CEO revisa una vez por mes cuántas fechas se movieron, por qué área y cuántos días de obra se perdieron. No es para buscar culpables: es para que mover una fecha no se vuelva algo de todos los días.
 
 ### Si hay que mover la fecha
 
-Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito el motivo. El motivo dice **qué etapa se atrasó, de qué área, cuántos días y qué se intentó para no mover la fecha**, o qué causa ajena la movió. Experiencia Solar lo necesita para explicárselo al cliente ese mismo día, y Gerencia, para la revisión del mes. Si a un cliente le mueven la fecha tres veces, son tres avisos, no uno.
+Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito el motivo. El motivo dice **qué etapa se atrasó, de qué área, cuántos días y qué se intentó para no mover la fecha**, o qué causa ajena la movió. Experiencia Solar lo necesita para explicárselo al cliente ese mismo día, y el CEO, para la revisión del mes. Si a un cliente le mueven la fecha tres veces, son tres avisos, no uno.
 
 **Voltia PM pide el motivo** cuando la obra ya tenía la fecha confirmada, tanto con el botón **Reprogramar** como al arrastrar la obra a otro día, y con ese motivo le genera el aviso a Experiencia Solar. Si la obra todavía era tentativa, o se la lleva a una fecha que ya pasó (para dejar anotado cuándo se hizo de verdad), no lo pide.
 
@@ -171,16 +169,16 @@ Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito
 
 Si todo sigue el procedimiento, el gerente de Operaciones no tiene que inventar la planificación: **su trabajo es velar por que el procedimiento se cumpla**.
 
-- **Todos los días:** a cada proyecto que entra a Validación le agenda la fecha tentativa **ese mismo día**. A cada uno que ya tiene el informe del capataz le confirma la fecha definitiva, como mucho 2 días hábiles después, y lo pasa a Ingeniería Final.
-- **Una vez por semana, preferentemente el viernes:** coordina con los capataces el trabajo de la semana siguiente, para que cada uno sepa qué obras tiene. Ese mismo día revisa el calendario de las próximas semanas, detecta qué fechas confirmadas están en riesgo y, con el área que se está atrasando, busca cómo sostenerlas. Lo que no se puede sostener lo reprograma en Voltia PM, con su motivo.
-- **En la reunión de coordinación de Operaciones con Gerencia, los viernes:** rinde cuentas de cómo viene la planificación de la semana siguiente. Por eso la coordinación con los capataces tiene que estar hecha antes de esa reunión.
+- **Todos los días:** a cada proyecto que entra a Validación le confirma la fecha de obra, como mucho en 2 días hábiles (con un tercerizado, cuando acepta la obra). Con la fecha confirmada, el capataz de ese equipo hace su informe. Con las dos cosas hechas, lo pasa a Ingeniería Final.
+- **Una vez por semana, antes de la reunión con el CEO:** coordina con los capataces el trabajo de la semana siguiente, para que cada uno sepa qué obras tiene. Ese mismo día revisa el calendario de las próximas semanas, detecta qué fechas confirmadas están en riesgo y, con el área que se está atrasando, busca cómo sostenerlas. Lo que no se puede sostener lo reprograma en Voltia PM, con su motivo.
+- **En la reunión de coordinación de Operaciones con el CEO:** rinde cuentas de cómo viene la planificación de la semana siguiente. Por eso la coordinación con los capataces tiene que estar hecha antes de esa reunión.
 - **Antes de cada obra:** confirma con Logística que el material va a estar listo y con el capataz que la cuadrilla está asignada.
 - **Al terminar cada obra:** revisa que la documentación esté completa y marca la obra como pronta.
 
 ### Las cuadrillas
 
-- **La cuadrilla propia:** un capataz y sus peones. Si el trabajo lo pide, el gerente de Operaciones puede sumar gente.
-- **Las cuadrillas tercerizadas:** empresas instaladoras que trabajan para Voltia, cada una en su zona. Hoy hay una para Montevideo y Canelones y otra para el litoral oeste (San José, Colonia, Soriano, Flores y Río Negro). La idea es sumar más.
+- **La cuadrilla propia:** un capataz y su equipo de operarios. Si el trabajo lo pide, el gerente de Operaciones puede sumar gente.
+- **Las cuadrillas tercerizadas:** empresas instaladoras que trabajan para Voltia, cada una en su zona.
 - **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso.
 
 ### Cuadrilla propia o tercerizada
@@ -189,33 +187,55 @@ Si todo sigue el procedimiento, el gerente de Operaciones no tiene que inventar 
 
 > **Primero se llena la agenda de la cuadrilla propia.**
 
-La cuadrilla propia cobra sueldo haya obra o no. No se le da trabajo a un tercerizado mientras la cuadrilla propia está sin trabajo.
-
 - **Las obras grandes o complejas** las hace la cuadrilla propia.
 - **Las obras estándar o chicas, y las del interior**, van a una cuadrilla tercerizada.
-- **En el litoral oeste**, las obras van a la tercerizada de esa zona, salvo que sea una obra grande: esa la puede hacer la cuadrilla propia.
-- **Las obras chicas en Montevideo y Canelones** van a la tercerizada de esa zona.
+- **En una zona con tercerizada**, las obras van a la tercerizada de esa zona, salvo que sea una obra grande: esa la puede hacer la cuadrilla propia.
 - En todos los casos depende de **qué equipo tiene lugar** en la agenda.
 
 ### Cómo se trabaja con un tercerizado
 
 **Voltia contrata a la empresa, no a su gente.** El tercerizado contrata a los trabajadores que necesita para la obra, y Voltia no se mete en esa relación. Lo que sí le exige es el estándar de calidad y el de seguridad.
 
-**El presupuesto no se negocia.** El monto de mano de obra de cada obra ya está fijado en el costeo de la venta. Antes de agendar la obra, el gerente de Operaciones **se lo informa al tercerizado** y el tercerizado acepta o no. Si acepta, se agenda con su equipo, y el pago queda pendiente a su nombre (ver «Pagos a instaladores» en el capítulo 7). El gerente de Operaciones no tiene margen para negociar: **pagar más lo autoriza solo Gerencia**.
+**El presupuesto no se negocia.** El monto de mano de obra de cada obra ya está fijado en el costeo de la venta. Antes de agendar la obra, el gerente de Operaciones **se lo informa al tercerizado** y el tercerizado acepta o no. Si acepta, se agenda con su equipo, y el pago queda pendiente a su nombre (ver «Pagos a instaladores» en el capítulo 7). El gerente de Operaciones no tiene margen para negociar: **pagar más lo autoriza solo el CEO**.
 
 En Voltia PM el monto está en la subetapa **Presupuesto al instalador tercerizado** de Validación de Operaciones: se tilda cuando se le informó y cuando aceptó. Si la obra va con la cuadrilla propia, la subetapa se marca **No aplica**.
 
-**Cómo se le paga:** el **50 % al arrancar la obra** y el **50 % al terminarla**. La orden de pago la da el responsable de Administración y Finanzas o Gerencia, cuando en Voltia PM la etapa de Ejecución de obra figura terminada. Cada pago se registra en Finanzas, y el tercerizado ve en **Mis cobros** lo que cobró y lo que le falta cobrar.
+**Cómo se le paga:** el **50 % al arrancar la obra** y el **50 % al terminarla**. La orden de pago la da el responsable de Administración y Finanzas o el CEO, cuando en Voltia PM la etapa de Ejecución de obra figura terminada. Cada pago se registra en Finanzas, y el tercerizado ve en **Mis cobros** lo que cobró y lo que le falta cobrar.
 
 **La calidad:** al evaluar la obra terminada se le pueden pedir correcciones si no quedó como se espera.
 
 > *En definición:* el estándar de calidad escrito que se le exige a cada tercerizado.
 
-**La seguridad es innegociable, también con los tercerizados.** Si a un trabajador de un tercerizado le pasa algo en una obra de Voltia, Voltia también responde. Por eso, todos los meses, se le pide a cada tercerizado la documentación que demuestra que tiene a su gente en regla: el certificado del BPS al día, el recibo de los aportes, la póliza de accidentes de trabajo del BSE vigente para todos los que van a la obra, la planilla de trabajo y los recibos de sueldo. Si no la presenta, se le puede retener el pago.
+> **La seguridad es innegociable, también con los tercerizados.**
+
+Si a un trabajador de un tercerizado le pasa algo en una obra de Voltia, Voltia también responde. Por eso, todos los meses, se le pide a cada tercerizado la documentación que demuestra que tiene a su gente en regla: el certificado del BPS al día, el recibo de los aportes, la póliza de accidentes de trabajo del BSE vigente para todos los que van a la obra, la planilla de trabajo y los recibos de sueldo. Si no la presenta, se le puede retener el pago.
 
 > *En definición:* el plan de seguridad, que se está armando con un técnico prevencionista. Con ese plan se va a capacitar a la cuadrilla propia y a los tercerizados, y va a ser parte de lo que se le exige a cada tercerizado.
 
 > *Por armar:* el contrato entre Voltia y cada instalador tercerizado. Va como anexo de este manual.
+
+### El informe post-obra
+
+**Qué es.** Al terminar cada obra, después del control de obra, el gerente de Operaciones arma el **informe post-obra**: un documento interno de control del proceso, para el CEO. No mira solo cómo quedó la instalación: mira **cómo trabajó cada área para llegar a ella**.
+
+**Qué lleva:**
+
+- **Los datos de la obra:** el cliente, el tipo de obra, los días de ejecución y lo que se hizo.
+- **El resumen:** los días estimados contra los reales, el desvío y qué lo explica.
+- **El cronograma real:** cada jornada, con su fecha, quiénes fueron y qué pasó.
+- **Los hallazgos por área** (Ingeniería, Compras y Logística, el capataz y la Gerencia de Operaciones): cada error y cada acierto, con su impacto y si es grave o no.
+- **El personal:** quién se destacó y qué hay que corregir.
+- **Los incidentes** y **los factores externos** (la lluvia, una ausencia por enfermedad), que no cuentan como falla de un área.
+- **Las acciones correctivas:** qué se cambia, quién es el responsable y si es un cambio permanente o un punto que queda pendiente de esta obra.
+- **El balance general.**
+
+**Se notifica a todos los involucrados.** Cada responsable lee lo de su área, escribe a mano los errores que reconoce y los aciertos, y firma. El gerente de Operaciones firma el cierre, y lo recibe el CEO.
+
+> **No es para buscar culpables: es para que el mismo error no se repita.**
+
+**Las verificaciones son dobles.** Cuando falla un control y también falla el que lo tenía que revisar (por ejemplo, un error de la lista de materiales que el capataz no vio en su informe), la falla es de los dos. Y aunque los hallazgos sean de otras áreas, **el gerente de Operaciones responde por el resultado de la obra entera**.
+
+> *En definición:* el plazo para emitir el informe y dónde se guarda en Voltia PM.
 
 ### Los costos de cada obra
 
@@ -224,8 +244,8 @@ En Voltia PM el monto está en la subetapa **Presupuesto al instalador terceriza
 **Quién aprueba una compra:**
 
 - **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
-- **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la coordinación de los viernes con Gerencia.
-- **Por encima de eso**, lo aprueba Finanzas o Gerencia.
+- **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la reunión de coordinación con el CEO.
+- **Por encima de eso**, lo aprueba Finanzas o el CEO.
 
 
 ## 6 · Las reglas de Operaciones
@@ -233,7 +253,7 @@ En Voltia PM el monto está en la subetapa **Presupuesto al instalador terceriza
 > ### 1. En obra, el criterio del instalador le gana al del proyectista
 > Se resuelve ahí y se anota qué cambió y por qué. No aplica a lo que pide UTE ni a la seguridad.
 
-> ### 2. La fecha tentativa nunca queda a menos de 12 días hábiles de la Validación
+> ### 2. La fecha de obra nunca queda a menos de 12 días hábiles de la Validación
 > Es lo que tardan, una detrás de otra, la Validación, la Ingeniería Final y las Compras.
 
 > ### 3. Operaciones no le comunica la fecha al cliente
@@ -252,11 +272,11 @@ En Voltia PM el monto está en la subetapa **Presupuesto al instalador terceriza
 > Los sobrantes se retiran. Vale igual para la cuadrilla propia y para la tercerizada.
 
 > ### 8. Con la seguridad no hay flexibilidad
-> Si alguien trabaja sin las medidas de seguridad, se sanciona a él y a su capataz. Si quien lo encuentra es Gerencia, también al gerente de Operaciones.
+> Si alguien trabaja sin las medidas de seguridad, se sanciona a él y a su capataz. Si quien lo encuentra es el CEO, también al gerente de Operaciones.
 
-## 7 · Las herramientas y cómo se usan
+## 7 · Las herramientas de Voltia PM y cómo se usan
 
-**Todo el módulo de Proyectos de Voltia PM es de Operaciones.** Por eso acá está explicado todo lo que hay en él, aunque algunas partes las usen también otras áreas. *Faltan las capturas marcadas de cada pantalla.*
+**Todo el módulo de Proyectos de Voltia PM es de Operaciones.** Por eso acá está explicado todo lo que hay en él, aunque algunas partes las usen también otras áreas.
 
 ### La lista de proyectos
 
@@ -365,9 +385,9 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - **Retiro de sobrantes** (capataz). Lo que sobró se retira de la casa del cliente, o por lo menos el retiro queda **coordinado con el cliente**, y el lugar queda limpio. Lo coordina el capataz, dentro del plazo de la etapa. **La etapa no se cierra con materiales olvidados en la casa del cliente.**
 - **Control de obra** (gerente de Operaciones). Alguien que no estuvo en la obra verifica, con las fotos, los videos y los documentos, que se hizo según el proyecto y con el estándar de calidad, y que están todos los entregables. Si algo no está como se espera, pide las correcciones. Con esta subetapa completa, la etapa se cierra.
 
-> Las obras que ya estaban en curso al 10 de octubre de 2026 conservan las subetapas de antes (Planificación y Logística, Validación de Obra terminada). Las nuevas subetapas rigen para las obras nuevas.
-
 ![El panel de Ejecución de Obra: el botón para cargar las fotos y sus subetapas.](captura:ops-panel-obra)
+
+> Todos los proyectos tienen estas subetapas. En las obras que ya estaban terminadas cuando se cambiaron, se ven además, completadas, las subetapas de antes.
 
 ### El calendario
 
@@ -380,7 +400,7 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 
 ### Las fotos de obra
 
-**Subir fotos** carga varias a la vez; **Descargar todas** las baja juntas. El botón **Checklist de fotos** muestra la lista de las **23 fotos** que tiene que tener cada obra, y el PDF para firmar:
+**Subir fotos** carga varias a la vez; **Descargar todas** las baja juntas. El botón **Checklist de fotos** muestra la lista de **fotos** que tiene que tener cada obra, y el PDF para firmar:
 
 ![Las fotos de obra: Checklist de fotos, Descargar todas y Subir fotos.](captura:ops-obra-fotos)
 
@@ -392,9 +412,9 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 | Inversor y tableros | 15. Inversor y tableros juntos · 16. Inversor de frente · 17. Etiqueta de datos del inversor · 18. Tablero abierto · 19. Tablero con la tapa puesta y la puerta abierta · 20. Tablero cerrado con las etiquetas (las fotos de tablero se repiten por cada tablero) |
 | UTE | 21. Medidor de UTE · 22. Llave general (ICP) de UTE · 23. Precinto de seguridad |
 
-Al cerrar se anotan además el **número de precinto**, el **valor de la puesta a tierra** y si falta alguna foto. **Voltia PM no controla que estén las 23**: la lista es para consultar, y el control lo hace el capataz.
+Al cerrar se anotan además el **número de precinto**, el **valor de la puesta a tierra** y si falta alguna foto. **Voltia PM no controla que estén todas**: la lista es para consultar, y el control lo hace el capataz.
 
-![El checklist de fotos: las 23 fotos, por sección, y el PDF para firmar.](captura:ops-checklist-fotos)
+![El checklist de fotos: las fotos de la lista, por sección, y el PDF para firmar.](captura:ops-checklist-fotos)
 
 **El checklist de referencia** de la obra: una lista de controles (cableado, ajuste de conexiones, prueba de strings, puesta a tierra, montaje de paneles) que se marca OK o Pendiente, con observaciones.
 
@@ -461,7 +481,7 @@ El capataz avisa al gerente de Operaciones y al cliente le avisa él mismo, porq
 
 ### El informe del capataz no se puede hacer con lo que hay
 
-Si al relevamiento le falta algo para poder opinar (una foto, una medida), el capataz marca el informe como **Bloqueado** y avisa a quien hizo la visita y al gerente de Operaciones. **No se vuelve a la casa del cliente** sin que Experiencia Solar lo coordine.
+Si a la pre-ingeniería le falta algo para poder opinar (una medida, un dato del techo o del tablero), el capataz marca el informe como **Bloqueado** y avisa a quien hizo la visita y al gerente de Operaciones. **No se vuelve a la casa del cliente** sin que Experiencia Solar lo coordine.
 
 ### El cliente no puede en la fecha
 
@@ -490,15 +510,16 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 
 ## 10 · El informe del capataz
 
-**Cuándo.** En los **2 días hábiles** después de que el proyecto entra a Validación de Operaciones.
+**Cuándo.** En los **2 días hábiles** después de que se confirma la fecha de obra. Lo hace el capataz del equipo que tiene la obra: en una obra tercerizada, el instalador tercerizado, una vez que la aceptó.
 
-**Qué es.** El capataz trabaja con lo que se relevó en la visita de venta: revisa las fotos, los videos y la lista de materiales preliminar, y cuenta lo que ve. Lo que diga es lo que usa Ingeniería para la Ingeniería Final. En las obras tercerizadas lo hace el instalador tercerizado.
+**Qué es.** El capataz trabaja sobre la **pre-ingeniería**, que ya tomó en cuenta lo relevado en la visita de venta: la memoria descriptiva, los planos y, sobre todo, la **lista de materiales preliminar**. Analiza el trabajo que tiene que hacer y cuenta si hay alguna incongruencia o si falta algo. Lo de la visita (las fotos, los videos y el resumen) lo tiene disponible como complemento. Lo que diga es lo que usa Ingeniería para la Ingeniería Final. En las obras tercerizadas lo hace el instalador tercerizado.
 
-**Si la información no alcanza, puede ir.** Si el capataz entiende que lo relevado es insuficiente o le quedan dudas, va a la casa del cliente a verlo, **a su criterio**. Vale igual para la cuadrilla propia y para el tercerizado. Como toda visita, se agenda y se coordina con el cliente antes: no se va sin aviso.
+**Si la información no alcanza, puede ir.** Si el capataz entiende que con la pre-ingeniería y lo de la visita no alcanza, o le quedan dudas, va a la casa del cliente a verlo, **a su criterio**. Vale igual para la cuadrilla propia y para el tercerizado. Como toda visita, se agenda y se coordina con el cliente antes: no se va sin aviso.
 
 **Qué revisa y cuenta:**
 
-- Si el material de la lista preliminar coincide con lo que se ve en el relevamiento, o si algo sobra, falta o no corresponde.
+- Si la lista de materiales preliminar cierra con el trabajo que hay que hacer, o si algo sobra, falta o no corresponde. Es lo más importante del informe.
+- Si la memoria descriptiva y los planos tienen alguna incongruencia.
 - El estado del techo o de la estructura donde va el sistema.
 - Los accesos a la obra: para entrar con los materiales y para el camión.
 - Dónde están el tablero eléctrico y el medidor de UTE.
@@ -509,12 +530,12 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 1. Entrar a Voltia PM, desde el celular o la computadora.
 2. Ir a **Proyectos**, buscar el cliente y tocar **Ver**.
 3. En el recorrido del proyecto, tocar la tarjeta **Validación de Operaciones**.
-4. Revisar el relevamiento y la lista preliminar, y cargar el informe: hay **Foto**, **Video** y **Nota**, y un botón amarillo redondo para **grabar un audio**.
+4. Revisar la pre-ingeniería (memoria descriptiva, planos y lista de materiales preliminar) y cargar el informe: hay **Foto**, **Video** y **Nota**, y un botón amarillo redondo para **grabar un audio**.
 5. En la misma pantalla, en **Informe del capataz**, cambiar el estado a **Completado**.
 
 ![Donde se carga el informe del capataz: el panel de la etapa Validación de Operaciones.](captura:ops-panel-validacion)
 
-**Los estados del informe:** Pendiente · En progreso · Bloqueado · Completado. Mientras no diga **Completado**, el proyecto no avanza: no se puede confirmar la fecha y la Ingeniería Final no arranca. **Si no hay nada que cambiar, igual se marca Completado**, con una nota que lo diga. Si al relevamiento le falta algo para poder opinar, se marca **Bloqueado** y se avisa a quien hizo la visita y al gerente de Operaciones.
+**Los estados del informe:** Pendiente · En progreso · Bloqueado · Completado. Mientras no diga **Completado**, el proyecto no avanza: la Validación no termina y la Ingeniería Final no arranca. **Si no hay nada que cambiar, igual se marca Completado**, con una nota que lo diga. Si a la pre-ingeniería le falta algo para poder opinar, se marca **Bloqueado** y se avisa a quien hizo la visita y al gerente de Operaciones.
 
 ## 11 · Antes de salir a la obra
 
@@ -526,9 +547,9 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 
 **La preparación de materiales.** La hace el capataz, con la lista de materiales definitiva, el día de preparación que acordó con Logística. Para ese día **todo tiene que estar en el local**: si falta algo, se avisa al gerente de Operaciones ese mismo día, no el día de la obra.
 
-**La entrega en la casa del cliente.** El capataz define con Logística si el material va el mismo día de la obra o el día anterior, y **el capataz le avisa directo al cliente** el día, la franja horaria y que alguien tiene que estar para recibirlo (o qué acceso hace falta). Es de lo que el capataz habla directo con el cliente: horarios, accesos y materiales.
+**Los materiales, con la cuadrilla propia.** No hay una entrega aparte: el capataz prepara los materiales en el local y el día de la obra salen **con la cuadrilla, en el camión**. Con el cliente, el capataz habla directo de horarios y accesos.
 
-**En las obras tercerizadas**, Logística manda el kit de materiales **directo a la casa del cliente**, y el instalador tercerizado tiene que estar ahí para recibirlo. Se coordina entre los tres: Logística, el instalador y el cliente. Al recibirlo, el instalador lo revisa contra la lista; si falta algo, le avisa a Logística en el momento.
+**Los materiales, en las obras tercerizadas.** Logística manda el kit **directo a la casa del cliente**, no necesariamente el día que se trabaja, y el instalador tercerizado tiene que estar ahí para recibirlo. Logística coordina el envío con el instalador, y el instalador lo coordina con el cliente. Al recibirlo, lo revisa contra la lista; si falta algo, le avisa a Logística en el momento.
 
 **Lo que se lleva impreso:** los documentos de UTE para que firme el cliente, que se imprimen desde el proyecto en Voltia PM, en **Documentos UTE generados**.
 
@@ -549,7 +570,7 @@ tiene a cargo.
 | El operario | Es el **primer responsable**: usa siempre las medidas de seguridad, sin que nadie se lo tenga que pedir |
 | El capataz | Es el **segundo responsable**: controla que todo su equipo las use, en cada obra y todo el tiempo |
 | El gerente de Operaciones | Controla que los capataces hagan cumplir la seguridad en todas las obras |
-| Gerencia | Controla que toda la cadena funcione |
+| El CEO | Controla que toda la cadena funcione |
 
 ### Si se encuentra a alguien sin las medidas de seguridad
 
@@ -558,7 +579,7 @@ tiene a cargo.
 - Si **el capataz** encuentra a un operario sin protección: lo corrige en el momento.
 - Si lo encuentra **el gerente de Operaciones**: se sanciona al **operario** y
   también al **capataz**, que lo tendría que haber controlado.
-- Si lo encuentra **Gerencia**: se sanciona al **operario**, al **capataz** y al
+- Si lo encuentra **el CEO**: se sanciona al **operario**, al **capataz** y al
   **gerente de Operaciones**.
 
 Es a propósito: así el capataz no puede decir que "el operario no se la puso".
@@ -578,6 +599,26 @@ antes de seguir. En las obras tercerizadas, el equipo lo pone el tercerizado y
 Voltia le exige usarlo. Si alguien de su personal trabaja sin protección, quien
 lo vea para la tarea hasta que se lo ponga, y se le llama la atención **al
 tercerizado**, que es el responsable de su gente.
+
+### La seguridad en las obras tercerizadas
+
+> **Que Voltia no esté en la obra no quiere decir que nadie mire.**
+
+Voltia no controla todos los días cómo trabaja un instalador tercerizado. Pero el
+cliente está ahí y ve todo: es, casi siempre, quien primero avisa si alguien
+trabaja sin protección. Y si el cliente es una empresa, puede tener sus propios
+prevencionistas recorriendo la obra.
+
+**La responsabilidad es de todos, por ley.** En Uruguay rige la responsabilidad
+solidaria: si a un trabajador del tercerizado le pasa algo, responde el
+tercerizado, que es su empleador; responde Voltia, que lo contrató, y responde
+también el cliente, que contrató a Voltia. El accidentado puede reclamarle a
+cualquiera de los tres, y en general va contra el que más puede pagar.
+
+Por eso **el más interesado en que se cumpla la seguridad suele ser el
+cliente**, y Voltia no puede quedar mal ante él por una obra insegura. El
+tercerizado trabaja siempre como si lo estuvieran mirando, porque lo están
+mirando.
 
 **En el techo** (todo trabajo a 2 metros o más):
 
@@ -624,7 +665,7 @@ Son los criterios de Ingeniería que se aplican **en la obra**. Los que dicen **
 ### El montaje
 
 - **Inclinación 25°, mirando al norte**, con los paneles en vertical. Es el criterio cuando no se dice nada: si en la visita de venta se acordó otra cosa (por ejemplo, paneles coplanares) y quedó en el resumen de la visita y en el proyecto, manda eso.
-- **Los sujetadores (grampas) van a 456 mm de cada punta del panel.** Nunca en la punta: el vidrio se comba y se pierde la garantía.
+- **Los sujetadores (grampas) van dentro de la zona segura del panel**, la que indica el fabricante, y donde lo marquen los planos de Ingeniería. Nunca en la punta: el vidrio se comba y se pierde la garantía.
 - **Estructuras que se sueldan en la obra:** se terminan con primer rico en zinc y esmalte para exterior.
 
 ### La parte eléctrica
@@ -647,15 +688,15 @@ Son los criterios de Ingeniería que se aplican **en la obra**. Los que dicen **
 Después de instalar hay **cuatro cosas** que tienen que quedar resueltas. Las tres primeras cambian según la marca del inversor; la cuarta es igual para todas.
 
 1. **El datalogger y la planta:** el datalogger es el módulo que conecta la instalación a internet. Se conecta y se crea la planta en la aplicación del inversor.
-2. **La reconexión en 180 segundos:** el tiempo que tarda el inversor en volver a inyectar después de un corte de luz. **Siempre 180 segundos**: es lo que pide UTE.
+2. **Los 180 segundos:** lo que espera el inversor antes de empezar a inyectar, tanto al encenderlo como al volver la luz después de un corte. **Siempre 180 segundos en los dos casos**: es lo que pide UTE.
 3. **El smartmeter:** mide el consumo de la casa para que el inversor sepa cuánto inyectar. El modelo depende de la marca.
 4. **Las fotos y los dos ensayos filmados.**
 
 ### Los dos ensayos
 
-**Video 1 · El ensayo de encendido (arranque).** Se filma el inversor (la pantalla o la aplicación) desde antes de darle energía. Se le da energía y se filma sin cortar hasta que pasa a "generando" o "inyectando", mostrando cómo empieza a subir la potencia.
+**Video 1 · El ensayo de encendido (arranque).** Se filma el inversor (la pantalla o la aplicación) desde antes de darle energía. Se le da energía, se arranca un cronómetro que se vea en cámara y se filma sin cortar hasta que pasa a "generando" o "inyectando", mostrando cómo empieza a subir la potencia: **tienen que ser 180 segundos**.
 
-**Video 2 · El ensayo anti-isla.** Con la instalación generando, se corta la llave térmica de entrada de UTE y se filma cómo el inversor deja de inyectar. Se vuelve a subir la llave y se arranca un cronómetro que se vea en cámara. Se filma hasta que el inversor vuelve a inyectar: **tienen que ser 180 segundos**. Es la prueba de que quedó bien configurado.
+**Video 2 · El ensayo anti-isla.** Con la instalación generando, se baja la llave térmica de entrada de UTE y **se vuelve a subir enseguida, casi en el mismo segundo**, simulando un corte momentáneo de la red. El inversor deja de inyectar, y desde que se sube la llave corre un cronómetro que se vea en cámara. Se filma hasta que el inversor vuelve a inyectar: **tienen que ser 180 segundos**. Es la prueba de que quedó bien configurado.
 
 ### Las claves
 
@@ -669,7 +710,7 @@ Las contraseñas y los códigos **no van en este manual**: están en el document
 4. **En el portal OSS** (oss.growatt.com) se verifica que la planta figure **conectada**. Puede tardar horas en aparecer.
 5. **Los 180 segundos, en OSS:** doble clic en la planta → la ruedita del inversor → Configuración avanzada → se leen los registros **18 y 19**. Si no están en 180, se escribe 18 = 180, se espera la confirmación, y después 19 = 180. El 18 es la espera para arrancar; el 19, para reconectar después de un corte. **Si no aparece la ruedita**, la cuenta no tiene permiso de instalador.
 
-**El smartmeter:** el que se usa siempre es **Eastron**. Del lado del inversor: RS485 A al pin 10 y RS485 B al pin 9; dirección 003 en monofásico y 004 en trifásico; 9600 baudios. El resto se conecta según el diagrama de la ingeniería de la obra.
+**El smartmeter:** el que se usa siempre es **Eastron**. Se conecta según el diagrama de la ingeniería de la obra y el manual del modelo de inversor: los pines de comunicación (RS485), la dirección y la velocidad cambian de un modelo a otro.
 
 Videos en Capacitación: **Creación de planta**, **Tiempos 180** y **PE Abnormal** (un error frecuente).
 
@@ -738,8 +779,8 @@ Al cerrar cada día de obra, el capataz deja en los **Comentarios** del proyecto
 
 Además de instalar, hay cuatro cosas que tienen que quedar hechas y **cargadas en Voltia PM ese mismo día**. Si falta una, la obra no está cerrada.
 
-1. **La configuración:** datalogger conectado y planta creada en la aplicación del inversor, reconexión en 180 segundos y smartmeter conectado y midiendo (capítulo 14).
-2. **Las fotos:** las **23 fotos** de la lista (capítulo 7, *Las fotos de obra*). Voltia PM no controla que estén todas: lo controla el capataz.
+1. **La configuración:** datalogger conectado y planta creada en la aplicación del inversor, arranque y reconexión en 180 segundos y smartmeter conectado y midiendo (capítulo 14).
+2. **Las fotos:** todas las **fotos de la lista** (capítulo 7, *Las fotos de obra*). Voltia PM no controla que estén todas: lo controla el capataz.
 3. **Los dos videos:** el del ensayo de encendido y el del ensayo anti-isla (capítulo 14).
 4. **Los documentos de UTE firmados**: el cliente firma **todos** ese mismo día; se escanean todas las hojas en **un solo PDF** y se suben en el proyecto, en **Documentos UTE firmados** → **Subir**.
 
@@ -801,7 +842,7 @@ Se anota qué falta firmar y se le avisa a Experiencia Solar, que coordina con e
 
 Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la medida** en el proyecto.
 
-## 17 · Las hojas para llevar a la obra
+## 17 · El checklist de obra
 
 ### Antes de salir
 
@@ -811,7 +852,6 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 - [ ] Tengo la lista de materiales definitiva y el material preparado (en obra tercerizada: el kit llegó completo a la casa del cliente)
 - [ ] Cada uno tiene su equipo de seguridad en condiciones
 - [ ] Tengo los documentos de UTE impresos
-- [ ] Sé si el material llega el mismo día o el anterior
 
 ### Al cerrar cada día
 
@@ -820,9 +860,9 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 ### Antes de irme de la obra
 
 - [ ] El datalogger está conectado y la planta se ve en la aplicación del inversor
-- [ ] La reconexión está en 180 segundos
-- [ ] El smartmeter está conectado y midiendo
-- [ ] Las 23 fotos están cargadas en Voltia PM
+- [ ] El arranque y la reconexión están en 180 segundos
+- [ ] El smartmeter quedó bien conectado: mide positiva la energía que entra desde UTE
+- [ ] Las fotos de la lista están cargadas en Voltia PM
 - [ ] El video del ensayo de encendido está cargado
 - [ ] El video del ensayo anti-isla está cargado y da 180 segundos
 - [ ] El cliente firmó los 7 documentos de UTE y el PDF está subido
@@ -838,15 +878,15 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 
 **Para quién es.** Para quien hace las compras y la entrega de materiales.
 
-**Qué hace.** Mantiene el stock del local de los materiales que se usan siempre y compra lo que falta para cada obra. Sigue los pedidos, los recibe en el local y les da ingreso al stock, y coordina la entrega. Si la obra la hace un instalador tercerizado, arma el kit de materiales, coordina el flete y lo manda.
+**Qué hace.** Mantiene el stock del local de los materiales que se usan siempre y compra lo que falta para cada obra. Sigue los pedidos, los recibe en el local y les da ingreso al stock. Si la obra la hace un instalador tercerizado, arma el kit de materiales, coordina el flete y lo manda.
 
 **Dónde empieza su trabajo.** Cuando Ingeniería Final cierra la **lista de materiales definitiva**, que ya pasó por la revisión del capataz. Es su único punto de partida.
 
-**Dónde termina su trabajo.** Cuando **todo el material está en el local** para el día de preparación o, si la obra es tercerizada, **el kit está enviado**, y la entrega en la casa del cliente está coordinada.
+**Dónde termina su trabajo.** Cuando **todo el material está en el local** para el día de preparación o, si la obra es tercerizada, **el kit está enviado** a la casa del cliente.
 
 **El plazo.** 5 días hábiles.
 
-**Con el cliente.** **No lo contacta.** Si hay que coordinar una entrega en su casa, se la pasa al capataz, que es quien habla con el cliente de la entrega.
+**Con el cliente.** **No lo contacta.** El envío de un kit a su casa lo coordina con el instalador tercerizado, y el instalador lo coordina con el cliente.
 
 ## 19 · Las compras y la entrega
 
@@ -861,16 +901,12 @@ La excepción es lo urgente que frena una obra en el día: un material que falta
 **Quién aprueba una compra.**
 
 - **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
-- **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la coordinación de los viernes con Gerencia.
-- **Por encima de eso**, lo aprueba Finanzas o Gerencia.
+- **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la reunión de coordinación con el CEO.
+- **Por encima de eso**, lo aprueba Finanzas o el CEO.
 
-**La entrega, en este orden:**
+**Con la cuadrilla propia no hay entrega:** Logística deja todo el material en el local para el día de preparación, el capataz lo prepara y el día de la obra sale con la cuadrilla, en el camión.
 
-1. Logística confirma qué día va a estar todo el material.
-2. El capataz define si el material va a la casa del cliente el mismo día de la obra o el día anterior.
-3. El capataz le avisa al cliente el día, la franja horaria y que alguien tiene que estar para recibirlo.
-
-**Si la obra es tercerizada**, el kit va **directo a la casa del cliente**, y el instalador tercerizado tiene que estar ahí para recibirlo. Logística coordina el flete y el día con el instalador, y el instalador lo coordina con el cliente. Al recibirlo, el instalador lo revisa contra la lista y avisa en el momento si falta algo.
+**Si la obra es tercerizada**, el kit va **directo a la casa del cliente**, no necesariamente el día que se trabaja, y el instalador tercerizado tiene que estar ahí para recibirlo. Logística coordina el flete y el día con el instalador, y el instalador lo coordina con el cliente. Al recibirlo, el instalador lo revisa contra la lista y avisa en el momento si falta algo.
 
 ### Cómo se compra
 
@@ -911,7 +947,7 @@ Comprar obra por obra no escala: con ocho obras en el mes, son ocho pedidos a ca
 - Revisar en Voltia PM los proyectos que entraron a Compras: verificar su lista contra el stock y anotar lo que falta.
 - Recibir lo que llega: controlarlo contra el pedido y darle ingreso al stock.
 - Preparar con el capataz el material de las obras próximas (el **vale de salida** cuando se use).
-- Coordinar los fletes y las entregas, y con los tercerizados, el día que reciben el kit en la casa del cliente.
+- Coordinar con los tercerizados el flete y el día que reciben el kit en la casa del cliente.
 - Avisar al gerente de Operaciones en cuanto algo se demora y puede mover una fecha de obra.
 
 **Una vez por semana, el día de compras**
@@ -931,7 +967,7 @@ Comprar obra por obra no escala: con ocho obras en el mes, son ocho pedidos a ca
 **Cada tres meses**
 
 - **Revisar si los mínimos de stock siguen sirviendo.** La empresa crece rápido: un mínimo que hoy alcanza para un mes de obras, en unos meses puede alcanzar para una semana, por la cantidad de obras y por su tamaño promedio. Los mínimos se recalculan con el gerente de Operaciones según lo instalado en el último trimestre.
-- Planificar las importaciones con el gerente de Operaciones y Gerencia, según las ventas y las obras que vienen.
+- Planificar las importaciones con el gerente de Operaciones y el CEO, según las ventas y las obras que vienen.
 
 ### Lo que se viene: salida y devolución de materiales
 
@@ -967,7 +1003,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 > ### 1. En obra, el criterio del instalador le gana al del proyectista
 > Se resuelve ahí y se anota. No aplica a lo que pide UTE ni a la seguridad.
 
-> ### 2. La fecha tentativa nunca queda a menos de 12 días hábiles de la Validación
+> ### 2. La fecha de obra nunca queda a menos de 12 días hábiles de la Validación
 > Validación 4, Ingeniería Final 3 y Compras 5.
 
 > ### 3. Operaciones no le comunica la fecha al cliente
@@ -980,13 +1016,13 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 > Aunque no haya nada que cambiar.
 
 > ### 6. La obra no se da por terminada sin la documentación completa
-> Las 23 fotos, los 2 videos y las 7 firmas de UTE. La cierra el gerente con el control de obra.
+> Las fotos de la lista, los 2 videos y las 7 firmas de UTE. La cierra el gerente con el control de obra.
 
 > ### 7. Se deja el lugar limpio, y los sobrantes no se olvidan
 > Ni con materiales en la casa del cliente, salvo que el retiro esté coordinado.
 
 > ### 8. Con la seguridad no hay flexibilidad
-> Se sanciona a quien no la usa y a su capataz; si lo ve Gerencia, también al gerente.
+> Se sanciona a quien no la usa y a su capataz; si lo ve el CEO, también al gerente.
 
 > ### 9. Ante un imprevisto, primero se busca no perder el día
 > Solo si no hay forma, se reagenda.
@@ -1005,6 +1041,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 | Palabra | Qué quiere decir |
 |---|---|
 | Voltia PM | La herramienta interna de Voltia, donde se registra todo el trabajo de cada proyecto |
+| CEO | El director general de Voltia. Es quien autoriza lo que está fuera de las reglas de cada área, como pagarle más a un tercerizado |
 | UTE | La empresa eléctrica estatal. Tiene que aprobar (habilitar) cada instalación antes de que el cliente la encienda |
 | Onboarding | La etapa que sigue a la venta: el asesor firma el contrato con el cliente, cobra la seña, define cómo va a pagar y junta los datos para empezar |
 | Seña | El primer pago del cliente, que se cobra al firmar el contrato. Sin la seña cobrada (o el crédito aprobado, si paga con financiación del banco) no se confirma la fecha de obra |
@@ -1028,11 +1065,11 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 | Pre-ingeniería | El primer diseño de la instalación que hace Ingeniería, con los planos y la lista de materiales preliminar |
 | Ingeniería Final | La etapa en que Ingeniería aplica lo que marcó el capataz y cierra la lista de materiales definitiva |
 | Informe del capataz | Lo que deja el capataz al revisar la pre-ingeniería: qué hay que cambiar, o que no hay nada que cambiar |
-| Fecha tentativa | La primera fecha de obra, interna (al cliente no se le dice); se ve con rayas en el calendario y todavía puede cambiar |
+| Fecha tentativa | Una fecha de obra sin confirmar, que el gerente de Operaciones puede marcar al empezar la Validación (sobre todo mientras un tercerizado acepta la obra). No es un paso obligatorio y al cliente no se le dice. Se ve con rayas en el calendario |
 | Fecha confirmada | La fecha de obra definitiva; se ve en color sólido en el calendario |
 | Datalogger | El módulo que conecta el inversor a internet |
 | Smartmeter | El medidor que mide el consumo de la casa para que el inversor sepa cuánto inyectar |
-| Ensayo anti-isla | La prueba de que el inversor deja de inyectar cuando se corta la luz de UTE y vuelve a los 180 segundos |
+| Ensayo anti-isla | La prueba de que el inversor deja de inyectar ante un corte momentáneo de la luz de UTE y vuelve a inyectar a los 180 segundos |
 | Jabalina | La barra de metal que se clava en el suelo para la puesta a tierra |
 | Experiencia Solar | El área que acompaña al cliente desde que termina el onboarding; es la que le habla de fechas y de cómo sigue todo |
 
@@ -1040,6 +1077,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.11 | 11 de octubre de 2026 | La fecha tentativa deja de ser un paso obligatorio. En la Validación, primero se confirma la fecha de obra y después el capataz hace su informe, sobre la pre-ingeniería. Donde decía «Gerencia» ahora dice «el CEO», y pagarle más a un tercerizado lo autoriza solo él. Con la cuadrilla propia los materiales salen con ella el día de la obra; el envío al cliente es solo para tercerizados. Se agregan el informe post-obra y la seguridad en las obras tercerizadas, con «La seguridad es innegociable, también con los tercerizados» como regla destacada. Todos los proyectos tienen las subetapas nuevas de Validación y de Ejecución de Obra. Cambian de nombre los capítulos 3 («Del proyecto a la obra: plazos»), 7 («Las herramientas de Voltia PM y cómo se usan») y 17 («El checklist de obra»); en el 7, cada captura va primero y con números. Ensayos de 180 segundos (encendido y reconexión), anti-isla con la llave bajada y subida casi en el mismo segundo, grampas en la zona segura del panel, smartmeter sin pines fijos y verificado midiendo positiva la energía de UTE. |
 | 0.10 | 11 de octubre de 2026 | La inclinación por defecto pasa a 25 grados al norte, y lo acordado en la visita de venta manda. Al vender, Ventas da solo una estimación de obra por quincena. Se completan los capítulos que faltaban. **Planificación:** la semana del gerente de Operaciones, las cuadrillas y cuándo va la propia o una tercerizada. **Tercerizados:** presupuesto que no se negocia, pago 50 % y 50 %, documentación mensual; en sus obras el instalador es el capataz. **Imprevistos:** la regla de no perder el día, la lluvia, el operario que falta, la obra que no termina, el accidente y el cliente que no puede. **Obra:** el capataz estudia y planifica antes de salir, puede ir a ver la casa si lo relevado no alcanza, cierra cada día con un registro, y la obra la cierra el gerente con el control de obra. **Seguridad:** las medidas que no pueden faltar, tomadas del Reglamento interno. **Puesta en marcha:** Growatt, Huawei y Fronius con las respuestas del 5 de octubre. **Logística:** se compra para el stock, con un día fijo de compras, tres cotizaciones desde USD 100 y una rutina de trabajo. **Gastos:** el gerente aprueba hasta USD 200 por gasto. Se suman reglas y palabras al glosario. |
 | 0.9 | 10 de octubre de 2026 | Se escribe el capítulo 5 (la semana del gerente de Operaciones, las cuadrillas y cómo se trabaja con un tercerizado). Las reglas 4 y 8 del área se actualizan (la fecha confirmada se defiende; a quién se sanciona sin seguridad). La subetapa nueva del presupuesto al tercerizado, el estado No aplica y las cuatro subetapas nuevas de Ejecución de Obra. Logística: quién aprueba cada compra y los vales de salida y devolución como lo que se viene. |
 | 0.8 | 10 de octubre de 2026 | El pago al instalador tercerizado lo genera el calendario: la primera vez que la obra se agenda con un equipo tercerizado, el pago aparece a nombre de quien cobra por ese equipo, y después ya no cambia. Con equipo propio no hay pago aparte. La obra se agenda desde el principio con el equipo que de verdad la hace. |

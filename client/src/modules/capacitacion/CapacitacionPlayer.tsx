@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Link2, Maximize2, Minimize2, PlayCircle } from "lucide-react";
+import { ArrowLeft, Check, Link2, Maximize2, Minimize2, PlayCircle, Send } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -11,11 +11,7 @@ import { Spinner } from "../../components/ui/Spinner";
 import { ComentariosVideo } from "./ComentariosVideo";
 import { DocumentoFila } from "./CapacitacionSeccion";
 import { fmtDuracion, Miniatura } from "./capacitacionUi";
-import { useBunnyPlayer } from "./useBunnyPlayer";
-
-// Cada cuánto se manda la posición del video mientras se mira. Suficiente para
-// no perder el punto y sin llenar la red de pedidos.
-const GUARDADO_CADA_MS = 15_000;
+import { useProgresoVideo } from "./useProgresoVideo";
 
 // Tamaño del reproductor. En "normal" la altura se ata a la del navegador, para
 // que el título, los botones y los comentarios entren sin scrollear (en una
@@ -73,65 +69,16 @@ export function CapacitacionPlayer() {
     },
   });
 
-  // Posición del video vivo fuera de React: el evento llega ~4 veces por
-  // segundo y no tiene que repintar nada.
-  const posicion = useRef(0);
-  const ultimoGuardado = useRef(0);
-  // Última posición efectivamente guardada: si el video está pausado no se
-  // vuelve a mandar nada. Sin esto, abrir un video y no mirarlo dejaba a la
-  // persona registrada con 0 segundos en el seguimiento.
-  const posicionGuardada = useRef(-1);
-  const videoIdRef = useRef<string | undefined>(actual?.id);
-  videoIdRef.current = actual?.id;
-
-  const guardar = useCallback(
-    (completado?: boolean) => {
-      const videoId = videoIdRef.current;
-      if (!videoId) return;
-      const segundos = Math.floor(posicion.current);
-      // Sin avance real y sin marcar a mano, no hay nada que guardar.
-      if (completado === undefined && segundos <= posicionGuardada.current) return;
-      progreso.mutate({ videoId, segundos, completado });
-      posicionGuardada.current = segundos;
-      ultimoGuardado.current = Date.now();
-    },
-    [progreso],
-  );
-
-  useBunnyPlayer(iframeRef, {
-    videoKey: actual?.id,
-    onTiempo: (segundos) => {
-      posicion.current = segundos;
-      if (Date.now() - ultimoGuardado.current >= GUARDADO_CADA_MS) guardar();
-    },
-    onFin: () => {
-      guardar(true);
+  const { guardar } = useProgresoVideo(iframeRef, {
+    videoId: actual?.id,
+    enviar: (body) => progreso.mutate(body),
+    onFin: (videoId) => {
       // Pasar solo al siguiente, como una lista de reproducción.
-      const i = videos.findIndex((v) => v.id === videoIdRef.current);
+      const i = videos.findIndex((v) => v.id === videoId);
       const siguiente = i >= 0 ? videos[i + 1] : undefined;
       if (siguiente) seleccionar(siguiente.id);
     },
   });
-
-  // Al cambiar de video o salir de la pantalla, guardar lo último visto.
-  useEffect(() => {
-    posicion.current = 0;
-    posicionGuardada.current = 0;
-    ultimoGuardado.current = Date.now();
-  }, [actual?.id]);
-
-  useEffect(() => {
-    function alSalir() {
-      if (posicion.current > 0) guardar();
-    }
-    window.addEventListener("pagehide", alSalir);
-    return () => {
-      window.removeEventListener("pagehide", alSalir);
-      alSalir();
-    };
-    // `guardar` es estable salvo por la mutación; no hace falta re-registrar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Enlace directo a ESTE video, para pasarlo por chat. Lo abre cualquiera que
   // tenga habilitada el área; el resto ve "No encontramos esta capacitación".
@@ -147,15 +94,19 @@ export function CapacitacionPlayer() {
     });
   }
 
-  async function copiarEnlace() {
+  // `paraCliente`: el enlace lleva al video dentro del portal (Videos), para
+  // mandárselo al cliente por WhatsApp. Solo en áreas habilitadas para clientes.
+  async function copiarEnlace(paraCliente = false) {
     if (!actual) return;
     // Enlace "de compartir": lo resuelve el backend con el título y la miniatura
     // del video, para que WhatsApp o Slack muestren la tarjeta. A la persona la
     // redirige al reproductor.
-    const url = `${window.location.origin}/api/capacitacion/compartir/${actual.id}`;
+    const url = `${window.location.origin}/api/capacitacion/compartir/${actual.id}${
+      paraCliente ? "?para=cliente" : ""
+    }`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Enlace copiado");
+      toast.success(paraCliente ? "Enlace para el cliente copiado" : "Enlace copiado");
     } catch {
       // Safari sin permiso de portapapeles: al menos dejarlo a la vista.
       window.prompt("Copiá el enlace:", url);
@@ -239,11 +190,23 @@ export function CapacitacionPlayer() {
                     {amplio ? "Achicar" : "Agrandar"}
                   </span>
                 </Button>
-                <Button size="sm" variant="ghost" onClick={copiarEnlace} title="Copiar enlace a este video">
+                <Button size="sm" variant="ghost" onClick={() => copiarEnlace()} title="Copiar enlace a este video">
                   <span className="flex items-center gap-1.5">
                     <Link2 size={14} /> Copiar enlace
                   </span>
                 </Button>
+                {data.seccion.paraClientes && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => copiarEnlace(true)}
+                    title="Enlace que abre este video en el portal del cliente, para mandárselo por WhatsApp"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Send size={14} /> Enlace para el cliente
+                    </span>
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant={actual?.visto ? "secondary" : "primary"}

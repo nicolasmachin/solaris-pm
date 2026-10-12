@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.11 · del 11/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.12 · del 12/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -108,6 +108,15 @@ suministro, cada una con sus versiones: el primero de cada suministro viene
 precargado con su inversor y sus paneles, y el plano lleva "Suministro N" en el
 rótulo. **El Proyecto Final** sigue siendo uno solo: al generarlo con IA, el
 borrador ya describe cada suministro por separado.
+
+### El informe post-obra
+
+Al terminar cada obra, el gerente de Operaciones arma el **informe post-obra**:
+evalúa cómo trabajó cada área que intervino, Ingeniería incluida (por ejemplo,
+si la lista de materiales estaba completa o si el soporte o la estructura
+especificados eran los que pedía la obra). El responsable de Ingeniería lee lo
+de su área, escribe a mano los errores que reconoce y los aciertos, y firma. No
+es para buscar culpables: es para que el mismo error no se repita.
 
 ## 4 · Las herramientas y cómo se usan
 
@@ -385,6 +394,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.12 | 12 de octubre de 2026 | Se agrega el informe post-obra: al terminar cada obra el gerente de Operaciones evalúa también a Ingeniería, y su responsable firma su parte. |
 | 0.11 | 11 de octubre de 2026 | Nuevo lineamiento: si no se dice otra cosa, los paneles se diseñan a 25 grados mirando al norte; lo acordado en la visita de venta (por ejemplo, coplanar con un 10 % más de paneles) manda. |
 | 0.10 | 9 de octubre de 2026 | Nuevo lineamiento: la fecha de obra confirmada se defiende. Si la Ingeniería Final se va a atrasar, se avisa y se busca recuperar el tiempo; si igual se mueve, el atraso lo explica Ingeniería. |
 | 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae. Si no se carga, se deduce de la potencia que dijo UTE; si tampoco hay, se trata como cuenta nueva. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. Al cargar cantidades, Enter pasa a la siguiente. |

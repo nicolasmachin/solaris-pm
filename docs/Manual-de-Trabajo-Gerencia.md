@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.14 — 11 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.16 — 12 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -145,12 +145,14 @@ Ingeniería, al de Ventas, al de Experiencia Solar y al de Finanzas.
 **Qué se decidió.**
 
 - **Primero se llena la agenda de la cuadrilla propia.** No se le da trabajo a un
-  tercerizado mientras la cuadrilla propia está sin trabajo. Las obras grandes o
+  tercerizado mientras la cuadrilla propia está sin trabajo, porque la cuadrilla
+  propia cobra sueldo haya obra o no. Este porqué no va en el manual de
+  Operaciones, que también lo leen los tercerizados. Las obras grandes o
   complejas son de la propia; las estándar, chicas o del interior, de los
   tercerizados, cada uno en su zona.
 - **El presupuesto de mano de obra no se negocia.** Sale del costeo de la venta;
   el gerente de Operaciones se lo informa al tercerizado antes de agendar, y el
-  tercerizado acepta o no. Pagar más lo autoriza solo Gerencia.
+  tercerizado acepta o no. Pagar más lo autoriza solo el CEO.
 - **Se le paga el 50 % al arrancar la obra y el 50 % al terminarla.** La orden la
   da el responsable de Administración y Finanzas o Gerencia.
 - **Lo que se compra fuera de la lista de materiales** sigue la regla de
@@ -250,8 +252,8 @@ Ingeniería.
 
 ### Al cliente la fecha de obra se le dice una sola vez
 
-**Qué se decidió.** La fecha tentativa que agenda Operaciones es interna. Al
-cliente se le comunica la fecha de obra una sola vez, cuando el gerente de
+**Qué se decidió.** Si el gerente de Operaciones agenda una fecha tentativa, es
+interna. Al cliente se le comunica la fecha de obra una sola vez, cuando el gerente de
 Operaciones la confirma. Al vender, el asesor le da solo una estimación por
 quincena, para que tenga una idea aproximada: no es una fecha.
 
@@ -261,6 +263,29 @@ confianza.
 **Desde cuándo rige.** 5 de octubre de 2026.
 
 **A qué manuales afecta.** Al PGT, al de Operaciones y al de Experiencia Solar.
+
+### La fecha tentativa no es parte del procedimiento
+
+**Qué se decidió.** Nadie tiene que agendar una fecha tentativa de obra. Al
+vender, el asesor le da al cliente solo una estimación por quincena. Cuando el
+proyecto llega de Ingeniería a la Validación de Operaciones, **primero** el
+gerente de Operaciones confirma la fecha de obra y **después** el capataz del
+equipo que tiene la obra hace su informe. El gerente de
+Operaciones puede marcar una tentativa al empezar la Validación, sobre todo con
+un tercerizado: la usa mientras le propone la obra con su presupuesto, y la
+confirma cuando el tercerizado acepta. No es un paso obligatorio.
+
+**Por qué.** La tentativa se había pensado para el asesor, y ya la reemplaza la
+quincena. Mantenerla como un paso más (tentativa, después informe, después
+fecha definitiva) agregaba complejidad sin aportar nada, y no tiene sentido
+esperar el informe del capataz para confirmar la fecha: nada de lo que diga el
+informe cambia la agenda. Al revés: un tercerizado no hace el informe antes de
+aceptar la obra, y cuando la acepta ya tiene la fecha.
+
+**Desde cuándo rige.** 11 de octubre de 2026.
+
+**A qué manuales afecta.** Al PGT y a los de Operaciones, Ventas y Experiencia
+Solar.
 
 ### Seguridad: sin flexibilidad, y la sanción alcanza a toda la cadena
 
@@ -272,7 +297,7 @@ capataz y al gerente de Operaciones.
 
 **Por qué.** Para que el control sea parte del trabajo de cada uno: el capataz
 no puede descargar la responsabilidad en el operario, ni el gerente en el
-capataz.
+capataz. En las obras tercerizadas pesa todavía más: por la responsabilidad solidaria, si un trabajador del tercerizado se accidenta responden el tercerizado, Voltia y el cliente, y el accidentado suele ir contra el que más puede pagar. Por eso el cliente (y si es una empresa, sus prevencionistas) es quien más controla, y Voltia no puede quedar mal ante él. Voltia no controla todos los días al tercerizado: muchas veces quien avisa es el cliente.
 
 **Desde cuándo rige.** 5 de octubre de 2026.
 
@@ -419,7 +444,7 @@ Finanzas.
 **Qué se decidió.**
 
 - **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
-- **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la coordinación de los viernes con Gerencia.
+- **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la reunión de coordinación con Gerencia.
 - **Por encima de eso**, lo aprueba Finanzas o Gerencia.
 
 
@@ -452,6 +477,25 @@ cuando Administración tome el módulo. Hasta entonces, sigue Experiencia Solar.
 **A qué manuales afecta.** Al PGT y a los manuales de Finanzas y de Experiencia
 Solar.
 
+### Los videos para el cliente quedan en su portal
+
+**Qué se decidió.** Los videos que se le mandan al cliente durante el proceso
+(cómo usar la aplicación del inversor, cómo reconectar el wifi, etc.) quedan
+guardados en el portal de Voltia, en una pestaña **Videos**, y se le mandan con
+el enlace que abre el video ahí. Todos los clientes ven los mismos videos: por
+ahora no se separan por marca de inversor ni por etapa. Desde el portal no se
+comenta un video: las dudas del cliente entran por un ticket.
+
+**Por qué.** Un video mandado suelto por WhatsApp se pierde entre los mensajes, y
+el cliente vuelve a preguntar lo que ya se le explicó. Con los videos a mano,
+muchas consultas las resuelve solo. Las dudas van por ticket para que queden
+registradas y alguien las atienda, en vez de quedar en un comentario que nadie
+mira.
+
+**Desde cuándo rige.** Decidido el 12 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Experiencia Solar.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -483,6 +527,8 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.16 | 12 de octubre de 2026 | Se registra que los videos para el cliente quedan en la pestaña Videos de su portal y se le mandan con el enlace que los abre ahí; todos los clientes ven los mismos, y las dudas van por ticket. |
+| 0.15 | 11 de octubre de 2026 | Se registra que la fecha tentativa deja de ser parte del procedimiento: al cliente se le da la quincena al vender, y en la Validación primero se confirma la fecha de obra y después el capataz hace su informe. Pagarle más a un tercerizado lo autoriza solo el CEO. |
 | 0.14 | 11 de octubre de 2026 | La seña no se devuelve si el cliente desiste; sí si el banco o UTE no aprueban. El precio y el contrato: markup de 25 % a 15 % sin autorización y revisado una vez por mes, seña de USD 500, el asesor firma el contrato último con firma digital. Que alguien sea mejor lo dicen los resultados, no el perfil; para vender, mejor un técnico que vende que un vendedor con algo de técnica. Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |
 | 0.13 | 11 de octubre de 2026 | Se registra que se compra para mantener el stock y no para cada obra: materiales de siempre con su mínimo (revisado cada tres meses), compras agrupadas un día por semana, importar lo que se pueda, y lo comprado se recibe en el local. Las compras en plaza de más de USD 100 van con tres cotizaciones y se hacen con anticipación; reemplaza la decisión de los tres presupuestos solo si había tiempo. |
 | 0.12 | 10 de octubre de 2026 | Se registra cómo se trabaja con las cuadrillas tercerizadas: primero se llena la agenda de la propia, el presupuesto de mano de obra no se negocia y se paga 50 % y 50 %. Se registra quién aprueba las compras: lo de la lista de materiales lo compra directo el encargado de compras; lo de fuera de la lista, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas; por encima, Finanzas o Gerencia. Reemplaza la decisión de que las compras no se aprobaban. Los plazos ya tienen margen: no se suma otro sobre la fecha confirmada. |

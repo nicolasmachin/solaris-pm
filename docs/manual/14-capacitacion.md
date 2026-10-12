@@ -79,6 +79,29 @@ notificación lleva su propio destino (`Notification.link`), así que al tocarla
 abre el reproductor en ese video; el resto de las notificaciones sigue navegando
 por tipo, como siempre. No se manda correo.
 
+### Videos para clientes (portal)
+
+El mismo módulo alimenta la pestaña **Videos** del portal de Voltia: los
+tutoriales que se le van mandando al cliente durante el proceso, para que los
+vuelva a ver cuando quiera.
+
+- Se arma desde **Gestionar**, como cualquier área: se crea el área (por ejemplo
+  "Videos para clientes"), en **Áreas y roles** se le tilda **Clientes (portal de
+  Voltia)** —es el rol `CLIENT`, rotulado así solo en esta pantalla— y se le
+  cargan listas, videos y documentos.
+- El cliente ve en `/portal/videos` todas las áreas con ese rol tildado, con sus
+  listas y documentos en una sola pantalla. Al tocar un video se abre el
+  reproductor (`/portal/videos?v=<videoId>`), con "Marcar como visto", el
+  material de la lista y el resto de sus videos. Al terminar pasa solo al
+  siguiente. Sin comentarios: las dudas del cliente entran por tickets.
+- En el reproductor interno, los videos de un área para clientes muestran además
+  **Enlace para el cliente**: copia `/api/capacitacion/compartir/<videoId>?para=cliente`,
+  cuya tarjeta de WhatsApp dice "Videos de Voltia" (no "Capacitación") y que
+  redirige a `/portal/videos?v=<videoId>`. El cliente tiene que estar logueado
+  en el portal.
+- En **Seguimiento**, el área para clientes lista a los usuarios de portal con
+  cuántos videos vio cada uno.
+
 ## Cómo funciona
 
 ### Estructura
@@ -149,7 +172,33 @@ visibilidad del recurso para el usuario del token.
 
 El front escucha los eventos del reproductor de Bunny por el protocolo player.js
 (`useBunnyPlayer.ts`, mensajes `postMessage`): guarda cada 15 segundos mientras
-hay avance real, y al terminar marca visto y salta al siguiente.
+hay avance real, y al terminar marca visto y salta al siguiente. Esa lógica vive
+en `useProgresoVideo.ts`, que comparten el reproductor interno y el del portal;
+cada uno le pasa a qué endpoint mandar el progreso.
+
+### Portal del cliente
+
+Los endpoints del portal están en `routes/portal-videos.routes.ts`, registrados
+**dentro** de `registerPortalRoutes` para heredar `authenticate` y el modo "ver
+el portal como el cliente" (capítulo 10):
+
+- `GET /api/client/videos` → `contenidoPortal()`: todas las áreas visibles con
+  listas, videos y documentos, más el `mediaToken`. Omite las áreas vacías.
+- `GET /api/client/videos/:id/embed` → embed firmado. Es **GET** (en Capacitación
+  es POST) porque la vista previa del portal solo deja pasar GET, y quien mira
+  tiene que poder reproducir.
+- `PUT /api/client/videos/:id/progreso` → el mismo `guardarProgreso()`.
+
+Todos piden `PORTAL_CLIENTE:VIEW` y **fuerzan el rol a `CLIENT`** al llamar al
+service (`usuarioCliente()`): la visibilidad se resuelve como si pidiera un
+cliente aunque pida un interno (un admin que abre `/portal/videos` no ve las
+áreas del equipo). El progreso sí queda a nombre del usuario real. Miniaturas y
+documentos usan las mismas rutas con `?t=` de Capacitación; el token sale
+firmado con rol `CLIENT`, así que tampoco abre áreas internas.
+
+`detalleLista()` devuelve `seccion.paraClientes` (el área tiene el rol `CLIENT`)
+para mostrar el botón "Enlace para el cliente". Con `?para=cliente`,
+`datosCompartir()` solo responde videos de áreas activas con ese rol.
 
 ### Comentarios
 
@@ -170,9 +219,12 @@ la lista, sus comentarios se van con él (cascade): no tienen dónde vivir.
 | Ver el seguimiento de quién vio qué | `CAPACITACION:EDIT` |
 | Comentar, editar y borrar lo propio | `CAPACITACION:VIEW` + que el rol tenga el área |
 | Borrar el comentario de otro (moderación) | `CAPACITACION:EDIT` |
+| Ver los videos en el portal y marcarlos vistos | `PORTAL_CLIENTE:VIEW` + que el área tenga el rol `CLIENT` |
 
 El seed (`services/capacitacion/seed-capacitacion.ts`) da `VIEW` a **todos los
-roles internos** (todos menos `CLIENT`) y `EDIT` solo a `ADMIN`. Para que otro
+roles internos** (todos menos `CLIENT`) y `EDIT` solo a `ADMIN`. El cliente
+**no** tiene `CAPACITACION:VIEW`: no entra a `/capacitacion` ni a sus endpoints
+(403), solo a los del portal. Para que otro
 rol gestione, se le tilda `CAPACITACION:EDIT` en Administración → Permisos.
 
 Áreas iniciales y sus roles: Ventas (asesor y gerente comercial); Ingeniería y
@@ -198,6 +250,17 @@ Otros (todos los internos).
 - El seguimiento lista los usuarios activos de los roles del área **más**
   cualquiera con progreso (por ejemplo, alguien a quien después se le cambió el
   rol); esos salen marcados "(otro rol)".
+- **El portal reusa el módulo en vez de tener uno propio.** Quien carga videos
+  para el equipo ya sabe cargarlos para el cliente, y el reproductor, las
+  miniaturas, la firma y el seguimiento son los mismos. Lo que distingue a un
+  área "para clientes" es solo tener el rol `CLIENT` tildado; no hay un campo
+  aparte.
+- **Un área puede tener a la vez roles internos y el de clientes.** Se ve en los
+  dos lados. Cuidado con los documentos: todo lo del área lo ve el cliente.
+- **Todos los clientes ven los mismos videos.** No se filtra por marca de
+  inversor ni por etapa del cliente: si hace falta, va como mejora.
+- **Sin comentarios en el portal**: las preguntas del cliente van por tickets,
+  donde Experiencia Solar ya las atiende.
 - El seed crea las áreas iniciales **solo si no hay ninguna**: re-correrlo no las
   recrea aunque se hayan renombrado o borrado.
 
@@ -222,6 +285,12 @@ Otros (todos los internos).
   al dominio de producción, que es el que está permitido en Bunny.
 - **Comentario en un video que se quita de la lista**: se borra con el video. Si
   el video se vuelve a agregar, los comentarios no vuelven (el progreso sí).
+- **Enlace para el cliente de un área a la que después se le saca el rol
+  `CLIENT`**: la tarjeta responde 404, y si el cliente ya está en el portal ve
+  "Ese video ya no está disponible" con el resto de los videos.
+- **Cliente con el portal en vista previa**: reproduce pero no guarda progreso
+  (el front ni lo intenta y el backend devolvería 403), y no aparece "Marcar como
+  visto".
 - **El reproductor no reporta avance** (si Bunny cambiara su protocolo): no se
   guarda el progreso automático, pero el botón "Marcar como visto" sigue
   funcionando.
@@ -234,6 +303,9 @@ Otros (todos los internos).
   `server/src/services/bunny-stream.service.ts`.
 - Script de prod: `server/scripts/seed-capacitacion.ts`.
 - Frontend: `client/src/modules/capacitacion/`, `client/src/api/capacitacion.api.ts`.
+- Portal: `server/src/routes/portal-videos.routes.ts`,
+  `client/src/pages/PortalVideos.tsx`,
+  `client/src/modules/capacitacion/useProgresoVideo.ts`.
 - Compartir: `server/src/services/capacitacion/compartir.ts`.
 - Comentarios: `server/src/services/capacitacion/comentarios.service.ts`,
   `client/src/modules/capacitacion/ComentariosVideo.tsx`.

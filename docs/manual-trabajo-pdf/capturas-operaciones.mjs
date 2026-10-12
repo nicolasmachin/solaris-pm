@@ -244,14 +244,17 @@ for (const [archivo, pestana, ancla] of [
 await intentar("calendario", async () => {
   await abrir("/calendario");
   await guardar("ops-calendario-mes");
-  const abrio = await page.evaluate(() => {
+  // Una obra confirmada que todavía no pasó: solo en esas Voltia PM pide el
+  // motivo al reprogramar. CAPTURA_OBRA elige cuál, por el nombre del cliente.
+  const abrio = await page.evaluate((cual) => {
     const ev = [...document.querySelectorAll("[title]")].find(
-      (x) => !x.getAttribute("title").includes("Fecha tentativa") && x.getAttribute("title").includes("·"),
+      (x) => !x.getAttribute("title").includes("Fecha tentativa") && x.getAttribute("title").includes("·")
+        && (!cual || x.getAttribute("title").includes(cual)),
     );
     if (!ev) return false;
     ev.click();
     return true;
-  });
+  }, process.env.CAPTURA_OBRA || "");
   await esperar(2000);
   if (!abrio) {
     console.log("  · no encontré una obra confirmada en el mes");

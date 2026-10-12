@@ -1,7 +1,7 @@
 # 10 · Portal del cliente
 
 > **Capítulo parcial.** Están escritas y al día las secciones "Generación día a
-> día" y "Ver el portal como lo ve el cliente". El resto funciona en producción
+> día", "Videos" y "Ver el portal como lo ve el cliente". El resto funciona en producción
 > pero todavía no está documentado.
 
 Lo que ve el cliente final: sus proyectos, tickets, encuestas y reportes.
@@ -59,6 +59,41 @@ viendo su dashboard mensual completo, sólo que sin la tarjeta nueva.
 - **Los datos empiezan cuando empezó a correr el monitoreo.** Para meses
   anteriores hay que correr `backfill-generacion-diaria.ts --desde YYYY-MM-DD`.
 - Si no hay ningún día con dato, la tarjeta directamente no se renderiza.
+
+---
+
+# Videos
+
+## Para qué existe
+
+Durante el proceso se le mandan al cliente videos cortos (cómo usar la
+aplicación del inversor, qué hacer si se corta la generación, etc.). Por
+WhatsApp se pierden entre los mensajes; en el portal quedan juntos para volver a
+verlos cuando haga falta.
+
+## Cómo se usa
+
+Pestaña **Videos** del portal (`/portal/videos`): los videos agrupados por lista,
+con miniatura, duración y tilde de visto, y los documentos de apoyo. Al tocar uno
+se abre el reproductor arriba y debajo el resto de la lista.
+
+## Cómo funciona
+
+Es el módulo **Capacitación** (capítulo 14, sección "Videos para clientes"): se
+ve lo de las áreas que tienen tildado el rol del cliente. Los detalles técnicos
+están allá.
+
+## Permisos
+
+`PORTAL_CLIENTE:VIEW`. En modo vista previa la pestaña se ve y los videos se
+reproducen, pero no se guarda progreso.
+
+## Casos borde
+
+- Sin ningún área para clientes con videos, la pestaña muestra "Todavía no hay
+  videos".
+- En el celular las cinco pestañas no entran: la barra se desliza de costado y
+  la pestaña activa se acomoda sola a la vista (`PortalLayout.tsx`).
 
 ---
 

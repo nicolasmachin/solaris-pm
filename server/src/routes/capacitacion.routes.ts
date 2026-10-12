@@ -96,14 +96,18 @@ async function registerRutasConToken(app: FastifyInstance) {
   // robot de WhatsApp/Slack, y redirección al reproductor para las personas.
   // Pública a propósito (el robot no tiene sesión): expone título, área y
   // miniatura, nunca el video.
+  // Con `?para=cliente` el enlace lleva al video dentro del portal (`/portal/
+  // videos`) en vez del reproductor interno, y solo vale para videos de un
+  // área habilitada para clientes.
   app.get("/capacitacion/compartir/:id", async (request, reply) => {
     const { id } = idParam.parse(request.params);
-    const video = await cap.datosCompartir(id);
+    const { para } = z.object({ para: z.enum(["cliente"]).optional() }).parse(request.query);
+    const video = await cap.datosCompartir(id, { soloClientes: para === "cliente" });
     reply.header("Content-Type", "text/html; charset=utf-8");
     // Que la tarjeta se pueda cachear un rato, pero no eternamente: el título
     // del video se puede editar.
     reply.header("Cache-Control", "public, max-age=600");
-    return reply.send(paginaCompartir(video));
+    return reply.send(paginaCompartir(video, para === "cliente" ? "portal" : "equipo"));
   });
 
   // Miniatura de esa tarjeta. También pública: WhatsApp no manda credenciales.
@@ -204,14 +208,17 @@ async function registerRutasAutenticadas(app: FastifyInstance) {
 
   // ─── Gestión: secciones ───────────────────────────────────────────────────
 
-  // Roles asignables (todos menos el del portal de clientes). Va acá y no en
-  // /roles para no exigir USUARIOS:VIEW a quien gestiona capacitación.
+  // Roles asignables. Va acá y no en /roles para no exigir USUARIOS:VIEW a
+  // quien gestiona capacitación. Incluye al de los clientes: un área con ese
+  // rol se ve en "Videos" del portal, y se rotula para que se note.
   app.get("/capacitacion/roles", gestionar, async () => {
-    return prisma.role.findMany({
-      where: { name: { not: "CLIENT" } },
+    const roles = await prisma.role.findMany({
       select: { id: true, name: true, label: true },
       orderBy: { label: "asc" },
     });
+    return roles.map((r) =>
+      r.name === cap.ROL_CLIENTE ? { ...r, label: "Clientes (portal de Voltia)" } : r,
+    );
   });
 
   const seccionBody = z.object({

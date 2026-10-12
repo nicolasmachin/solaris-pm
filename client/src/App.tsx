@@ -97,6 +97,7 @@ const PortalTickets = lazy(() => import("./pages/PortalTickets").then((module) =
 const PortalTicketDetail = lazy(() => import("./pages/PortalTicketDetail").then((module) => ({ default: module.PortalTicketDetail })));
 const PortalSurveys = lazy(() => import("./pages/PortalSurveys").then((module) => ({ default: module.PortalSurveys })));
 const PortalReportes = lazy(() => import("./pages/PortalReportes").then((module) => ({ default: module.PortalReportes })));
+const PortalVideos = lazy(() => import("./pages/PortalVideos").then((module) => ({ default: module.PortalVideos })));
 const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
 const ChangePassword = lazy(() => import("./pages/ChangePassword").then((module) => ({ default: module.ChangePassword })));
 const Clientes = lazy(() => import("./modules/clientes/pages/ClientesPage").then((module) => ({ default: module.ClientesPage })));
@@ -260,6 +261,7 @@ export function App() {
         <Route path="/portal/tickets/:id" element={<PortalTicketDetail />} />
         <Route path="/portal/encuestas" element={<PortalSurveys />} />
         <Route path="/portal/reportes" element={<PortalReportes />} />
+        <Route path="/portal/videos" element={<PortalVideos />} />
         <Route path="/portal/:id" element={<PortalProjectUte />} />
       </Route>
 

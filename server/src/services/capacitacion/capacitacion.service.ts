@@ -26,6 +26,10 @@ import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../file-s
 
 export type CapUser = { id: string; role: string };
 
+// Rol de los clientes del portal. Un área con este rol tildado se ve en
+// "Videos" del portal (ver `routes/portal-videos.routes.ts`).
+export const ROL_CLIENTE = "CLIENT";
+
 // Un video se da por visto al llegar a este porcentaje: los últimos segundos
 // suelen ser créditos o silencio y mucha gente corta antes.
 export const UMBRAL_COMPLETADO = 0.9;
@@ -95,7 +99,13 @@ async function assertListaVisible(listaId: string, user: CapUser) {
       titulo: true,
       descripcion: true,
       seccionId: true,
-      seccion: { select: { id: true, nombre: true } },
+      seccion: {
+        select: {
+          id: true,
+          nombre: true,
+          roles: { where: { role: { name: ROL_CLIENTE } }, select: { id: true } },
+        },
+      },
     },
   });
   if (!lista) throw notFound("LISTA_NOT_FOUND", "Lista no encontrada");
@@ -291,10 +301,30 @@ export async function detalleLista(listaId: string, user: CapUser) {
     id: lista.id,
     titulo: lista.titulo,
     descripcion: lista.descripcion,
-    seccion: lista.seccion,
+    seccion: {
+      id: lista.seccion.id,
+      nombre: lista.seccion.nombre,
+      // Habilita "Enlace para el cliente" en el reproductor.
+      paraClientes: lista.seccion.roles.length > 0,
+    },
     videos: videos.map((v) => serializarVideo(v, vistas)),
     documentos: documentos.map(serializarDocumento),
   };
+}
+
+/**
+ * Lo que ve el cliente en "Videos" del portal: todas sus áreas con listas,
+ * videos y documentos, en una sola respuesta.
+ */
+export async function contenidoPortal(user: CapUser) {
+  const secciones = await prisma.capacitacionSeccion.findMany({
+    where: await whereSeccionVisible(user),
+    orderBy: [{ orden: "asc" }, { createdAt: "asc" }],
+    select: { id: true },
+  });
+  const detalles = await Promise.all(secciones.map((s) => detalleSeccion(s.id, user)));
+  // Un área sin nada que mostrar no aporta en el portal.
+  return detalles.filter((s) => s.listas.some((l) => l.videos.length > 0) || s.documentos.length > 0);
 }
 
 /** Video visible para el usuario, con lo que necesita el hilo de comentarios. */
@@ -331,9 +361,12 @@ export async function miniaturaDeVideo(videoId: string, user: CapUser) {
  * título, área y miniatura —nunca el video—, y solo de secciones activas. El id
  * del video es un cuid que no se puede adivinar.
  */
-export async function datosCompartir(videoId: string) {
+export async function datosCompartir(videoId: string, opts: { soloClientes?: boolean } = {}) {
+  const seccion: Prisma.CapacitacionSeccionWhereInput = opts.soloClientes
+    ? { activa: true, roles: { some: { role: { name: ROL_CLIENTE } } } }
+    : { activa: true };
   const video = await prisma.capacitacionVideo.findFirst({
-    where: { id: videoId, deletedAt: null, lista: { deletedAt: null, seccion: { activa: true } } },
+    where: { id: videoId, deletedAt: null, lista: { deletedAt: null, seccion } },
     select: {
       id: true,
       titulo: true,

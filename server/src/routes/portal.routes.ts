@@ -19,6 +19,7 @@ import { responderEncuesta, serializeSurvey } from "../services/encuestas/encues
 import { PREGUNTAS_POR_TIPO } from "../services/encuestas/preguntas.js";
 import { calculateTimes } from "../services/uteProcess.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
+import { registerPortalVideosRoutes } from "./portal-videos.routes.js";
 import { serializeDate } from "../utils/serialization.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { getStoredFilePath } from "../services/file-storage.service.js";
@@ -1191,6 +1192,9 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       return { generadores };
     },
   );
+
+  // Videos para clientes (contenido de Capacitación con el rol CLIENT).
+  await registerPortalVideosRoutes(app);
 
   // No-op para suprimir warnings de imports no usados en futuros refactors.
   void forbidden;

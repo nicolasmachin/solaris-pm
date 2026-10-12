@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.19 · del 11/10/26
+**Voltia · Uruguay** · Versión 1.21 · del 12/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -399,8 +399,8 @@ el cliente asume que el capataz reemplazó a Experiencia Solar y deja de escribi
 
 ### 5.6 · Aviso de fecha de obra
 
-**Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.** La
-fecha tentativa que Operaciones agenda al entrar a Validación es interna y **no
+**Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.** Si el
+gerente de Operaciones agenda una fecha tentativa para organizarse, es interna y **no
 se le comunica**: decirle una fecha y después otra confunde y le saca confianza.
 La plantilla **"Fecha de obra tentativa"** sigue en Voltia PM, pero no se usa. Al vender, el asesor le da al cliente solo una **estimación por quincena** (por ejemplo, "la segunda quincena de noviembre"), para que tenga una idea; no es una fecha.
 
@@ -686,6 +686,17 @@ y el reloj lo arranca solo el sistema cuando Tramitación cierra el trámite.
 no cuando el cliente lo miró. Si quiere recorrerlo por teléfono, mejor, pero no es
 condición.
 
+**Los videos se mandan con el enlace del portal, no sueltos.** Un video mandado
+por WhatsApp se pierde entre los mensajes; en el portal de Voltia, en cambio, el
+cliente tiene una pestaña **Videos** donde quedan todos juntos, para volver a
+verlos cuando quiera. Por eso Experiencia Solar abre el video en Voltia PM
+(menú del usuario, arriba a la derecha → **Capacitación**) y usa el botón
+**Enlace para el cliente**: copia un enlace que, al tocarlo, abre ese video
+dentro del portal del cliente. Ese botón aparece solo en los videos del área
+habilitada para clientes; un video que no está cargado ahí, el cliente no lo ve
+en el portal. Lo mismo vale para cualquier video que se le mande después, en
+cualquier etapa.
+
 ### 7.2 · Acceso a la plataforma del inversor
 
 | | |
@@ -737,8 +748,10 @@ retiene (Anexo E, tema 12).
 
 ### 7.4 · Recorrido por el portal
 
-Tickets, encuestas, reportes y documentación. Es el paso que convierte el portal
-de "una cosa que me mandaron" en una herramienta que va a usar.
+Tickets, encuestas, reportes, documentación y videos. Es el paso que convierte el
+portal de "una cosa que me mandaron" en una herramienta que va a usar. Conviene
+mostrarle la pestaña **Videos**: ahí están los que ya se le mandaron, y es el
+primer lugar donde buscar antes de escribir por una duda de uso.
 
 Tres cosas que tiene que aprender a hacer solo en el portal de Voltia:
 
@@ -1642,7 +1655,7 @@ partes:
 **Qué explicar:**
 
 - Son **dos cosas distintas**, y conviene explicarlo así desde el principio, con esos dos nombres siempre:
-- **El portal de Voltia:** el seguimiento del trámite, las encuestas, los tickets, y donde carga su fecha de corte y su tarifa.
+- **El portal de Voltia:** el seguimiento del trámite, las encuestas, los tickets, los videos que se le mandaron, y donde carga su fecha de corte y su tarifa.
 - **La aplicación de tu inversor:** la generación en tiempo real, el histórico y el consumo. Es de la marca del inversor, no de Voltia.
 
 **Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación del inversor se le manda el link de descarga y las credenciales; si no tiene usuario, lo creás siguiendo el video instructivo.
@@ -1779,7 +1792,7 @@ partes:
 - Preguntale si **cambió la contraseña del wifi o el router**: es la causa más común.
 - Cuando se resuelve, enseñale a hacerlo solo: es de las consultas que más se repiten y que menos hace falta que pasen por Voltia.
 
-**Política interna:** mandale el **video de reconexión de su marca** para que lo haga solo, si se anima. Si no, que abra un ticket de soporte desde el portal de Voltia.
+**Política interna:** mandale el **video de reconexión de su marca** para que lo haga solo, si se anima, con el botón **Enlace para el cliente** (sección 7.1): así le queda guardado en la pestaña Videos del portal para la próxima vez. Si no, que abra un ticket de soporte desde el portal de Voltia.
 
 **Cuándo escalar:** si la luz no está verde, pasa al tema 17.
 
@@ -1875,6 +1888,8 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.21 | 12 de octubre de 2026 | El portal tiene una pestaña de Videos: los videos al cliente se mandan con el enlace del portal, para que le queden guardados y los pueda volver a ver. |
+| 1.20 | 11 de octubre de 2026 | La fecha tentativa ya no es parte del procedimiento: el gerente de Operaciones la usa solo si le sirve para organizarse, y nunca se le comunica al cliente. |
 | 1.19 | 11 de octubre de 2026 | El contrato lo intercambia el asesor y Voltia firma último, con firma digital; Experiencia Solar controla que quede archivado. Al vender, el asesor le da al cliente solo una estimación de obra por quincena, que no es una fecha. |
 | 1.18 | 10 de octubre de 2026 | Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas vencidas lo hace Experiencia Solar hasta que pase al área de Administración. |
 | 1.17 | 9 de octubre de 2026 | Mover una fecha de obra confirmada es la excepción y cada cambio rinde cuentas. Si la mueve un pedido del cliente, Experiencia Solar lo deja escrito en el motivo; al cliente se le explica sin nombrar áreas. |
