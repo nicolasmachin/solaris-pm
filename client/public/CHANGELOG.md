@@ -16,6 +16,10 @@
 
 - En la ficha de cada cliente de Experiencia Solar, arriba a la derecha, debajo de los enlaces a los otros módulos, están ahora las acciones del portal que antes había que ir a buscar al listado: **Ver como el cliente** (el ojito), **Reenviar acceso**, **Copiar enlace del portal** y, si todavía no tiene usuario, **Crear acceso al portal**.
 
+#### El menú del portal, abajo en el celular
+
+- En el celular, las secciones del portal ya no quedan cortadas arriba: pasaron a una **barra fija abajo**, con ícono y nombre (Inicio, Reportes, Tickets, Encuestas, Videos), como en las aplicaciones del teléfono. En la computadora siguen las pestañas de arriba.
+
 ## v12.3
 
 ### 11 de octubre de 2026

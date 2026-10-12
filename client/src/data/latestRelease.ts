@@ -41,6 +41,12 @@ export const LATEST_RELEASE: Release = {
         "En la ficha de cada cliente de Experiencia Solar, arriba a la derecha, están ahora las acciones del portal que antes estaban solo en el listado: Ver como el cliente (el ojito), Reenviar acceso, Copiar enlace del portal y, si todavía no tiene usuario, Crear acceso al portal.",
       ],
     },
+    {
+      title: "El menú del portal, abajo en el celular",
+      items: [
+        "En el celular, las secciones del portal ya no quedan cortadas arriba: pasaron a una barra fija abajo, con ícono y nombre, como en las aplicaciones del teléfono. En la computadora siguen las pestañas de arriba.",
+      ],
+    },
   ],
 };
 

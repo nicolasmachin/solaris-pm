@@ -1,6 +1,19 @@
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Eye, KeyRound, LogOut, X } from 'lucide-react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import {
+  BarChart3,
+  ChevronDown,
+  Eye,
+  Home,
+  KeyRound,
+  LogOut,
+  MessageSquare,
+  MoreHorizontal,
+  PlayCircle,
+  Star,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { usePortalPreviewStore } from '../../store/portalPreview.store';
 import { PortalNotificationBell } from './PortalNotificationBell';
@@ -11,15 +24,6 @@ export function PortalLayout() {
   const navigate = useNavigate();
   const { preview, salir } = usePortalPreviewStore();
   const location = useLocation();
-  const navRef = useRef<HTMLElement>(null);
-
-  // En el celular las pestañas no entran todas: que la activa quede a la vista
-  // (si no, quien llega por un enlace a "Videos" no ve en qué pestaña está).
-  useEffect(() => {
-    navRef.current
-      ?.querySelector('[aria-current="page"]')
-      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
-  }, [location.pathname]);
 
   function logout() {
     clearAuth();
@@ -129,39 +133,125 @@ export function PortalLayout() {
             </div>
           </div>
         </div>
-        {/* Con cinco pestañas no entran en un celular angosto: se desliza. */}
-        <nav ref={navRef} className="max-w-3xl mx-auto flex items-center gap-1 px-4 overflow-x-auto">
-          {[
-            { to: "/portal", label: "Mis proyectos", end: true },
-            { to: "/portal/reportes", label: "Reportes", end: false },
-            { to: "/portal/tickets", label: "Mis tickets", end: false },
-            { to: "/portal/encuestas", label: "Encuestas", end: false },
-            { to: "/portal/videos", label: "Videos", end: false },
-          ].map((item) => (
-            <NavLink
+        {/* Computadora: pestañas arriba. En el celular van abajo (PortalBottomNav). */}
+        <nav className="max-w-3xl mx-auto hidden sm:flex items-center gap-1 px-4">
+          {PORTAL_NAV.map((item) => (
+            <Link
               key={item.to}
               to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                [
-                  "px-3 py-2 text-sm border-b-2 -mb-[1px] transition-colors whitespace-nowrap shrink-0",
-                  isActive
-                    ? "border-[var(--color-accent)] text-[var(--color-text-primary)] font-medium"
-                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",
-                ].join(" ")
-              }
+              aria-current={esActiva(item, location.pathname) ? 'page' : undefined}
+              className={[
+                'px-3 py-2 text-sm border-b-2 -mb-[1px] transition-colors whitespace-nowrap',
+                esActiva(item, location.pathname)
+                  ? 'border-[var(--color-accent)] text-[var(--color-text-primary)] font-medium'
+                  : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]',
+              ].join(' ')}
             >
               {item.label}
-            </NavLink>
+            </Link>
           ))}
         </nav>
       </header>
       <main className="flex-1 px-4 py-6">
         <Outlet />
       </main>
-      <footer className="border-t border-[var(--color-border)] py-3 text-center text-[10px] text-[var(--color-text-muted)] font-mono">
+      {/* En el celular el pie queda arriba de la barra de abajo, que es fija. */}
+      <footer className="border-t border-[var(--color-border)] py-3 pb-[calc(0.75rem+4rem+env(safe-area-inset-bottom))] sm:pb-3 text-center text-[10px] text-[var(--color-text-muted)] font-mono">
         Voltia · Portal de Generadores
       </footer>
+      <PortalBottomNav pathname={location.pathname} />
     </div>
+  );
+}
+
+type PortalNavItem = { to: string; label: string; corto: string; icon: LucideIcon };
+
+// Las secciones del portal. Agregar una acá la suma a los dos menús: las
+// pestañas de arriba (computadora) y la barra de abajo (celular).
+const PORTAL_NAV: PortalNavItem[] = [
+  { to: '/portal', label: 'Mis proyectos', corto: 'Inicio', icon: Home },
+  { to: '/portal/reportes', label: 'Reportes', corto: 'Reportes', icon: BarChart3 },
+  { to: '/portal/tickets', label: 'Mis tickets', corto: 'Tickets', icon: MessageSquare },
+  { to: '/portal/encuestas', label: 'Encuestas', corto: 'Encuestas', icon: Star },
+  { to: '/portal/videos', label: 'Videos', corto: 'Videos', icon: PlayCircle },
+];
+
+// En la barra de abajo entran cómodas cinco. Si hay más, las primeras cuatro
+// quedan a la vista y el resto va a "Más".
+const MAX_BARRA = 5;
+
+function esActiva(item: PortalNavItem, pathname: string) {
+  if (item.to !== '/portal') return pathname === item.to || pathname.startsWith(`${item.to}/`);
+  // "Inicio" abarca también el detalle de un proyecto (/portal/:id).
+  return !PORTAL_NAV.some((o) => o.to !== '/portal' && (pathname === o.to || pathname.startsWith(`${o.to}/`)));
+}
+
+/**
+ * Menú del portal en el celular: una barra fija abajo, con ícono y nombre corto,
+ * como las aplicaciones del teléfono. Las pestañas de arriba no entraban en un
+ * celular angosto y quedaban cortadas.
+ */
+function PortalBottomNav({ pathname }: { pathname: string }) {
+  const [masAbierto, setMasAbierto] = useState(false);
+  const sobran = PORTAL_NAV.length > MAX_BARRA;
+  const visibles = sobran ? PORTAL_NAV.slice(0, MAX_BARRA - 1) : PORTAL_NAV;
+  const resto = sobran ? PORTAL_NAV.slice(MAX_BARRA - 1) : [];
+  const restoActivo = resto.some((i) => esActiva(i, pathname));
+
+  useEffect(() => setMasAbierto(false), [pathname]);
+
+  const claseItem = (activa: boolean) =>
+    [
+      'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors',
+      activa ? 'text-[var(--color-accent)] font-medium' : 'text-[var(--color-text-muted)]',
+    ].join(' ');
+
+  return (
+    <>
+      {masAbierto && (
+        <div className="fixed inset-0 z-30 bg-black/40 sm:hidden" onClick={() => setMasAbierto(false)}>
+          <div
+            className="absolute inset-x-3 bottom-[calc(4rem+env(safe-area-inset-bottom))] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-1 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {resto.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-[var(--color-bg-card-hover)] ${
+                    esActiva(item, pathname) ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" /> {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <nav
+        aria-label="Secciones del portal"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-[var(--color-border)] bg-[var(--color-bg-card)] pb-[env(safe-area-inset-bottom)] sm:hidden"
+      >
+        {visibles.map((item) => {
+          const Icon = item.icon;
+          const activa = esActiva(item, pathname);
+          return (
+            <Link key={item.to} to={item.to} aria-current={activa ? 'page' : undefined} className={claseItem(activa)}>
+              <Icon className="h-5 w-5" />
+              {item.corto}
+            </Link>
+          );
+        })}
+        {sobran && (
+          <button type="button" onClick={() => setMasAbierto((v) => !v)} className={claseItem(restoActivo || masAbierto)}>
+            <MoreHorizontal className="h-5 w-5" />
+            Más
+          </button>
+        )}
+      </nav>
+    </>
   );
 }

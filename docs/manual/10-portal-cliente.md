@@ -92,8 +92,35 @@ reproducen, pero no se guarda progreso.
 
 - Sin ningún área para clientes con videos, la pestaña muestra "Todavía no hay
   videos".
-- En el celular las cinco pestañas no entran: la barra se desliza de costado y
-  la pestaña activa se acomoda sola a la vista (`PortalLayout.tsx`).
+- La navegación del portal se describe en "El menú del portal", más abajo.
+
+---
+
+# El menú del portal
+
+## Cómo funciona
+
+Las secciones están en una sola lista, `PORTAL_NAV` en `PortalLayout.tsx`
+(ruta, nombre largo, nombre corto e ícono). De ahí salen los dos menús:
+
+- **Computadora** (`sm` en adelante): pestañas debajo del encabezado, con el
+  nombre largo.
+- **Celular**: `PortalBottomNav`, una barra fija abajo con ícono y nombre corto,
+  que respeta el área segura del iPhone (`env(safe-area-inset-bottom)`). El pie
+  de página lleva un margen inferior para que la barra no lo tape.
+
+"Inicio" (`/portal`) queda activa también en el detalle de un proyecto
+(`/portal/:id`): `esActiva()` la marca cuando la ruta no es de ninguna otra
+sección.
+
+## Reglas y decisiones
+
+- **Se pasó a la barra de abajo porque las pestañas no entraban.** Con cinco
+  secciones quedaban cortadas en un celular angosto, y deslizarlas de costado no
+  se descubre. Es el patrón de las aplicaciones del teléfono.
+- **Para sumar una sección se agrega a `PORTAL_NAV`, y nada más.** En la barra
+  entran cinco (`MAX_BARRA`): con una sexta, quedan cuatro a la vista y el resto
+  pasa a un botón **Más**, que abre la lista arriba de la barra.
 
 ---
 
