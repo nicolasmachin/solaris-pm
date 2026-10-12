@@ -967,7 +967,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       OR: [...(lead ? [{ leadId: lead.id }] : []), { projectId }],
     },
     select: {
-      id: true, content: true, leadId: true, createdAt: true,
+      id: true, content: true, leadId: true, createdAt: true, area: true,
       author: { select: { id: true, name: true } },
       stage: { select: { name: true } },
       substage: { select: { name: true, stage: { select: { name: true } } } },
@@ -988,9 +988,13 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
     const etapaDelComentario = c.stage?.name ?? c.substage?.stage?.name ?? null;
     items.push({
       id: `cm-${c.id}`,
+      // El área explícita (bloque "Comentarios y archivos" de cada pantalla) le
+      // gana a la deducida por etapa.
       source: c.leadId
         ? "sales"
-        : (etapaDelComentario ? MODULO_POR_ETAPA[etapaDelComentario] : null) ?? "operaciones",
+        : (c.area as TimelineItem["source"] | null) ??
+          (etapaDelComentario ? MODULO_POR_ETAPA[etapaDelComentario] : null) ??
+          "operaciones",
       kind: "comment",
       text: c.content,
       autor: c.author ? { id: c.author.id, nombre: c.author.name } : null,
@@ -1153,11 +1157,17 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
   const archivos = fileIds.length
     ? await prisma.fileAttachment.findMany({
         where: { id: { in: fileIds } },
-        select: { id: true, toolSource: true },
+        select: { id: true, toolSource: true, area: true },
       })
     : [];
   const moduloPorArchivo = new Map(
-    archivos.map((f) => [f.id, MODULO_POR_TOOL[f.toolSource ?? ""] ?? "operaciones"] as const),
+    archivos.map(
+      (f) =>
+        [
+          f.id,
+          (f.area as TimelineItem["source"] | null) ?? MODULO_POR_TOOL[f.toolSource ?? ""] ?? "operaciones",
+        ] as const,
+    ),
   );
 
   for (const a of audits) {

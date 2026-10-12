@@ -386,7 +386,15 @@ tiene sobre la mesa.
 ### Qué registra
 
 Cualquier **cambio de alcance o de diseño** que el cliente tenga que saber. Lo
-deja como comentario en su etapa y le llega solo a Experiencia Solar.
+deja como comentario y le llega solo a Experiencia Solar.
+
+**Dónde comenta y adjunta.** En el espacio de Ingeniería del proyecto, al pie,
+está el bloque **Comentarios y archivos**: ahí escribe los comentarios y sube
+los archivos sueltos (un plano, una foto, una respuesta del cliente) sin ir a la
+pantalla del proyecto. Todo queda en el mismo proyecto, lo ven las demás áreas y
+aparece en la ficha del cliente marcado como de Ingeniería. Los archivos se
+pueden ver solo los de Ingeniería o todos los del proyecto. Lo que sube lo puede
+borrar; lo de otras áreas, no.
 
 ---
 
@@ -394,7 +402,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.12 | 12 de octubre de 2026 | Se agrega el informe post-obra: al terminar cada obra el gerente de Operaciones evalúa también a Ingeniería, y su responsable firma su parte. |
+| 0.12 | 12 de octubre de 2026 | Se agrega el informe post-obra: al terminar cada obra el gerente de Operaciones evalúa también a Ingeniería, y su responsable firma su parte. En el espacio de Ingeniería se agrega el bloque Comentarios y archivos, para comentar y adjuntar sin ir a la pantalla del proyecto. |
 | 0.11 | 11 de octubre de 2026 | Nuevo lineamiento: si no se dice otra cosa, los paneles se diseñan a 25 grados mirando al norte; lo acordado en la visita de venta (por ejemplo, coplanar con un 10 % más de paneles) manda. |
 | 0.10 | 9 de octubre de 2026 | Nuevo lineamiento: la fecha de obra confirmada se defiende. Si la Ingeniería Final se va a atrasar, se avisa y se busca recuperar el tiempo; si igual se mueve, el atraso lo explica Ingeniería. |
 | 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae. Si no se carga, se deduce de la potencia que dijo UTE; si tampoco hay, se trata como cuenta nueva. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. Al cargar cantidades, Enter pasa a la siguiente. |

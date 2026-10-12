@@ -12,11 +12,16 @@ export async function uploadFile(
   // Opcional: si se omite (o es null), el adjunto queda a nivel proyecto
   // (sin etapa). El backend ya acepta subir con solo projectId.
   stageId?: string | null,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  // Área desde cuya pantalla se sube: así la ficha del cliente lo etiqueta bien.
+  area?: import("../types/api.types").AreaTrabajo,
 ): Promise<FileAttachment> {
   const form = new FormData();
-  form.append("file", file);
   if (stageId) form.append("stageId", stageId);
+  if (area) form.append("area", area);
+  // El archivo va último: el backend lee las partes en orden y los campos
+  // tienen que llegar antes de que termine de procesar el archivo.
+  form.append("file", file);
 
   const { data } = await apiClient.post<FileAttachment>(
     `/api/projects/${projectId}/files`,
@@ -59,6 +64,7 @@ export interface ProjectDocument {
   toolEntityId: string | null;
   uploadedAt: string;
   uploadedBy: string | null;
+  area: import("../types/api.types").AreaTrabajo | null;
   source: "stage" | "substage" | "generated" | "other";
   sourceLabel: string;
   stageId: string | null;

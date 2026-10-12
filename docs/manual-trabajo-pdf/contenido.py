@@ -67,6 +67,10 @@ if MANUAL == "operaciones":
 # Cada manual con su foto de portada: si no, todos salen con la misma.
 if MANUAL == "ventas":
     IMG.PORTADA = "/_blob/c41de33a7f6be025d3e530d01a15874d"  # casa con paneles en la azotea, al atardecer
+    IMG.CIERRE = "/_blob/883d4a8ac113879dd1d3be810b57c788"  # paneles sobre techo de chapa
+if MANUAL == "operaciones":
+    # Ya en la dirección del canvas de Operaciones (no pasa por assets-operaciones.json).
+    IMG.PORTADA = "/_blob/871e3d109a7c1625835db5de3dfa7693"  # estructura a suelo, en obra
 import generar  # noqa: E402
 from generar import (  # noqa: E402
     AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, ROJO_BORDE, ROJO_FONDO, SANS, SERIF, TEXTO,
@@ -2420,7 +2424,7 @@ def _techo_svg(coplanar):
                  '<line x1="110" y1="27" x2="110" y2="66" stroke="#5b6278" stroke-width="2.5"/>'
                  '<line x1="42" y1="64" x2="110" y2="31" stroke="#5b6278" stroke-width="1.5"/>'
                  '<path d="M156 30 L128 30 M128 30 l7 -5 M128 30 l7 5" stroke="#5b6278" stroke-width="2" fill="none"/>'
-                 '<text x="124" y="20" font-size="9" font-family="sans-serif" fill="#5b6278">viento sur</text>')
+                 '<text x="156" y="20" text-anchor="end" font-size="9" font-family="sans-serif" fill="#5b6278">viento sur</text>')
     return (f'<svg viewBox="0 0 160 84" width="150" height="79" aria-hidden="true">{techo}{panel}{extra}</svg>')
 
 
@@ -2684,6 +2688,48 @@ def ganar_ventanas():
     ]))
 
 
+def escalera_prioridad(items):
+    """A quién se atiende primero: una banda por grupo, más larga y más
+    oscura cuanto más urgente, con dónde se lo ve en Voltia PM."""
+    donde = ["Se trabaja en el proyecto", "Priorizada: Visitados", "Priorizada: Agendar visita, Cotizados y Reclamados",
+             "Priorizada: Nuevos leads", "Todavía no es lead"]
+    tonos = ["#0f2a8f", "#1836b2", "#3a55c4", "#8094e0", "#c3cdf3"]
+    filas = ""
+    for k, x in enumerate(items):
+        claro = k >= 3
+        ancho = 92 - k * 9
+        filas += (f'<div style="display: flex; gap: 12px; align-items: center; margin-top: 6px">'
+                  f'<div style="flex: 1; min-width: 0"><div style="width: {ancho}%; display: flex; gap: 12px; align-items: center; '
+                  f'padding: 10px 14px; border-radius: 10px; background: {tonos[k]}">'
+                  f'<div style="flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: {"#ffffff" if not claro else OP}; '
+                  f'color: {tonos[k] if not claro else "#ffffff"}; font-family: {SANS}; font-size: 16px; font-weight: 700; line-height: 30px; '
+                  f'text-align: center">{k + 1}</div>'
+                  f'<div style="font-size: 14.5px; line-height: 1.35; color: {NEGRO if claro else "#ffffff"}">{en_linea(x)}</div></div></div>'
+                  f'<div style="flex-shrink: 0; width: 170px; font-family: {SANS}; font-size: 11.5px; line-height: 1.3; '
+                  f'color: {GRIS}">{donde[k] if k < len(donde) else ""}</div></div>')
+    cab = (f'<div style="display: flex; justify-content: space-between; align-items: flex-end">'
+           f'{_rotulo_v("DE LO MÁS URGENTE A LO QUE PUEDE ESPERAR", "0")}'
+           f'<div style="width: 170px; font-family: {SANS}; font-size: 11px; font-weight: 700; color: {GRIS_CLARO}; '
+           f'letter-spacing: 0.4px">DÓNDE SE VE</div></div>')
+    return _envolver(cab + filas)
+
+
+def comision_b2b():
+    caja = lambda grande, chico, fondo, color: (
+        f'<div style="flex: 1; min-width: 0; padding: 12px 14px; border-radius: 12px; background: {fondo}; text-align: center">'
+        f'<div style="font-family: {SANS}; font-size: 26px; font-weight: 700; line-height: 1; color: {color}">{grande}</div>'
+        f'<div style="margin-top: 6px; font-size: 12.5px; line-height: 1.4; color: {NEGRO if color != "#ffffff" else "#ffffffe6"}">{chico}</div></div>')
+    signo = lambda t: (f'<div style="flex-shrink: 0; align-self: center; font-family: {SANS}; font-size: 26px; font-weight: 700; '
+                       f'color: {OP}">{t}</div>')
+    return _envolver(_rotulo_v("LA COMISIÓN DEL ASESOR EN UNA VENTA A EMPRESA")
+                     + '<div style="display: flex; gap: 10px; align-items: stretch">'
+                     + caja("4 %", "del precio sin IVA: la comisión base", OP_F, OP) + signo("+")
+                     + caja("30 %", "de lo que consiga de markup <strong>por encima del 20&nbsp;%</strong>", OP, "#ffffff") + signo("=")
+                     + caja("Su comisión", "escalonada: negociar un mejor precio también le conviene al asesor", "#e9f4ea", "#3d6b47")
+                     + '</div>'
+                     + f'<div style="margin-top: 7px; font-size: 12px; color: {GRIS}">El markup de las empresas arranca en 20 %.</div>')
+
+
 def mas_cuadros_ventas(crudos):
     """Las reglas: (condición sobre el bloque, qué hacer). 'despues' suma
     bloques después; 'antes', antes; 'cambia', lo reemplaza."""
@@ -2713,6 +2759,8 @@ def mas_cuadros_ventas(crudos):
          lambda c: [("vv_obra", None), banda("Cada fecha que se mueve es plata.")]),
         (empieza("lista", "Un reclamo **no es una queja"), "despues", lambda c: [("vv_reclamo", None)]),
         (empieza("numerada", "**Marcar como Ganado:**"), "antes", lambda c: [("vv_ganar", None)]),
+        (empieza("numerada", "Los clientes que **confirmaron la compra**"), "cambia", lambda c: [("vv_prioridad", c)]),
+        (empieza("p", "Las propuestas a empresas se arman con el **Cotizador B2B**"), "despues", lambda c: [("vv_b2b", None)]),
     ]
     out = []
     for t, c in crudos:
@@ -2801,6 +2849,8 @@ VISUALES = {
     "vv_obra": lambda c: cae_a_la_obra(),
     "vv_reclamo": lambda c: reclamo_vs_etapa(),
     "vv_ganar": lambda c: ganar_ventanas(),
+    "vv_prioridad": escalera_prioridad,
+    "vv_b2b": lambda c: comision_b2b(),
     "vv_resultados": resultados_embudo,
     "vv_modalidad": modalidad_pago,
     "vv_cuotas": cuotas_pago,

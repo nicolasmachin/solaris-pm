@@ -42,6 +42,7 @@ import {
   STATUS_BADGE_COLORS,
   UteProcessDetail,
 } from "../components/ute/UteProcessDetail";
+import { ComentariosYArchivos } from "../components/area/ComentariosYArchivos";
 import { UteKanbanBoard } from "../components/ute/UteKanbanBoard";
 
 const FILTER_STORAGE_KEY = "ute-filters";
@@ -1127,6 +1128,12 @@ function UteDetailDrawer({
         </div>
 
         <UteProcessDetail process={process} />
+
+        {/* Tramitación comenta y adjunta (papeles firmados, respuestas de UTE)
+            desde el trámite, sin ir al proyecto. */}
+        <div className="px-5 pt-2">
+          <ComentariosYArchivos projectId={process.projectId} area="ute" />
+        </div>
 
         <div className="flex items-center justify-between gap-2 px-5 py-4">
           {isAdmin ? (

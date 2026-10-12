@@ -71,6 +71,13 @@ el 12-oct-2026). Sus imágenes tienen otra dirección que las del PGT:
 `MANUAL=ventas REMAP_ASSETS=docs/manual-trabajo-pdf/assets-ventas.json`. Una
 imagen nueva hay que subirla a este canvas y sumarla a ese archivo.
 
+**La portada de Ventas es propia** (`portada-ventas.jpg`, una casa con paneles en
+la azotea, de `docs/Fotos/4d27a792…`): se cambia en `contenido.py` con
+`IMG.PORTADA` cuando `MANUAL=ventas`, para que no salga igual que el PGT. El cierre también es
+propio (`cierre-ventas.jpg`, techo de chapa). Operaciones tiene su portada
+(`portada-operaciones.jpg`, estructura a suelo en obra), puesta directo con la
+dirección de su canvas. Fotos de `docs/Fotos/` que no usa ningún manual: ninguna.
+
 **Los cuadros siguen el criterio del de Operaciones** (pedido del 12-oct-2026):
 primero la captura y después lo que la explica (`foto_primero`), las capturas
 con números rojos sobre lo que describe la lista que las acompaña

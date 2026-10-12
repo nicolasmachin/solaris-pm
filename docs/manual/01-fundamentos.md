@@ -310,6 +310,47 @@ original se descarta.
 Borrar el objeto dueño debe **soft-deletear el `FileAttachment` y borrar el
 archivo físico**. El patrón está establecido en visitas técnicas.
 
+### Comentarios y archivos por área
+
+Principio (pedido de Nicolás, 12-oct-2026): **cada área trabaja desde su
+pantalla, y por detrás la ficha del cliente es una sola.** El componente
+`components/area/ComentariosYArchivos.tsx` (`ComentariosYArchivos({ projectId,
+area })`) es el mismo bloque montado en cada pantalla de área: hoy en el
+espacio de Ingeniería (`IngenieriaWorkspace.tsx`, `area="ingenieria"`) y en el
+detalle del trámite de `TramitesUte.tsx` (`area="ute"`). Escribe en lo común:
+
+- **Comentarios**: `CommentThread` a nivel proyecto, con la prop `area`, que se
+  guarda en `Comment.area`.
+- **Archivos**: `POST /projects/:projectId/files` con el campo multipart `area`,
+  que se guarda en `FileAttachment.area`. El listado
+  (`GET /projects/:projectId/documents`) devuelve `area` y, si el archivo no
+  tiene etapa ni herramienta, `sourceLabel` = el nombre del área.
+
+`area` toma los valores de `AREAS_TRABAJO` en `api.routes.ts` (`operaciones`,
+`ingenieria`, `ute`, `client`, `cobros`), que son **los mismos nombres de
+`TimelineItem.source`** de la línea de tiempo del cliente
+(`services/clientes/index.ts` → `getClienteTimeline()`). Ahí, `Comment.area` y
+`FileAttachment.area` **le ganan** a la etiqueta deducida por etapa o por
+`toolSource`. Sin eso, un comentario a nivel proyecto caía siempre como
+"Operaciones". Comentarios y archivos anteriores tienen `area` null y se
+etiquetan como antes.
+
+**Permisos de archivos** (antes todo era `OPERACIONES`, y Tramitación UTE, que no
+lo tiene, no podía ni ver los documentos):
+
+| Acción | Permiso |
+|---|---|
+| Subir (`POST /projects/:projectId/files`) | cualquiera de `OPERACIONES:EDIT`, `INGENIERIA:EDIT`, `TRAMITES_UTE:EDIT`, `EXPERIENCIA_CLIENTES:CREATE`, `FINANZAS:EDIT` |
+| Listar, descargar, previsualizar, miniatura | cualquiera de los `VIEW` de esos mismos módulos |
+| Borrar (`DELETE /files/:fileId`) | los de subir; **sin `OPERACIONES:EDIT` solo se borra lo que uno subió** (`uploadedById`) |
+
+El listado `GET /projects/:projectId/files` (sin etiquetas) sigue en
+`OPERACIONES:EDIT`: no lo usa el bloque. Comentar no tiene permiso de módulo
+(`POST /comments` solo exige sesión), como antes.
+
+**Falta** montar el bloque en la ficha del cliente (Experiencia Solar) y en el
+cobro de Finanzas; los valores `client` y `cobros` ya están previstos.
+
 ---
 
 ## 5. Versionado de documentos generados

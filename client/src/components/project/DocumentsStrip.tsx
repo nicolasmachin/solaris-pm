@@ -549,7 +549,7 @@ function DocumentRow({ doc, onClick, canDelete, onDelete, deleting }: {
   );
 }
 
-function DocumentPreviewModal({
+export function DocumentPreviewModal({
   doc,
   onClose,
 }: {

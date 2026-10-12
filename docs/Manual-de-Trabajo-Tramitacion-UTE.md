@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.6 · del 11/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.7 · del 12/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -143,6 +143,17 @@ Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos camino
 
 ## 10 · Las herramientas y cómo se usan
 
+**Comentarios y archivos del trámite.** En Trámites UTE, al abrir un trámite,
+abajo del detalle está el bloque **Comentarios y archivos**. Ahí se anota lo
+que pasa con el trámite (qué pidió UTE, qué se le contestó, qué falta) y se
+suben los papeles (los documentos firmados, la respuesta de UTE, una factura)
+sin ir a la pantalla del proyecto. Todo queda en el proyecto, lo ven las demás
+áreas y aparece en la ficha del cliente marcado como de Tramitación UTE. Lo que
+sube Tramitación lo puede borrar; lo de otras áreas, no.
+
+La **nota** que ya tenía cada trámite sigue estando, pero es una sola nota que
+se reescribe: lo que tiene que quedar con fecha y autor va como comentario.
+
 *Por escribir: Trámites UTE, el trámite dentro de la ficha, los documentos UTE.*
 
 ---
@@ -151,6 +162,7 @@ Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos camino
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.7 | 12 de octubre de 2026 | En el detalle de cada trámite se agrega el bloque Comentarios y archivos: Tramitación comenta y sube los papeles desde el trámite, sin ir a la pantalla del proyecto, y todo aparece en la ficha del cliente. |
 | 0.6 | 11 de octubre de 2026 | La consulta inicial la presenta el asesor apenas se cobra la seña, y el seguimiento lo hace Tramitación UTE desde ahí. |
 | 0.5 | 7 de octubre de 2026 | Se agrega qué pasa cuando UTE contesta la consulta con menos potencia que la pedida: lo contesta Ingeniería con el informe de justificación de potencia, y el caso abierto se marca cuando UTE lo abre. |
 | 0.4 | 5 de octubre de 2026 | Para cerrar un trámite hay que tener todos los pasos cargados, o decir por qué se cierra sin ellos; y lo que avisa al cliente es la fecha de habilitación, no el selector de etapa. |

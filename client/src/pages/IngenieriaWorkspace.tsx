@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { ComentariosYArchivos } from "../components/area/ComentariosYArchivos";
 import {
   ArrowLeft,
   ArrowRight,
@@ -198,6 +199,9 @@ export function IngenieriaWorkspace() {
           </ul>
         )}
       </section>
+
+      {/* Ingeniería comenta y adjunta desde su espacio, sin ir al proyecto. */}
+      {id && <ComentariosYArchivos projectId={id} area="ingenieria" />}
     </div>
   );
 }

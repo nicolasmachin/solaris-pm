@@ -13,7 +13,8 @@ import {
   patchComment,
   patchTaskComment,
 } from "../../api/comments.api";
-import type { Comment } from "../../types/api.types";
+import type { AreaTrabajo, Comment } from "../../types/api.types";
+import { AREA_TRABAJO_LABEL } from "../../types/api.types";
 import { useAuthStore } from "../../store/auth.store";
 import { Spinner } from "../ui/Spinner";
 
@@ -41,6 +42,8 @@ interface CommentThreadProps {
   substageId?: string;
   checklistItemId?: string;
   taskId?: string;
+  /** Pantalla del área desde la que se comenta: se guarda en el comentario. */
+  area?: AreaTrabajo;
   level: CommentLevel;
   context?: {
     stageLabelsById?: Record<string, string>;
@@ -113,6 +116,9 @@ function getCommentOrigin(comment: Comment, props: CommentThreadProps) {
   const taskLabel = comment.taskId ? props.context?.taskTitlesById?.[comment.taskId] : null;
 
   if (props.level === "project") {
+    if (comment.area) {
+      parts.push(AREA_TRABAJO_LABEL[comment.area]);
+    }
     if (stageLabel) {
       parts.push(`Etapa: ${stageLabel}`);
     }
@@ -219,6 +225,7 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
         substageId: props.substageId,
         checklistItemId: props.checklistItemId,
         taskId: props.taskId,
+        area: props.area,
       });
     },
     onSuccess: (createdComment) => {

@@ -525,9 +525,24 @@ const userPasswordPatchSchema = z
   })
   .strict();
 
+// Áreas que trabajan desde su propia pantalla con el bloque "Comentarios y
+// archivos". Son los mismos nombres que usa la línea de tiempo de la ficha del
+// cliente (TimelineItem.source), así un comentario o un archivo cae ahí con la
+// etiqueta del área que lo escribió.
+const AREAS_TRABAJO = ["operaciones", "ingenieria", "ute", "client", "cobros"] as const;
+const areaTrabajoSchema = z.enum(AREAS_TRABAJO);
+const AREA_LABEL: Record<string, string> = {
+  operaciones: "Operaciones",
+  ingenieria: "Ingeniería",
+  ute: "Tramitación UTE",
+  client: "Experiencia Solar",
+  cobros: "Finanzas",
+};
+
 const commentCreateSchema = z
   .object({
     content: z.string().trim().min(1, "El comentario no puede estar vacío"),
+    area: areaTrabajoSchema.optional(),
     projectId: z.string().min(1).optional(),
     leadId: z.string().min(1).optional(),
     stageId: z.string().nullable().optional(),
@@ -1046,6 +1061,7 @@ function serializeComment(comment: {
   substageId: string | null;
   checklistItemId: string | null;
   taskId: string | null;
+  area?: string | null;
   isEdited: boolean;
   editedAt: Date | null;
   createdAt: Date;
@@ -1058,6 +1074,7 @@ function serializeComment(comment: {
   return {
     id: comment.id,
     content: comment.content,
+    area: comment.area ?? null,
     projectId: comment.projectId,
     leadId: comment.leadId,
     stageId: comment.stageId,
@@ -4130,7 +4147,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return null;
   });
 
-  app.post("/projects/:projectId/files", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+  // Archivos del proyecto: cada área sube y consulta desde su pantalla (bloque
+  // "Comentarios y archivos"), no solo Operaciones. Ver archivo/listado/descarga.
+  const archivosPermsEdit = [
+    { module: Module.OPERACIONES, action: Action.EDIT },
+    { module: Module.INGENIERIA, action: Action.EDIT },
+    { module: Module.TRAMITES_UTE, action: Action.EDIT },
+    { module: Module.EXPERIENCIA_CLIENTES, action: Action.CREATE },
+    { module: Module.FINANZAS, action: Action.EDIT },
+  ];
+  const archivosPermsView = [
+    { module: Module.OPERACIONES, action: Action.VIEW },
+    { module: Module.INGENIERIA, action: Action.VIEW },
+    { module: Module.TRAMITES_UTE, action: Action.VIEW },
+    { module: Module.EXPERIENCIA_CLIENTES, action: Action.VIEW },
+    { module: Module.FINANZAS, action: Action.VIEW },
+  ];
+
+  app.post("/projects/:projectId/files", { preHandler: authorizeAny(archivosPermsEdit) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string() }).parse(request.params);
     await findProjectOrThrow(params.projectId);
@@ -4139,6 +4173,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     let uploadedFile: Awaited<ReturnType<typeof saveUploadedFile>> | null = null;
     let stageId: string | null = null;
     let substageId: string | null = null;
+    let area: string | null = null;
 
     for await (const part of parts) {
       if (part.type === "file") {
@@ -4147,6 +4182,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         stageId = String(part.value || "") || null;
       } else if (part.fieldname === "substageId") {
         substageId = String(part.value || "") || null;
+      } else if (part.fieldname === "area") {
+        const parsed = areaTrabajoSchema.safeParse(String(part.value || ""));
+        area = parsed.success ? parsed.data : null;
       }
     }
 
@@ -4159,6 +4197,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         projectId: params.projectId,
         stageId,
         substageId,
+        area,
         filename: uploadedFile.filename,
         storedFilename: uploadedFile.storedFilename,
         mimeType: uploadedFile.mimeType,
@@ -4208,7 +4247,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return files.map(serializeFile);
   });
 
-  app.get("/files/:fileId/download", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+  app.get("/files/:fileId/download", { preHandler: authorizeAny(archivosPermsView) }, async (request, reply) => {
     ensureUser(request);
     const params = z.object({ fileId: z.string() }).parse(request.params);
     const file = await findFileOrThrow(params.fileId);
@@ -4223,10 +4262,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return reply.send(fs.createReadStream(absolutePath));
   });
 
-  app.delete("/files/:fileId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.delete("/files/:fileId", { preHandler: authorizeAny(archivosPermsEdit) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ fileId: z.string() }).parse(request.params);
     const file = await findFileOrThrow(params.fileId);
+    // Operaciones borra cualquier archivo del proyecto (como siempre). Las demás
+    // áreas suben desde su pantalla, pero solo borran lo que subieron ellas.
+    if (!(await hasPermission(user.role, Module.OPERACIONES, Action.EDIT)) && file.uploadedById !== user.id) {
+      throw forbidden("Solo podés borrar los archivos que subiste vos.");
+    }
 
     await deleteStoredFile(file.url);
 
@@ -4251,7 +4295,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // Devuelve todos los archivos asociados al proyecto con etiqueta de origen
   // (etapa o subetapa). Por ahora Comment no tiene adjuntos, así que la fuente
   // es siempre stage/substage.
-  app.get("/projects/:projectId/documents", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+  app.get("/projects/:projectId/documents", { preHandler: authorizeAny(archivosPermsView) }, async (request) => {
     const params = z.object({ projectId: z.string() }).parse(request.params);
     await findProjectOrThrow(params.projectId);
 
@@ -4327,6 +4371,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         source = "stage";
         sourceLabel = `Etapa ${getStageLabel(file.stage.name)}`;
         stageId = file.stage.id;
+      } else if (file.area && AREA_LABEL[file.area]) {
+        sourceLabel = AREA_LABEL[file.area];
       }
       return {
         id: file.id,
@@ -4339,6 +4385,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         toolEntityId: file.toolEntityId,
         uploadedAt: serializeDate(file.createdAt),
         uploadedBy: file.uploadedById,
+        area: file.area,
         source,
         sourceLabel,
         stageId,
@@ -4350,7 +4397,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   // Sirve el archivo inline (no force-download) para previews de PDF/imagen.
-  app.get("/files/:fileId/preview", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request, reply) => {
+  app.get("/files/:fileId/preview", { preHandler: authorizeAny(archivosPermsView) }, async (request, reply) => {
     ensureUser(request);
     const params = z.object({ fileId: z.string() }).parse(request.params);
     const file = await findFileOrThrow(params.fileId);
@@ -4367,7 +4414,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   // Sirve el thumbnail de una foto de obra (JPEG 400px). Si no existe thumb en
   // disco (archivos que no son de obra), hace fallback al archivo original.
-  app.get("/files/:fileId/thumbnail", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request, reply) => {
+  app.get("/files/:fileId/thumbnail", { preHandler: authorizeAny(archivosPermsView) }, async (request, reply) => {
     ensureUser(request);
     const params = z.object({ fileId: z.string() }).parse(request.params);
     const file = await findFileOrThrow(params.fileId);
@@ -6956,6 +7003,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         substageId: body.substageId ?? null,
         checklistItemId: body.checklistItemId ?? null,
         taskId: body.taskId ?? null,
+        area: body.area ?? null,
       },
       include: {
         author: {

@@ -27,6 +27,13 @@ export const LATEST_RELEASE: Release = {
   date: "12 de octubre de 2026",
   sections: [
     {
+      title: "Cada área comenta y adjunta desde su pantalla",
+      items: [
+        "Ingeniería (en el espacio de cada proyecto) y Tramitación UTE (en el detalle del trámite) tienen su bloque Comentarios y archivos, sin ir a la pantalla del proyecto.",
+        "Todo queda en el mismo proyecto y aparece en la ficha del cliente marcado con el área que lo hizo.",
+      ],
+    },
+    {
       title: "Videos para clientes en el portal",
       items: [
         "El portal de Voltia tiene una pestaña nueva, Videos: el cliente encuentra ahí los videos que le vamos mandando durante el proceso, para volver a verlos cuando quiera, con su material de apoyo.",

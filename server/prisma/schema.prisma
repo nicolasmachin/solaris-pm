@@ -1522,6 +1522,8 @@ model FileAttachment {
   // de owner — la validación que exige exactamente uno de
   // project/lead/stage/substage/informe se hace a nivel de service.
   informeId               String?
+  // Área desde cuya pantalla se subió (mismo vocabulario que Comment.area).
+  area                    String?
   filename                String
   storedFilename          String
   mimeType                String
@@ -1726,6 +1728,10 @@ model Comment {
   // quita de la lista, sus comentarios se van con él: no tienen dónde vivir.
   capacitacionVideoId String?
   capacitacionVideo   CapacitacionVideo? @relation(fields: [capacitacionVideoId], references: [id], onDelete: Cascade)
+  // Área desde cuya pantalla se escribió (ingenieria, ute, client, cobros…).
+  // Para un comentario a nivel proyecto es lo único que dice de quién es: sin
+  // esto la ficha del cliente lo etiquetaba "Operaciones". Ver AREAS_TRABAJO.
+  area                String?
   isEdited            Boolean            @default(false)
   editedAt            DateTime?          @db.Timestamptz(6)
   deletedAt           DateTime?          @db.Timestamptz(6)

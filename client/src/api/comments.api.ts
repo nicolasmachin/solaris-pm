@@ -24,6 +24,7 @@ export async function getLeadComments(leadId: string): Promise<Comment[]> {
 
 export async function createComment(body: {
   content: string;
+  area?: import("../types/api.types").AreaTrabajo;
   projectId?: string;
   leadId?: string;
   stageId?: string;

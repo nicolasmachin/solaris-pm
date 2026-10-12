@@ -4,6 +4,13 @@
 
 ### 12 de octubre de 2026
 
+#### Cada área comenta y adjunta desde su pantalla
+
+- **Ingeniería** (en el espacio de cada proyecto) y **Tramitación UTE** (en el detalle del trámite) tienen ahora su bloque **Comentarios y archivos**: se escribe un comentario o se sube un archivo sin tener que ir a la pantalla del proyecto.
+- Todo queda en el mismo proyecto: lo ven las demás áreas y aparece en la ficha del cliente **marcado con el área que lo hizo** (antes un comentario general salía siempre como "Operaciones").
+- Los archivos se pueden ver solo los del área o todos los del proyecto, y se abren ahí mismo. Cada área borra lo que subió; Operaciones, como siempre, puede borrar cualquiera.
+- Tramitación UTE ya puede subir y abrir los archivos del proyecto (antes no tenía permiso).
+
 #### Videos para clientes en el portal
 
 - El portal de Voltia tiene una pestaña nueva, **Videos**: el cliente encuentra ahí los videos que le vamos mandando durante el proceso, para volver a verlos cuando quiera, con su material de apoyo. Puede marcarlos como vistos y, al terminar uno, pasa solo al siguiente.

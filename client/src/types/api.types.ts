@@ -202,6 +202,17 @@ export interface ChecklistItem {
   updatedAt: string;
 }
 
+/** Áreas que comentan y adjuntan desde su propia pantalla. Mismos nombres que la línea de tiempo del cliente. */
+export type AreaTrabajo = "operaciones" | "ingenieria" | "ute" | "client" | "cobros";
+
+export const AREA_TRABAJO_LABEL: Record<AreaTrabajo, string> = {
+  operaciones: "Operaciones",
+  ingenieria: "Ingeniería",
+  ute: "Tramitación UTE",
+  client: "Experiencia Solar",
+  cobros: "Finanzas",
+};
+
 export interface Comment {
   id: string;
   content: string;
@@ -211,6 +222,8 @@ export interface Comment {
   substageId: string | null;
   checklistItemId: string | null;
   taskId: string | null;
+  /** Área desde cuya pantalla se escribió (bloque "Comentarios y archivos"). */
+  area?: AreaTrabajo | null;
   isEdited: boolean;
   editedAt: string | null;
   createdAt: string;
