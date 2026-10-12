@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.21 · del 12/10/26
+**Voltia · Uruguay** · Versión 1.22 · del 12/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -312,7 +312,7 @@ tanto", la ficha tiene que poder responder esa pregunta.
 | **Cuándo** | Apenas se crea el proyecto |
 | **Quién** | Experiencia Solar |
 | **Plazo** | Sin plazo, pero queda pendiente hasta que se haga |
-| **En Voltia PM** | El **ícono de crear usuario** en el propio paso, o la columna de acceso del listado |
+| **En Voltia PM** | El **ícono de crear usuario** en el propio paso, el botón **Crear acceso al portal** arriba en la ficha, o la columna de acceso del listado |
 | **Qué decir** | Plantilla **"Acceso al portal"**, que sale con el usuario y la contraseña reales |
 
 > **El texto, tal como sale en Voltia PM:**
@@ -323,15 +323,21 @@ tanto", la ficha tiene que poder responder esa pregunta.
 >> Link: {link del portal}
 >>
 >> Te va a pedir cambiar la contraseña al entrar. Cualquier duda, escribime.
-**Cómo se crea:** desde el propio paso, con el ícono a la derecha (o desde la
-columna de acceso del listado). El mail y el teléfono se toman de los datos del
+**Cómo se crea:** desde el propio paso, con el ícono a la derecha. También se
+puede desde la ficha del cliente, arriba a la derecha, con **Crear acceso al
+portal**, o desde la columna de acceso del listado. El mail y el teléfono se toman de los datos del
 cliente y la contraseña por defecto es **12345678**, que el sistema le pide
 cambiar al entrar. Al terminar, la plantilla de acceso sale **con el usuario y la
 contraseña ya adentro**.
 
 > Si el cliente ya tenía acceso de antes, la plantilla trae su usuario pero deja
 > la contraseña en blanco: **no se puede recuperar**. Para mandársela hay que
-> resetearla con el botón de reenviar.
+> resetearla con el botón de reenviar (**Reenviar acceso**, arriba en la ficha).
+
+En la misma fila de la ficha están **Copiar enlace del portal**, para mandarle
+solo la dirección, y **Ver como el cliente**, que abre su portal tal como lo ve
+él, en modo de solo lectura: sirve para saber qué está mirando cuando pregunta
+algo.
 
 **Si el cliente no tiene mail, igual se le crea el acceso.** El sistema usa su
 cédula si está cargada, y si no, arma un usuario con su nombre (por ejemplo
@@ -1873,7 +1879,7 @@ capítulo aparte: repiten lo que ya se explicó, con la pantalla al lado.
 | Los pasos de la etapa | La lista de pasos, con los que tienen plazo resaltados, y el botón de plantillas | Dentro de la ficha |
 | Los mensajes modelo | El panel de plantillas: se elige a la izquierda, se lee a la derecha, se copia | Botón **Plantillas** de la etapa |
 | El trámite de UTE | Los hitos con sus fechas — lo mismo que ve el cliente | Dentro de la ficha |
-| El portal del cliente | Su pantalla tal cual la ve él | Se abre en modo cliente desde el listado |
+| El portal del cliente | Su pantalla tal cual la ve él | Se abre en modo cliente desde el listado (el ojito) o desde la ficha (**Ver como el cliente**) |
 | Los reportes mensuales | El tablero desde donde salen, con los tres pasos numerados | Experiencia Solar → Reportes FV |
 | El listado de clientes | Agrupado por etapa y ordenado por prioridad de contacto | Experiencia Solar → Generadores |
 | El calendario de obra | Dónde se agenda, y la diferencia entre fecha tentativa y confirmada | Calendario |
@@ -1888,6 +1894,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.22 | 12 de octubre de 2026 | Crear el acceso al portal, reenviarlo, copiar el enlace y ver el portal como el cliente se pueden hacer también desde la ficha del cliente. |
 | 1.21 | 12 de octubre de 2026 | El portal tiene una pestaña de Videos: los videos al cliente se mandan con el enlace del portal, para que le queden guardados y los pueda volver a ver. |
 | 1.20 | 11 de octubre de 2026 | La fecha tentativa ya no es parte del procedimiento: el gerente de Operaciones la usa solo si le sirve para organizarse, y nunca se le comunica al cliente. |
 | 1.19 | 11 de octubre de 2026 | El contrato lo intercambia el asesor y Voltia firma último, con firma digital; Experiencia Solar controla que quede archivado. Al vender, el asesor le da al cliente solo una estimación de obra por quincena, que no es una fecha. |

@@ -12,6 +12,10 @@
 - En **Seguimiento** se ve qué clientes vieron cada video.
 - Al **ver el portal como lo ve el cliente**, la pestaña también aparece y los videos se reproducen, pero no se le marca nada como visto.
 
+#### El acceso al portal, también en la ficha del cliente
+
+- En la ficha de cada cliente de Experiencia Solar, arriba a la derecha, debajo de los enlaces a los otros módulos, están ahora las acciones del portal que antes había que ir a buscar al listado: **Ver como el cliente** (el ojito), **Reenviar acceso**, **Copiar enlace del portal** y, si todavía no tiene usuario, **Crear acceso al portal**.
+
 ## v12.3
 
 ### 11 de octubre de 2026

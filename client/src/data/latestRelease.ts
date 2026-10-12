@@ -35,6 +35,12 @@ export const LATEST_RELEASE: Release = {
         "En Seguimiento se ve qué clientes vieron cada video.",
       ],
     },
+    {
+      title: "El acceso al portal, también en la ficha del cliente",
+      items: [
+        "En la ficha de cada cliente de Experiencia Solar, arriba a la derecha, están ahora las acciones del portal que antes estaban solo en el listado: Ver como el cliente (el ojito), Reenviar acceso, Copiar enlace del portal y, si todavía no tiene usuario, Crear acceso al portal.",
+      ],
+    },
   ],
 };
 

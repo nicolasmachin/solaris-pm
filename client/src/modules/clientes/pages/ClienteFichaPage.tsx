@@ -7,6 +7,7 @@ import { getChecks, type ClienteRecorrido } from "../../../api/clientes.api";
 import { EnlacesModulos } from "../../../components/layout/EnlacesModulos";
 import { Spinner } from "../../../components/ui/Spinner";
 import { usePermission } from "../../../hooks/usePermission";
+import { AccesoPortalAcciones } from "../components/AccesoPortalAcciones";
 import { ClienteInteractionForm } from "../components/ClienteInteractionForm";
 import { ClienteTimeline } from "../components/ClienteTimeline";
 import { ClienteTramiteUteCard } from "../components/ClienteTramiteUteCard";
@@ -213,13 +214,16 @@ export function ClienteFichaPage() {
             )}
           </div>
         </div>
-        <EnlacesModulos
-          actual="experiencia"
-          projectId={projectId ?? null}
-          leadId={ficha.leadId}
-          uteProcessId={ficha.uteProcessId}
-          className="shrink-0 justify-end"
-        />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <EnlacesModulos
+            actual="experiencia"
+            projectId={projectId ?? null}
+            leadId={ficha.leadId}
+            uteProcessId={ficha.uteProcessId}
+            className="justify-end"
+          />
+          <AccesoPortalAcciones ficha={ficha} />
+        </div>
       </div>
 
       {/* Dos columnas a la par: a la izquierda lo que hay que hacer, a la derecha

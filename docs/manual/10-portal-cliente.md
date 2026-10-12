@@ -107,7 +107,8 @@ una captura ni tener su contraseña.
 ## Cómo se usa
 
 En **Experiencia Solar → Generadores**, en la última columna de cada fila, hay un
-ícono de ojo a la izquierda de la papelera. Aparece sólo si ese generador ya
+ícono de ojo a la izquierda de la papelera. El mismo acceso está en la cabecera
+de la ficha del cliente, como **Ver como el cliente**. Aparece sólo si ese generador ya
 tiene usuario de portal creado.
 
 Al hacer clic se entra al portal de ese cliente con una **franja ámbar fija

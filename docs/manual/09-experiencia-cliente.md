@@ -628,8 +628,16 @@ anterior. Cómo está armada:
 
 - **Encabezado**: nombre, estado editable, semáforo de días sin contacto, los
   avisos clave pendientes, **todos los datos del cliente** en una o dos filas
-  chicas (estaban plegados al fondo, que es donde nadie los busca) y la fila de
-  enlaces a los otros módulos (`EnlacesModulos`).
+  chicas (estaban plegados al fondo, que es donde nadie los busca), la fila de
+  enlaces a los otros módulos (`EnlacesModulos`) y, debajo, las acciones del
+  portal (`AccesoPortalAcciones`): **Ver como el cliente**, **Reenviar acceso**,
+  **Copiar enlace del portal** (copia `<origen>/portal`) y, sin usuario, **Crear
+  acceso al portal**. Usan los mismos modales que el listado
+  (`CrearUsuarioModal`, `ReenviarAccesoModal`), que terminan con "Copiar
+  mensaje". Crear y reenviar piden `EXPERIENCIA_CLIENTES:CREATE`, igual que en el
+  listado; ver como el cliente, solo entrar a la ficha. Crear y reenviar siguen
+  estando también en el paso "Envío del acceso al portal" de la E1, donde además
+  abren la plantilla con las credenciales recién generadas.
 - **Mitad izquierda**: el recorrido (`RecorridoPipeline`, mismo lenguaje visual
   que el pipeline del proyecto), los pasos de la etapa elegida, y el trámite UTE
   desplegado con **el mismo timeline que ve el cliente en su portal**
