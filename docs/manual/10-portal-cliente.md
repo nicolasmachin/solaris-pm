@@ -17,62 +17,10 @@ con `PORTAL_CLIENTE:VIEW` y el chequeo de que la planta sea suya. Todo el
 detalle (de dónde salen los datos, los totales, los casos borde) está en el
 capítulo 09, *Vista de energía*.
 
-La tarjeta "Generación día a día" de abajo sigue existiendo y se superpone con la
-pestaña Día de la vista nueva: queda pendiente decidir si se saca.
-
----
-
-# Generación día a día
-
-## Para qué existe
-
-El dashboard del portal mostraba sólo datos mensuales, y sólo de meses con
-reporte ya publicado. El cliente que quería saber cuánto generó *esta semana* no
-tenía dónde mirarlo dentro de la aplicación.
-
-## Cómo se usa
-
-En el portal, dentro de "Mi energía", aparece una tarjeta **"Generación día a día"**
-con el mes en curso: una barra por día, y abajo el total del mes, el promedio
-diario y el mejor día. Con las flechas ‹ › se navegan los meses anteriores; no
-deja avanzar más allá del mes actual.
-
-La tarjeta aclara hasta qué día llegan los datos, porque el último disponible es
-siempre el de ayer.
-
-## Cómo funciona
-
-`GET /api/client/energia/diaria?periodo=YYYY-MM` lee `ReporteFvGeneracionDiaria`,
-la misma tabla que llena el monitoreo diario. **No consulta Growatt**: es lectura
-de una tabla ya poblada, así que la pantalla es instantánea.
-
-El endpoint viejo `/client/energia` (mensual) **no se tocó**, y el guard de
-render de `PortalEnergiaDashboard.tsx` tampoco: un cliente sin serie diaria sigue
-viendo su dashboard mensual completo, sólo que sin la tarjeta nueva.
-
-## Reglas y decisiones
-
-- **Tiene un gate propio, más laxo que el del reporte mensual.** Aquel exige
-  `publicadoEnPortal` porque el reporte lleva números económicos (ahorro, ROI,
-  tarifa) que alguien tiene que revisar antes de mostrarlos. Esto son kWh crudos
-  del inversor, el mismo dato que el cliente ya ve en la app de Growatt si tiene
-  la cuenta. Además el mes en curso **nunca** va a tener reporte publicado —el de
-  agosto se emite el 7 de septiembre—, así que con aquel gate la pantalla no
-  mostraría nada nunca.
-- El gate concreto es: planta vinculada y no ignorada + el usuario es cliente del
-  proyecto + `ReporteFvConfig.habilitado !== false`.
-- **`habilitado` se reusa como opt-out, pero no se exige que la config exista.**
-  Si a un cliente no le mandamos el reporte mensual, tampoco le mostramos el
-  detalle diario; pero un generador vinculado y andando que nunca se dio de alta
-  en la herramienta ve su gráfico igual.
-- La condición se escribe con `OR` y no con `NOT`: en Prisma, un `NOT` sobre una
-  relación opcional también descarta las filas que **no tienen** esa relación.
-
-## Casos borde
-
-- **Los datos empiezan cuando empezó a correr el monitoreo.** Para meses
-  anteriores hay que correr `backfill-generacion-diaria.ts --desde YYYY-MM-DD`.
-- Si no hay ningún día con dato, la tarjeta directamente no se renderiza.
+Antes había una tarjeta "Generación día a día" (generación por día del mes);
+se sacó el 13-oct-2026 porque la pestaña Día muestra lo mismo y además el
+consumo. Su endpoint, `GET /api/client/energia/diaria`, y `getPortalEnergiaDiaria`
+en `portal.api.ts` quedaron sin uso: se pueden borrar.
 
 ---
 
