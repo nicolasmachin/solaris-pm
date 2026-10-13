@@ -390,5 +390,167 @@ export async function muestrasDelDia(
   return (data?.meter_data ?? []) as MuestraMedidor[];
 }
 
+// ─── Curva del día (cada 5 minutos) ──────────────────────────────────────────
+//
+// La vista de energía (pestaña "Hora") necesita la curva del día. La Open API la
+// da por inversor —`tlx_data` para los MIN (tipo 7), `max_data` para los MAX
+// (tipo 4)—, paginada de a 100 (más de 100 por página da error 10013) y ordenada
+// del último registro al primero. Un día son ~290 registros: 3 páginas.
+//
+// Medido contra la API (13-oct-2026): 3 páginas seguidas con 2 s de pausa
+// pasan; con ~1,3 s Growatt empieza a devolver vacío. Por eso la pausa propia.
+
+const PAUSA_CURVA_MS = Number(process.env.GROWATT_PAUSA_CURVA_MS ?? 2000);
+const MAX_PAGINAS_DIA = 5;
+
+// Fila única para las consultas de curva dentro del proceso: la ficha, el
+// portal y el guardado nocturno pueden pedir a la vez, y Growatt corta si se le
+// pregunta seguido. Cada consulta espera a la anterior y deja PAUSA_CURVA_MS de
+// aire. (El script de relleno corre en otro proceso: no conviene largarlo
+// mientras corre el monitoreo de las 8.)
+let colaCurva: Promise<unknown> = Promise.resolve();
+let ultimaCurvaEn = 0;
+function enFila<T>(tarea: () => Promise<T>): Promise<T> {
+  const turno = colaCurva.then(async () => {
+    const espera = ultimaCurvaEn + PAUSA_CURVA_MS - Date.now();
+    if (espera > 0) await dormir(espera);
+    try {
+      return await tarea();
+    } finally {
+      ultimaCurvaEn = Date.now();
+    }
+  });
+  colaCurva = turno.catch(() => undefined);
+  return turno;
+}
+
+/**
+ * Pide todas las páginas de un día. Si Growatt corta a mitad (rate limit: a
+ * veces devuelve vacío en vez de error), se tira un error en vez de devolver el
+ * día a medias: guardado así quedaría como un día cerrado incompleto para
+ * siempre. Los registros repetidos (llega uno nuevo entre páginas) se descartan.
+ */
+async function paginasDelDia(
+  pedirPagina: (page: number) => Promise<any>,
+  extraer: (data: any) => any[],
+  claveTiempo: (r: any) => unknown,
+): Promise<any[]> {
+  const crudos: any[] = [];
+  let total = 0;
+  for (let page = 1; page <= MAX_PAGINAS_DIA; page++) {
+    const data = await enFila(() => pedirPagina(page));
+    const lote = extraer(data);
+    total = Math.max(total, Number(data?.count ?? 0));
+    crudos.push(...lote);
+    if (lote.length < 100 || (total > 0 && crudos.length >= total)) break;
+  }
+  if (total > 0 && crudos.length < total) {
+    throw new AppError(502, "GROWATT_INCOMPLETO", `Growatt devolvió ${crudos.length} de ${total} registros del día`);
+  }
+  const vistos = new Set<string>();
+  return crudos.filter((r) => {
+    const k = String(claveTiempo(r) ?? "");
+    if (vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
+}
+
+/** Un registro del inversor. Los campos del medidor solo vienen en los MIN. */
+export interface MuestraInversor {
+  ts: Date;
+  /** Potencia de salida del inversor, W. */
+  pac: number;
+  /** Consumo de la casa, W (MIN con medidor). */
+  consumo: number | null;
+  /** Tomado de la red, W (MIN con medidor). */
+  deRed: number | null;
+  /** Exportado a la red, W (MIN con medidor). */
+  aRed: number | null;
+  /** Acumulados del día, kWh. */
+  genHoyKwh: number | null;
+  consumoHoyKwh: number | null;
+  deRedHoyKwh: number | null;
+  aRedHoyKwh: number | null;
+}
+
+const numOrNull = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** Registros de un inversor en un día, del primero al último. */
+export async function muestrasInversorDelDia(
+  deviceSn: string,
+  tipo: number,
+  dia: string,
+): Promise<MuestraInversor[]> {
+  const esMax = tipo === 4;
+  const endpoint = esMax ? "device/max/max_data" : "device/tlx/tlx_data";
+  const snParam = esMax ? "max_sn" : "tlx_sn";
+  const crudos = await paginasDelDia(
+    (page) => post(endpoint, { [snParam]: deviceSn, start_date: dia, end_date: dia, page, perpage: 100 }),
+    (data) => data?.datas ?? data?.max_data ?? data?.tlx_data ?? [],
+    (r) => r?.time,
+  );
+  const out: MuestraInversor[] = [];
+  for (const r of crudos) {
+    const ts = parsearFechaGrowatt(r?.time);
+    if (!ts) continue;
+    out.push({
+      ts,
+      pac: numOrNull(r?.pac) ?? 0,
+      consumo: esMax ? null : numOrNull(r?.pacToLocalLoad),
+      deRed: esMax ? null : numOrNull(r?.pacToUserTotal),
+      aRed: esMax ? null : numOrNull(r?.pacToGridTotal),
+      genHoyKwh: numOrNull(r?.eacToday),
+      consumoHoyKwh: esMax ? null : numOrNull(r?.elocalLoadToday),
+      deRedHoyKwh: esMax ? null : numOrNull(r?.etoUserToday),
+      aRedHoyKwh: esMax ? null : numOrNull(r?.etoGridToday),
+    });
+  }
+  return out.sort((a, b) => a.ts.getTime() - b.ts.getTime());
+}
+
+/** Un registro del medidor (smart meter aparte, el que usan los MAX). */
+export interface MuestraMedidorCurva {
+  ts: Date;
+  /** Potencia tomada de la red, W. Al exportar el medidor marca 0, no negativo. */
+  deRed: number | null;
+  /** Acumulados del día, kWh. */
+  deRedHoyKwh: number | null;
+  aRedHoyKwh: number | null;
+}
+
+/** Registros del medidor en un día, del primero al último (paginado de a 100). */
+export async function muestrasMedidorCurva(
+  datalogSn: string,
+  address: string,
+  dia: string,
+): Promise<MuestraMedidorCurva[]> {
+  const crudos = await paginasDelDia(
+    (page) =>
+      get("device/ammeter/meter_data", { datalog_sn: datalogSn, address, start_date: dia, end_date: dia, page, perpage: 100 }),
+    (data) => data?.meter_data ?? [],
+    (r) => r?.timeText ?? r?.time,
+  );
+  const out: MuestraMedidorCurva[] = [];
+  for (const r of crudos) {
+    const ts = parsearFechaGrowatt(r?.timeText ?? r?.time);
+    if (!ts) continue;
+    out.push({
+      ts,
+      deRed: numOrNull(r?.activePower),
+      deRedHoyKwh: numOrNull(r?.positiveActiveTodayEnergy),
+      aRedHoyKwh: numOrNull(r?.reverseActiveTodayEnergy),
+    });
+  }
+  return out.sort((a, b) => a.ts.getTime() - b.ts.getTime());
+}
+
+export const growattPausaCurvaMs = PAUSA_CURVA_MS;
+export { enFila as growattEnFilaCurva };
+
 export const growattPausaMs = PAUSA_MS;
 export { dormir as growattDormir };

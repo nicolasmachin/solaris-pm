@@ -29,6 +29,13 @@ import {
   setDiaCorteMedidorCliente,
 } from "../services/reportesFv/config.service.js";
 import fs from "node:fs";
+import {
+  hoyUy,
+  obtenerAnios,
+  obtenerCurvaDia,
+  obtenerDiasDelMes,
+  obtenerMesesDelAnio,
+} from "../services/reportesFv/energia/curva.service.js";
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
 
@@ -1190,6 +1197,84 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         .filter((g) => g.dias.length > 0);
 
       return { generadores };
+    },
+  );
+
+  // ─── Vista de energía (como la aplicación de Growatt) ──────────────────────
+  // La misma que la ficha del cliente, para que el Generador no necesite la
+  // aplicación del inversor. Solo sus plantas, y con la misma regla que el
+  // gráfico diario: si se le apagó el reporte mensual, no ve el detalle.
+  const plantasDelCliente = (userId: string) =>
+    prisma.project.findMany({
+      where: {
+        deletedAt: null,
+        clients: { some: { userId } },
+        OR: [{ growattPlant: { ignorada: false } }, { huaweiPlant: { ignorada: false } }],
+        AND: [{ OR: [{ reporteFvConfig: { is: null } }, { reporteFvConfig: { habilitado: true } }] }],
+      },
+      select: { id: true, clientName: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+  async function plantaDelCliente(userId: string, projectId: string) {
+    const propias = await plantasDelCliente(userId);
+    if (!propias.some((p) => p.id === projectId)) {
+      throw notFound("GENERADOR_NO_ENCONTRADO", "El generador no existe o no es tuyo");
+    }
+  }
+
+  app.get("/client/energia/plantas", { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) }, async (request) => {
+    const user = ensureUser(request);
+    const plantas = await plantasDelCliente(user.id);
+    return { plantas: plantas.map((p) => ({ projectId: p.id, nombre: p.clientName })) };
+  });
+
+  app.get(
+    "/client/energia/:projectId/curva",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const q = z.object({ fecha: z.string().optional() }).passthrough().parse(request.query);
+      await plantaDelCliente(user.id, projectId);
+      // Sin "forzar" desde el portal: el día en curso se refresca solo cada 5
+      // minutos, y un cliente no puede disparar consultas a Growatt a voluntad.
+      return obtenerCurvaDia(projectId, q.fecha ?? hoyUy());
+    },
+  );
+
+  app.get(
+    "/client/energia/:projectId/dias",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const { periodo } = z.object({ periodo: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional() }).parse(request.query);
+      await plantaDelCliente(user.id, projectId);
+      return obtenerDiasDelMes(projectId, periodo ?? hoyUy().slice(0, 7));
+    },
+  );
+
+  app.get(
+    "/client/energia/:projectId/meses",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const { anio } = z.object({ anio: z.coerce.number().int().optional() }).parse(request.query);
+      await plantaDelCliente(user.id, projectId);
+      return obtenerMesesDelAnio(projectId, anio ?? Number(hoyUy().slice(0, 4)));
+    },
+  );
+
+  app.get(
+    "/client/energia/:projectId/anios",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      await plantaDelCliente(user.id, projectId);
+      return obtenerAnios(projectId);
     },
   );
 

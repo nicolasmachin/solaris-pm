@@ -711,6 +711,7 @@ model Project {
   reporteFvCalculos               ReporteFvCalculo[]
   reporteFvEmisiones              ReporteFvEmision[]
   reporteFvGeneracionesDiarias    ReporteFvGeneracionDiaria[]
+  fvCurvasDia                  FvCurvaDia[]
   growattPlant                    GrowattPlant?
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
@@ -4661,6 +4662,12 @@ model ReporteFvGeneracionDiaria {
   // sólo que no medimos. Confundirlos llena el panel de alertas falsas.
   exportacionKwh Decimal? @db.Decimal(10, 2)
 
+  // Consumo e importación del día. Mismo criterio que exportacionKwh: null = no
+  // se midió (planta sin medidor, o medidor que no llega al inversor). Los
+  // llena la curva del día (FvCurvaDia) y, en Huawei, la serie diaria.
+  consumoKwh     Decimal? @db.Decimal(10, 2)
+  importacionKwh Decimal? @db.Decimal(10, 2)
+
   // Denormalizado para poder trazar de qué planta salió el dato: el vínculo
   // planta↔proyecto puede cambiar con el tiempo.
   growattPlantId BigInt?
@@ -4671,6 +4678,46 @@ model ReporteFvGeneracionDiaria {
   @@unique([projectId, fecha])
   @@index([fecha])
   @@map("reporte_fv_generaciones_diarias")
+}
+
+// Curva de un día de una planta, cada 5 minutos: producción, consumo, lo que se
+// toma de la red y lo que se exporta (en W). Es lo que muestra la pestaña "Hora"
+// de la vista de energía (como la aplicación de Growatt).
+//
+// Se pide a Growatt cuando alguien abre el día y se guarda: un día ya cerrado
+// (`completo`) no se vuelve a pedir; el día en curso se refresca si el dato
+// tiene más de 5 minutos. El monitoreo nocturno además guarda la de ayer, así
+// el historial se arma solo. Ver services/reportesFv/energia/curva.service.ts.
+model FvCurvaDia {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fecha     DateTime @db.Date
+
+  // [{ h: "HH:MM", gen, consumo, deRed, aRed }] en W. consumo/deRed/aRed son
+  // null si la planta no mide (sin medidor o medidor que no llega al inversor).
+  puntos Json
+
+  // Totales del día en kWh (de los acumulados del inversor y del medidor, no de
+  // integrar la curva). null = no medido.
+  generacionKwh  Decimal? @db.Decimal(10, 2)
+  consumoKwh     Decimal? @db.Decimal(10, 2)
+  importacionKwh Decimal? @db.Decimal(10, 2)
+  exportacionKwh Decimal? @db.Decimal(10, 2)
+
+  // Cómo se obtuvo el consumo: INVERSOR (el medidor llega al inversor MIN y la
+  // curva viene completa), MEDIDOR (inversor MAX: se arma con el medidor aparte,
+  // menos fino) o null (no hay medición de consumo).
+  origenMedicion String?
+
+  // Día terminado: ya no cambia y no se vuelve a pedir.
+  completo  Boolean  @default(false)
+  fuente    ReporteFvFuente @default(GROWATT)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([projectId, fecha])
+  @@map("fv_curvas_dia")
 }
 
 enum FvDiagnostico {

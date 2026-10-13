@@ -1,5 +1,18 @@
 # Novedades
 
+## v12.5
+
+### 13 de octubre de 2026
+
+#### Generación y consumo, como en la aplicación de Growatt
+
+- En la **ficha del cliente** hay una sección nueva, **Generación y consumo**, con las mismas pestañas que la aplicación de Growatt: **Hora** (la curva del día cada 5 minutos: producción solar, consumo, lo exportado y lo importado de la red), **Día** (las barras del mes), **Mes** (las del año) y **Año**.
+- Abajo, el resumen del período: cuánto de lo producido se usó en la casa (**autoconsumo**) y cuánto se exportó, y cuánto del consumo salió de los paneles y cuánto de la red.
+- La misma vista está en el **portal de Voltia**, en *Mis reportes solares*: el cliente ve su generación y su consumo sin tener que entrar a la aplicación del inversor.
+- Los datos salen de Growatt. El día de hoy se actualiza cada 5 minutos (con el botón **Actualizar** se pide al momento), y los días pasados quedan guardados.
+- Si la planta no mide el consumo (no tiene medidor, o el medidor no le llega al inversor), se muestra solo la producción y se avisa.
+- En las plantas Huawei están Día, Mes y Año; la pestaña Hora todavía no.
+
 ## v12.4
 
 ### 12 de octubre de 2026

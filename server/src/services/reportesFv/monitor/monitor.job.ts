@@ -7,6 +7,8 @@ import { CRON_DEFAULT, monitorHabilitado } from "./config.js";
 import { enviarDigest } from "./digest.email.js";
 import { ejecutarMonitorDiario } from "./monitor.service.js";
 import { sincronizarPlantas } from "../growatt/plantas.service.js";
+import { guardarCurvasDelDia } from "../energia/curva.service.js";
+import { diaAEvaluar } from "./dias.js";
 
 /**
  * Todos los días a las 08:00 de Uruguay, evaluando el día anterior completo.
@@ -49,6 +51,13 @@ export function startFvMonitorJob() {
 
         const resumen = await ejecutarMonitorDiario(new Date(), { modo: FvMonitorCorridaModo.CRON });
         await enviarDigest(resumen);
+
+        // Después del digest (que no espere): la curva de ayer de cada planta,
+        // para la vista de energía. Se puede apagar con ENERGIA_CURVA_NOCTURNA=false.
+        if (process.env.ENERGIA_CURVA_NOCTURNA !== "false") {
+          const c = await guardarCurvasDelDia(diaAEvaluar(new Date()));
+          console.log(`[fv-monitor] curvas de ayer: ${c.guardadas} guardadas, ${c.fallidas} con error`);
+        }
       } catch (err) {
         console.error("[fv-monitor] error:", err);
       }

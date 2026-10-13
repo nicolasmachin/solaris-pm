@@ -54,6 +54,13 @@ import {
 import { lanzarMonitorEnBackground } from "../services/reportesFv/monitor/monitor.service.js";
 import { leerGeneracionDiaria } from "../services/reportesFv/monitor/generacion-diaria.service.js";
 import { esDiaValido } from "../services/reportesFv/monitor/dias.js";
+import {
+  hoyUy,
+  obtenerAnios,
+  obtenerCurvaDia,
+  obtenerDiasDelMes,
+  obtenerMesesDelAnio,
+} from "../services/reportesFv/energia/curva.service.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { AuditAction, AuditEntityType } from "@prisma/client";
 import {
@@ -620,6 +627,50 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
         .object({ desde: diaSchema, hasta: diaSchema })
         .parse(request.query);
       return { dias: await leerGeneracionDiaria(projectId, desde, hasta) };
+    },
+  );
+
+  // ─── Vista de energía (como la aplicación de Growatt) ──────────────────────
+  // Hora: curva del día, pedida a Growatt al abrir y guardada. Día/Mes/Año: de
+  // lo guardado. Ver services/reportesFv/energia/curva.service.ts.
+  app.get(
+    "/reportes-fv/generadores/:projectId/energia/curva",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const q = z
+        .object({ fecha: z.string().optional(), forzar: z.enum(["true", "false"]).optional() })
+        .parse(request.query);
+      return obtenerCurvaDia(projectId, q.fecha ?? hoyUy(), { forzar: q.forzar === "true" });
+    },
+  );
+
+  app.get(
+    "/reportes-fv/generadores/:projectId/energia/dias",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const { periodo } = z.object({ periodo: periodoSchema.optional() }).parse(request.query);
+      return obtenerDiasDelMes(projectId, periodo ?? hoyUy().slice(0, 7));
+    },
+  );
+
+  app.get(
+    "/reportes-fv/generadores/:projectId/energia/meses",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const { anio } = z.object({ anio: z.coerce.number().int().optional() }).parse(request.query);
+      return obtenerMesesDelAnio(projectId, anio ?? Number(hoyUy().slice(0, 4)));
+    },
+  );
+
+  app.get(
+    "/reportes-fv/generadores/:projectId/energia/anios",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      return obtenerAnios(projectId);
     },
   );
 

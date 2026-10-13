@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.22 · del 12/10/26
+**Voltia · Uruguay** · Versión 1.23 · del 13/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1665,8 +1665,8 @@ partes:
 **Qué explicar:**
 
 - Son **dos cosas distintas**, y conviene explicarlo así desde el principio, con esos dos nombres siempre:
-- **El portal de Voltia:** el seguimiento del trámite, las encuestas, los tickets, los videos que se le mandaron, y donde carga su fecha de corte y su tarifa.
-- **La aplicación de tu inversor:** la generación en tiempo real, el histórico y el consumo. Es de la marca del inversor, no de Voltia.
+- **El portal de Voltia:** el seguimiento del trámite, las encuestas, los tickets, los videos que se le mandaron, y donde carga su fecha de corte y su tarifa. En *Mis reportes solares* ve además **su generación y su consumo**: la curva del día, los días del mes, los meses y los años, igual que en la aplicación de su inversor (en los inversores Growatt; en Huawei, por ahora, sin la curva del día).
+- **La aplicación de tu inversor:** la generación en tiempo real, el histórico y el consumo. Es de la marca del inversor, no de Voltia. Sigue sirviendo, pero ya no hace falta para ver cómo va.
 
 **Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación del inversor se le manda el link de descarga y las credenciales; si no tiene usuario, lo creás siguiendo el video instructivo.
 
@@ -1729,7 +1729,7 @@ partes:
 
 - Se compara la generación **real** (la aplicación del inversor) contra la **esperada** (el gráfico de la propuesta), **por mes y no por día**. Un día nublado aislado no dice nada.
 - El pico de potencia depende de la altura del sol, la orientación y la temperatura. **En invierno, con sol, es normal no llegar a la potencia nominal**: los 6 kWp son en condiciones ideales, no un piso de cada día.
-- Lo que más convence es mostrarle **la curva de potencia de un día soleado de ese mes**: ve que el sistema anda y entiende por qué no llega al número.
+- Lo que más convence es mostrarle **la curva de potencia de un día soleado de ese mes**: ve que el sistema anda y entiende por qué no llega al número. Está en su ficha, en **Generación y consumo → Hora**, yendo con las flechas al día que se quiera (y el cliente la ve igual en su portal).
 
 **Política interna:** se contesta **con números, no con opiniones**. Un "está bien, es normal" sin datos se lee como que no lo miraste.
 
@@ -1883,6 +1883,7 @@ capítulo aparte: repiten lo que ya se explicó, con la pantalla al lado.
 | Los pasos de la etapa | La lista de pasos, con los que tienen plazo resaltados, y el botón de plantillas | Dentro de la ficha |
 | Los mensajes modelo | El panel de plantillas: se elige a la izquierda, se lee a la derecha, se copia | Botón **Plantillas** de la etapa |
 | El trámite de UTE | Los hitos con sus fechas — lo mismo que ve el cliente | Dentro de la ficha |
+| La generación y el consumo | La curva del día, los días, los meses y los años, como en la aplicación del inversor, con cuánto se autoconsume, se exporta y se importa | Dentro de la ficha (**Generación y consumo**) |
 | El portal del cliente | Su pantalla tal cual la ve él | Se abre en modo cliente desde el listado (el ojito) o desde la ficha (**Ver como el cliente**) |
 | Los reportes mensuales | El tablero desde donde salen, con los tres pasos numerados | Experiencia Solar → Reportes FV |
 | El listado de clientes | Agrupado por etapa y ordenado por prioridad de contacto | Experiencia Solar → Generadores |
@@ -1898,6 +1899,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.23 | 13 de octubre de 2026 | En la ficha del cliente y en el portal de Voltia se agrega Generación y consumo: la curva del día, los días, los meses y los años, como en la aplicación del inversor. Se usa para contestar "genera poco" con la curva de un día soleado. |
 | 1.22 | 12 de octubre de 2026 | Crear el acceso al portal, reenviarlo, copiar el enlace y ver el portal como el cliente se pueden hacer también desde la ficha del cliente. Al pie de la ficha del cliente se agrega el bloque Comentarios y archivos; cada área registra desde su propia pantalla (Ingeniería, Tramitación UTE, Finanzas); los archivos se abren desde el historial, y los contactos con el cliente se ven también desde el proyecto. |
 | 1.21 | 12 de octubre de 2026 | El portal tiene una pestaña de Videos: los videos al cliente se mandan con el enlace del portal, para que le queden guardados y los pueda volver a ver. |
 | 1.20 | 11 de octubre de 2026 | La fecha tentativa ya no es parte del procedimiento: el gerente de Operaciones la usa solo si le sirve para organizarse, y nunca se le comunica al cliente. |

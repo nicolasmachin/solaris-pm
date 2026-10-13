@@ -23,6 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.5",
+  date: "13 de octubre de 2026",
+  sections: [
+    {
+      title: "Generación y consumo, como en la aplicación de Growatt",
+      items: [
+        "En la ficha del cliente, la sección Generación y consumo con las pestañas Hora (curva del día cada 5 minutos), Día, Mes y Año.",
+        "El resumen del período: autoconsumo, exportado e importado de la red.",
+        "La misma vista en el portal de Voltia, para que el cliente no necesite la aplicación del inversor.",
+        "Si la planta no mide el consumo, se muestra solo la producción. Huawei: Día, Mes y Año.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_4: Release = {
   version: "12.4",
   date: "12 de octubre de 2026",
   sections: [
@@ -584,6 +600,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.4",
+    shortDate: "12 oct",
+    highlights: RELEASE_12_4.sections.map((sec) => sec.title),
+  },
   {
     version: "12.3",
     shortDate: "11 oct",

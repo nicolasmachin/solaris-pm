@@ -195,7 +195,7 @@ function aEstadoDispositivo(d: DispositivoGrowatt): EstadoDispositivo {
   };
 }
 
-async function guardarDispositivos(plantId: bigint, dispositivos: DispositivoGrowatt[]) {
+export async function guardarDispositivos(plantId: bigint, dispositivos: DispositivoGrowatt[]) {
   const ahora = new Date();
   for (const d of dispositivos) {
     if (!d.deviceSn) continue;
@@ -234,7 +234,7 @@ interface ResultadoPlanta {
  * Devuelve null si la planta no tiene medidor: hay clientes que directamente no
  * lo tienen, y para ellos no hay exportación que consultar nunca.
  */
-async function resolverMedidor(
+export async function resolverMedidor(
   plantId: bigint,
   onRequest: () => void,
 ): Promise<{ dataloggerSn: string; address: string } | null> {

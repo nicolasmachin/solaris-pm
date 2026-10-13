@@ -1258,6 +1258,242 @@ planta Huawei tampoco tiene botón todavía (los campos existen en el modelo).
 
 ---
 
+# Vista de energía: generación y consumo (como la aplicación de Growatt)
+
+## Para qué existe
+
+Para que el equipo y el cliente vean la generación y el consumo de la planta sin
+entrar a la aplicación del inversor. Replica la pantalla "Poder | Energía" de la
+aplicación de Growatt: pestañas **Hora**, **Día**, **Mes** y **Año**, con el
+resumen de autoconsumo, exportado e importado.
+
+Nació el 13-oct-2026. Se verificó contra la aplicación de Growatt con Rafael
+Ricca: el 12-oct dio producción 21,4, consumo 29,2, importado 15,9, exportado
+8,1 y autoconsumo 13,3 kWh, igual que la aplicación, y el mes del 1 al 12
+(394,7 kWh de producción y 303,7 de consumo) también.
+
+## Cómo se usa
+
+- **Ficha del cliente** (`ClienteFichaPage.tsx`): sección "Generación y consumo",
+  a todo el ancho, entre las dos columnas y "Comentarios y archivos". Aparece
+  solo si el proyecto tiene una planta Growatt o Huawei vinculada y no ignorada
+  (`tienePlantaMonitoreo`, que arma `getClienteFicha()`).
+- **Portal de Voltia**, en *Mis reportes solares* (`PortalReportes.tsx` →
+  `PortalEnergiaPlantas.tsx`): una vista por planta del cliente, con el nombre si
+  tiene más de una.
+- **Hora**: la curva del día (W cada 5 minutos, dibujada en kW). Producción como
+  área, consumo, exportado e importado como líneas. Navegación por día; en el
+  día de hoy, "Datos de Growatt hace X" y **Actualizar**.
+- **Día / Mes / Año**: barras de producción, consumo y exportado (el importado
+  está en el tooltip, la tabla y el resumen, como en la aplicación de Growatt).
+- La leyenda apaga y prende series; **Ver tabla** muestra los números (en Hora,
+  cada 30 minutos).
+- Abajo, dos barras: producción repartida en autoconsumo y exportado, y consumo
+  repartido en autoconsumo e importado.
+
+## Cómo funciona
+
+**Una sola pieza, dos fuentes.** `components/energia/EnergiaPlanta.tsx` recibe
+`fuentes: FuentesEnergia` (`api/energiaFv.api.ts`): `fuentesInternas(projectId)`
+para la ficha y `fuentesPortal(projectId)` para el portal. El servicio es el
+mismo: `services/reportesFv/energia/curva.service.ts`.
+
+**Hora — de Growatt al abrir, y guardada.** `obtenerCurvaDia(projectId, dia)`:
+
+1. Si ya hay `FvCurvaDia` del día y está `completo`, o es el día en curso y tiene
+   menos de 5 minutos, devuelve eso.
+2. Si no, la pide a Growatt (`pedirYGuardar`): por cada inversor de la planta,
+   `muestrasInversorDelDia()` — `POST device/tlx/tlx_data` para los MIN (tipo 7)
+   o `device/max/max_data` para los MAX (tipo 4) —, paginado de a 100 (más da
+   error 10013), ~3 páginas por día. Todas las consultas de curva del proceso
+   pasan por **una fila** (`enFila` en `growatt/client.ts`) con
+   `GROWATT_PAUSA_CURVA_MS` (2 s) entre una y otra: la ficha, el portal y el
+   guardado nocturno pueden pedir a la vez, y con ~1,3 s Growatt devuelve vacío
+   o 10012. Si una página vuelve vacía a mitad del día (Growatt a veces corta
+   así, sin error), `paginasDelDia` tira error en vez de devolver el día a
+   medias, y los registros repetidos entre páginas se descartan.
+3. Si el inversor no trae la medición (MAX, o MIN al que no le llega el medidor),
+   pide el medidor aparte: `resolverMedidor()` (caché del monitoreo) y
+   `muestrasMedidorCurva()` (`device/ammeter/meter_data`, paginado de a 100).
+4. `armarCurva()` (`energia/curva.ts`, puro y con tests) junta todo en tramos de
+   5 minutos y calcula los totales. Se guarda en `FvCurvaDia`. Si el día está
+   cerrado, sus totales van además a `ReporteFvGeneracionDiaria`
+   (`guardarTotalesDelDia`), que es de donde salen Día, Mes y Año.
+
+Un mismo día de una planta no se pide dos veces en paralelo (`enCurso`). Los
+equipos de la planta se leen del caché del monitoreo (`GrowattDevice`); si no
+están, se piden una vez y se guardan (`guardarDispositivos`).
+
+**Dos formas de medir el consumo** (`origenMedicion`):
+
+- `INVERSOR` (MIN con el medidor conectado): cada registro trae `pacToLocalLoad`
+  (consumo), `pacToUserTotal` (de la red) y `pacToGridTotal` (a la red). Curva
+  completa, también de noche.
+- `MEDIDOR` (MAX, o MIN cuyo medidor no reporta): el medidor da `activePower`,
+  que **es solo lo que se toma de la red: al exportar marca 0, no negativo**. Lo
+  exportado se deduce de cuánto sube `reverseActiveTodayEnergy`, que avanza de a
+  0,1 kWh (1,2 kW de salto en 5 minutos), así que se promedia en una ventana de
+  30 minutos. Consumo = producción + red − exportado. La pantalla avisa que la
+  curva es aproximada; los totales son exactos.
+- `null`: sin medidor, o medidor que no le llega al inversor (todo en 0 en el
+  día). Consumo, red y exportado quedan null y la pantalla lo dice. Caso real:
+  Pablo Stratta.
+
+**Los totales del día** (`totalDelContador`). Salen de los contadores "de hoy"
+del equipo (`eacToday`, `elocalLoadToday`, `etoUserToday`, `etoGridToday`; en el
+medidor, `positiveActiveTodayEnergy` y `reverseActiveTodayEnergy`), que es lo
+que muestra Growatt. Tienen tres trampas:
+
+- En los MIN **se reinician cuando el inversor arranca con el sol, no a la
+  medianoche**: entre la medianoche y el amanecer arrastran el valor de ayer (y
+  el de consumo sigue sumando la noche). A la 1 de la mañana el "hoy" de Belora
+  decía 18,9 kWh de producción, con la curva en 0.
+- **Si el equipo se reinicia a mitad del día**, el contador vuelve a cero y el
+  último valor se queda corto. Ricca, 10-oct: el contador decía 7,6 kWh y la
+  curva integraba 36.
+- Bajas chicas por redondeo.
+
+Por eso no se toma el último valor: se **suman los aumentos entre muestras
+consecutivas**, y en un reinicio el valor nuevo cuenta entero
+(`lecturasDelContador`). Lo único que no se sabe es si el primer valor del día
+es de hoy (contador que arrancó a la medianoche) o arrastre de ayer: de las dos
+lecturas (contándolo o no) se toma la más cercana a la curva integrada, y si
+ninguna se le parece (más de 25 % y más de 1 kWh) se usa la curva. Así entra
+también el consumo de la madrugada. Lo encontró la revisión del 13-oct.
+
+Dos detalles que costaron:
+
+- **La curva integrada se calcula por tramos de 5 minutos**, no sumando
+  registros: algunos inversores mandan más de uno por tramo (Ricca, 194 en un
+  día), y sumarlos crudos daba 48 kWh en vez de 36.
+- **El medidor aparte (MAX) se toma tal cual, sin árbitro**: se reinicia a la
+  medianoche, pero no reporta de noche. La primera muestra de Ricca es de las
+  06:16 y ya trae 10,9 kWh importados desde la medianoche; compararla con la
+  curva (que no tiene la noche) la descartaba como arrastre.
+
+**Un día se da por cerrado** (`completo`) recién 2 horas después de terminar: el
+datalogger a veces sube los últimos registros con atraso. Y **no se cierra**
+—queda para volver a pedirse— si algún inversor falló o no devolvió registros,
+o si la planta tiene medidor y no se pudo leer (o volvió vacío): quedaría
+guardado incompleto para siempre. Un inversor que falla no tira abajo la curva
+(se muestran los demás); solo si fallan todos se devuelve error.
+
+**La generación de la serie diaria no se pisa.** La escribe el monitoreo con el
+total de la planta, o alguien a mano; la curva solo la crea si falta y escribe
+la medición (consumo, importación, exportación). Si el consumo sale del medidor
+aparte, se recalcula con la generación guardada (generación + red − exportado)
+para que el día cierre consigo mismo.
+
+**Plantas sin medidor**: se recuerdan 24 horas en memoria (`sinMedidor`) para no
+preguntar la lista de equipos en cada apertura.
+
+**No se pide un día anterior al primer dato de la planta** (primera fila de la
+serie diaria): cada pedido son 3 a 6 consultas y dejaría un día vacío.
+
+**Día / Mes / Año — de lo guardado, sin llamar a Growatt.**
+`obtenerDiasDelMes` lee `ReporteFvGeneracionDiaria`. `obtenerMesesDelAnio` y
+`obtenerAnios` usan la lectura mensual (`ReporteFvLectura`, la de los reportes
+FV) cuando existe y, si no (el mes en curso), la suma de los días. En las sumas,
+**el consumo y la red solo se suman si todos los días con producción los
+tienen**: un total con días faltantes subestimaría el consumo. El resumen trae
+`cobertura` (días o meses con producción y cuántos con consumo), y la pantalla
+distingue "esta planta no mide el consumo" (0 de N) de "el consumo está medido
+en N de M días" (antes de esta función, o días en que falló el medidor). Ojo: en
+Mes, un mes con lectura mensual oficial muestra esa, que puede no coincidir con
+la suma de sus barras de Día.
+
+**De noche, solo.** El cron del monitoreo (`monitor.job.ts`), después del
+digest, corre `guardarCurvasDelDia(ayer)` para todas las plantas Growatt
+vinculadas, de a una y con pausa (~4 consultas por planta). Así el historial se
+arma sin que nadie abra la ficha. Se apaga con `ENERGIA_CURVA_NOCTURNA=false`.
+
+**Huawei.** No hay curva por hora todavía (`obtenerCurvaDia` responde
+`disponible: false` con el motivo). Día, Mes y Año sí: la serie diaria de
+FusionSolar (`serieDiariaDelMes`) ya traía consumo e importación, y desde esta
+versión `guardarExportacionHuawei()` los guarda además de la exportación.
+
+**Relleno hacia atrás**: `server/prisma/scripts/backfill-curvas-energia.ts
+--desde AAAA-MM-DD [--hasta] [--proyecto]`. Saltea los días ya cerrados, así que
+se puede cortar y volver a correr. Todas las plantas por 30 días son unas 2.000
+consultas: más de una hora.
+
+**Colores**: producción ámbar y consumo azul (los del portal), exportado verde
+agua e importado naranja. Son los pasos claros y oscuros de la paleta de
+referencia de visualización, validados contra daltonismo y contraste sobre el
+fondo de Voltia PM (`#0b1d33`). Se definen como variables en `.energia-viz` y
+cambian solos con el tema claro (`:root.light`).
+
+## Permisos
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /reportes-fv/generadores/:projectId/energia/{curva,dias,meses,anios}` | `EXPERIENCIA_CLIENTES:VIEW` |
+| `GET /client/energia/plantas` y `/client/energia/:projectId/{curva,dias,meses,anios}` | `PORTAL_CLIENTE:VIEW` + que la planta sea del cliente (`plantaDelCliente`) |
+
+El portal aplica la misma regla que el gráfico diario: planta Growatt o Huawei
+no ignorada, y si se le apagó el reporte mensual (`reporteFvConfig.habilitado =
+false`) no ve el detalle. Un cliente que pide la planta de otro recibe 404
+("no existe o no es tuyo"). En el portal **no hay "Actualizar"** y el parámetro
+`forzar` se ignora: un cliente no puede disparar consultas a Growatt a voluntad.
+
+## Reglas y decisiones
+
+- **No se consulta en segundo plano cada 5 minutos.** Con ~60 plantas sería una
+  consulta cada 5 segundos, en el borde de lo que Growatt tolera, y la curva
+  entera del día viene en una tanda. Se pide al abrir, como hace la aplicación
+  de Growatt.
+- **Los totales mandan sobre los puntos sueltos.** La curva del medidor aparte
+  toma la muestra que cae en cada tramo; Growatt la promedia a su manera, así
+  que un punto puede diferir (Ricca 12-oct 07:15: 1,42 kW importados contra
+  0,93 en la aplicación). Los totales del día coinciden.
+- **El dibujo se suaviza** (promedio móvil de 15 minutos, `suavizar()` en el
+  componente); el tooltip muestra el valor real del tramo.
+- El eje de Hora muestra solo las horas con datos, con un mínimo de 8 horas.
+
+## Casos borde
+
+- **Planta vinculada en Growatt pero sin proyecto**: no aparece en ninguna ficha.
+  Al 13-oct, Rafael Ricca y Pablo Stratta estaban así en producción.
+- **Un mismo equipo listado dos veces** con tipos distintos (Ricca: tipo 1 y 4
+  con el mismo número de serie): al guardar los equipos se ordenan para que
+  quede el de curva.
+- **Inversores de otros tipos** (no 7 ni 4): "Growatt no da la curva de este
+  modelo de inversor".
+- **Varios MIN en la misma planta**: la producción se suma; la medición del
+  medidor se toma del mayor (todos ven el mismo medidor).
+- **Rate limit**: si Growatt corta, la pantalla dice que se pruebe en un minuto.
+  El reintento del cliente HTTP espera hasta 20 s por intento, así que un
+  pedido que falla puede tardar.
+- **El script de relleno corre en otro proceso**: la fila de consultas no lo
+  cubre. No largarlo cerca de las 8, cuando corre el monitoreo.
+- **Huawei**: la pestaña Hora dice que no está disponible y la vista se abre en
+  Día.
+- **Pendiente, no resuelto**: `FvCurvaDia` no guarda de qué planta salió. Si una
+  planta estuvo vinculada al proyecto equivocado y se corrige, las curvas ya
+  cerradas quedan en el proyecto: hay que borrarlas a mano. Y un día que no se
+  puede cerrar (medidor que falla siempre) se vuelve a pedir en cada apertura,
+  sin tope.
+
+## Archivos
+
+| Qué | Dónde |
+|---|---|
+| Lógica pura y tests | `server/src/services/reportesFv/energia/curva.ts`, `curva.test.ts` |
+| Servicio | `server/src/services/reportesFv/energia/curva.service.ts` |
+| Consultas a Growatt | `growatt/client.ts` → `muestrasInversorDelDia()`, `muestrasMedidorCurva()` |
+| Rutas | `routes/reportes-fv.routes.ts`, `routes/portal.routes.ts` |
+| Pantalla | `client/src/components/energia/EnergiaPlanta.tsx`, `components/portal/PortalEnergiaPlantas.tsx` |
+| Relleno | `server/prisma/scripts/backfill-curvas-energia.ts` |
+
+## Variables de entorno
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `GROWATT_PAUSA_CURVA_MS` | 2000 | Pausa entre páginas y equipos al pedir una curva |
+| `ENERGIA_CURVA_NOCTURNA` | (prendido) | `false` apaga el guardado de la curva de ayer en el cron del monitoreo |
+
+---
+
 # Ingesta de generadores Huawei (FusionSolar)
 
 ## Para qué existe

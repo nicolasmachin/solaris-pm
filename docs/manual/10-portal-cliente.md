@@ -8,6 +8,20 @@ Lo que ve el cliente final: sus proyectos, tickets, encuestas y reportes.
 
 ---
 
+# Generación y consumo (vista de energía)
+
+En *Mis reportes solares* el cliente tiene la misma vista que el equipo en la
+ficha: pestañas Hora, Día, Mes y Año, como la aplicación de Growatt, una por
+planta. Endpoints `/client/energia/plantas` y `/client/energia/:projectId/*`,
+con `PORTAL_CLIENTE:VIEW` y el chequeo de que la planta sea suya. Todo el
+detalle (de dónde salen los datos, los totales, los casos borde) está en el
+capítulo 09, *Vista de energía*.
+
+La tarjeta "Generación día a día" de abajo sigue existiendo y se superpone con la
+pestaña Día de la vista nueva: queda pendiente decidir si se saca.
+
+---
+
 # Generación día a día
 
 ## Para qué existe

@@ -97,6 +97,8 @@ export interface ClienteFicha extends ClienteListItem {
   tramiteUte: { etapa: string; desde: string | null } | null;
   interacciones: ClienteInteraction[];
   proyectoUrl: string;
+  /** Tiene una planta Growatt o Huawei vinculada: muestra la vista de energía. */
+  tienePlantaMonitoreo?: boolean;
 }
 
 export interface ClientesFilters {

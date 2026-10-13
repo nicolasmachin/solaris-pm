@@ -44,13 +44,28 @@ export async function guardarExportacionDiaria(
  */
 export async function guardarExportacionHuawei(
   projectId: string,
-  dias: { fecha: string; consumoKwh: number; exportacionKwh: number }[],
+  dias: { fecha: string; consumoKwh: number; exportacionKwh: number; importacionKwh?: number }[],
 ): Promise<number> {
   let escritos = 0;
   for (const d of dias) {
     if (!Number.isFinite(d.exportacionKwh) || d.exportacionKwh < 0) continue;
     if (d.consumoKwh <= 0 && d.exportacionKwh <= 0) continue;
-    await guardarExportacionDiaria(projectId, d.fecha as Dia, d.exportacionKwh);
+    // Consumo e importación vienen en la misma serie (vista de energía,
+    // pestaña "Día"): con el medidor reportando, son medición real.
+    await prisma.reporteFvGeneracionDiaria.updateMany({
+      where: { projectId, fecha: diaADate(d.fecha as Dia) },
+      data: {
+        exportacionKwh: new Prisma.Decimal(d.exportacionKwh.toFixed(2)),
+        ...(Number.isFinite(d.consumoKwh) && d.consumoKwh > 0
+          ? { consumoKwh: new Prisma.Decimal(d.consumoKwh.toFixed(2)) }
+          : {}),
+        // Solo si es > 0: el cliente de Huawei convierte un campo ausente en 0,
+        // y un 0 guardado se tomaría como medición real.
+        ...(d.importacionKwh !== undefined && Number.isFinite(d.importacionKwh) && d.importacionKwh > 0
+          ? { importacionKwh: new Prisma.Decimal(d.importacionKwh.toFixed(2)) }
+          : {}),
+      },
+    });
     escritos++;
   }
   return escritos;

@@ -765,6 +765,9 @@ export async function getClienteFicha(projectId: string) {
       // Lead de origen y trámite: para poder saltar a Ventas y a Trámites UTE
       // desde la ficha sin buscar al cliente de nuevo en cada módulo.
       convertedLeads: { select: { id: true }, take: 1 },
+      // Para mostrar la vista de energía solo si hay planta de monitoreo.
+      growattPlant: { select: { ignorada: true } },
+      huaweiPlant: { select: { ignorada: true } },
     },
   });
 
@@ -793,6 +796,8 @@ export async function getClienteFicha(projectId: string) {
     tramiteUte: ute ? { etapa: ute.currentStage, desde: serializeDateOnly(lastActionAt(ute)) } : null,
     interacciones: p.clientInteractions.map(serializeInteraction),
     proyectoUrl: `/projects/${p.id}`,
+    tienePlantaMonitoreo:
+      (!!p.growattPlant && !p.growattPlant.ignorada) || (!!p.huaweiPlant && !p.huaweiPlant.ignorada),
   };
 }
 

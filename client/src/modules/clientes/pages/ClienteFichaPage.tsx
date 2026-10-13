@@ -11,6 +11,8 @@ import { AccesoPortalAcciones } from "../components/AccesoPortalAcciones";
 import { ClienteInteractionForm } from "../components/ClienteInteractionForm";
 import { ClienteTimeline } from "../components/ClienteTimeline";
 import { ComentariosYArchivos } from "../../../components/area/ComentariosYArchivos";
+import { EnergiaPlanta } from "../../../components/energia/EnergiaPlanta";
+import { fuentesInternas } from "../../../api/energiaFv.api";
 import { ClienteTramiteUteCard } from "../components/ClienteTramiteUteCard";
 import { EditableCell } from "../components/EditableCell";
 import { RecorridoChecks } from "../components/RecorridoChecks";
@@ -295,6 +297,12 @@ export function ClienteFichaPage() {
           </div>
         </div>
       </div>
+
+      {/* Generación y consumo de la planta, como en la aplicación de Growatt.
+          Solo si el cliente tiene una planta de monitoreo vinculada. */}
+      {projectId && ficha.tienePlantaMonitoreo && (
+        <EnergiaPlanta fuentes={fuentesInternas(projectId)} claveCache={projectId} />
+      )}
 
       {/* Experiencia Solar comenta y adjunta desde la ficha (capturas de
           WhatsApp, una foto que mandó el cliente) sin ir al proyecto. */}
