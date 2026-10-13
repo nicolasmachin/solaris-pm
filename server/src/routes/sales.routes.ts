@@ -17,6 +17,7 @@ import { contentDisposition } from "../utils/content-disposition.js";
 import {
   deleteLeadAttachmentFile,
   leadAttachmentAbsolutePath,
+  copyLeadAttachmentToProject,
   saveLeadAttachment,
 } from "../services/sales/sales.service.js";
 import {
@@ -87,7 +88,7 @@ export async function registerSalesRoutes(app: FastifyInstance) {
 
       const lead = await prisma.salesLead.findFirst({
         where: { id: params.id, deletedAt: null },
-        select: { id: true },
+        select: { id: true, convertedToProjectId: true },
       });
       if (!lead) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
 
@@ -116,6 +117,31 @@ export async function registerSalesRoutes(app: FastifyInstance) {
         action: AuditAction.file_uploaded,
         description: `Subió adjunto "${saved.filename}" al lead`,
       });
+
+      // Lead ya ganado: el adjunto pasa también al proyecto, como en la
+      // conversión. Antes quedaba solo en el lead y el proyecto no lo veía.
+      // Best-effort: si falla, el adjunto ya está guardado en el lead.
+      if (lead.convertedToProjectId) {
+        try {
+          const proyecto = await prisma.project.findFirst({
+            where: { id: lead.convertedToProjectId, deletedAt: null },
+            select: { id: true },
+          });
+          const copia = proyecto ? await copyLeadAttachmentToProject(created.id, proyecto.id) : null;
+          if (copia && proyecto) {
+            await createAuditEntry({
+              entityType: AuditEntityType.file,
+              entityId: copia.id,
+              projectId: proyecto.id,
+              userId: user.id,
+              action: AuditAction.file_uploaded,
+              description: `Subió archivo '${copia.filename}' desde el lead`,
+            });
+          }
+        } catch (err) {
+          request.log.error({ err, leadId: lead.id }, "copiar adjunto del lead al proyecto falló");
+        }
+      }
 
       reply.code(201);
       return serializeLeadAttachment(created);

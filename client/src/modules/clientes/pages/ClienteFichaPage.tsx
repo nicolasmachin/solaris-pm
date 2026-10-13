@@ -10,6 +10,7 @@ import { usePermission } from "../../../hooks/usePermission";
 import { AccesoPortalAcciones } from "../components/AccesoPortalAcciones";
 import { ClienteInteractionForm } from "../components/ClienteInteractionForm";
 import { ClienteTimeline } from "../components/ClienteTimeline";
+import { ComentariosYArchivos } from "../../../components/area/ComentariosYArchivos";
 import { ClienteTramiteUteCard } from "../components/ClienteTramiteUteCard";
 import { EditableCell } from "../components/EditableCell";
 import { RecorridoChecks } from "../components/RecorridoChecks";
@@ -294,6 +295,10 @@ export function ClienteFichaPage() {
           </div>
         </div>
       </div>
+
+      {/* Experiencia Solar comenta y adjunta desde la ficha (capturas de
+          WhatsApp, una foto que mandó el cliente) sin ir al proyecto. */}
+      {projectId && <ComentariosYArchivos projectId={projectId} area="client" />}
     </div>
   );
 }

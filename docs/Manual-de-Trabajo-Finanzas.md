@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.10 · del 11/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.11 · del 12/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -569,6 +569,12 @@ el presupuesto, lo cobrado y lo pendiente. Se filtra por cómo está el pago:
 **Pendientes**, **Parciales**, **Completos**, **Excedidos** o **Sin
 presupuesto** (o **Todos los estados**).
 
+**Comentarios y archivos del cobro.** Al pie del detalle de cada cliente está
+el bloque **Comentarios y archivos**: ahí Finanzas anota lo que se acordó con el
+cliente sobre los pagos y sube los comprobantes, sin ir a la pantalla del
+proyecto. Queda en el proyecto y en la ficha del cliente, marcado como de
+Finanzas.
+
 **El detalle de un cliente** (tocando un proyecto) muestra los cobros ya
 recibidos y los **previstos** del plan, ordenados por fecha. Los previstos se
 distinguen con la etiqueta **PREVISTO**. Los totales cuentan solo lo
@@ -1037,6 +1043,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.11 | 12 de octubre de 2026 | En el detalle del cobro de cada cliente se agrega el bloque Comentarios y archivos, para anotar lo acordado y subir comprobantes desde ahí. |
 | 0.10 | 11 de octubre de 2026 | Con financiación bancaria, la gestión con el banco la sigue el asesor hasta que termina. |
 | 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Quién aprueba las compras: lo de la lista de materiales, nadie (lo compra directo el encargado de compras); lo de fuera, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas, y por encima Finanzas o Gerencia. |
 | 0.8 | 10 de octubre de 2026 | Las facturas recibidas también se cargan a mano, con el mismo control para no cargar dos veces la misma; cada factura tiene su PDF (de la facturación electrónica o subido a mano). |

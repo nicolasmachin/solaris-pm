@@ -47,6 +47,7 @@ import {
   getPhaseTypeLabel,
   getPhaseTypeShortLabel,
 } from "../components/project/SolarSystemFields";
+import { ContactoClienteTab } from "../components/project/ContactoClienteTab";
 
 // ─── Skeletons ────────────────────────────────────────────────────────────────
 
@@ -792,7 +793,7 @@ export function ProjectDetail() {
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
   const [deletingSolarSystemId, setDeletingSolarSystemId] = useState<string | null>(null);
-  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "compras" | "ute" | "costos">("activity");
+  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "contacto" | "timeline" | "materiales" | "compras" | "ute" | "costos">("activity");
   const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
   const canViewStock = usePermission("STOCK", "VIEW");
@@ -1082,6 +1083,13 @@ export function ProjectDetail() {
           >
             Comentarios
           </button>
+          <button
+            className={`rounded-full px-3 py-1 text-xs ${bottomTab === "contacto" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
+            onClick={() => setBottomTab("contacto")}
+            type="button"
+          >
+            Contacto con el cliente
+          </button>
           {canViewMetrics ? (
             <button
               className={`rounded-full px-3 py-1 text-xs ${bottomTab === "timeline" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
@@ -1167,6 +1175,8 @@ export function ProjectDetail() {
             canCreate={canCreateUte}
             onChanged={invalidate}
           />
+        ) : bottomTab === "contacto" ? (
+          <ContactoClienteTab projectId={project.id} />
         ) : bottomTab === "costos" ? (
           <CostosTab projectId={project.id} budgetUsd={project.budgetUsd ?? null} />
         ) : (

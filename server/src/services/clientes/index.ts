@@ -1157,9 +1157,12 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
   const archivos = fileIds.length
     ? await prisma.fileAttachment.findMany({
         where: { id: { in: fileIds } },
-        select: { id: true, toolSource: true, area: true },
+        select: { id: true, toolSource: true, area: true, filename: true, mimeType: true, sizeBytes: true, deletedAt: true },
       })
     : [];
+  // Para poder abrir el archivo desde la ficha (no solo leer "Subió archivo"),
+  // si todavía existe.
+  const archivoVivo = new Map(archivos.filter((f) => !f.deletedAt).map((f) => [f.id, f] as const));
   const moduloPorArchivo = new Map(
     archivos.map(
       (f) =>
@@ -1207,7 +1210,15 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       autor: a.user ? { id: a.user.id, nombre: a.user.name } : null,
       automatico: false,
       createdAt: serializeDate(a.timestamp) ?? "",
-      meta: { action: a.action },
+      meta: {
+        action: a.action,
+        ...(a.action === AuditAction.file_uploaded && archivoVivo.has(a.entityId)
+          ? (() => {
+              const f = archivoVivo.get(a.entityId)!;
+              return { fileId: f.id, filename: f.filename, mimeType: f.mimeType, sizeBytes: f.sizeBytes };
+            })()
+          : {}),
+      },
     });
   }
 

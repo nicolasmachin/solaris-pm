@@ -191,14 +191,18 @@ Nadie tiene que entrar a un módulo que no usa para dejar una nota.
 | Área | Qué registra | Dónde lo hace |
 |---|---|---|
 | **Comercial** | Lo que le prometió al cliente en la venta: plazos, alcance, condiciones especiales | Comentarios del lead y del proyecto |
-| **Ingeniería** | Cambios de alcance o de diseño que el cliente tiene que saber | Comentarios del proyecto / etapa |
+| **Ingeniería** | Cambios de alcance o de diseño que el cliente tiene que saber | **Comentarios y archivos** de su espacio de Ingeniería |
 | **Capataz / Operaciones** | **Todo intercambio con el cliente en la obra** y cualquier incidente: algo que se rompió, un pedido que hizo, una queja al pasar | Comentario en la etapa del proyecto, **desde el celular** |
-| **Tramitación UTE** | Novedades del trámite que cambian el plazo prometido | Comentarios del proyecto / módulo UTE |
-| **Experiencia Solar** | Cada contacto con el cliente: el canal y qué se dijo | El formulario del **historial** de la ficha |
-| **Finanzas** | Los cobros que entran y las facturas que se emiten | Finanzas — **aparecen solos** en el historial del cliente |
+| **Tramitación UTE** | Novedades del trámite que cambian el plazo prometido | **Comentarios y archivos** del trámite, en Trámites UTE |
+| **Experiencia Solar** | Cada contacto con el cliente: el canal y qué se dijo. Y lo que no es un contacto (una nota interna, una captura que mandó el cliente) | El formulario del **historial** de la ficha; las notas y los archivos, en **Comentarios y archivos**, al pie de la ficha |
+| **Finanzas** | Los cobros que entran y las facturas que se emiten, y lo que se acordó con el cliente sobre los pagos | Los cobros **aparecen solos** en el historial; lo demás, en **Comentarios y archivos** del cobro del cliente |
 
 **Todos esos comentarios llegan al Historial de la ficha del cliente**, indicando
-de dónde salieron (por ejemplo *"en Ejecución de obra"*). El capataz no necesita
+de qué área vienen y de dónde salieron (por ejemplo *"en Ejecución de obra"*).
+Los archivos que se suben también aparecen, y **se abren desde el mismo
+historial**. Y al revés: lo que Experiencia Solar registra como contacto con el
+cliente lo ven las demás áreas en la pantalla del proyecto, en la pestaña
+**Contacto con el cliente**. El capataz no necesita
 permisos de Experiencia Solar ni entrar a ese módulo: **comentar el proyecto
 alcanza**.
 
@@ -1894,7 +1898,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.22 | 12 de octubre de 2026 | Crear el acceso al portal, reenviarlo, copiar el enlace y ver el portal como el cliente se pueden hacer también desde la ficha del cliente. |
+| 1.22 | 12 de octubre de 2026 | Crear el acceso al portal, reenviarlo, copiar el enlace y ver el portal como el cliente se pueden hacer también desde la ficha del cliente. Al pie de la ficha del cliente se agrega el bloque Comentarios y archivos; cada área registra desde su propia pantalla (Ingeniería, Tramitación UTE, Finanzas); los archivos se abren desde el historial, y los contactos con el cliente se ven también desde el proyecto. |
 | 1.21 | 12 de octubre de 2026 | El portal tiene una pestaña de Videos: los videos al cliente se mandan con el enlace del portal, para que le queden guardados y los pueda volver a ver. |
 | 1.20 | 11 de octubre de 2026 | La fecha tentativa ya no es parte del procedimiento: el gerente de Operaciones la usa solo si le sirve para organizarse, y nunca se le comunica al cliente. |
 | 1.19 | 11 de octubre de 2026 | El contrato lo intercambia el asesor y Voltia firma último, con firma digital; Experiencia Solar controla que quede archivado. Al vender, el asesor le da al cliente solo una estimación de obra por quincena, que no es una fecha. |

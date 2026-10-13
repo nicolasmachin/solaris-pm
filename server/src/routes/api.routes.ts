@@ -532,6 +532,7 @@ const userPasswordPatchSchema = z
 const AREAS_TRABAJO = ["operaciones", "ingenieria", "ute", "client", "cobros"] as const;
 const areaTrabajoSchema = z.enum(AREAS_TRABAJO);
 const AREA_LABEL: Record<string, string> = {
+  sales: "Ventas",
   operaciones: "Operaciones",
   ingenieria: "Ingeniería",
   ute: "Tramitación UTE",

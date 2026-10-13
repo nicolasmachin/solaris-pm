@@ -6,10 +6,13 @@
 
 #### Cada área comenta y adjunta desde su pantalla
 
-- **Ingeniería** (en el espacio de cada proyecto) y **Tramitación UTE** (en el detalle del trámite) tienen ahora su bloque **Comentarios y archivos**: se escribe un comentario o se sube un archivo sin tener que ir a la pantalla del proyecto.
+- **Ingeniería** (en el espacio de cada proyecto), **Tramitación UTE** (en el detalle del trámite), **Experiencia Solar** (en la ficha del cliente) y **Finanzas** (en el cobro de cada cliente) tienen ahora su bloque **Comentarios y archivos**: se escribe un comentario o se sube un archivo sin tener que ir a la pantalla del proyecto.
 - Todo queda en el mismo proyecto: lo ven las demás áreas y aparece en la ficha del cliente **marcado con el área que lo hizo** (antes un comentario general salía siempre como "Operaciones").
 - Los archivos se pueden ver solo los del área o todos los del proyecto, y se abren ahí mismo. Cada área borra lo que subió; Operaciones, como siempre, puede borrar cualquiera.
 - Tramitación UTE ya puede subir y abrir los archivos del proyecto (antes no tenía permiso).
+- En la pantalla del proyecto hay una pestaña nueva, **Contacto con el cliente**: lo que Experiencia Solar habló con el cliente (llamadas, WhatsApp, mails), que antes solo se veía en la ficha.
+- Lo que se adjunta en un lead **después de ganado** ahora pasa también al proyecto. Antes quedaba solo en el lead.
+- En la ficha del cliente, los archivos que se subieron **se pueden abrir** desde el historial, no solo leer que se subió uno.
 
 #### Videos para clientes en el portal
 

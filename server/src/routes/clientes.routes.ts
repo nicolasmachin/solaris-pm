@@ -13,7 +13,7 @@ import { prisma } from "../lib/prisma.js";
 import { SUMINISTRO_PRINCIPAL } from "../services/suministros.service.js";
 import { vistaDelProyecto } from "../services/ute-sync.service.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize } from "../middleware/authorize.middleware.js";
+import { authorize, authorizeAny } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import {
   buildClientesCsv,
@@ -457,9 +457,20 @@ export async function registerClientesRoutes(app: FastifyInstance) {
   );
 
   // ─── Bitácora: listar ────────────────────────────────────────────────────
+  // Lectura abierta a las áreas que trabajan el proyecto: lo que se habló con
+  // el cliente se ve desde la pantalla del proyecto (pestaña "Contacto con el
+  // cliente"), no solo desde la ficha. Registrar sigue siendo de Experiencia Solar.
   app.get(
     "/clientes/:projectId/interacciones",
-    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.VIEW) },
+    {
+      preHandler: authorizeAny([
+        { module: Module.EXPERIENCIA_CLIENTES, action: Action.VIEW },
+        { module: Module.OPERACIONES, action: Action.VIEW },
+        { module: Module.INGENIERIA, action: Action.VIEW },
+        { module: Module.TRAMITES_UTE, action: Action.VIEW },
+        { module: Module.FINANZAS, action: Action.VIEW },
+      ]),
+    },
     async (request) => {
       const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
       if (!(await projectExists(projectId))) throw notFound("CLIENTE_NOT_FOUND", "Cliente no encontrado");

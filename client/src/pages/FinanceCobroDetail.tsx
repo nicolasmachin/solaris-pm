@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ComentariosYArchivos } from '../components/area/ComentariosYArchivos';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil, Copy, Trash2 } from 'lucide-react';
@@ -356,6 +357,9 @@ export function FinanceCobroDetail() {
           }}
         />
       )}
+      {/* Finanzas comenta y adjunta desde el cobro (comprobantes, lo que se
+          acordó con el cliente) sin ir al proyecto. */}
+      {projectId && <ComentariosYArchivos projectId={projectId} area="cobros" />}
     </div>
   );
 }

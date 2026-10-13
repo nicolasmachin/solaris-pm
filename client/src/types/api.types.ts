@@ -203,9 +203,11 @@ export interface ChecklistItem {
 }
 
 /** Áreas que comentan y adjuntan desde su propia pantalla. Mismos nombres que la línea de tiempo del cliente. */
-export type AreaTrabajo = "operaciones" | "ingenieria" | "ute" | "client" | "cobros";
+/** `sales` solo lo pone el servidor (adjunto del lead que pasa al proyecto); no hay bloque de Ventas. */
+export type AreaTrabajo = "sales" | "operaciones" | "ingenieria" | "ute" | "client" | "cobros";
 
 export const AREA_TRABAJO_LABEL: Record<AreaTrabajo, string> = {
+  sales: "Ventas",
   operaciones: "Operaciones",
   ingenieria: "Ingeniería",
   ute: "Tramitación UTE",

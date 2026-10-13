@@ -8,6 +8,8 @@ import { Button } from "../../../components/ui/Button";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { Spinner } from "../../../components/ui/Spinner";
 import { useAuthStore } from "../../../store/auth.store";
+import { DocumentPreviewModal } from "../../../components/project/DocumentsStrip";
+import type { ProjectDocument } from "../../../api/files.api";
 import { CHANNEL_LABELS, DIRECTION_LABELS, REASON_LABELS } from "../constants";
 import { useDeleteInteraction, useEditInteraction } from "../hooks/useClienteInteractions";
 
@@ -130,6 +132,7 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
   const [editando, setEditando] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [archivo, setArchivo] = useState<ProjectDocument | null>(null);
 
   function guardar(id: string) {
     const texto = draft.trim();
@@ -215,6 +218,35 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
               ) : (
                 <p className="whitespace-pre-wrap break-words text-sm text-[var(--color-text-primary)]">{it.text}</p>
               )}
+              {typeof it.meta?.fileId === "string" && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setArchivo({
+                      id: it.meta!.fileId as string,
+                      filename: String(it.meta!.filename ?? "archivo"),
+                      mimeType: String(it.meta!.mimeType ?? ""),
+                      sizeBytes: Number(it.meta!.sizeBytes ?? 0),
+                      tipo: null,
+                      toolSource: null,
+                      toolVersion: null,
+                      toolEntityId: null,
+                      uploadedAt: it.createdAt,
+                      uploadedBy: it.autor?.id ?? null,
+                      area: null,
+                      source: "other",
+                      sourceLabel: src.label,
+                      stageId: null,
+                      substageId: null,
+                      downloadUrl: `/api/files/${it.meta!.fileId}/download`,
+                      previewUrl: `/api/files/${it.meta!.fileId}/preview`,
+                    })
+                  }
+                  className="mt-1 inline-flex items-center gap-1 text-[12px] text-[var(--color-accent)] hover:underline"
+                >
+                  <FileText size={12} /> Abrir {String(it.meta.filename ?? "archivo")}
+                </button>
+              )}
               {it.kind === "survey" && typeof it.meta?.comentario === "string" && it.meta.comentario && (
                 <p className="mt-0.5 text-[12px] italic text-[var(--color-text-muted)]">“{it.meta.comentario}”</p>
               )}
@@ -278,6 +310,7 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
         }
         onClose={() => setConfirmId(null)}
       />
+      {archivo && <DocumentPreviewModal doc={archivo} onClose={() => setArchivo(null)} />}
     </>
   );
 }

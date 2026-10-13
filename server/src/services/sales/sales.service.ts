@@ -12,6 +12,8 @@ import { randomUUID } from "node:crypto";
 import type { MultipartFile } from "@fastify/multipart";
 import type { Prisma, PrismaClient } from "@prisma/client";
 
+import { prisma as prismaClient } from "../../lib/prisma.js";
+
 import { env } from "../../config/env.js";
 import { convertirArchivoHeicAJpeg, esHeic, renombrarAJpeg } from "../heic.service.js";
 import { AppError, badRequest } from "../../utils/errors.js";
@@ -181,6 +183,47 @@ export async function copyLeadAttachmentsToProject(
     copied++;
   }
   return { copied };
+}
+
+/**
+ * Copia UN adjunto del lead al proyecto, con el mismo criterio que la copia de
+ * la conversión. Se usa cuando se sube algo al lead **después** de ganado: sin
+ * esto quedaba solo en el lead y el proyecto (y la ficha del cliente) nunca lo
+ * veía. Devuelve el adjunto nuevo del proyecto, o null si el archivo físico no
+ * está.
+ */
+export async function copyLeadAttachmentToProject(
+  attachmentId: string,
+  projectId: string,
+): Promise<{ id: string; filename: string } | null> {
+  const att = await prismaClient.fileAttachment.findUnique({ where: { id: attachmentId } });
+  if (!att) return null;
+  const srcAbs = absolutePathFromUrl(att.url);
+  try {
+    await fsPromises.access(srcAbs);
+  } catch {
+    return null;
+  }
+  const destDir = storageRootForProject(projectId);
+  await fsPromises.mkdir(destDir, { recursive: true });
+  const newStoredFilename = `${randomUUID()}${path.extname(att.storedFilename) || ""}`;
+  await fsPromises.copyFile(srcAbs, path.join(destDir, newStoredFilename));
+  return prismaClient.fileAttachment.create({
+    data: {
+      projectId,
+      leadId: null,
+      filename: att.filename,
+      storedFilename: newStoredFilename,
+      mimeType: att.mimeType,
+      sizeBytes: att.sizeBytes,
+      url: `${projectId}/${newStoredFilename}`,
+      tipo: att.tipo,
+      uploadedById: att.uploadedById,
+      // Lo subió Ventas: así lo etiqueta la ficha del cliente.
+      area: "sales",
+    },
+    select: { id: true, filename: true },
+  });
 }
 
 /**

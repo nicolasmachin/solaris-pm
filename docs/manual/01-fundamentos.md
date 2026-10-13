@@ -315,9 +315,11 @@ archivo físico**. El patrón está establecido en visitas técnicas.
 Principio (pedido de Nicolás, 12-oct-2026): **cada área trabaja desde su
 pantalla, y por detrás la ficha del cliente es una sola.** El componente
 `components/area/ComentariosYArchivos.tsx` (`ComentariosYArchivos({ projectId,
-area })`) es el mismo bloque montado en cada pantalla de área: hoy en el
-espacio de Ingeniería (`IngenieriaWorkspace.tsx`, `area="ingenieria"`) y en el
-detalle del trámite de `TramitesUte.tsx` (`area="ute"`). Escribe en lo común:
+area })`) es el mismo bloque montado en cada pantalla de área: el espacio de
+Ingeniería (`IngenieriaWorkspace.tsx`, `area="ingenieria"`), el detalle del
+trámite de `TramitesUte.tsx` (`area="ute"`), la ficha del cliente
+(`ClienteFichaPage.tsx`, `area="client"`) y el cobro de Finanzas
+(`FinanceCobroDetail.tsx`, `area="cobros"`). Escribe en lo común:
 
 - **Comentarios**: `CommentThread` a nivel proyecto, con la prop `area`, que se
   guarda en `Comment.area`.
@@ -348,8 +350,24 @@ El listado `GET /projects/:projectId/files` (sin etiquetas) sigue en
 `OPERACIONES:EDIT`: no lo usa el bloque. Comentar no tiene permiso de módulo
 (`POST /comments` solo exige sesión), como antes.
 
-**Falta** montar el bloque en la ficha del cliente (Experiencia Solar) y en el
-cobro de Finanzas; los valores `client` y `cobros` ya están previstos.
+**Lo demás que cierra el círculo:**
+
+- **Contacto con el cliente en el proyecto.** `ProjectDetail.tsx` tiene la
+  pestaña "Contacto con el cliente" (`components/project/ContactoClienteTab.tsx`),
+  que lee `GET /clientes/:projectId/interacciones`. Esa lectura ahora es
+  `authorizeAny` de los `VIEW` de `EXPERIENCIA_CLIENTES`, `OPERACIONES`,
+  `INGENIERIA`, `TRAMITES_UTE` y `FINANZAS`; **registrar** sigue siendo
+  `EXPERIENCIA_CLIENTES:CREATE`, solo desde la ficha.
+- **Adjuntos del lead ya ganado.** `POST /leads/:id/attachments`: si el lead
+  tiene `convertedToProjectId`, el archivo además se copia al proyecto
+  (`copyLeadAttachmentToProject()` en `sales.service.ts`, best-effort) con
+  `area = "sales"` y su `file_uploaded` en la auditoría del proyecto. `sales` no
+  está en `AREAS_TRABAJO` (no hay bloque de Ventas): solo lo escribe el servidor.
+  Antes solo se copiaban los adjuntos que existían al momento de convertir.
+- **Abrir archivos desde la ficha.** En `getClienteTimeline()`, cada
+  `file_uploaded` cuyo archivo sigue vivo lleva en `meta` `fileId`, `filename`,
+  `mimeType` y `sizeBytes`; `ClienteTimeline.tsx` muestra "Abrir …" con el visor
+  de documentos (`DocumentPreviewModal`, exportado de `DocumentsStrip.tsx`).
 
 ---
 

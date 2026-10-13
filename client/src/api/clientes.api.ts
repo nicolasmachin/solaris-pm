@@ -329,6 +329,11 @@ export async function createInteraction(
   return data;
 }
 
+export async function getInteractions(projectId: string): Promise<ClienteInteraction[]> {
+  const { data } = await apiClient.get<ClienteInteraction[]>(`/api/clientes/${projectId}/interacciones`);
+  return data;
+}
+
 export async function patchInteraction(
   id: string,
   body: { content: string; channel?: InteractionChannel },

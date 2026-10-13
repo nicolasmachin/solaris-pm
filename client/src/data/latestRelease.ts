@@ -29,8 +29,10 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Cada área comenta y adjunta desde su pantalla",
       items: [
-        "Ingeniería (en el espacio de cada proyecto) y Tramitación UTE (en el detalle del trámite) tienen su bloque Comentarios y archivos, sin ir a la pantalla del proyecto.",
+        "Ingeniería, Tramitación UTE, Experiencia Solar (en la ficha) y Finanzas (en el cobro) tienen su bloque Comentarios y archivos, sin ir a la pantalla del proyecto.",
         "Todo queda en el mismo proyecto y aparece en la ficha del cliente marcado con el área que lo hizo.",
+        "Nueva pestaña Contacto con el cliente en el proyecto, y en la ficha los archivos se abren desde el historial.",
+        "Lo que se adjunta en un lead después de ganado pasa también al proyecto.",
       ],
     },
     {
