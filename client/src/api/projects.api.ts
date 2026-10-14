@@ -1,5 +1,5 @@
 import { apiClient } from "./axios";
-import type { PhaseType, Project, ProjectListItem, SolarSystem } from "../types/api.types";
+import type { PhaseType, Project, TipoMontaje, ProjectListItem, SolarSystem } from "../types/api.types";
 
 export interface SolarSystemPayload {
   order?: number;
@@ -105,6 +105,7 @@ export async function patchProject(
     facturaNota?: string | null;
     modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | "OTRO";
     modalidadPagoNota?: string | null;
+    tipoMontaje?: TipoMontaje | null;
   }
 ): Promise<Project> {
   const { data } = await apiClient.patch<Project>(`/api/projects/${id}`, body);

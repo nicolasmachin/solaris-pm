@@ -1,3 +1,4 @@
+import { getDatosTecnicosObra } from "../services/datos-tecnicos-obra.service.js";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs, { promises as fsPromises } from "node:fs";
@@ -29,6 +30,7 @@ import {
   GoalPeriod,
   MetodoPago,
   ModalidadPago,
+  TipoMontaje,
   Module,
   Moneda,
   NotificationType,
@@ -318,6 +320,7 @@ const projectPatchSchema = z
     modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
     // Qué se acordó, cuando la modalidad es OTRO. Vacío la borra.
     modalidadPagoNota: z.string().trim().max(1000).nullable().optional(),
+    tipoMontaje: z.nativeEnum(TipoMontaje).nullable().optional(),
     clientEmail: clientEmailValue.nullable().optional(),
     clientPhone: clientPhoneValue.nullable().optional(),
     clientAddress: z.string().nullable().optional(),
@@ -852,6 +855,45 @@ async function assertOnboardingDefinido(projectId: string) {
   }
 }
 
+/**
+ * Regla dura de Operaciones: la Pre-Ingeniería no cierra sin paneles, inversor,
+ * fase y montaje cargados en Datos técnicos y coincidiendo con la pre-ingeniería.
+ * Mismo 409 DEFINICIONES_PENDIENTES que el Onboarding: la pantalla lo muestra y
+ * manda a la ficha a completarlo.
+ */
+const SUBETAPA_DOCUMENTO_PREINGENIERIA = "Documento pre-ingeniería";
+
+async function assertPreIngenieriaDefinida(projectId: string) {
+  const { faltantes } = await getDatosTecnicosObra(projectId);
+  if (faltantes.length > 0) {
+    throw new AppError(409, "DEFINICIONES_PENDIENTES", faltantes.map((f) => f.mensaje).join(" "), {
+      projectId,
+      etapa: "PRE_INGENIERIA",
+      faltantes,
+    });
+  }
+}
+
+/**
+ * ¿Resolver esta subetapa cierra la Pre-Ingeniería? Sí si es de esa etapa y es
+ * el documento de pre-ingeniería (de donde salen los datos) o la última que
+ * quedaba: la etapa se completa sola cuando se resuelven todas.
+ */
+async function resolverSubetapaCierraPreIngenieria(substage: { id: string; stageId: string; name: string }) {
+  const stage = await prisma.stage.findUnique({
+    where: { id: substage.stageId },
+    select: {
+      name: true,
+      substages: { where: { deletedAt: null, isActive: true }, select: { id: true, status: true } },
+    },
+  });
+  if (stage?.name !== StageType.PRE_INGENIERIA) return false;
+  if (substage.name === SUBETAPA_DOCUMENTO_PREINGENIERIA) return true;
+  return stage.substages.every(
+    (s) => s.id === substage.id || s.status === SubstageStatus.COMPLETED || s.status === SubstageStatus.NO_APLICA,
+  );
+}
+
 async function getPendingBlockers(stageId: string, modalidadPago?: ModalidadPago | null) {
   return prisma.checklistItem.findMany({
     where: {
@@ -924,6 +966,7 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   if (source.modalidadPagoNota !== undefined) {
     normalized.modalidadPagoNota = source.modalidadPagoNota || null;
   }
+  if (source.tipoMontaje !== undefined) normalized.tipoMontaje = source.tipoMontaje;
   if (source.clientEmail !== undefined) normalized.clientEmail = source.clientEmail;
   if (source.clientPhone !== undefined) normalized.clientPhone = source.clientPhone;
   if (source.clientAddress !== undefined) normalized.clientAddress = source.clientAddress;
@@ -991,6 +1034,7 @@ const projectFieldLabels: Record<string, string> = {
   co2TonsAvoided: "CO2 evitado",
   modalidadPago: "modalidad de pago",
   modalidadPagoNota: "detalle de la modalidad de pago",
+  tipoMontaje: "tipo de montaje",
   clientEmail: "email del cliente",
   clientPhone: "teléfono del cliente",
   clientAddress: "dirección del cliente",
@@ -1499,7 +1543,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           orderBy: { order: "asc" },
         },
         solarSystems: {
-          where: { deletedAt: null, order: 1 },
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
         },
         installationSchedule: {
@@ -1566,6 +1610,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         locationCity: project.locationCity,
         locationProvince: project.locationProvince,
         capacityKwp: decimalToNumber(project.capacityKwp),
+        tipoMontaje: project.tipoMontaje,
         status: project.status,
         progressPercent,
         completionPercent,
@@ -1782,6 +1827,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       ...serializeProject(project),
       installationSchedule,
       solarSystems: project.solarSystems.map(serializeSolarSystem),
+      datosTecnicos: await getDatosTecnicosObra(project.id),
       ampliaciones: project.ampliaciones.map((a) => ({
         id: a.id,
         code: a.code,
@@ -2631,6 +2677,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         if (stage.name === StageType.ONBOARDING) {
           await assertOnboardingDefinido(params.projectId);
         }
+        if (stage.name === StageType.PRE_INGENIERIA) {
+          await assertPreIngenieriaDefinida(params.projectId);
+        }
         const blockers = await getPendingBlockers(stage.id, stage.project.modalidadPago);
         if (blockers.length > 0) {
           const blockerLabels = blockers.map((item) => item.label);
@@ -3000,6 +3049,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     ) {
       await assertOnboardingDefinido(params.projectId);
     }
+    if (
+      (body.status === SubstageStatus.COMPLETED || body.status === SubstageStatus.NO_APLICA) &&
+      body.status !== substage.status &&
+      (await resolverSubetapaCierraPreIngenieria(substage))
+    ) {
+      await assertPreIngenieriaDefinida(params.projectId);
+    }
 
     // Regla 2: no permitir iniciar/completar subetapa de ejecución si OPERACIONES no está activa
     if (
@@ -3153,6 +3209,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (substage.name === SUBETAPA_MODALIDAD_PAGO) {
       await assertOnboardingDefinido(substage.projectId);
     }
+    if (await resolverSubetapaCierraPreIngenieria(substage)) {
+      await assertPreIngenieriaDefinida(substage.projectId);
+    }
 
     const pendingItems = substage.checklistItems.filter((item) => {
       if (!item.appliesWhenModalidadPago) {
@@ -3238,6 +3297,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // Completar todo no puede tildar "Plan de pagos creado" si el plan no existe.
     if (substages.some((s) => s.name === SUBETAPA_MODALIDAD_PAGO)) {
       await assertOnboardingDefinido(params.projectId);
+    }
+    if (stage.name === StageType.PRE_INGENIERIA && substages.length > 0) {
+      await assertPreIngenieriaDefinida(params.projectId);
     }
 
     const actualEndDate = todayUtc();

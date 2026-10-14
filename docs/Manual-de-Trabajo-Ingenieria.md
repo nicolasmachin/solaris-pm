@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.12 · del 12/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.13 · del 14/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -35,6 +35,21 @@ norte**. Si en la visita de venta se acordó otra cosa con el cliente (por
 ejemplo, paneles coplanares, con un 10 % más de paneles para compensar), queda en
 el resumen de la visita y el proyecto lo sigue. Si ese 10 % hace pasar la
 potencia en verano de lo que da UTE, se justifica con el informe de potencia.
+
+### La Pre-Ingeniería no se cierra sin los datos técnicos
+
+Operaciones agenda la obra sabiendo **cuántos paneles** lleva, si es
+**monofásica o trifásica** y **cómo se monta** (coplanar, con ángulos, sobre
+hormigón o en el suelo). Por eso, antes de cerrar la Pre-Ingeniería, Ingeniería
+deja cargados en Voltia PM los paneles, el inversor (marca y potencia), la fase
+y el montaje, y **tienen que coincidir con lo que dice el documento de
+pre-ingeniería**. Si no coinciden, se corrige el que esté mal: o los datos del
+proyecto, o la pre-ingeniería. Voltia PM no deja cerrar la etapa hasta que esté
+todo.
+
+Lo que dijo la propuesta comercial se muestra al lado como referencia, pero no
+manda: la obra puede haber cambiado después de la venta, y lo que vale es lo que
+definió Ingeniería.
 
 ### La fecha de obra depende de la Ingeniería Final
 
@@ -146,6 +161,15 @@ los videos, que al ganar el lead pasan al proyecto).
   pueden leer como texto. Un PDF escaneado no lo puede leer: ahí hay que abrirlo
   con el enlace. Se le pide por el nombre del cliente ("traeme los documentos de
   tal obra" y después "leé la memoria y el unifilar").
+
+- **Los datos técnicos del proyecto.** En la pantalla de cada proyecto, en el
+  bloque **Datos técnicos**, arriba de todo, se ven los paneles, la fase y el
+  montaje. El montaje se elige ahí mismo, de una lista. Debajo aparecen lo que
+  decía la propuesta y lo que dice la última pre-ingeniería; lo que no coincide
+  con los datos del proyecto se marca en amarillo, y un recuadro dice qué falta
+  para poder cerrar la Pre-Ingeniería. Los paneles y el inversor se corrigen con
+  **Editar sistema**. Si se intenta cerrar la etapa con algo pendiente, Voltia PM
+  avisa qué falta y ofrece ir a los datos técnicos.
 
 > Estas herramientas cambian seguido: por eso el detalle está acá y no en el PGT.
 
@@ -402,6 +426,7 @@ borrar; lo de otras áreas, no.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.13 | 14 de octubre de 2026 | Nuevo lineamiento: la Pre-Ingeniería no se cierra sin paneles, inversor, fase y montaje cargados en el proyecto y coincidiendo con el documento de pre-ingeniería. Se agrega, entre las herramientas, el bloque Datos técnicos del proyecto, donde se elige el montaje y se ve lo que no coincide. |
 | 0.12 | 12 de octubre de 2026 | Se agrega el informe post-obra: al terminar cada obra el gerente de Operaciones evalúa también a Ingeniería, y su responsable firma su parte. En el espacio de Ingeniería se agrega el bloque Comentarios y archivos, para comentar y adjuntar sin ir a la pantalla del proyecto. |
 | 0.11 | 11 de octubre de 2026 | Nuevo lineamiento: si no se dice otra cosa, los paneles se diseñan a 25 grados mirando al norte; lo acordado en la visita de venta (por ejemplo, coplanar con un 10 % más de paneles) manda. |
 | 0.10 | 9 de octubre de 2026 | Nuevo lineamiento: la fecha de obra confirmada se defiende. Si la Ingeniería Final se va a atrasar, se avisa y se busca recuperar el tiempo; si igual se mueve, el atraso lo explica Ingeniería. |

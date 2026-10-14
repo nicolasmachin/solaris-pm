@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 import { useDefinicionesPendientes } from "../../store/definicionesPendientes.store";
 import { ModalidadPagoPanel } from "./ModalidadPagoPanel";
@@ -13,8 +14,21 @@ import { ModalidadPagoPanel } from "./ModalidadPagoPanel";
  */
 export function DefinicionesPendientesModal() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { pedido, cerrar } = useDefinicionesPendientes();
   if (!pedido) return null;
+  const esPreIngenieria = pedido.etapa === "PRE_INGENIERIA";
+
+  // Pre-Ingeniería: lo que falta se corrige en Datos técnicos de la ficha (y,
+  // si no coincide, en la pre-ingeniería). No hay reintento: se cierra a mano
+  // cuando esté todo.
+  function irADatosTecnicos() {
+    if (!pedido) return;
+    const { projectId } = pedido;
+    cerrar();
+    qc.invalidateQueries({ queryKey: ["project", projectId] });
+    navigate(`/projects/${projectId}`);
+  }
 
   function continuar() {
     if (!pedido) return;
@@ -36,10 +50,12 @@ export function DefinicionesPendientesModal() {
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl">
         <div className="border-b border-[var(--color-border)] px-5 py-4">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-            Antes de cerrar el Onboarding
+            {esPreIngenieria ? "Antes de cerrar la Pre-Ingeniería" : "Antes de cerrar el Onboarding"}
           </h2>
           <p className="mt-1 text-[12px] text-[var(--color-text-muted)]">
-            El proyecto no avanza sin dejar definido cómo y cuándo paga el cliente.
+            {esPreIngenieria
+              ? "Operaciones necesita paneles, inversor, fase y montaje definidos —y coincidiendo con la pre-ingeniería— para validar y agendar la obra."
+              : "El proyecto no avanza sin dejar definido cómo y cuándo paga el cliente."}
           </p>
         </div>
 
@@ -52,7 +68,7 @@ export function DefinicionesPendientesModal() {
               </li>
             ))}
           </ul>
-          <ModalidadPagoPanel projectId={pedido.projectId} />
+          {esPreIngenieria ? null : <ModalidadPagoPanel projectId={pedido.projectId} />}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
@@ -65,10 +81,10 @@ export function DefinicionesPendientesModal() {
           </button>
           <button
             type="button"
-            onClick={continuar}
+            onClick={esPreIngenieria ? irADatosTecnicos : continuar}
             className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90"
           >
-            Listo, continuar
+            {esPreIngenieria ? "Ir a Datos técnicos" : "Listo, continuar"}
           </button>
         </div>
       </div>

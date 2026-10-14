@@ -23,6 +23,7 @@ import { ClienteDocsUpload } from "../components/projects/ClienteDocsUpload";
 import { AgendaDelProyecto } from "../components/calendario/AgendaDelProyecto";
 import { TaskDetailModal } from "../components/tasks/TaskDetailModal";
 import { SolarSystemModal } from "../components/project/SolarSystemModal";
+import { DatosTecnicosResumen } from "../components/project/DatosTecnicosResumen";
 import { AuditHistory } from "../components/project/AuditHistory";
 import { ProjectGantt } from "../components/project/ProjectGantt";
 import { DocumentsStrip } from "../components/project/DocumentsStrip";
@@ -323,6 +324,8 @@ function SolarSystemsSection({
           {systems.length === 0 ? "Agregar sistema" : "Agregar suministro"}
         </Button>
       </div>
+
+      <DatosTecnicosResumen project={project} />
 
       {systems.length === 0 ? (
         <div className="mt-4 rounded-lg border border-dashed border-[var(--color-border)] px-4 py-5 text-sm text-[var(--color-text-secondary)]">

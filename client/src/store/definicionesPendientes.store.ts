@@ -6,12 +6,15 @@ import { create } from "zustand";
 // que pide eso mismo y, al terminar, reintenta la acción original.
 
 export interface DefinicionPendiente {
-  codigo: "MODALIDAD_PAGO" | "PLAN_PAGOS" | "PROFORMA" | "NOTA_MODALIDAD";
+  /** Onboarding: MODALIDAD_PAGO | PLAN_PAGOS | PROFORMA | NOTA_MODALIDAD. Pre-Ingeniería: los de Datos técnicos. */
+  codigo: string;
   mensaje: string;
 }
 
 interface Pedido {
   projectId: string;
+  /** Qué etapa se quiso cerrar: cambia lo que pide el modal. */
+  etapa: "ONBOARDING" | "PRE_INGENIERIA";
   faltantes: DefinicionPendiente[];
   reintentar: () => void;
 }
@@ -36,11 +39,12 @@ export const useDefinicionesPendientes = create<DefinicionesState>((set) => ({
 export function pedirDefinicionesSiFaltan(err: unknown, reintentar: () => void): boolean {
   // El manejador de errores del servidor aplana `details` en el cuerpo.
   const data = (err as {
-    response?: { data?: { code?: string; projectId?: string; faltantes?: DefinicionPendiente[] } };
+    response?: { data?: { code?: string; projectId?: string; etapa?: string; faltantes?: DefinicionPendiente[] } };
   })?.response?.data;
   if (data?.code !== "DEFINICIONES_PENDIENTES" || !data.projectId) return false;
   useDefinicionesPendientes.getState().abrir({
     projectId: data.projectId,
+    etapa: data.etapa === "PRE_INGENIERIA" ? "PRE_INGENIERIA" : "ONBOARDING",
     faltantes: data.faltantes ?? [],
     reintentar,
   });

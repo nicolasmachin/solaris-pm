@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Versión 1.0 — 12 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.1 — 14 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -452,7 +452,7 @@ otra arranca a ciegas:
 |---|---|---|
 | Ventas | Ingeniería | Todo lo de la visita cargado en el proyecto: el resumen, la minuta, las fotos y los videos |
 | Ventas | Experiencia Solar | El cliente **presentado**: el asesor le presenta al responsable de Experiencia Solar antes de que este le escriba |
-| Ingeniería | Operaciones | La pre-ingeniería, con la lista de materiales preliminar, para validar |
+| Ingeniería | Operaciones | La pre-ingeniería, con la lista de materiales preliminar, para validar, y los datos de la instalación ya definidos: cuántos paneles, el inversor, si es monofásica o trifásica y cómo se montan los paneles. Sin esos datos, la Pre-Ingeniería no se da por terminada |
 | Operaciones | Ingeniería | El informe del capataz, si hay algo que cambiar, para la Ingeniería Final |
 | Ingeniería | Logística | La lista de materiales de la Ingeniería Final, ya revisada por el capataz |
 | Operaciones | Experiencia Solar | La fecha de obra confirmada **en el calendario**: el aviso le llega solo |
@@ -642,4 +642,5 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.1 | 14 de octubre de 2026 | En el traspaso de Ingeniería a Operaciones se suman los datos de la instalación (paneles, inversor, fase y montaje): la Pre-Ingeniería no se da por terminada sin ellos. |
 | 1.0 | 12 de octubre de 2026 | Primera versión aprobada. De los borradores anteriores no hay registro de cambios. |

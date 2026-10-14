@@ -23,6 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.6",
+  date: "14 de octubre de 2026",
+  sections: [
+    {
+      title: "Paneles, fase y montaje a la vista para agendar",
+      items: [
+        "En Datos técnicos de cada proyecto, arriba de todo: cuántos paneles lleva la obra, si es mono o trifásica y el tipo de montaje (coplanar, con ángulos, sobre hormigón o suelo).",
+        "Al lado, lo que decía la propuesta y lo que relevó la pre-ingeniería, marcando lo que no coincide.",
+        "La Pre-Ingeniería no se puede cerrar sin paneles, inversor, fase y montaje cargados y coincidiendo con la pre-ingeniería.",
+        "En la lista de proyectos, el montaje aparece debajo de los paneles.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_5: Release = {
   version: "12.5",
   date: "13 de octubre de 2026",
   sections: [
@@ -600,6 +616,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.5",
+    shortDate: "13 oct",
+    highlights: RELEASE_12_5.sections.map((sec) => sec.title),
+  },
   {
     version: "12.4",
     shortDate: "12 oct",

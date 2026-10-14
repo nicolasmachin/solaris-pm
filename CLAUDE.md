@@ -284,7 +284,7 @@ Son de dos niveles:
 | Documento | Qué cubre | Estado |
 |---|---|---|
 | **Procedimiento General de Trabajo (PGT) de Voltia** | Lo que **conecta** a las áreas: el recorrido, las reglas comunes, qué hace cada área a grandes rasgos, dónde termina su trabajo y cómo se lo pasa a la siguiente. **Solo generalidades, sin detalle.** | `Procedimiento-General-de-Trabajo-Voltia.md` (v1.0, aprobado el 12-oct-2026) |
-| **Manual de trabajo de Ventas** | El detalle del área: procedimiento, lineamientos y herramientas | `Manual-de-Trabajo-Ventas.md`, esqueleto con el material que salió del PGT |
+| **Manual de trabajo de Ventas** | El detalle del área: procedimiento, lineamientos y herramientas | `Manual-de-Trabajo-Ventas.md` (v1.0, completo) |
 | **Manual de trabajo de Ingeniería** | Ídem | `Manual-de-Trabajo-Ingenieria.md`, esqueleto |
 | **Manual de trabajo de Operaciones** | Ídem. **Obra** y **Logística** son partes de este manual, pero armadas para poder imprimirse y entregarse como **librillos independientes** (el capataz recibe solo el de Obra) | `Manual-de-Trabajo-Operaciones.md` (v1.0, completo; partes A, B y C) |
 | **Manual de trabajo de Tramitación UTE** | Ídem | `Manual-de-Trabajo-Tramitacion-UTE.md`, esqueleto |

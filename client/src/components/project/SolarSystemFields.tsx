@@ -1,5 +1,5 @@
 import type { ChangeEvent, ReactNode } from "react";
-import type { PhaseType, SolarSystem } from "../../types/api.types";
+import type { PhaseType, SolarSystem, TipoMontaje } from "../../types/api.types";
 import type { SolarSystemPayload } from "../../api/projects.api";
 
 export interface SolarSystemFormValues {
@@ -248,4 +248,27 @@ export function SolarSystemFields({
       </div>
     </div>
   );
+}
+
+export const TIPO_MONTAJE_OPTIONS: Array<{ value: TipoMontaje; label: string; hint: string }> = [
+  { value: "COPLANAR", label: "Coplanar", hint: "Pegado al techo (chapa, isopanel, teja)" },
+  { value: "ANGULOS", label: "Con ángulos", hint: "Estructura que inclina los paneles sobre techo liviano" },
+  { value: "HORMIGON", label: "Sobre hormigón", hint: "Losas, contrapesos o anclaje en techo de hormigón" },
+  { value: "SUELO", label: "Suelo", hint: "Estructura apoyada en el suelo" },
+];
+
+export function getTipoMontajeLabel(tipo: TipoMontaje | null | undefined) {
+  return TIPO_MONTAJE_OPTIONS.find((o) => o.value === tipo)?.label ?? null;
+}
+
+/** Suma de paneles de todos los sistemas, o null si alguno no la tiene cargada. */
+export function totalPanelesDeSistemas(systems: SolarSystem[]): number | null {
+  if (systems.length === 0 || systems.some((s) => s.panelQuantity == null)) return null;
+  return systems.reduce((sum, s) => sum + (s.panelQuantity ?? 0), 0);
+}
+
+/** "MONO", "TRI-400", o "MONO + TRI-400" si los suministros tienen fases distintas. */
+export function fasesDeSistemas(systems: SolarSystem[]): string | null {
+  const fases = [...new Set(systems.map((s) => s.inverterPhaseType).filter(Boolean))] as PhaseType[];
+  return fases.length > 0 ? fases.map((f) => getPhaseTypeShortLabel(f)).join(" + ") : null;
 }

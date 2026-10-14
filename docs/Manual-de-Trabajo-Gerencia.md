@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.16 — 12 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.17 — 14 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -496,6 +496,25 @@ mira.
 
 **A qué manuales afecta.** Al de Experiencia Solar.
 
+### La Pre-Ingeniería no termina sin los datos de la instalación definidos
+
+**Qué se decidió.** Ingeniería no da por terminada la Pre-Ingeniería sin dejar
+definidos en Voltia PM cuántos paneles lleva la obra, el inversor, si es
+monofásica o trifásica y cómo se montan los paneles (coplanar, con ángulos, sobre
+hormigón o en el suelo), y todo eso tiene que coincidir con el documento de
+pre-ingeniería. Voltia PM no deja cerrar la etapa hasta que esté.
+
+**Por qué.** Operaciones agenda la cuadrilla con esos datos: no es lo mismo una
+obra de 9 paneles coplanares que una de 40 sobre hormigón. Hasta ahora se
+buscaban a mano en la lista de materiales, y lo que decía la propuesta comercial
+no siempre era lo que terminaba diseñando Ingeniería. La propuesta queda como
+referencia, pero manda lo que define Ingeniería.
+
+**Desde cuándo rige.** 14 de octubre de 2026.
+
+**A qué manuales afecta.** Al PGT (el traspaso de Ingeniería a Operaciones), al
+de Ingeniería y al de Operaciones.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -527,6 +546,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.17 | 14 de octubre de 2026 | Se registra que la Pre-Ingeniería no termina sin los datos de la instalación definidos (paneles, inversor, fase y montaje) y coincidiendo con el documento de pre-ingeniería. |
 | 0.16 | 12 de octubre de 2026 | Se registra que los videos para el cliente quedan en la pestaña Videos de su portal y se le mandan con el enlace que los abre ahí; todos los clientes ven los mismos, y las dudas van por ticket. |
 | 0.15 | 11 de octubre de 2026 | Se registra que la fecha tentativa deja de ser parte del procedimiento: al cliente se le da la quincena al vender, y en la Validación primero se confirma la fecha de obra y después el capataz hace su informe. Pagarle más a un tercerizado lo autoriza solo el CEO. |
 | 0.14 | 11 de octubre de 2026 | La seña no se devuelve si el cliente desiste; sí si el banco o UTE no aprueban. El precio y el contrato: markup de 25 % a 15 % sin autorización y revisado una vez por mes, seña de USD 500, el asesor firma el contrato último con firma digital. Que alguien sea mejor lo dicen los resultados, no el perfil; para vender, mejor un técnico que vende que un vendedor con algo de técnica. Al vender, el asesor da solo una estimación de obra por quincena. Se registran dos principios para delegar: al principio nadie lo hace tan bien como el dueño, y a mediano plazo la persona en la que se delega tiene que ser mejor que él en su área. |

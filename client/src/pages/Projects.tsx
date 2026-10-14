@@ -18,6 +18,8 @@ import { getProjectTeamColor, getProjectTeamName, getProjectTeamType } from "../
 import {
   formatSolarSystemPanels,
   formatSolarSystemPrimary,
+  getTipoMontajeLabel,
+  totalPanelesDeSistemas,
   getPhaseTypeShortLabel,
 } from "../components/project/SolarSystemFields";
 
@@ -732,6 +734,16 @@ function ProjectGroupTable({
                     <span className="text-sm text-[var(--color-text-primary)]">
                       {solarSystem ? formatSolarSystemPanels(solarSystem) : "Sin datos"}
                     </span>
+                    {extraCount > 0 && totalPanelesDeSistemas(project.solarSystems) != null ? (
+                      <div className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                        Total: {totalPanelesDeSistemas(project.solarSystems)} paneles
+                      </div>
+                    ) : null}
+                    {getTipoMontajeLabel(project.tipoMontaje) ? (
+                      <div className="mt-1 text-xs text-[var(--color-text-muted)]">
+                        {getTipoMontajeLabel(project.tipoMontaje)}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-4 py-4 align-top">
                     {project.salespersonName ? (

@@ -116,10 +116,42 @@ export interface ProjectCurrentStage {
   countdown?: StageCountdown | null;
 }
 
+export type TipoMontaje = "COPLANAR" | "ANGULOS" | "HORMIGON" | "SUELO";
+
+export interface DatosTecnicosFaltante {
+  codigo: string;
+  mensaje: string;
+}
+
+/** Cruce de Datos técnicos con la propuesta y la pre-ingeniería (ficha del proyecto). */
+export interface DatosTecnicosObra {
+  tipoMontaje: TipoMontaje | null;
+  totalPaneles: number | null;
+  totalInversorKw: number | null;
+  fases: PhaseType[];
+  propuesta: {
+    versionNumber: number;
+    tipoMontaje: string | null;
+    cantidadPaneles: number | null;
+    potenciaInversorKw: number | null;
+  } | null;
+  preIngenieria: {
+    versionNumber: number;
+    cantidadPaneles: number | null;
+    cantidadPanelesTexto: string | null;
+    inversor: string | null;
+    inversorKw: number | null;
+    red: PhaseType[];
+  } | null;
+  /** Lo que impide cerrar la Pre-Ingeniería. Vacío = está todo. */
+  faltantes: DatosTecnicosFaltante[];
+}
+
 export interface ProjectListItem {
   id: string;
   code: string;
   clientName: string;
+  tipoMontaje?: TipoMontaje | null;
   /** Si tiene valor, el proyecto es una ampliación de esa obra. */
   parentProjectId?: string | null;
   locationCity: string;
@@ -434,6 +466,8 @@ export interface Project {
   /** Lead del que salió el proyecto. Permite volver a Ventas sin buscarlo. */
   leadId?: string | null;
   modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | "OTRO" | null;
+  tipoMontaje?: TipoMontaje | null;
+  datosTecnicos?: DatosTecnicosObra;
   /** Qué se acordó, cuando la modalidad es OTRO. */
   modalidadPagoNota?: string | null;
 }

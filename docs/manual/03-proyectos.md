@@ -158,6 +158,70 @@ checklist se copia al crear el proyecto. Para eso está
 **sin completar** (las cerradas se dejan como están: agregarles un pendiente las
 volvería inconsistentes).
 
+### La Pre-Ingeniería no cierra sin paneles, inversor, fase y montaje
+
+Pedido de Operaciones (14-oct-2026): para agendar hay que saber cuántos paneles
+son, si es mono o tri y cómo se monta, y eso se buscaba a mano en la lista de
+materiales. Ahora está arriba de todo en **Datos técnicos** de la ficha
+(`DatosTecnicosResumen.tsx`) y la Pre-Ingeniería no cierra sin eso definido, para
+que Validación de Operaciones lo reciba listo.
+
+**El montaje es un dato nuevo**, `Project.tipoMontaje` (enum `TipoMontaje`:
+`COPLANAR`, `ANGULOS`, `HORMIGON`, `SUELO`), editable desde el selector del
+resumen con `PATCH /projects/:id` (mismo permiso que editar el sistema,
+`authorizeProjectEditAnyPipeline(EDIT)`). No se deduce de nada: la propuesta lo
+tiene como **texto libre** (`snapshot.data.sistema.tipoMontaje`) y en prod es
+inutilizable para clasificar ("Hormigon", "Zinc", "de 75 m2", "sol directo"); el
+`tipoTecho` de la pre-ingeniería dice el techo, no la estructura (una chapa puede
+ir coplanar o con ángulos). Los dos se muestran como pista al lado del selector
+—el de la propuesta, textual— pero se elige a mano. **Sin backfill**: los
+proyectos existentes quedan "Sin definir".
+
+`datos-tecnicos-obra.service.ts` → `getDatosTecnicosObra(projectId)` arma el
+cruce y viaja como `datosTecnicos` en `GET /projects/:id`:
+
+- **Datos técnicos**: suma de `panelQuantity` y de `inverterPowerKw × inverterQuantity`
+  de todos los `SolarSystem` (varios suministros = se suman), y las fases.
+- **Propuesta**: la última `ProposalV2Version` publicada del lead convertido.
+  Solo se muestra; **no bloquea** (la obra puede cambiar después de la venta).
+- **Pre-ingeniería**: la última `PreIngenieriaVersion`. `cantidadPaneles` es
+  texto y se toma el primer número; los kW del inversor se sacan del texto con
+  `parseInversorKw()` (el último "N kW"; "Huawei" a secas no da número y no se
+  compara); la red sale de los tres booleanos `red*`.
+
+`faltantes` (lo que bloquea), con su código: `SISTEMA` (no hay ninguno),
+`PANELES`, `INVERSOR` (marca y potencia), `FASE`, `MONTAJE`, y los desacuerdos
+con la pre-ingeniería `PANELES_NO_COINCIDEN`, `INVERSOR_NO_COINCIDE` (diferencia
+> 0,05 kW) y `FASE_NO_COINCIDE` (alguna fase de los sistemas no está marcada en
+la red de la pre-ingeniería). Lo que no se pudo leer de la pre-ingeniería no se
+compara, y **sin documento de pre-ingeniería no se exige el cruce**, solo los
+datos cargados.
+
+`assertPreIngenieriaDefinida()` (en `api.routes.ts`) devuelve el mismo **409
+`DEFINICIONES_PENDIENTES`** que el Onboarding, con `etapa: "PRE_INGENIERIA"`.
+Se llama en:
+
+- `PATCH /projects/:p/stages/:s` con `COMPLETED` si la etapa es `PRE_INGENIERIA`;
+- `PATCH /projects/:p/stages/:s/substages/:id` (`COMPLETED` o `NO_APLICA`) y
+  `PATCH /substages/:id/complete`, cuando `resolverSubetapaCierraPreIngenieria()`
+  dice que sí: la subetapa es "Documento pre-ingeniería" **o** es la última
+  abierta de la etapa (la etapa se completa sola en `syncStageProgress` cuando se
+  resuelven todas);
+- `PATCH .../complete-all` sobre la etapa `PRE_INGENIERIA`.
+
+**Agujero conocido:** tildar el último ítem del checklist no pasa por estos
+caminos (igual que en el Onboarding). ADMIN no está exento.
+
+En el cliente, el mismo `DefinicionesPendientesModal` distingue por `etapa`: para
+Pre-Ingeniería no muestra el panel de modalidad de pago, sino la lista y un botón
+**Ir a Datos técnicos** que abre la ficha (no reintenta: se cierra a mano cuando
+esté todo).
+
+En la **lista de proyectos** (`GET /projects`), el listado ahora trae **todos**
+los sistemas (antes solo el `order: 1`, por eso el "+N" de suministros extra no
+aparecía nunca) y `tipoMontaje`; la columna Paneles muestra el montaje y, con
+varios suministros, el total.
+
 
 - **Por qué `FIJAR_ETAPA` y no `EDIT`** (septiembre 2026): con `EDIT` lo podían
   hacer 13 roles, incluidos asesores comerciales, logística y los instaladores
