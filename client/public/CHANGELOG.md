@@ -4,12 +4,14 @@
 
 ### 14 de octubre de 2026
 
-#### Paneles, fase y montaje a la vista para agendar
+#### Paneles, red y montaje a la vista para agendar
 
-- En la pantalla de cada proyecto, en **Datos técnicos**, arriba de todo se ve cuántos **paneles** lleva la obra, si es **mono o trifásica** y el **tipo de montaje**: coplanar, con ángulos, sobre hormigón o suelo. El montaje se elige ahí mismo.
-- Al lado aparece lo que decía la **propuesta** (incluido el montaje que escribió el asesor, como pista) y lo que relevó la **pre-ingeniería**. Lo que no coincide con Datos técnicos se marca en amarillo.
-- La **Pre-Ingeniería no se puede cerrar** sin paneles, inversor, fase y montaje cargados, y con los paneles, la potencia del inversor y la red coincidiendo con la pre-ingeniería. Si se intenta cerrar con algo pendiente, se avisa qué falta y se manda a Datos técnicos. Así Validación de Operaciones recibe la obra con esos datos definidos.
-- En la **lista de proyectos**, el montaje aparece debajo de los paneles, y cuando la obra tiene varios suministros se muestra el total de paneles.
+- En la pantalla de cada proyecto, en **Datos técnicos**, arriba de todo se ve cuántos **paneles** lleva la obra, si es **mono o trifásica**, el **tipo de techo** y si los paneles van **coplanares o inclinados**. Lo mismo aparece arriba de todo en el espacio de Ingeniería del proyecto.
+- Esos datos salen del **formulario de pre-ingeniería**, que suma dos cosas: la opción **Suelo** en el tipo de techo y la pregunta **coplanar o inclinado**, aparte del techo (cualquier techo puede ir de las dos formas).
+- Debajo se compara con el **unifilar**: si los paneles, la potencia del inversor o la red no coinciden con la pre-ingeniería, se marca en amarillo. Lo que decía la propuesta se muestra solo como referencia.
+- La **Pre-Ingeniería no se puede cerrar** sin la pre-ingeniería completa (paneles, inversor con su potencia, red, techo y coplanar o inclinado), sin el unifilar de cada suministro y con los dos documentos coincidiendo. Si se intenta cerrar con algo pendiente, se avisa qué falta y se ofrece ir a Ingeniería.
+- Al guardar un unifilar, los paneles, el inversor y la red pasan solos a los datos del sistema del proyecto: no se cargan dos veces.
+- En la **lista de proyectos**, debajo de los paneles aparecen el techo y si es coplanar o inclinado, y cuando la obra tiene varios suministros, el total de paneles.
 
 ## v12.5
 

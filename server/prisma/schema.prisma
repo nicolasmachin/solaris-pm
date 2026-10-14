@@ -51,17 +51,6 @@ enum TipoObra {
   TERCERIZADA
 }
 
-enum TipoMontaje {
-  /// Paneles pegados al techo (chapa, isopanel, teja), sin estructura inclinada.
-  COPLANAR
-  /// Estructura de ángulos que inclina los paneles sobre un techo liviano.
-  ANGULOS
-  /// Estructura sobre techo de hormigón (losas, contrapesos o anclaje).
-  HORMIGON
-  /// Estructura apoyada en el suelo.
-  SUELO
-}
-
 enum ModalidadPago {
   DIRECTO_50_50
   FINANCIACION_BANCARIA
@@ -666,9 +655,6 @@ model Project {
   /// Qué se acordó, cuando la modalidad es OTRO. Es lo que hace que el caso
   /// particular quede explicado y no solo marcado como "otro".
   modalidadPagoNota               String?
-  /// Cómo se montan los paneles. Lo define Ingeniería en Pre-Ingeniería (la
-  /// etapa no cierra sin esto) y lo usa Operaciones para agendar la cuadrilla.
-  tipoMontaje                     TipoMontaje?
   firstDateScheduledAt            DateTime?                      @db.Timestamptz(6)
   clientEmail                     String?
   clientPhone                     String?
@@ -3069,6 +3055,10 @@ model PreIngenieriaVersion {
   // Datos del sitio
   tipoTecho     String?
   tipoTechoOtro String?
+  // COPLANAR | INCLINADO. Independiente del techo: cualquier techo puede ir
+  // coplanar o con estructura inclinada. Operaciones lo usa para agendar y la
+  // Pre-Ingeniería no cierra sin esto.
+  inclinacion   String?
   infoTecho     String?
   alturaTecho   String?
 

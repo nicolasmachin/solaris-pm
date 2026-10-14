@@ -35,6 +35,7 @@ import {
   klass,
   lbl,
   TIPO_TECHO_OPTIONS,
+  INCLINACION_OPTIONS,
 } from "./shared";
 import { ACCEPT_FOTOS } from "../../../utils/fileAccept";
 
@@ -352,6 +353,7 @@ export function PreIngenieriaFormModal({
       qc.invalidateQueries({ queryKey: ["preingenieria-versions", projectId] });
       qc.invalidateQueries({ queryKey: ["project-documents", projectId] });
       qc.invalidateQueries({ queryKey: ["ingenieria-workspace", projectId] });
+      qc.invalidateQueries({ queryKey: ["datos-tecnicos", projectId] });
       toast.success(`Pre-ingeniería v${res.versionNumber} generada`);
       onSuccess({ id: res.id, versionNumber: res.versionNumber });
     },
@@ -537,6 +539,22 @@ export function PreIngenieriaFormModal({
                   maxLength={100}
                 />
               )}
+            </div>
+            <div>
+              <label className={lbl}>Paneles coplanares o inclinados</label>
+              <div className="flex flex-wrap gap-2">
+                {INCLINACION_OPTIONS.map((o) => (
+                  <label key={o.value} className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-[var(--color-border)] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="inclinacion"
+                      checked={form.inclinacion === o.value}
+                      onChange={() => setF("inclinacion", o.value)}
+                    />
+                    {o.label}
+                  </label>
+                ))}
+              </div>
             </div>
             <div>
               <label className={lbl}>Info techo (multi-línea)<AiBadge active={aiFields.has("infoTecho")} /></label>

@@ -50,7 +50,7 @@ const ALLOWED_PHOTO_MIMETYPES = new Set([
   "image/webp",
 ]);
 
-const tipoTechoEnum = z.enum(["ISOPANEL", "HORMIGON", "CHAPA", "TEJAS", "OTRO"]) satisfies z.ZodType<TipoTechoKey>;
+const tipoTechoEnum = z.enum(["ISOPANEL", "HORMIGON", "CHAPA", "TEJAS", "SUELO", "OTRO"]) satisfies z.ZodType<TipoTechoKey>;
 
 const createBodySchema = z
   .object({
@@ -58,6 +58,7 @@ const createBodySchema = z
     // Sitio
     tipoTecho: tipoTechoEnum.optional().nullable(),
     tipoTechoOtro: z.string().trim().max(100).optional().nullable(),
+    inclinacion: z.enum(["COPLANAR", "INCLINADO"]).optional().nullable(),
     infoTecho: z.string().trim().max(2000).optional().nullable(),
     alturaTecho: z.string().trim().max(50).optional().nullable(),
     // Eléctricos
@@ -120,6 +121,7 @@ function inputsFromVersion(v: CreateBody & { snapshotNombre: string }): PreIngen
     snapshotFechaPrevista: v.snapshotFechaPrevista ?? null,
     tipoTecho: v.tipoTecho ?? null,
     tipoTechoOtro: v.tipoTechoOtro ?? null,
+    inclinacion: v.inclinacion ?? null,
     infoTecho: v.infoTecho ?? null,
     alturaTecho: v.alturaTecho ?? null,
     cantidadPaneles: v.cantidadPaneles ?? null,
@@ -477,6 +479,7 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
           snapshotFechaPrevista: body.snapshotFechaPrevista ?? null,
           tipoTecho: body.tipoTecho ?? null,
           tipoTechoOtro: body.tipoTechoOtro ?? null,
+          inclinacion: body.inclinacion ?? null,
           infoTecho: body.infoTecho ?? null,
           alturaTecho: body.alturaTecho ?? null,
           cantidadPaneles: body.cantidadPaneles ?? null,

@@ -30,13 +30,14 @@ const COLOR_BORDER = "#1e40af";
 const COLOR_INFO_BG = "#f5f7fb";
 const COLOR_INFO_BORDER = "#c7d2e6";
 
-export type TipoTechoKey = "ISOPANEL" | "HORMIGON" | "CHAPA" | "TEJAS" | "OTRO";
+export type TipoTechoKey = "ISOPANEL" | "HORMIGON" | "CHAPA" | "TEJAS" | "SUELO" | "OTRO";
 
 const TIPO_TECHO_LABELS: Record<TipoTechoKey, string> = {
   ISOPANEL: "Isopanel",
   HORMIGON: "Hormigón",
   CHAPA: "Chapa",
   TEJAS: "Tejas",
+  SUELO: "Suelo",
   OTRO: "Otro:",
 };
 
@@ -50,6 +51,7 @@ export interface PreIngenieriaPdfInputs {
   // Sitio
   tipoTecho: TipoTechoKey | null;
   tipoTechoOtro: string | null;
+  inclinacion?: "COPLANAR" | "INCLINADO" | null;
   infoTecho: string | null;
   alturaTecho: string | null;
   // Eléctricos
@@ -160,6 +162,7 @@ export async function generatePreIngenieriaPdf(
     rightY += 12;
     rightY = drawSectionHeader(doc, FONT_BOLD, "OTROS DATOS", RIGHT_X, rightY, COL_W);
     rightY = drawFieldRow(doc, FONT, FONT_BOLD, "Altura techo:", inputs.alturaTecho, RIGHT_X, rightY, COL_W);
+    rightY = drawFieldRow(doc, FONT, FONT_BOLD, "Paneles:", inputs.inclinacion === "COPLANAR" ? "Coplanares" : inputs.inclinacion === "INCLINADO" ? "Con estructura inclinada" : null, RIGHT_X, rightY, COL_W);
     rightY += 8;
     rightY = drawRedBlock(doc, FONT, FONT_BOLD, inputs, RIGHT_X, rightY, COL_W);
 
@@ -256,7 +259,7 @@ function drawTipoTechoBlock(
   y: number,
   width: number,
 ): number {
-  const opciones: TipoTechoKey[] = ["ISOPANEL", "HORMIGON", "CHAPA", "TEJAS", "OTRO"];
+  const opciones: TipoTechoKey[] = ["ISOPANEL", "HORMIGON", "CHAPA", "TEJAS", "SUELO", "OTRO"];
   const ROW_H = 14;
   const blockH = ROW_H * opciones.length + 8;
   doc.save();

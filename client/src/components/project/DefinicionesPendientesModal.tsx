@@ -19,15 +19,15 @@ export function DefinicionesPendientesModal() {
   if (!pedido) return null;
   const esPreIngenieria = pedido.etapa === "PRE_INGENIERIA";
 
-  // Pre-Ingeniería: lo que falta se corrige en Datos técnicos de la ficha (y,
-  // si no coincide, en la pre-ingeniería). No hay reintento: se cierra a mano
+  // Pre-Ingeniería: lo que falta se corrige en la pre-ingeniería o en el
+  // unifilar, en el espacio de Ingeniería. No hay reintento: se cierra a mano
   // cuando esté todo.
-  function irADatosTecnicos() {
+  function irAIngenieria() {
     if (!pedido) return;
     const { projectId } = pedido;
     cerrar();
-    qc.invalidateQueries({ queryKey: ["project", projectId] });
-    navigate(`/projects/${projectId}`);
+    qc.invalidateQueries({ queryKey: ["datos-tecnicos", projectId] });
+    navigate(`/ingenieria/proyecto/${projectId}`);
   }
 
   function continuar() {
@@ -54,7 +54,7 @@ export function DefinicionesPendientesModal() {
           </h2>
           <p className="mt-1 text-[12px] text-[var(--color-text-muted)]">
             {esPreIngenieria
-              ? "Operaciones necesita paneles, inversor, fase y montaje definidos —y coincidiendo con la pre-ingeniería— para validar y agendar la obra."
+              ? "Operaciones necesita la pre-ingeniería completa (paneles, inversor, red, techo y si van coplanares o inclinados) y coincidiendo con el unifilar, para validar y agendar la obra."
               : "El proyecto no avanza sin dejar definido cómo y cuándo paga el cliente."}
           </p>
         </div>
@@ -81,10 +81,10 @@ export function DefinicionesPendientesModal() {
           </button>
           <button
             type="button"
-            onClick={esPreIngenieria ? irADatosTecnicos : continuar}
+            onClick={esPreIngenieria ? irAIngenieria : continuar}
             className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90"
           >
-            {esPreIngenieria ? "Ir a Datos técnicos" : "Listo, continuar"}
+            {esPreIngenieria ? "Ir a Ingeniería" : "Listo, continuar"}
           </button>
         </div>
       </div>

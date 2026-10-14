@@ -1,5 +1,5 @@
 import { apiClient } from "./axios";
-import type { PhaseType, Project, TipoMontaje, ProjectListItem, SolarSystem } from "../types/api.types";
+import type { DatosTecnicosObra, PhaseType, Project, ProjectListItem, SolarSystem } from "../types/api.types";
 
 export interface SolarSystemPayload {
   order?: number;
@@ -28,6 +28,11 @@ export interface GetProjectsParams {
 
 export async function getProjects(params?: GetProjectsParams): Promise<ProjectListItem[]> {
   const { data } = await apiClient.get<ProjectListItem[]>("/api/projects", { params });
+  return data;
+}
+
+export async function getDatosTecnicos(id: string): Promise<DatosTecnicosObra> {
+  const { data } = await apiClient.get<DatosTecnicosObra>(`/api/projects/${id}/datos-tecnicos`);
   return data;
 }
 
@@ -105,7 +110,6 @@ export async function patchProject(
     facturaNota?: string | null;
     modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | "OTRO";
     modalidadPagoNota?: string | null;
-    tipoMontaje?: TipoMontaje | null;
   }
 ): Promise<Project> {
   const { data } = await apiClient.patch<Project>(`/api/projects/${id}`, body);

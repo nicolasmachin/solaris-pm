@@ -325,7 +325,7 @@ function SolarSystemsSection({
         </Button>
       </div>
 
-      <DatosTecnicosResumen project={project} />
+      <DatosTecnicosResumen projectId={project.id} linkIngenieria />
 
       {systems.length === 0 ? (
         <div className="mt-4 rounded-lg border border-dashed border-[var(--color-border)] px-4 py-5 text-sm text-[var(--color-text-secondary)]">

@@ -1,6 +1,7 @@
 import { apiClient } from "./axios";
 
-export type TipoTecho = "ISOPANEL" | "HORMIGON" | "CHAPA" | "TEJAS" | "OTRO";
+export type Inclinacion = "COPLANAR" | "INCLINADO";
+export type TipoTecho = "ISOPANEL" | "HORMIGON" | "CHAPA" | "TEJAS" | "SUELO" | "OTRO";
 
 export interface PreIngenieriaVersionListItem {
   id: string;
@@ -46,6 +47,7 @@ export interface PreIngenieriaVersionFull {
   snapshotFechaPrevista: string | null;
   tipoTecho: TipoTecho | null;
   tipoTechoOtro: string | null;
+  inclinacion: Inclinacion | null;
   infoTecho: string | null;
   alturaTecho: string | null;
   cantidadPaneles: string | null;
@@ -111,6 +113,7 @@ export interface PreIngenieriaFormInput {
   // Sitio
   tipoTecho?: TipoTecho | null;
   tipoTechoOtro?: string | null;
+  inclinacion?: Inclinacion | null;
   infoTecho?: string | null;
   alturaTecho?: string | null;
   // Eléctricos

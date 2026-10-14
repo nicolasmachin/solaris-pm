@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type {
   PreIngenieriaFormInput,
   PreIngenieriaVersionFull,
+  Inclinacion,
   TipoTecho,
 } from "../../../api/preingenieria.api";
 import type { TipoRed, UnifilarVersionFull } from "../../../api/unifilar.api";
@@ -43,7 +44,13 @@ export const TIPO_TECHO_OPTIONS: { value: TipoTecho; label: string }[] = [
   { value: "HORMIGON", label: "Hormigón" },
   { value: "CHAPA", label: "Chapa" },
   { value: "TEJAS", label: "Tejas" },
+  { value: "SUELO", label: "Suelo" },
   { value: "OTRO", label: "Otro" },
+];
+
+export const INCLINACION_OPTIONS: { value: Inclinacion; label: string }[] = [
+  { value: "COPLANAR", label: "Coplanar" },
+  { value: "INCLINADO", label: "Inclinado" },
 ];
 
 export function emptyForm(snapshotNombre: string): PreIngenieriaFormInput {
@@ -56,6 +63,7 @@ export function emptyForm(snapshotNombre: string): PreIngenieriaFormInput {
     snapshotFechaPrevista: "",
     tipoTecho: null,
     tipoTechoOtro: "",
+    inclinacion: null,
     infoTecho: "",
     alturaTecho: "",
     cantidadPaneles: "",
@@ -96,6 +104,7 @@ export function applyPreviousVersionPrefill(
     snapshotFechaPrevista: v.snapshotFechaPrevista ?? "",
     tipoTecho: v.tipoTecho ?? null,
     tipoTechoOtro: v.tipoTechoOtro ?? "",
+    inclinacion: v.inclinacion ?? null,
     infoTecho: v.infoTecho ?? "",
     alturaTecho: v.alturaTecho ?? "",
     cantidadPaneles: v.cantidadPaneles ?? "",

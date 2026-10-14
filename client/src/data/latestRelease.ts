@@ -27,12 +27,13 @@ export const LATEST_RELEASE: Release = {
   date: "14 de octubre de 2026",
   sections: [
     {
-      title: "Paneles, fase y montaje a la vista para agendar",
+      title: "Paneles, red y montaje a la vista para agendar",
       items: [
-        "En Datos técnicos de cada proyecto, arriba de todo: cuántos paneles lleva la obra, si es mono o trifásica y el tipo de montaje (coplanar, con ángulos, sobre hormigón o suelo).",
-        "Al lado, lo que decía la propuesta y lo que relevó la pre-ingeniería, marcando lo que no coincide.",
-        "La Pre-Ingeniería no se puede cerrar sin paneles, inversor, fase y montaje cargados y coincidiendo con la pre-ingeniería.",
-        "En la lista de proyectos, el montaje aparece debajo de los paneles.",
+        "En Datos técnicos de cada proyecto y en el espacio de Ingeniería: cuántos paneles, mono o trifásica, el tipo de techo y si van coplanares o inclinados.",
+        "Salen del formulario de pre-ingeniería, que suma la opción Suelo y la pregunta coplanar o inclinado.",
+        "Se comparan con el unifilar y lo que no coincide se marca en amarillo.",
+        "La Pre-Ingeniería no se puede cerrar sin la pre-ingeniería completa, el unifilar y los dos coincidiendo.",
+        "Al guardar un unifilar, los datos del sistema del proyecto se actualizan solos.",
       ],
     },
   ],

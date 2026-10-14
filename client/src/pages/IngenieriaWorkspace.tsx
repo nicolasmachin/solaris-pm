@@ -29,6 +29,7 @@ import { ToolAccordion } from "../components/ingenieria/ToolAccordion";
 import { UnifilarToolPanel } from "../components/ingenieria/unifilar/UnifilarToolPanel";
 import { MaterialesToolPanel } from "../components/ingenieria/MaterialesToolPanel";
 import { TriangulosToolPanel } from "../components/ingenieria/TriangulosToolPanel";
+import { DatosTecnicosResumen } from "../components/project/DatosTecnicosResumen";
 import { PreIngenieriaToolPanel } from "../components/ingenieria/preing/PreIngenieriaToolPanel";
 import { VisitasReadOnlyPanel } from "../components/ingenieria/visitas/VisitasReadOnlyPanel";
 import { EFPToolPanel } from "../components/ingenieria/efp/EFPToolPanel";
@@ -135,6 +136,14 @@ export function IngenieriaWorkspace() {
           No se pudo cargar el workspace.
         </div>
       )}
+
+      {/* Lo que Operaciones necesita para agendar, con lo que falta para cerrar
+          la Pre-Ingeniería (pre-ingeniería contra unifilar). */}
+      {id ? (
+        <section className="-mt-4">
+          <DatosTecnicosResumen projectId={id} />
+        </section>
+      ) : null}
 
       {/* Herramientas — acordeón inline en grid de 2 columnas. La herramienta
           abierta ocupa ancho completo (span 2) para que el body inline (lista

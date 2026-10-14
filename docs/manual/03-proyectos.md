@@ -158,44 +158,50 @@ checklist se copia al crear el proyecto. Para eso está
 **sin completar** (las cerradas se dejan como están: agregarles un pendiente las
 volvería inconsistentes).
 
-### La Pre-Ingeniería no cierra sin paneles, inversor, fase y montaje
+### La Pre-Ingeniería no cierra sin los datos de la obra, y pre-ingeniería y unifilar tienen que coincidir
 
 Pedido de Operaciones (14-oct-2026): para agendar hay que saber cuántos paneles
 son, si es mono o tri y cómo se monta, y eso se buscaba a mano en la lista de
-materiales. Ahora está arriba de todo en **Datos técnicos** de la ficha
-(`DatosTecnicosResumen.tsx`) y la Pre-Ingeniería no cierra sin eso definido, para
-que Validación de Operaciones lo reciba listo.
+materiales. Ahora está arriba de todo en **Datos técnicos** de la ficha y en el
+espacio de Ingeniería (`DatosTecnicosResumen.tsx`, mismo componente en
+`ProjectDetail` e `IngenieriaWorkspace`), y la Pre-Ingeniería no cierra sin eso.
 
-**El montaje es un dato nuevo**, `Project.tipoMontaje` (enum `TipoMontaje`:
-`COPLANAR`, `ANGULOS`, `HORMIGON`, `SUELO`), editable desde el selector del
-resumen con `PATCH /projects/:id` (mismo permiso que editar el sistema,
-`authorizeProjectEditAnyPipeline(EDIT)`). No se deduce de nada: la propuesta lo
-tiene como **texto libre** (`snapshot.data.sistema.tipoMontaje`) y en prod es
-inutilizable para clasificar ("Hormigon", "Zinc", "de 75 m2", "sol directo"); el
-`tipoTecho` de la pre-ingeniería dice el techo, no la estructura (una chapa puede
-ir coplanar o con ángulos). Los dos se muestran como pista al lado del selector
-—el de la propuesta, textual— pero se elige a mano. **Sin backfill**: los
-proyectos existentes quedan "Sin definir".
+**La fuente es el formulario de pre-ingeniería** (última `PreIngenieriaVersion`):
+`cantidadPaneles` (texto, se toma el primer número), `inversor` (texto; los kW
+salen de `parseInversorKw()`, el último "N kW"), los tres booleanos `red*`,
+`tipoTecho` (+ `tipoTechoOtro`) e `inclinacion`. Se le sumaron:
 
-`datos-tecnicos-obra.service.ts` → `getDatosTecnicosObra(projectId)` arma el
-cruce y viaja como `datosTecnicos` en `GET /projects/:id`:
+- **`SUELO`** en `tipoTecho`. La columna es `String`, así que no llevó migración:
+  se agregó en el zod de `preingenieria.routes.ts`, en el de la extracción de
+  minuta (`minutaExtraction`), en el PDF (`preingenieriaPdf`, una fila más en el
+  bloque de checkboxes) y en `TIPO_TECHO_OPTIONS`.
+- **`inclinacion`** (`COPLANAR` | `INCLINADO`, columna `String?`, migración
+  `preingenieria_inclinacion`). Es aparte del techo porque cualquier techo puede
+  ir de las dos formas. Sale en el PDF como "Paneles: Coplanares / Con estructura
+  inclinada". La IA de la minuta no lo extrae.
 
-- **Datos técnicos**: suma de `panelQuantity` y de `inverterPowerKw × inverterQuantity`
-  de todos los `SolarSystem` (varios suministros = se suman), y las fases.
-- **Propuesta**: la última `ProposalV2Version` publicada del lead convertido.
-  Solo se muestra; **no bloquea** (la obra puede cambiar después de la venta).
-- **Pre-ingeniería**: la última `PreIngenieriaVersion`. `cantidadPaneles` es
-  texto y se toma el primer número; los kW del inversor se sacan del texto con
-  `parseInversorKw()` (el último "N kW"; "Huawei" a secas no da número y no se
-  compara); la red sale de los tres booleanos `red*`.
+**Se valida contra el unifilar**: la última `UnifilarVersion` de cada suministro.
+Se suman `cantidadPaneles` y `potenciaInversorKw` de todos y se juntan las redes
+(`TipoRed` → `PhaseType`). Los suministros son 1 más los `order` de los
+`SolarSystem`; uno sin unifilar es un faltante.
 
-`faltantes` (lo que bloquea), con su código: `SISTEMA` (no hay ninguno),
-`PANELES`, `INVERSOR` (marca y potencia), `FASE`, `MONTAJE`, y los desacuerdos
-con la pre-ingeniería `PANELES_NO_COINCIDEN`, `INVERSOR_NO_COINCIDE` (diferencia
-> 0,05 kW) y `FASE_NO_COINCIDE` (alguna fase de los sistemas no está marcada en
-la red de la pre-ingeniería). Lo que no se pudo leer de la pre-ingeniería no se
-compara, y **sin documento de pre-ingeniería no se exige el cruce**, solo los
-datos cargados.
+La propuesta (última `ProposalV2Version` publicada del lead) se muestra solo como
+referencia y **no bloquea**: la obra puede cambiar después de la venta, y su
+`tipoMontaje` es texto libre inservible para clasificar.
+
+`datos-tecnicos-obra.service.ts` → `getDatosTecnicosObra(projectId)` devuelve
+todo eso más `faltantes`, en `GET /projects/:id/datos-tecnicos`
+(`authorizeProjectEditAnyPipeline(VIEW)`: cualquiera con `VIEW` en un módulo del
+recorrido). Códigos:
+
+| Código | Cuándo |
+|---|---|
+| `PREINGENIERIA` | No hay pre-ingeniería |
+| `PANELES` / `INVERSOR` / `FASE` / `TECHO` / `INCLINACION` | Falta ese dato en la pre-ingeniería. `INVERSOR` también si el texto no trae los kW ("Huawei" a secas no alcanza) |
+| `UNIFILAR` | No hay unifilar, o falta el de algún suministro |
+| `PANELES_NO_COINCIDEN` | Total de paneles distinto |
+| `INVERSOR_NO_COINCIDE` | Diferencia de kW > 0,05 |
+| `FASE_NO_COINCIDE` | Alguna red del unifilar no está marcada en la pre-ingeniería |
 
 `assertPreIngenieriaDefinida()` (en `api.routes.ts`) devuelve el mismo **409
 `DEFINICIONES_PENDIENTES`** que el Onboarding, con `etapa: "PRE_INGENIERIA"`.
@@ -210,16 +216,30 @@ Se llama en:
 - `PATCH .../complete-all` sobre la etapa `PRE_INGENIERIA`.
 
 **Agujero conocido:** tildar el último ítem del checklist no pasa por estos
-caminos (igual que en el Onboarding). ADMIN no está exento.
+caminos (igual que en el Onboarding). ADMIN no está exento. Sin backfill: los
+proyectos que ya pasaron la etapa no se tocan; los que están en Pre-Ingeniería
+necesitan una versión nueva de la pre-ingeniería con coplanar/inclinado.
 
 En el cliente, el mismo `DefinicionesPendientesModal` distingue por `etapa`: para
-Pre-Ingeniería no muestra el panel de modalidad de pago, sino la lista y un botón
-**Ir a Datos técnicos** que abre la ficha (no reintenta: se cierra a mano cuando
-esté todo).
+Pre-Ingeniería muestra la lista y **Ir a Ingeniería** (no reintenta: se cierra a
+mano cuando esté todo). Guardar una pre-ingeniería o un unifilar invalida la
+query `["datos-tecnicos", projectId]`.
 
-En la **lista de proyectos** (`GET /projects`), el listado ahora trae **todos**
-los sistemas (antes solo el `order: 1`, por eso el "+N" de suministros extra no
-aparecía nunca) y `tipoMontaje`; la columna Paneles muestra el montaje y, con
+**El unifilar alimenta los `SolarSystem`.** Al crear una versión
+(`POST /projects/:id/unifilar-versions`), `volcarUnifilarEnSistema()` pisa en el
+sistema del suministro (`order = suministro`; lo crea si no existe) paneles,
+potencia del panel, modelo del panel si viene, modelo del inversor y fase. La
+potencia del inversor solo si no coincide con `inverterPowerKw × inverterQuantity`
+(si coincide se respeta la cantidad); si no, queda un inversor con la potencia
+del unifilar. La marca solo se completa si falta, deducida del modelo con
+`marcaDesdeModelo()` (Growatt, Huawei —también "SUN2000"—, Fronius, SMA, Solis,
+GoodWe, Deye, Sungrow, Solax). Deja una auditoría `solar_system` con lo que
+cambió. Es best-effort: si falla, la versión del unifilar igual queda.
+
+En la **lista de proyectos** (`GET /projects`), el listado trae **todos** los
+sistemas (antes solo el `order: 1`, por eso el "+N" de suministros extra no
+aparecía nunca) y `montaje` (techo · coplanar/inclinado de la última
+pre-ingeniería, `montajeDePreIngenieria()`); la columna Paneles lo muestra y, con
 varios suministros, el total.
 
 

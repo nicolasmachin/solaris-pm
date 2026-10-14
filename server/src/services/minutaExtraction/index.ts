@@ -44,7 +44,7 @@ export function isMinutaExtractionEnabled(): boolean {
 // ─── Tipo de resultado ──────────────────────────────────────────────────────
 
 export const ExtractedFieldsSchema = z.object({
-  tipoTecho: z.enum(["ISOPANEL", "HORMIGON", "CHAPA", "TEJAS", "OTRO"]).nullable(),
+  tipoTecho: z.enum(["ISOPANEL", "HORMIGON", "CHAPA", "TEJAS", "SUELO", "OTRO"]).nullable(),
   tipoTechoOtro: z.string().max(200).nullable(),
   infoTecho: z.string().max(2000).nullable(),
   alturaTecho: z.string().max(50).nullable(),
@@ -198,7 +198,7 @@ Devolvé SOLO el JSON. Sin texto antes o después. Sin markdown. Sin explicacion
 const USER_PROMPT_PREFIX = `Extraé los siguientes datos de esta minuta y devolvé exactamente este JSON (sin propiedades extra):
 
 {
-  "tipoTecho": "ISOPANEL" | "HORMIGON" | "CHAPA" | "TEJAS" | "OTRO" | null,
+  "tipoTecho": "ISOPANEL" | "HORMIGON" | "CHAPA" | "TEJAS" | "SUELO" | "OTRO" | null,
   "tipoTechoOtro": string | null,
   "infoTecho": string | null,
   "alturaTecho": string | null,

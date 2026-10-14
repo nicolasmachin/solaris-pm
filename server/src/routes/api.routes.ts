@@ -1,4 +1,4 @@
-import { getDatosTecnicosObra } from "../services/datos-tecnicos-obra.service.js";
+import { getDatosTecnicosObra, montajeDePreIngenieria } from "../services/datos-tecnicos-obra.service.js";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs, { promises as fsPromises } from "node:fs";
@@ -30,7 +30,6 @@ import {
   GoalPeriod,
   MetodoPago,
   ModalidadPago,
-  TipoMontaje,
   Module,
   Moneda,
   NotificationType,
@@ -320,7 +319,6 @@ const projectPatchSchema = z
     modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
     // Qué se acordó, cuando la modalidad es OTRO. Vacío la borra.
     modalidadPagoNota: z.string().trim().max(1000).nullable().optional(),
-    tipoMontaje: z.nativeEnum(TipoMontaje).nullable().optional(),
     clientEmail: clientEmailValue.nullable().optional(),
     clientPhone: clientPhoneValue.nullable().optional(),
     clientAddress: z.string().nullable().optional(),
@@ -966,7 +964,6 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   if (source.modalidadPagoNota !== undefined) {
     normalized.modalidadPagoNota = source.modalidadPagoNota || null;
   }
-  if (source.tipoMontaje !== undefined) normalized.tipoMontaje = source.tipoMontaje;
   if (source.clientEmail !== undefined) normalized.clientEmail = source.clientEmail;
   if (source.clientPhone !== undefined) normalized.clientPhone = source.clientPhone;
   if (source.clientAddress !== undefined) normalized.clientAddress = source.clientAddress;
@@ -1034,7 +1031,6 @@ const projectFieldLabels: Record<string, string> = {
   co2TonsAvoided: "CO2 evitado",
   modalidadPago: "modalidad de pago",
   modalidadPagoNota: "detalle de la modalidad de pago",
-  tipoMontaje: "tipo de montaje",
   clientEmail: "email del cliente",
   clientPhone: "teléfono del cliente",
   clientAddress: "dirección del cliente",
@@ -1551,6 +1547,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
           include: { segments: { orderBy: { startDate: "asc" }, take: 1 } },
         },
         salesperson: { select: { id: true, name: true } },
+        preIngenieriaVersions: {
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          select: { tipoTecho: true, tipoTechoOtro: true, inclinacion: true },
+        },
       },
       orderBy: baseOrder,
       ...(query.page || query.limit
@@ -1610,7 +1611,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         locationCity: project.locationCity,
         locationProvince: project.locationProvince,
         capacityKwp: decimalToNumber(project.capacityKwp),
-        tipoMontaje: project.tipoMontaje,
+        montaje: montajeDePreIngenieria(project.preIngenieriaVersions[0]),
         status: project.status,
         progressPercent,
         completionPercent,
@@ -1827,7 +1828,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       ...serializeProject(project),
       installationSchedule,
       solarSystems: project.solarSystems.map(serializeSolarSystem),
-      datosTecnicos: await getDatosTecnicosObra(project.id),
       ampliaciones: project.ampliaciones.map((a) => ({
         id: a.id,
         code: a.code,
@@ -2068,6 +2068,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     },
   );
+
+  // Paneles, inversor, red y montaje de la obra: pre-ingeniería contra unifilar.
+  // Lo que falta acá es lo que impide cerrar la Pre-Ingeniería.
+  app.get("/projects/:id/datos-tecnicos", { preHandler: authorizeProjectEditAnyPipeline(Action.VIEW) }, async (request) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    return getDatosTecnicosObra(params.id);
+  });
 
   app.patch("/projects/:id", { preHandler: authorizeProjectEditAnyPipeline(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);

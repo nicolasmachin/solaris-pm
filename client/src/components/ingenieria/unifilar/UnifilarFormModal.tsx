@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import {
   createUnifilarVersion,
@@ -81,9 +81,14 @@ export function UnifilarFormModal({
     placeholderData: (prev) => prev,
   });
 
+  const qc = useQueryClient();
   const createMut = useMutation({
     mutationFn: () => createUnifilarVersion(projectId, form, suministro),
     onSuccess: (created) => {
+      // El unifilar actualiza Datos técnicos del suministro y el chequeo contra
+      // la pre-ingeniería.
+      qc.invalidateQueries({ queryKey: ["datos-tecnicos", projectId] });
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
       onSuccess(created);
     },
     onError: (e) => setError(getApiErr(e) ?? "Error al crear versión"),

@@ -1,7 +1,7 @@
 // REST endpoints del generador de unifilares. Vive bajo el módulo INGENIERIA
 // (la sección "Unifilar" es parte del flujo técnico del proyecto).
 
-import { Action, Module, type TipoProteccionDC, type TipoRed } from "@prisma/client";
+import { Action, AuditAction, AuditEntityType, Module, type TipoProteccionDC, type TipoRed } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -13,6 +13,8 @@ import { fechaTexto, inputsFromVersion } from "../services/unifilarSvg/from-vers
 import { generateUnifilarSvg, type UnifilarInputs } from "../services/unifilarSvg/index.js";
 import { svgToPdf } from "../services/unifilarSvg/pdf.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
+import { createAuditEntry } from "../services/audit.service.js";
+import { volcarUnifilarEnSistema } from "../services/datos-tecnicos-obra.service.js";
 import { serializeDate } from "../utils/serialization.js";
 import { SUMINISTRO_PRINCIPAL, datosSuministro, uteConfigKey } from "../services/suministros.service.js";
 
@@ -312,6 +314,34 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
           { err, unifilarVersionId: created.id },
           "[unifilar] no se pudo guardar el PDF como FileAttachment",
         );
+      }
+
+      // Los datos del unifilar pasan a Datos técnicos del suministro: Ingeniería
+      // no los carga dos veces. Best-effort:
+      // si falla, la versión ya quedó guardada.
+      try {
+        const cambios = await volcarUnifilarEnSistema({
+          projectId: params.projectId,
+          suministro,
+          tipoRed: created.tipoRed,
+          cantidadPaneles: created.cantidadPaneles,
+          potenciaPanelW: created.potenciaPanelW,
+          modeloPanel: created.modeloPanel,
+          modeloInversor: created.modeloInversor,
+          potenciaInversorKw: created.potenciaInversorKw,
+        });
+        if (cambios.length > 0) {
+          await createAuditEntry({
+            entityType: AuditEntityType.solar_system,
+            entityId: params.projectId,
+            projectId: params.projectId,
+            userId: user.id,
+            action: AuditAction.updated,
+            description: `Datos técnicos tomados del unifilar v${created.versionNumber}${suministro === SUMINISTRO_PRINCIPAL ? "" : ` (suministro ${suministro})`}: ${cambios.join(", ")}`,
+          });
+        }
+      } catch (err) {
+        request.log.warn({ err, unifilarVersionId: created.id }, "[unifilar] no se pudieron volcar los datos técnicos");
       }
 
       reply.code(201);
