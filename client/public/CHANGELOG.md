@@ -14,6 +14,16 @@
 - Al guardar un unifilar, los paneles, el inversor y la red pasan solos a los datos del sistema del proyecto: no se cargan dos veces.
 - En la **lista de proyectos**, debajo de los paneles aparecen el techo y si es coplanar o inclinado, y cuando la obra tiene varios suministros, el total de paneles.
 
+#### Facturas al cliente con Biller
+
+- En **Finanzas → Facturación**, cada proyecto pendiente tiene el botón **Emitir factura**: Voltia PM arma la factura con los datos del proyecto (cédula o RUT, nombre, dirección, el presupuesto de la obra con IVA incluido) y se puede corregir todo antes de mandarla.
+- Antes de emitir hay un segundo paso, **Confirmar**, que muestra exactamente lo que se va a mandar. Nada sale hacia DGI sin ese OK.
+- A una persona se le hace un **e-Ticket** con su cédula; a una empresa, una **e-Factura** con su RUT. Si el RUT está registrado, se ofrece la razón social que figura en DGI.
+- Se puede elegir si Biller le manda el PDF al cliente por mail.
+- En la lista se ve el número de la factura y su estado: **Esperando DGI**, **Aceptada DGI** o **Rechazada DGI**. El estado se actualiza solo cada pocos minutos, y con el botón de refrescar se consulta en el momento. El PDF oficial queda guardado en el proyecto.
+- Lo emitido no se edita: se corrige con una **Nota de crédito**, total (anula la factura y el proyecto vuelve a quedar pendiente de facturar) o parcial (por un monto, con su motivo).
+- **Marcar emitida** sigue estando para las facturas que se hacen por fuera de Voltia PM.
+
 ## v12.5
 
 ### 13 de octubre de 2026

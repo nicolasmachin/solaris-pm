@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.17 — 14 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.18 — 14 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -517,6 +517,29 @@ referencia, pero manda lo que define Ingeniería.
 **A qué manuales afecta.** Al PGT (el traspaso de Ingeniería a Operaciones), al
 de Ingeniería y al de Operaciones.
 
+### Las facturas al cliente: con confirmación, una por obra
+
+**Qué se decidió.** Las facturas a los clientes se emiten desde Voltia PM, que
+las manda a DGI por la facturación electrónica. **Nada que va a DGI sale sin
+que una persona vea el borrador completo y lo confirme**: ni una factura, ni una
+nota de crédito, ni (cuando los haya) un recibo. Ningún automatismo emite solo.
+Cada obra lleva **una factura**, por el total. Lo emitido no se edita: se
+corrige con una nota de crédito.
+
+**Por qué.** Una factura mal emitida no se puede borrar: se corrige con otro
+comprobante y los dos quedan registrados ante DGI. Revisar antes cuesta un
+minuto; corregir después cuesta dos comprobantes y una explicación al cliente.
+
+**Qué queda abierto.** Si cada cobro tiene que llevar su recibo electrónico, o
+alcanza con registrar el pago, se define con el contador. Hasta entonces las
+facturas salen de contado y los cobros no emiten comprobantes.
+
+**Desde cuándo rige.** La confirmación previa, desde el 30 de septiembre de 2026;
+la emisión desde Voltia PM y la factura única por obra, desde el 14 de octubre
+de 2026.
+
+**A qué manuales afecta.** Al de Finanzas.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -548,6 +571,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.18 | 14 de octubre de 2026 | Se registra que las facturas al cliente se emiten desde Voltia PM con un borrador que una persona confirma antes de que salga a DGI, una por obra, y que lo emitido se corrige con nota de crédito. |
 | 0.17 | 14 de octubre de 2026 | Se registra que la Pre-Ingeniería no termina sin los datos de la instalación definidos (paneles, inversor, red, techo y si van coplanares o inclinados) y con la pre-ingeniería y el unifilar diciendo lo mismo. |
 | 0.16 | 12 de octubre de 2026 | Se registra que los videos para el cliente quedan en la pestaña Videos de su portal y se le mandan con el enlace que los abre ahí; todos los clientes ven los mismos, y las dudas van por ticket. |
 | 0.15 | 11 de octubre de 2026 | Se registra que la fecha tentativa deja de ser parte del procedimiento: al cliente se le da la quincena al vender, y en la Validación primero se confirma la fecha de obra y después el capataz hace su informe. Pagarle más a un tercerizado lo autoriza solo el CEO. |

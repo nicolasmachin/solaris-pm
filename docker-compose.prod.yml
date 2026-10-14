@@ -111,6 +111,9 @@ services:
       # BILLER_URL: https://test.biller.uy (prueba) o https://biller.uy (producción).
       BILLER_TOKEN: ${BILLER_TOKEN:-}
       BILLER_URL: ${BILLER_URL:-https://biller.uy}
+      # ID de la sucursal de Voltia en Biller (Ajustes → Sucursales). Sin esto no
+      # se emiten facturas a clientes; la bandeja de recibidos no lo necesita.
+      BILLER_SUCURSAL: ${BILLER_SUCURSAL:-}
     volumes:
       - voltia_storage:/app/storage
     ports:

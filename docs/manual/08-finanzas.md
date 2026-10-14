@@ -621,11 +621,159 @@ La pestaña **Finanzas → Costos fijos** monta el mismo `TabCostosFijos`
 ya pedían `FINANZAS:*`, así que no cambió ningún permiso: antes un usuario de
 Finanzas sin acceso a `/admin` no tenía cómo llegar a la pantalla.
 
+## Facturación al cliente (emisión por Biller)
+
+### Para qué existe
+
+Emitir la factura de cada obra al cliente desde Voltia PM, como comprobante
+fiscal electrónico (CFE) ante DGI, sin entrar a Biller. Biller es solo el motor
+fiscal: firma, numera y manda a DGI. Qué lleva factura, su estado y el archivo
+viven en Voltia PM.
+
+### Cómo se usa
+
+**Dónde:** Finanzas → Facturación. Lista los proyectos con el check **lleva
+factura** (se prende al crear o editar el proyecto).
+
+- **Emitir factura** (solo si Biller está habilitado, ver más abajo): abre el
+  borrador en dos pasos.
+  1. **Datos**: tipo (e-Ticket con cédula o e-Factura con RUT), documento,
+     nombre o razón social, dirección, ciudad, departamento, fecha de emisión,
+     forma de pago (contado / crédito con vencimiento), renglones con precio
+     **con IVA incluido**, adenda y si Biller le manda el PDF al cliente. Arriba
+     se muestra la nota de facturación del proyecto. Para un RUT se ofrece la
+     razón social registrada en DGI.
+  2. **Confirmar**: muestra exactamente lo que se manda. Hay que tildar "Revisé
+     los datos" para que se habilite **Emitir**.
+- **Nota de crédito** (en una factura emitida por Biller): total (copia los
+  renglones y anula la factura) o parcial (un renglón "Nota de crédito" por el
+  monto con IVA). El motivo es obligatorio.
+- **Refrescar** (ícono): consulta el estado ante DGI en el momento.
+- **Marcar emitida / Revertir**: para facturas hechas por fuera de Voltia PM.
+  **Revertir** se bloquea si la factura se emitió por Biller
+  (`FACTURA_EMITIDA_POR_BILLER`): eso se corrige con nota de crédito.
+- **Adjuntar factura** (ícono de subir): para las hechas por fuera. Con Biller,
+  el PDF oficial se guarda solo y reemplaza al adjunto manual.
+
+### Cómo funciona
+
+Código: `services/biller/cfe-emitidos.service.ts`, rutas en
+`routes/facturacion-cliente.routes.ts`, job en `cfe-emitidos.job.ts`, pantalla
+`FinanceFacturacionTab.tsx` + `components/finance/EmitirCfeModal.tsx`.
+
+- **Modelo** `CfeEmitido` (`cfes_emitidos`): una fila por comprobante (factura
+  101/111 o NC 102/112 con `referenciaId` a su factura). Guarda el borrador
+  confirmado y el cuerpo exacto mandado (`payload.borrador` / `payload.cuerpo`),
+  la respuesta, `billerId`, serie, número, hash, `estadoDgi` (texto de Biller)
+  y el PDF (`pdfAttachmentId`).
+- **Borrador** (`armarBorradorFactura()`): `ciCliente` de 12 dígitos (o
+  `empresa` con un documento que no es cédula) → e-Factura con RUT; si no,
+  e-Ticket con cédula. Nombre = `nombreCliente` o `clientName`; dirección =
+  `calle` + `numCalle` o `clientAddress`; ciudad/departamento = `locationCity` /
+  `locationProvince`; precio = `budgetUsd`; mail = `clientEmail`. Contado por
+  defecto.
+- **IVA**: se manda `montos_brutos: 1` con tasa básica (indicador 3): Biller
+  separa neto e IVA del total. Equivale a la cotización, donde el precio con IVA
+  es siempre el sin IVA × 1,22. La tasa de cambio no se manda: Biller toma la del
+  cierre del día anterior a la emisión.
+- **Validación** (`validarBorrador()`): e-Factura ↔ RUT de 12 dígitos, e-Ticket
+  ↔ cédula con dígito verificador válido (`esCiUruguayaValida()`), crédito con
+  vencimiento, emisión hasta dos meses a futuro. `POST /finance/facturacion/revisar`
+  la corre sin tocar Biller.
+- **Emisión sin duplicados** (`emitirCfe()`), porque Biller no tiene
+  idempotency key:
+  1. Se crea la fila en `EMITIENDO` con `numeroInterno = <código del
+     proyecto>-<id de la fila>` (`@unique`).
+  2. `POST /v3/comprobantes/emitir`. 201 → `ESPERANDO_DGI`.
+  3. 422 "Número interno no puede estar repetido" o corte de red / 5xx → se
+     busca por `numero_interno` (`/v2/comprobantes/obtener`); si está, se adopta;
+     si no, `DUDOSO`. Otro 4xx → `ERROR` (no se emitió; se puede reintentar).
+  4. Mientras un proyecto tenga un CFE `EMITIENDO` o `DUDOSO` no se deja emitir
+     otro (`CFE_EN_CURSO`).
+  5. Todo pasa por una cola en memoria de un pedido a la vez con 1,1 s entre
+     pedidos (Biller admite 1 por segundo al emitir).
+- **Seguimiento** (job cada 5 minutos, `CRON_BILLER_CFE`, solo si hay
+  `BILLER_TOKEN`): consulta `/v3/comprobantes/detalle` de los `ESPERANDO_DGI` de
+  los últimos 30 días, re-busca los `DUDOSO` (y los `EMITIENDO` de más de 5
+  minutos, que son pedidos cortados por un reinicio). Un dudoso que no aparece en
+  30 minutos pasa a `ERROR`. **El job nunca emite.**
+- **Estados DGI** (`actualizarEstadoDgi()`): "Aceptado DGI" → `ACEPTADO`;
+  "Envío no corresponde" → `ACEPTADO` (e-Ticket chico que va en el reporte
+  diario de DGI, no uno por uno; visto en test el 14-oct-2026); texto con
+  "rechaz" → `RECHAZADO`; cualquier otro → sigue `ESPERANDO_DGI` y se loguea.
+- **Efectos en el proyecto**: factura emitida → `facturaEmitida = true`. NC que
+  completa el total de la factura, o factura rechazada → `facturaEmitida =
+  false` (vuelve a pendientes y se puede emitir otra).
+- **PDF**: al quedar aceptado (o al pedirlo con `GET /finance/cfe/:id/pdf`) se
+  baja de Biller una sola vez y se guarda como `FileAttachment` con `toolSource`
+  `factura-cliente` (reemplaza al adjunto manual) o `nota-credito-cliente`.
+- **Auditoría**: cada emisión y cada rechazo crean una entrada
+  `AuditEntityType.cfe_emitido` con el número, el total y el cliente.
+
+### Configuración
+
+- `BILLER_TOKEN`, `BILLER_URL` y `BILLER_SUCURSAL` (ver `docs/DEPLOY.md`).
+  Sin sucursal no se emite.
+- **Contra el Biller productivo solo emite el servidor de producción**
+  (`NODE_ENV=production`): un desarrollo con el token real no puede emitir
+  (`estadoEmision()`).
+- **En test nunca se manda el mail al cliente**, aunque se tilde: la base de
+  desarrollo tiene mails reales. La pantalla avisa que es ambiente de prueba.
+
+### Permisos
+
+| Acción | Endpoint | Permiso |
+|---|---|---|
+| Listado (incluye `cfes` y `emision`) | `GET /finance/facturacion` | `FINANZAS:VIEW` |
+| CFEs del proyecto | `GET /finance/facturacion/:projectId/cfes` | `FINANZAS:VIEW` |
+| Borrador de factura | `GET /finance/facturacion/:projectId/borrador` | `FINANZAS:EDIT` |
+| Revisar borrador (sin emitir) | `POST /finance/facturacion/revisar` | `FINANZAS:EDIT` |
+| Emitir factura (`confirmado: true`) | `POST /finance/facturacion/:projectId/emitir` | `FINANZAS:EDIT` |
+| Borrador de NC | `GET /finance/cfe/:id/borrador-nota-credito[?monto=]` | `FINANZAS:EDIT` |
+| Emitir NC (`confirmado: true`) | `POST /finance/cfe/:id/nota-credito` | `FINANZAS:EDIT` |
+| Consultar estado DGI | `POST /finance/cfe/:id/actualizar` | `FINANZAS:VIEW` |
+| PDF | `GET /finance/cfe/:id/pdf[?descargar=true]` | `FINANZAS:VIEW` |
+| Adjuntar factura manual | `POST /finance/facturacion/:projectId/factura` | `FINANZAS:EDIT` |
+| Ver factura manual | `GET /finance/facturacion/:projectId/factura` | `FINANZAS:VIEW` |
+
+Sin guards por rol: todo sale de la matriz `FINANZAS`. El adjunto manual va por
+Finanzas y no por `/files/:id/download` porque ese pide permiso de Operaciones.
+
+### Reglas y decisiones
+
+- **Nada fiscal se emite sin confirmación** de una persona (decidido el
+  30-sep-2026): el endpoint exige `confirmado: true` y ningún job emite.
+- **Una factura por proyecto** (decidido el 14-oct-2026). Para facturar de nuevo
+  hay que anular la anterior con una NC total.
+- **Contado por defecto**: los cobros todavía no emiten recibo. Si un recibo
+  (CFE de cobranza) o un pago registrado en Biller es lo que corresponde está
+  pendiente con el contador; hasta entonces, los cobros siguen como antes y no
+  tocan Biller.
+- NC siempre por `/v3/comprobantes/emitir` con `referencias: [billerId]`, no por
+  `/v2/comprobantes/anular` (que falla si el comprobante tiene otros asociados).
+  La suma de las NC no puede pasar el total de la factura (`NC_SUPERA`).
+
+### Casos borde
+
+- **e-Ticket de más de 5.000 UI exige receptor**: por eso el e-Ticket siempre
+  lleva cédula y dirección.
+- **Nombre de persona**: va como `nombre_fantasia`, que Biller corta a 30
+  caracteres. Razón social de RUT: hasta 70.
+- **Nombre del rechazo de DGI no confirmado**: solo cuenta como rechazo lo que
+  dice "rechaz". Un estado desconocido queda esperando con el texto de Biller
+  (se ve al pasar el mouse sobre el estado).
+- **La cola es en memoria**: con un solo servidor alcanza. Un reinicio en medio
+  de una emisión deja la fila en `EMITIENDO`, que el job trata como dudosa a los
+  5 minutos.
+- Si se pide el PDF antes de que DGI acepte, se guarda igual (ya trae CAE y
+  código de seguridad).
+- La cuenta productiva no se probó todavía al escribir esto (14-oct-2026):
+  todo lo de arriba está verificado contra test.biller.uy.
+
 ## Qué falta cubrir de este capítulo
 
 - Movimientos: tipos, fuentes y comprobantes
 - Pagos a proveedores y la aplicación FIFO a facturas
-- Facturación al cliente: qué lleva factura y su estado
 - Flujo de fondos: proyección de costos fijos y filtros
 - Cotización del dólar: origen BCU y carga manual
 
@@ -640,30 +788,6 @@ Al escribirlo, seguir la estructura común (ver `README.md`):
 ## Cómo se usa
 ## Cómo funciona
 ## Permisos
-## La factura que se le emite al cliente
-
-**Dónde:** Finanzas → Facturación al cliente, columna **Factura**.
-
-El archivo se guarda como un `FileAttachment` del proyecto con
-`toolSource = "factura-cliente"`. **Hay una sola por proyecto**: subir una nueva
-soft-deletea la anterior (`deletedAt`), así que el reemplazo queda en la base pero
-la pantalla muestra una.
-
-| Acción | Endpoint | Permiso |
-|---|---|---|
-| Adjuntar | `POST /finance/facturacion/:projectId/factura` (multipart) | `FINANZAS:EDIT` |
-| Ver / descargar | `GET /finance/facturacion/:projectId/factura[?descargar=true]` | `FINANZAS:VIEW` |
-
-**Por qué no usa el endpoint general de archivos** (`/files/:id/download`): ese
-pide permiso de **Operaciones**, y quien factura puede no tenerlo. El de acá va
-por Finanzas, que es quien trabaja en esa pantalla.
-
-`descargar=true` cambia el `Content-Disposition` de `inline` a `attachment`: la
-misma ruta sirve para la vista previa en el navegador y para bajar el archivo.
-
-El listado de facturación (`GET /finance/facturacion`) devuelve `factura: {id,
-filename, mimeType, subidaEn} | null`, que es lo que decide qué ícono se muestra.
-
 ## Reglas y decisiones
 ## Casos borde
 ```

@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Download, Eye, Search, Upload } from 'lucide-react';
+import { Download, Eye, RefreshCw, Search, Upload } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { ResponsiveTable, type Column } from '../components/ui/ResponsiveTable';
 import {
-  getFacturacion, patchFacturacion, subirFacturaCliente, urlFacturaCliente,
-  type FacturacionRow,
+  actualizarEstadoCfe, getFacturacion, patchFacturacion, subirFacturaCliente, urlFacturaCliente, urlPdfCfe,
+  type CfeEmitido, type EstadoCfe, type FacturacionRow,
 } from '../api/finance.api';
+import { EmitirCfeModal } from '../components/finance/EmitirCfeModal';
 import { usePermission } from '../hooks/usePermission';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 
@@ -16,6 +17,22 @@ function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).
 const FILTER_KEY = 'finance-facturacion-filters-v1';
 
 type EstadoFilter = 'pendiente' | 'emitida' | 'todas';
+
+const ESTADO_CFE: Record<EstadoCfe, { label: string; cls: string }> = {
+  EMITIENDO: { label: 'Emitiendo', cls: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
+  DUDOSO: { label: 'Verificando', cls: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
+  ESPERANDO_DGI: { label: 'Esperando DGI', cls: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
+  ACEPTADO: { label: 'Aceptada DGI', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+  RECHAZADO: { label: 'Rechazada DGI', cls: 'bg-red-500/15 text-red-300 border-red-500/30' },
+  ERROR: { label: 'No se emitió', cls: 'bg-red-500/15 text-red-300 border-red-500/30' },
+};
+const VIVOS: EstadoCfe[] = ['EMITIENDO', 'DUDOSO', 'ESPERANDO_DGI', 'ACEPTADO'];
+
+/** La factura de Biller vigente del proyecto (la última que no falló). */
+function facturaBiller(p: FacturacionRow): CfeEmitido | null {
+  const facturas = p.cfes.filter((c) => !c.esNotaCredito && VIVOS.includes(c.estado));
+  return facturas[facturas.length - 1] ?? null;
+}
 
 export function FinanceFacturacionTab() {
   const queryClient = useQueryClient();
@@ -26,6 +43,10 @@ export function FinanceFacturacionTab() {
   const [editing, setEditing] = useState<{ id: string; clientName: string; value: string } | null>(null);
   // Proyecto cuya factura se está subiendo, para deshabilitar sólo ese botón.
   const [subiendo, setSubiendo] = useState<string | null>(null);
+  // Emisión por Biller abierta (factura o nota de crédito).
+  const [emitiendo, setEmitiendo] = useState<
+    { modo: 'factura'; p: FacturacionRow } | { modo: 'nota-credito'; p: FacturacionRow; factura: CfeEmitido } | null
+  >(null);
 
   useEffect(() => {
     try {
@@ -48,6 +69,17 @@ export function FinanceFacturacionTab() {
 
   const projects = data?.projects ?? [];
   const totales = data?.totales;
+  const emision = data?.emision;
+  const puedeEmitir = canEdit && !!emision?.habilitada;
+
+  const actualizarMutation = useMutation({
+    mutationFn: (cfeId: string) => actualizarEstadoCfe(cfeId),
+    onSuccess: ({ cfe }) => {
+      queryClient.invalidateQueries({ queryKey: ['facturacion'] });
+      toast.success(`${cfe.tipoLabel} ${cfe.serie}-${cfe.numero}: ${cfe.estadoDgi ?? ESTADO_CFE[cfe.estado].label}`);
+    },
+    onError: () => toast.error('No se pudo consultar a Biller'),
+  });
 
   const marcarMutation = useMutation({
     mutationFn: (vars: { id: string; emitida: boolean }) =>
@@ -153,7 +185,7 @@ export function FinanceFacturacionTab() {
     },
     {
       key: 'estado', label: 'Estado', cardRole: 'highlight',
-      render: (p) => (
+      render: (p) => p.cfes.length > 0 ? <EstadoCfes p={p} /> : (
         <div className="flex flex-col gap-0.5">
           <span className={klass(
             'text-[10px] font-mono px-2 py-0.5 rounded uppercase border w-fit',
@@ -172,7 +204,26 @@ export function FinanceFacturacionTab() {
     {
       key: 'factura', label: 'Factura', align: 'center' as const,
       render: (p: FacturacionRow) => (
-        p.factura ? (
+        facturaBiller(p) ? (
+          <div className="flex items-center justify-center gap-1">
+            <a
+              href={urlPdfCfe(facturaBiller(p)!.id)}
+              target="_blank"
+              rel="noreferrer"
+              title="Ver el PDF de la factura"
+              className="rounded p-1.5 text-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <Eye className="h-4 w-4" />
+            </a>
+            <a
+              href={urlPdfCfe(facturaBiller(p)!.id, true)}
+              title="Descargar"
+              className="rounded p-1.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <Download className="h-4 w-4" />
+            </a>
+          </div>
+        ) : p.factura ? (
           <div className="flex items-center justify-center gap-1">
             <a
               href={urlFacturaCliente(p.id)}
@@ -207,8 +258,32 @@ export function FinanceFacturacionTab() {
     },
     ...(canEdit ? [{
       key: 'accion', label: '', align: 'right' as const,
-      render: (p: FacturacionRow) => (
-        p.facturaEmitida ? (
+      render: (p: FacturacionRow) => {
+        const fb = facturaBiller(p);
+        if (fb) {
+          const enCurso = fb.estado === 'EMITIENDO' || fb.estado === 'DUDOSO';
+          return (
+            <div className="flex items-center justify-end gap-1.5">
+              <button
+                onClick={() => actualizarMutation.mutate(fb.id)}
+                disabled={actualizarMutation.isPending || enCurso}
+                title="Consultar el estado en DGI ahora"
+                className="rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+              {puedeEmitir && !enCurso && (
+                <button
+                  onClick={() => setEmitiendo({ modo: 'nota-credito', p, factura: fb })}
+                  className="text-[11px] px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+                >
+                  Nota de crédito
+                </button>
+              )}
+            </div>
+          );
+        }
+        return p.facturaEmitida ? (
           <button
             onClick={() => marcarMutation.mutate({ id: p.id, emitida: false })}
             disabled={marcarMutation.isPending}
@@ -217,15 +292,29 @@ export function FinanceFacturacionTab() {
             Revertir
           </button>
         ) : (
-          <button
-            onClick={() => marcarMutation.mutate({ id: p.id, emitida: true })}
-            disabled={marcarMutation.isPending}
-            className="text-[11px] px-2.5 py-1 rounded-md bg-[var(--color-accent)] text-gray-900 font-semibold hover:opacity-90 disabled:opacity-50"
-          >
-            Marcar emitida
-          </button>
-        )
-      ),
+          <div className="flex items-center justify-end gap-2">
+            {/* Para una factura hecha por fuera de Voltia PM. */}
+            <button
+              onClick={() => marcarMutation.mutate({ id: p.id, emitida: true })}
+              disabled={marcarMutation.isPending}
+              title="La factura se hizo por fuera de Voltia PM"
+              className={puedeEmitir
+                ? 'text-[11px] text-[var(--color-text-muted)] hover:underline disabled:opacity-50'
+                : 'text-[11px] px-2.5 py-1 rounded-md bg-[var(--color-accent)] text-gray-900 font-semibold hover:opacity-90 disabled:opacity-50'}
+            >
+              Marcar emitida
+            </button>
+            {puedeEmitir && (
+              <button
+                onClick={() => setEmitiendo({ modo: 'factura', p })}
+                className="text-[11px] px-2.5 py-1 rounded-md bg-[var(--color-accent)] text-gray-900 font-semibold hover:opacity-90"
+              >
+                Emitir factura
+              </button>
+            )}
+          </div>
+        );
+      },
     }] : []),
   ];
 
@@ -237,6 +326,9 @@ export function FinanceFacturacionTab() {
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
             {filtered.length} de {projects.length} proyecto{projects.length !== 1 ? 's' : ''} que llevan factura
           </p>
+          {emision?.habilitada && emision.ambiente === 'TEST' && (
+            <p className="text-[11px] text-sky-300 mt-1">Biller en ambiente de prueba: lo que se emite no tiene valor fiscal.</p>
+          )}
         </div>
       </div>
 
@@ -299,6 +391,20 @@ export function FinanceFacturacionTab() {
         )}
       </div>
 
+      {emitiendo && (
+        emitiendo.modo === 'factura' ? (
+          <EmitirCfeModal modo="factura" projectId={emitiendo.p.id} clientName={emitiendo.p.clientName} onClose={() => setEmitiendo(null)} />
+        ) : (
+          <EmitirCfeModal
+            modo="nota-credito"
+            factura={emitiendo.factura}
+            projectId={emitiendo.p.id}
+            clientName={emitiendo.p.clientName}
+            onClose={() => setEmitiendo(null)}
+          />
+        )
+      )}
+
       {/* Modal de edición de nota */}
       {editing && (
         <div
@@ -335,6 +441,36 @@ export function FinanceFacturacionTab() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** La factura de Biller y sus notas de crédito, con el estado ante DGI. */
+function EstadoCfes({ p }: { p: FacturacionRow }) {
+  return (
+    <div className="flex flex-col gap-1">
+      {p.cfes.map((c) => (
+        <div key={c.id} className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] text-[var(--color-text-secondary)]">
+              {c.esNotaCredito ? 'NC ' : ''}{c.serie && c.numero ? `${c.serie}-${c.numero}` : c.tipoLabel}
+              {c.esNotaCredito && <> · {fmtCurrency(c.total, c.moneda)}</>}
+            </span>
+            <span
+              title={c.estadoDgi ? `Biller: ${c.estadoDgi}` : undefined}
+              className={klass('text-[10px] font-mono px-1.5 py-0.5 rounded uppercase border w-fit', ESTADO_CFE[c.estado].cls)}
+            >
+              {ESTADO_CFE[c.estado].label}
+            </span>
+          </div>
+          {(c.estado === 'ERROR' || c.estado === 'RECHAZADO') && (c.error || c.estadoDgi) && (
+            <span className="text-[10px] text-red-300 max-w-[260px] break-words">{c.error ?? c.estadoDgi}</span>
+          )}
+          {c.estado === 'DUDOSO' && (
+            <span className="text-[10px] text-sky-300 max-w-[260px]">Biller no respondió a tiempo; se está verificando si se emitió.</span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

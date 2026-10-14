@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.11 · del 12/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.12 · del 14/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -181,7 +181,7 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
    el pago de la mano de obra al instalador.
 6. **Obra terminada**: se cobra el **30 %**.
 7. **UTE habilita** la instalación: se cobra el **20 %**.
-8. Si el proyecto **lleva factura**, Finanzas la emite y la marca emitida.
+8. Si el proyecto **lleva factura**, Finanzas la emite desde Voltia PM (ver 5.12).
 9. El trabajo de Finanzas con el proyecto termina cuando está **cobrado entero y
    sus gastos pagados**.
 
@@ -296,6 +296,17 @@ El pago de la mano de obra nace la primera vez que la obra se agenda con un
 equipo tercerizado, y después no cambia solo. Si la obra se reagenda o cambia
 de equipo, **la corrección la hace Finanzas a mano**. Las obras de equipo propio
 no se pagan aparte.
+
+### Nada que va a DGI sale sin que una persona lo confirme
+
+Una factura o una nota de crédito al cliente se emite solo después de que quien
+factura ve el borrador completo y confirma. Ningún automatismo de Voltia PM
+emite por su cuenta. El motivo: **lo emitido no se edita**. Una factura con un
+error se corrige con una nota de crédito, y las dos quedan registradas en DGI.
+Es más barato revisar antes que corregir después.
+
+**Una factura por proyecto**, por el total de la obra. Si hay que rehacerla, se
+anula entera con una nota de crédito y se emite otra.
 
 ---
 
@@ -775,16 +786,71 @@ factura»** y una **nota** libre (para anotar RUT, razón social o a nombre de
 quién facturar). Se cargan al crear el proyecto y se editan desde su ficha.
 
 En **Finanzas → Facturación** están los proyectos que llevan factura, con
-**Pendientes**, **Emitidas** y **Todas**. Cuando se emite una factura se usa
-**«Marcar emitida»**, que registra la fecha y la saca de pendientes; si fue un
-error, **«Revertir»**. La nota se edita desde la lista.
+**Pendientes**, **Emitidas** y **Todas**. La nota se edita desde la lista.
 
-La columna **Factura** sirve para adjuntar el archivo (PDF o imagen): ícono de
-subir si no tiene, y de ver y descargar si tiene. **Hay una sola por proyecto**:
-subir otra reemplaza la anterior.
+**Emitir la factura.** Voltia PM emite la factura electrónica directamente: no
+hace falta entrar al sistema de facturación electrónica. Se toca **«Emitir
+factura»** en el proyecto y se abre el borrador, en dos pasos:
 
-La factura se emite **por fuera de Voltia PM**: Voltia PM no emite facturas, solo
-lleva el control de cuáles faltan y guarda el archivo.
+1. **Datos.** Voltia PM lo arma con lo que tiene el proyecto, y todo se puede
+   corregir:
+   - **El tipo de comprobante.** A una persona se le hace un **e-Ticket**, con su
+     cédula. A una empresa, una **e-Factura**, con su RUT. Si el RUT está
+     registrado en DGI, se ofrece la razón social que figura ahí.
+   - **El nombre, la dirección, la ciudad y el departamento** del cliente. Son
+     obligatorios: DGI pide los datos del comprador en toda compra grande, y una
+     instalación siempre lo es.
+   - **La fecha de emisión** (puede ser anterior a hoy) y **la forma de pago**:
+     contado o crédito, con su vencimiento.
+   - **Los renglones**, con el precio **con IVA incluido**. Viene uno solo, por
+     el presupuesto de la obra. Abajo se ve cuánto es neto, cuánto IVA y el total.
+   - **La adenda**: un texto libre que sale impreso en la factura. Viene con el
+     código del proyecto.
+   - **Si se le manda el PDF al cliente por mail**, y a qué dirección.
+
+   Arriba se ve la nota de facturación del proyecto, para no olvidarse de lo
+   que se anotó al venderlo.
+2. **Confirmar.** Muestra exactamente lo que se va a emitir. Hay que tildar
+   **«Revisé los datos»** para que se habilite el botón de emitir. Si hay algo
+   mal (una cédula que no existe, una e-Factura sin RUT, una factura a crédito
+   sin vencimiento), Voltia PM lo avisa antes y no deja pasar.
+
+**Después de emitir.** La factura aparece en la lista con su número y su estado
+ante DGI:
+
+- **Esperando DGI**: la factura ya salió y DGI todavía no respondió. Suele tardar
+  unos minutos. Voltia PM lo consulta solo cada cinco minutos; con el botón de
+  refrescar se consulta en el momento.
+- **Aceptada DGI**: quedó firme.
+- **Rechazada DGI**: DGI no la aceptó. El proyecto vuelve a pendientes (ver el
+  capítulo 6).
+- **Verificando**: el sistema de facturación electrónica tardó en responder y
+  todavía no se sabe si la factura salió. Voltia PM lo averigua solo en pocos
+  minutos, y mientras tanto no deja emitir otra.
+
+El PDF oficial queda guardado en el proyecto y se abre desde la columna
+**Factura**.
+
+**Corregir una factura: la nota de crédito.** Lo emitido no se edita. Con
+**«Nota de crédito»**, en la misma fila, se elige:
+
+- **Total**: anula la factura entera. El proyecto vuelve a pendientes y se puede
+  emitir una nueva.
+- **Parcial**: descuenta un monto (con IVA), por ejemplo un descuento acordado
+  después de facturar.
+
+En los dos casos el **motivo** es obligatorio, y se confirma igual que la
+factura.
+
+**Facturas hechas por fuera de Voltia PM.** Si una factura se emitió en otro
+lado, se usa **«Marcar emitida»**, que registra la fecha y la saca de
+pendientes, y se adjunta el archivo desde la columna **Factura** (ícono de
+subir). Si se marcó por error, **«Revertir»**. Una factura emitida desde Voltia
+PM no se puede revertir así: se anula con una nota de crédito.
+
+**Los cobros no emiten comprobantes.** Registrar un cobro sigue sin tocar la
+facturación electrónica. Si cada cobro tiene que llevar su recibo electrónico
+está pendiente de definir con el contador.
 
 ### 5.13 · Cuentas bancarias y conciliación
 
@@ -991,6 +1057,20 @@ o borró cada movimiento y cuándo**, pero **no qué dato cambió** (el monto
 anterior, la fecha anterior). Ese registro no se ve en Movimientos: si el
 movimiento es de un proyecto, aparece en el historial del proyecto.
 
+### DGI rechazó una factura
+
+El proyecto vuelve solo a **Pendientes**, y en la fila se ve el motivo que dio
+DGI. Se corrige el dato que falló y se emite una factura nueva. Si el motivo no
+se entiende, se consulta con el contador antes de volver a emitir.
+
+### Una factura quedó «Verificando» mucho tiempo
+
+Pasa cuando el sistema de facturación electrónica no respondió a tiempo. Voltia
+PM lo resuelve solo: si la factura salió, la toma con su número; si a la media
+hora no apareció, la marca como **No se emitió** y se puede volver a emitir.
+**No se emite a mano por otro lado mientras tanto**: es la forma más segura de
+terminar con dos facturas para la misma obra.
+
 ### La fecha de una obra se movió por algo de Finanzas
 
 Lo explica Finanzas: qué pasó, cuántos días y qué se intentó. Gerencia lo revisa
@@ -1008,7 +1088,9 @@ una vez por mes.
 | **UTE** | La empresa estatal de electricidad. Tiene que aprobar y **habilitar** la instalación para que el cliente pueda encenderla. |
 | **DGI** | La Dirección General Impositiva. Registra todas las facturas electrónicas. |
 | **CFE** | Comprobante fiscal electrónico: la factura electrónica (o nota de crédito, o nota de débito). |
-| **Facturación electrónica** | El servicio por el que Voltia emite y recibe los CFE. De ahí llegan solas las facturas de los proveedores. |
+| **Facturación electrónica** | El servicio por el que Voltia emite y recibe los CFE. Voltia PM emite por ahí las facturas a los clientes, y de ahí llegan solas las facturas de los proveedores. |
+| **e-Factura** | La factura electrónica a una empresa, con su RUT. |
+| **e-Ticket** | La factura electrónica a una persona, con su cédula. |
 | **RUT** | El número de identificación tributaria de una empresa. Voltia PM reconoce a cada proveedor por su RUT. |
 | **Etapa** | Cada uno de los ocho tramos de un proyecto, de Venta a Trámite UTE. |
 | **Onboarding** | La etapa del proyecto, después de cerrar la venta, en la que el asesor confirma la venta, firma el contrato, cobra la seña y define cómo va a pagar el cliente. |
@@ -1026,7 +1108,7 @@ una vez por mes.
 | **Plazo de crédito** | Los días que un proveedor le da a Voltia para pagar una factura. |
 | **Límite de crédito** | El tope de deuda que acepta un proveedor. |
 | **Saldo a favor** | Plata pagada a un proveedor que todavía no se descontó de ninguna factura. |
-| **Nota de crédito** | Un comprobante con el que el proveedor descuenta algo de lo facturado. |
+| **Nota de crédito** | Un comprobante que descuenta algo de una factura ya emitida, o la anula entera. La emite quien hizo la factura: el proveedor a Voltia, o Voltia a su cliente. |
 | **Conciliar** | Comparar lo que dice Voltia PM con lo que dice el banco (o el proveedor) y corregir las diferencias. |
 | **Flujo de fondos** | La proyección de cuánta plata va a haber, con lo que se espera cobrar y pagar. |
 | **Estado de resultados** | Cuánto se ganó o perdió en un período, con lo efectivamente cobrado y pagado (de caja). |
@@ -1043,6 +1125,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.12 | 14 de octubre de 2026 | Las facturas a los clientes se emiten desde Voltia PM, con borrador y confirmación, y se corrigen con nota de crédito. Nuevo lineamiento: nada que va a DGI sale sin que una persona lo confirme, y una factura por proyecto. Qué hacer si DGI rechaza una factura o si queda «Verificando». |
 | 0.11 | 12 de octubre de 2026 | En el detalle del cobro de cada cliente se agrega el bloque Comentarios y archivos, para anotar lo acordado y subir comprobantes desde ahí. |
 | 0.10 | 11 de octubre de 2026 | Con financiación bancaria, la gestión con el banco la sigue el asesor hasta que termina. |
 | 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Quién aprueba las compras: lo de la lista de materiales, nadie (lo compra directo el encargado de compras); lo de fuera, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas, y por encima Finanzas o Gerencia. |

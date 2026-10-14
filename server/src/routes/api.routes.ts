@@ -18,6 +18,7 @@ import {
   CategoriaPrincipal,
   DeadlineRuleTipo,
   EstadoAprobacion,
+  EstadoCfeEmitido,
   EstadoComprobante,
   ExpenseSourceType,
   FileAttachmentTipo,
@@ -224,6 +225,7 @@ import { UTE_HITO_LABEL } from "../services/ute-timeline.service.js";
 import { esUsernameValido, normalizarUsername } from "../utils/username.js";
 import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
 import { getGastoIA } from "../services/ai/usage-report.service.js";
+import { estadoEmision, serializarCfe } from "../services/biller/cfe-emitidos.service.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -11879,6 +11881,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
             take: 1,
             select: { id: true, filename: true, mimeType: true, createdAt: true },
           },
+          // Comprobantes emitidos por Biller (factura y notas de crédito).
+          cfesEmitidos: { orderBy: { createdAt: "asc" } },
         },
         // Pendientes primero, luego por fecha de venta más reciente.
         orderBy: [{ facturaEmitida: "asc" }, { saleDate: "desc" }, { createdAt: "desc" }],
@@ -11895,6 +11899,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         facturaEmitidaEn: p.facturaEmitidaEn ? serializeDate(p.facturaEmitidaEn) : null,
         nota: p.facturaNota,
         salesperson: p.salesperson ?? null,
+        cfes: p.cfesEmitidos.map(serializarCfe),
         factura: p.files[0]
           ? {
               id: p.files[0].id,
@@ -11911,6 +11916,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           pendientes: items.filter((p) => !p.facturaEmitida).length,
           emitidas: items.filter((p) => p.facturaEmitida).length,
         },
+        emision: estadoEmision(),
       };
     });
 
@@ -12018,6 +12024,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const project = await findProjectOrThrow(projectId);
       if (!project.llevaFactura) {
         throw new AppError(400, "PROJECT_SIN_FACTURA", "El proyecto no está marcado como que lleva factura");
+      }
+
+      // Lo emitido por Biller no se revierte a mano: se corrige con nota de crédito.
+      if (body.facturaEmitida === false) {
+        const porBiller = await prisma.cfeEmitido.count({
+          where: {
+            projectId,
+            referenciaId: null,
+            estado: { in: [EstadoCfeEmitido.EMITIENDO, EstadoCfeEmitido.DUDOSO, EstadoCfeEmitido.ESPERANDO_DGI, EstadoCfeEmitido.ACEPTADO] },
+          },
+        });
+        if (porBiller > 0) {
+          throw new AppError(409, "FACTURA_EMITIDA_POR_BILLER", "La factura se emitió por Biller: para anularla, hacé una nota de crédito");
+        }
       }
 
       const data: Prisma.ProjectUpdateInput = {};

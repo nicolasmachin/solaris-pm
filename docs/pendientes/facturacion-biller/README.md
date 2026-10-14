@@ -7,6 +7,26 @@ Guía técnica para integradores (preguntas y respuestas, 22 págs.): `guia-tecn
 (fuente: https://l.biller.uy/assets/guia-tecnica-integradores.pdf). biller.uy/api/documentacion
 redirige a la misma documentación de biller-labs.
 
+## Integración en Voltia PM — emisión (14-oct-2026)
+
+Hecha la primera tanda: **factura + nota de crédito** desde Finanzas → Facturación,
+con borrador y confirmación. Cómo funciona: `docs/manual/08-finanzas.md`,
+sección "Facturación al cliente (emisión por Biller)".
+
+Verificado contra test (sucursal 889): e-Ticket MT-930441 por USD 6.100 con
+montos brutos (PDF: neto 5.000 + IVA 1.100), segundo intento frenado, NC parcial
+MA-116357, adopción de un CFE dudoso por `numero_interno`, PDF guardado.
+
+Hallazgo: un estado DGI más, **"Envío no corresponde"** (la NC chica de e-Ticket,
+que va en el reporte diario y no se manda sola). Se toma como válido.
+
+Falta:
+- Producción: `BILLER_TOKEN`, `BILLER_SUCURSAL` y `BILLER_URL=https://biller.uy`
+  en el `.env` de prod, migración `cfes_emitidos` y probar la primera factura real.
+- Confirmar con una factura real cómo se llama el estado de un rechazo.
+- Segunda tanda: recibos o `pagos/crear` (espera al contador) y herramientas MCP
+  con confirmación.
+
 ## Qué cambia respecto del handoff (que estaba armado sobre la v2 de Postman)
 
 | Tema | Handoff (v2) | Documentación nueva |

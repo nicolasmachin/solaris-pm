@@ -795,12 +795,105 @@ export interface FacturacionRow {
   salesperson: { id: string; name: string } | null;
   /** La factura que se le mandó al cliente, si está adjunta. */
   factura: { id: string; filename: string; mimeType: string; subidaEn: string | null } | null;
+  /** Comprobantes emitidos por Biller: la factura y sus notas de crédito. */
+  cfes: CfeEmitido[];
+}
+
+export type EstadoCfe = 'EMITIENDO' | 'DUDOSO' | 'ESPERANDO_DGI' | 'ACEPTADO' | 'RECHAZADO' | 'ERROR';
+
+export interface CfeEmitido {
+  id: string;
+  tipoCfe: number;
+  tipoLabel: string;
+  esNotaCredito: boolean;
+  referenciaId: string | null;
+  estado: EstadoCfe;
+  estadoDgi: string | null;
+  serie: string | null;
+  numero: number | null;
+  fechaEmision: string;
+  moneda: 'USD' | 'UYU';
+  total: number;
+  tasaCambio: number | null;
+  clienteNombre: string;
+  clienteDocumento: string | null;
+  motivo: string | null;
+  error: string | null;
+  tienePdf: boolean;
+  creadoEn: string;
+}
+
+export interface EstadoEmisionBiller {
+  habilitada: boolean;
+  ambiente: 'TEST' | 'PRODUCCION';
+  motivo: string | null;
+}
+
+export interface BorradorCfe {
+  tipoCfe: 101 | 111 | 102 | 112;
+  formaPago: 1 | 2;
+  fechaEmision: string;
+  fechaVencimiento: string | null;
+  moneda: 'USD' | 'UYU';
+  cliente: {
+    tipoDocumento: 2 | 3;
+    documento: string;
+    nombre: string;
+    direccion: string;
+    ciudad: string;
+    departamento: string;
+  };
+  items: Array<{
+    concepto: string;
+    descripcion: string | null;
+    cantidad: number;
+    precio: number;
+    indicadorFacturacion: 1 | 2 | 3;
+  }>;
+  adenda: string | null;
+  emailCliente: string | null;
+  motivo: string | null;
 }
 
 export interface FacturacionResponse {
   projects: FacturacionRow[];
   totales: { pendientes: number; emitidas: number };
+  emision: EstadoEmisionBiller;
 }
+
+export const getBorradorFactura = (projectId: string) =>
+  apiClient.get<{
+    borrador: BorradorCfe;
+    razonSocialDgi: string | null;
+    proyecto: { id: string; code: string; clientName: string; budgetUsd: number | null };
+    nota: string | null;
+    facturaVigente: boolean;
+    emision: EstadoEmisionBiller;
+  }>(`/api/finance/facturacion/${projectId}/borrador`).then(r => r.data);
+
+export const getBorradorNotaCredito = (cfeId: string, monto?: number) =>
+  apiClient.get<{ borrador: BorradorCfe; disponible: number; factura: CfeEmitido; emision: EstadoEmisionBiller }>(
+    `/api/finance/cfe/${cfeId}/borrador-nota-credito`, { params: monto ? { monto } : {} },
+  ).then(r => r.data);
+
+/** Valida el borrador sin mandarlo a Biller. */
+export const revisarBorradorCfe = (borrador: BorradorCfe) =>
+  apiClient.post<{ problemas: string[]; total: number }>('/api/finance/facturacion/revisar', { borrador })
+    .then(r => r.data);
+
+export const emitirFactura = (projectId: string, borrador: BorradorCfe) =>
+  apiClient.post<{ cfe: CfeEmitido }>(`/api/finance/facturacion/${projectId}/emitir`, { borrador, confirmado: true })
+    .then(r => r.data);
+
+export const emitirNotaCredito = (facturaId: string, borrador: BorradorCfe) =>
+  apiClient.post<{ cfe: CfeEmitido }>(`/api/finance/cfe/${facturaId}/nota-credito`, { borrador, confirmado: true })
+    .then(r => r.data);
+
+export const actualizarEstadoCfe = (cfeId: string) =>
+  apiClient.post<{ cfe: CfeEmitido }>(`/api/finance/cfe/${cfeId}/actualizar`).then(r => r.data);
+
+export const urlPdfCfe = (cfeId: string, descargar = false) =>
+  `/api/finance/cfe/${cfeId}/pdf${descargar ? '?descargar=true' : ''}`;
 
 export const getFacturacion = (params?: { estado?: 'pendiente' | 'emitida' | 'todas'; clientName?: string }) =>
   apiClient.get<FacturacionResponse>('/api/finance/facturacion', { params }).then(r => r.data);

@@ -1,3 +1,4 @@
+import { startBillerCfeEmitidosJob } from "./services/biller/cfe-emitidos.job.js";
 import { startBillerRecibidosJob } from "./services/biller/recibidos.job.js";
 import fs from "node:fs";
 import { startPlanGranizoJob } from "./services/seguro-granizo/plan-granizo.job.js";
@@ -102,6 +103,7 @@ async function start() {
   startNovedadesJob();
   startPlanGranizoJob();
   startBillerRecibidosJob();
+  startBillerCfeEmitidosJob();
 
   // La cola de compresión de videos vive en memoria: un reinicio la vacía. Sin
   // esto, un video subido justo antes de un deploy quedaría "procesando" para

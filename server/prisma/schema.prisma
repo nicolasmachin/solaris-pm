@@ -153,6 +153,7 @@ enum AuditEntityType {
   cabinet_design
   factura_recibida
   conciliacion_proveedor
+  cfe_emitido
 }
 
 enum AuditAction {
@@ -615,6 +616,7 @@ model User {
   mcpAuthCodes                   McpAuthCode[]
   mcpRefreshTokens               McpRefreshToken[]
   capacitacionVideosCargados     CapacitacionVideo[]            @relation("CapacitacionVideoCreatedBy")
+  cfesEmitidos                   CfeEmitido[]                   @relation("CfeEmitidoPor")
   capacitacionDocumentosSubidos  CapacitacionDocumento[]        @relation("CapacitacionDocumentoUploadedBy")
   capacitacionVistas             CapacitacionVista[]
   passwordTemporary              Boolean                        @default(false)
@@ -677,6 +679,7 @@ model Project {
   notifications                   Notification[]
   comments                        Comment[]
   settings                        Setting[]                      @relation("SettingProject")
+  cfesEmitidos                    CfeEmitido[]
   convertedLeads                  SalesLead[]                    @relation("LeadConvertedTo")
   proposals                       ProposalGeneration[]           @relation("ProposalProject")
   solarSystems                    SolarSystem[]
@@ -711,7 +714,7 @@ model Project {
   reporteFvCalculos               ReporteFvCalculo[]
   reporteFvEmisiones              ReporteFvEmision[]
   reporteFvGeneracionesDiarias    ReporteFvGeneracionDiaria[]
-  fvCurvasDia                  FvCurvaDia[]
+  fvCurvasDia                     FvCurvaDia[]
   growattPlant                    GrowattPlant?
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
@@ -1904,34 +1907,34 @@ model ProposalGeneration {
 // ─── Módulo Finanzas & Stock ──────────────────────────────────────────────────
 
 model Supplier {
-  id             String    @id @default(cuid())
-  nombre         String
-  rut            String?
-  contactoNombre String?
-  email          String?
-  telefono       String?
-  direccion      String?
-  condicionPago  String?
+  id                  String    @id @default(cuid())
+  nombre              String
+  rut                 String?
+  contactoNombre      String?
+  email               String?
+  telefono            String?
+  direccion           String?
+  condicionPago       String?
   // Días desde la emisión de la factura hasta su vencimiento. Con esto se
   // calcula solo el vencimiento de cada factura (manual o importada de Biller).
-  plazoCreditoDias Int     @default(30)
+  plazoCreditoDias    Int       @default(30)
   // Tope de deuda que el proveedor nos acepta. null = sin límite.
-  limiteCredito       Decimal? @db.Decimal(14, 2)
-  limiteCreditoMoneda Moneda   @default(USD)
-  activo         Boolean   @default(true)
-  notas          String?
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  limiteCredito       Decimal?  @db.Decimal(14, 2)
+  limiteCreditoMoneda Moneda    @default(USD)
+  activo              Boolean   @default(true)
+  notas               String?
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  movimientos      FinanceMovement[]
+  movimientos       FinanceMovement[]
   facturasRecibidas FacturaRecibida[]
   conciliaciones    ConciliacionProveedor[]
-  payments         Payment[]
-  comprobantes     FinanceComprobante[]
-  movimientosStock StockMovement[]
-  materialItems    MaterialItem[]
-  projectMaterials ProjectMaterial[]
+  payments          Payment[]
+  comprobantes      FinanceComprobante[]
+  movimientosStock  StockMovement[]
+  materialItems     MaterialItem[]
+  projectMaterials  ProjectMaterial[]
 
   @@index([activo])
   @@map("suppliers")
@@ -2003,7 +2006,7 @@ model FinanceMovement {
   observaciones           String?
   estadoAprobacion        EstadoAprobacion         @default(REGISTRADO)
   archivoAdjuntoUrl       String?
-  facturaRecibida     FacturaRecibida?
+  facturaRecibida         FacturaRecibida?
   paymentApplications     PaymentApplication[]
   comprobantes            FinanceComprobante[]
   movimientosStock        StockMovement[]
@@ -2305,22 +2308,22 @@ enum TeamType {
 }
 
 model Team {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  color     String    @default("#378ADD")
-  type      TeamType  @default(PROPIO)
-  notes     String?
+  id    String   @id @default(cuid())
+  name  String   @unique
+  color String   @default("#378ADD")
+  type  TeamType @default(PROPIO)
+  notes String?
 
   // Quién cobra la mano de obra de las obras de este equipo (solo TERCERIZADO).
   // Es lo que ata el calendario con los pagos a instaladores: al agendar una
   // obra con este equipo, el pago se crea asignado a este usuario. Antes no
   // había vínculo entre el equipo y la persona, y el pago se asignaba a mano.
   installerUserId String?
-  installer       User?   @relation("TeamInstaller", fields: [installerUserId], references: [id], onDelete: SetNull)
-  createdBy String?
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
-  deletedAt DateTime? @db.Timestamptz(6)
+  installer       User?     @relation("TeamInstaller", fields: [installerUserId], references: [id], onDelete: SetNull)
+  createdBy       String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt       DateTime? @db.Timestamptz(6)
 
   installations InstallationSchedule[]
   agendaEventos AgendaEvento[]         @relation("AgendaEventoTeam")
@@ -4715,10 +4718,10 @@ model FvCurvaDia {
   origenMedicion String?
 
   // Día terminado: ya no cambia y no se vuelve a pedir.
-  completo  Boolean  @default(false)
+  completo  Boolean         @default(false)
   fuente    ReporteFvFuente @default(GROWATT)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime        @updatedAt @db.Timestamptz(6)
 
   @@unique([projectId, fecha])
   @@map("fv_curvas_dia")
@@ -5454,6 +5457,67 @@ model FacturaRecibida {
   @@map("facturas_recibidas")
 }
 
+// ─── Comprobantes fiscales que Voltia le emite a sus clientes (Biller) ──────
+//
+// Una fila por CFE emitido desde Voltia PM: la factura del proyecto (e-Factura
+// 111 o e-Ticket 101) y sus notas de crédito (112 / 102, con `referenciaId`).
+// Lo emitido no se edita: se corrige con una nota de crédito.
+//
+// Contra la doble emisión (Biller no tiene idempotency key): la fila se crea en
+// EMITIENDO con un `numeroInterno` único ANTES de llamar a Biller. Si la llamada
+// se corta, queda DUDOSO y se busca por `numeroInterno` antes de permitir otro
+// intento (ver services/biller/cfe-emitidos.service.ts).
+
+enum EstadoCfeEmitido {
+  EMITIENDO // se está llamando a Biller
+  DUDOSO // la llamada se cortó: no se sabe si Biller lo emitió
+  ESPERANDO_DGI // Biller lo firmó y lo mandó; DGI todavía no respondió
+  ACEPTADO
+  RECHAZADO // DGI lo rechazó
+  ERROR // Biller no lo emitió (datos inválidos, etc.): se puede reintentar
+}
+
+model CfeEmitido {
+  id               String           @id @default(cuid())
+  projectId        String
+  project          Project          @relation(fields: [projectId], references: [id])
+  tipoCfe          Int
+  numeroInterno    String           @unique
+  estado           EstadoCfeEmitido @default(EMITIENDO)
+  // Texto tal cual lo devuelve Biller ("Pendiente DGI", "Aceptado DGI"...).
+  estadoDgi        String?
+  billerId         String?          @unique
+  serie            String?
+  numero           Int?
+  hash             String?
+  fechaEmision     DateTime         @db.Date
+  moneda           Moneda
+  tasaCambio       Decimal?         @db.Decimal(12, 4)
+  // Total con IVA, tal cual se mandó (montos brutos).
+  total            Decimal          @db.Decimal(14, 2)
+  clienteNombre    String
+  clienteDocumento String?
+  // Nota de crédito: a qué factura corrige y por qué.
+  referenciaId     String?
+  referencia       CfeEmitido?      @relation("CfeReferencia", fields: [referenciaId], references: [id])
+  notasCredito     CfeEmitido[]     @relation("CfeReferencia")
+  motivo           String?
+  // El cuerpo exacto que se mandó a Biller (el borrador confirmado).
+  payload          Json
+  respuesta        Json?
+  error            String?
+  pdfAttachmentId  String?
+  emitidoPorId     String
+  emitidoPor       User             @relation("CfeEmitidoPor", fields: [emitidoPorId], references: [id])
+  ultimaConsultaEn DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([estado])
+  @@map("cfes_emitidos")
+}
+
 // ─── Conciliación contra el estado de cuenta del proveedor ──────────────────
 //
 // Finanzas pide cada tanto el estado de cuenta a un proveedor y lo sube: la IA
@@ -5462,25 +5526,25 @@ model FacturaRecibida {
 // faltaba, sin volver a gastar IA.
 
 model ConciliacionProveedor {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   supplierId     String
-  supplier       Supplier  @relation(fields: [supplierId], references: [id])
+  supplier       Supplier @relation(fields: [supplierId], references: [id])
   moneda         Moneda
-  fechaCorte     DateTime  @db.Date
+  fechaCorte     DateTime @db.Date
   archivoUrl     String
   archivoNombre  String
   archivoMime    String
   extraccion     Json
   resultado      Json
-  saldoProveedor Decimal?  @db.Decimal(14, 2)
-  saldoVoltia    Decimal   @db.Decimal(14, 2)
+  saldoProveedor Decimal? @db.Decimal(14, 2)
+  saldoVoltia    Decimal  @db.Decimal(14, 2)
   modelUsed      String
   tokensInput    Int
   tokensOutput   Int
-  costUsd        Decimal   @db.Decimal(10, 4)
+  costUsd        Decimal  @db.Decimal(10, 4)
   createdById    String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([supplierId, createdAt])
   @@map("conciliaciones_proveedor")
