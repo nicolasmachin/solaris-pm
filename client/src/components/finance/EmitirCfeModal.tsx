@@ -5,7 +5,7 @@ import { AlertTriangle, Plus, Trash2, X } from 'lucide-react';
 
 import { Spinner } from '../ui/Spinner';
 import {
-  emitirFactura, emitirNotaCredito, getBorradorFactura, getBorradorNotaCredito, revisarBorradorCfe,
+  emitirFactura, emitirNotaCredito, getBorradorFactura, getBorradorNotaCredito, getDatosRutDgi, revisarBorradorCfe,
   type BorradorCfe, type CfeEmitido, type EstadoEmisionBiller,
 } from '../../api/finance.api';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
@@ -29,6 +29,24 @@ function errorMsg(err: unknown, fallback: string) {
 }
 
 const redondear = (n: number) => Math.round(n * 100) / 100;
+const TASA_IVA: Record<number, number> = { 1: 0, 2: 0.1, 3: 0.22 };
+const aNumero = (v: string) => Number(v.replace(/\./g, '').replace(',', '.'));
+
+/** Neto, IVA y total: mismo cálculo que el servidor (precios sin IVA). */
+function totales(items: BorradorCfe['items']) {
+  let neto = 0;
+  let iva = 0;
+  for (const i of items) {
+    const linea = redondear(i.cantidad * i.precio);
+    neto += linea;
+    iva += redondear(linea * (TASA_IVA[i.indicadorFacturacion] ?? 0.22));
+  }
+  return { neto: redondear(neto), iva: redondear(iva), total: redondear(neto + iva) };
+}
+
+const CLIENTE_VACIO: BorradorCfe['cliente'] = {
+  tipoDocumento: 2, documento: '', nombre: '', direccion: '', ciudad: '', departamento: '',
+};
 
 export function EmitirCfeModal(props: Props) {
   const queryClient = useQueryClient();
@@ -48,6 +66,15 @@ export function EmitirCfeModal(props: Props) {
   const [ncTipo, setNcTipo] = useState<'total' | 'parcial'>('total');
   const [ncMonto, setNcMonto] = useState('');
   const [disponible, setDisponible] = useState<number | null>(null);
+  // Factura: de dónde sale el monto sin IVA, y a nombre de quién va. El receptor
+  // no viene elegido: se pregunta siempre.
+  const [base, setBase] = useState<{ monto: number; fuente: 'COTIZACION' | 'PRESUPUESTO' | null; version: number | null } | null>(null);
+  const [baseTxt, setBaseTxt] = useState('');
+  const [pctTxt, setPctTxt] = useState('100');
+  const [clienteProyecto, setClienteProyecto] = useState<BorradorCfe['cliente'] | null>(null);
+  const [mailProyecto, setMailProyecto] = useState<string | null>(null);
+  const [receptor, setReceptor] = useState<'CLIENTE' | 'TERCERO' | null>(null);
+  const [buscandoRut, setBuscandoRut] = useState(false);
 
   useEffect(() => {
     let vivo = true;
@@ -66,6 +93,10 @@ export function EmitirCfeModal(props: Props) {
           setRazonSocialDgi(r.razonSocialDgi);
           setNota(r.nota);
           setMandarMail(!!r.borrador.emailCliente);
+          setBase(r.base);
+          setBaseTxt(r.base.monto ? String(r.base.monto) : '');
+          setClienteProyecto(r.clienteProyecto);
+          setMailProyecto(r.borrador.emailCliente);
         });
     carga
       .catch((err) => { toast.error(errorMsg(err, 'No se pudo armar el borrador')); props.onClose(); })
@@ -74,7 +105,59 @@ export function EmitirCfeModal(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Parcial: un renglón por el monto (con IVA). Total: lo que arma el servidor.
+  // Monto sin IVA × porcentaje → el precio del renglón (cuando hay uno solo).
+  function aplicarPorcentaje(baseStr: string, pctStr: string) {
+    setBaseTxt(baseStr);
+    setPctTxt(pctStr);
+    const b = aNumero(baseStr);
+    const p = aNumero(pctStr);
+    if (!(b > 0) || !(p > 0) || p > 100) return;
+    setBorrador((prev) => prev && prev.items.length === 1
+      ? { ...prev, baseSinIva: b, porcentaje: p, items: [{ ...prev.items[0], precio: redondear((b * p) / 100) }] }
+      : prev && { ...prev, baseSinIva: b, porcentaje: p });
+  }
+
+  function elegirReceptor(r: 'CLIENTE' | 'TERCERO') {
+    setReceptor(r);
+    setBorrador((prev) => {
+      if (!prev) return prev;
+      if (r === 'CLIENTE' && clienteProyecto) {
+        return { ...prev, receptor: r, cliente: clienteProyecto, tipoCfe: clienteProyecto.tipoDocumento === 2 ? 111 : 101, emailCliente: mailProyecto };
+      }
+      // Otra persona o empresa: se arranca en blanco (por defecto una empresa con RUT).
+      return { ...prev, receptor: r, cliente: CLIENTE_VACIO, tipoCfe: 111, emailCliente: null };
+    });
+    setMandarMail(r === 'CLIENTE' && !!mailProyecto);
+  }
+
+  async function traerDeDgi() {
+    if (!borrador) return;
+    const rut = borrador.cliente.documento.replace(/\D/g, '');
+    if (rut.length !== 12) { toast.error('El RUT tiene 12 dígitos'); return; }
+    setBuscandoRut(true);
+    try {
+      const d = await getDatosRutDgi(rut);
+      setBorrador((prev) => prev && {
+        ...prev,
+        cliente: {
+          ...prev.cliente,
+          documento: rut,
+          nombre: d.razonSocial || prev.cliente.nombre,
+          direccion: d.direccion || prev.cliente.direccion,
+          ciudad: d.ciudad || prev.cliente.ciudad,
+          departamento: d.departamento || prev.cliente.departamento,
+        },
+        emailCliente: prev.emailCliente || d.email,
+      });
+      toast.success('Datos traídos de DGI');
+    } catch (err) {
+      toast.error(errorMsg(err, 'DGI no tiene datos para ese RUT'));
+    } finally {
+      setBuscandoRut(false);
+    }
+  }
+
+  // Parcial: un renglón por el monto (sin IVA). Total: lo que arma el servidor.
   async function aplicarMontoNC(tipo: 'total' | 'parcial', monto: string) {
     if (!facturaId) return;
     const n = Number(monto.replace(',', '.'));
@@ -83,16 +166,7 @@ export function EmitirCfeModal(props: Props) {
     setBorrador((prev) => ({ ...r.borrador, motivo: prev?.motivo ?? null }));
   }
 
-  const total = useMemo(
-    () => (borrador ? redondear(borrador.items.reduce((a, i) => a + i.cantidad * i.precio, 0)) : 0),
-    [borrador],
-  );
-  // Desglose aproximado para mostrar (Biller hace el cálculo oficial).
-  const ivaBasico = useMemo(() => {
-    if (!borrador) return 0;
-    const gravado = borrador.items.filter((i) => i.indicadorFacturacion === 3).reduce((a, i) => a + i.cantidad * i.precio, 0);
-    return redondear(gravado - gravado / 1.22);
-  }, [borrador]);
+  const t = useMemo(() => (borrador ? totales(borrador.items) : { neto: 0, iva: 0, total: 0 }), [borrador]);
 
   const borradorAEnviar = (): BorradorCfe | null =>
     borrador ? { ...borrador, emailCliente: mandarMail ? borrador.emailCliente : null } : null;
@@ -198,7 +272,7 @@ export function EmitirCfeModal(props: Props) {
                           <input
                             className={`${inputCls} w-32`}
                             inputMode="decimal"
-                            placeholder="Monto con IVA"
+                            placeholder="Monto sin IVA"
                             value={ncMonto}
                             onChange={(e) => setNcMonto(e.target.value)}
                             onBlur={() => aplicarMontoNC('parcial', ncMonto)}
@@ -217,6 +291,47 @@ export function EmitirCfeModal(props: Props) {
                     </div>
                   )}
 
+                  {!esNC && (
+                    <div className="space-y-2 rounded-lg border border-[var(--color-border)] p-3">
+                      <p className="text-[12px] font-semibold text-[var(--color-text-primary)]">¿Cuánto se factura?</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
+                        <div>
+                          <label className={labelCls}>
+                            Monto sin IVA {base?.fuente === 'COTIZACION'
+                              ? `(cotización v${base.version})`
+                              : base?.fuente === 'PRESUPUESTO' ? '(sin cotización: presupuesto de la obra sin IVA)' : ''}
+                          </label>
+                          <input className={inputCls} inputMode="decimal" value={baseTxt} onChange={(e) => aplicarPorcentaje(e.target.value, pctTxt)} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Porcentaje a facturar</label>
+                          <input className={inputCls} inputMode="decimal" value={pctTxt} onChange={(e) => aplicarPorcentaje(baseTxt, e.target.value)} />
+                        </div>
+                      </div>
+                      <p className="text-[12px] text-[var(--color-text-secondary)] tabular-nums">
+                        Se factura {fmtCurrency(t.neto, borrador.moneda)} sin IVA + IVA {fmtCurrency(t.iva, borrador.moneda)} ={' '}
+                        <span className="font-semibold text-[var(--color-text-primary)]">{fmtCurrency(t.total, borrador.moneda)}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {!esNC && (
+                    <div className="space-y-2 rounded-lg border border-[var(--color-border)] p-3">
+                      <p className="text-[12px] font-semibold text-[var(--color-text-primary)]">¿A nombre de quién va la factura?</p>
+                      <div className="flex flex-col gap-1.5 text-sm">
+                        <label className="flex items-center gap-1.5">
+                          <input type="radio" checked={receptor === 'CLIENTE'} onChange={() => elegirReceptor('CLIENTE')} />
+                          Del cliente del proyecto{clienteProyecto?.nombre ? `: ${clienteProyecto.nombre}` : ''}
+                        </label>
+                        <label className="flex items-center gap-1.5">
+                          <input type="radio" checked={receptor === 'TERCERO'} onChange={() => elegirReceptor('TERCERO')} />
+                          De otra persona o empresa (por ejemplo, la empresa del cliente)
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {(esNC || receptor) && (<>
                   {!esNC && (
                     <div className="flex flex-wrap gap-4 text-sm">
                       <label className="flex items-center gap-1.5">
@@ -241,12 +356,25 @@ export function EmitirCfeModal(props: Props) {
                   <fieldset disabled={esNC} className="grid grid-cols-1 sm:grid-cols-2 gap-3 disabled:opacity-70">
                     <div>
                       <label className={labelCls}>{borrador.cliente.tipoDocumento === 2 ? 'RUT' : 'Cédula'}</label>
-                      <input className={inputCls} value={borrador.cliente.documento} onChange={(e) => setCliente('documento', e.target.value)} />
+                      <div className="flex gap-2">
+                        <input className={inputCls} value={borrador.cliente.documento} onChange={(e) => setCliente('documento', e.target.value)} />
+                        {borrador.cliente.tipoDocumento === 2 && !esNC && (
+                          <button
+                            type="button"
+                            onClick={traerDeDgi}
+                            disabled={buscandoRut}
+                            className="shrink-0 rounded-md border border-[var(--color-border)] px-2 text-[11px] text-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+                            title="Completar razón social y domicilio fiscal con lo que tiene DGI"
+                          >
+                            {buscandoRut ? '…' : 'Traer de DGI'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className={labelCls}>{borrador.cliente.tipoDocumento === 2 ? 'Razón social' : 'Nombre'}</label>
                       <input className={inputCls} value={borrador.cliente.nombre} onChange={(e) => setCliente('nombre', e.target.value)} />
-                      {razonSocialDgi && razonSocialDgi !== borrador.cliente.nombre && (
+                      {razonSocialDgi && receptor !== 'TERCERO' && razonSocialDgi !== borrador.cliente.nombre && (
                         <button type="button" onClick={() => setCliente('nombre', razonSocialDgi)} className="mt-1 text-[11px] text-[var(--color-accent)] hover:underline">
                           Usar la de DGI: {razonSocialDgi}
                         </button>
@@ -295,12 +423,12 @@ export function EmitirCfeModal(props: Props) {
                   </div>
 
                   <div className="space-y-2">
-                    <p className={labelCls}>Renglones (precios con IVA incluido, en {borrador.moneda})</p>
+                    <p className={labelCls}>Renglones (precios sin IVA, en {borrador.moneda}; el IVA se suma al emitir)</p>
                     {borrador.items.map((it, i) => (
                       <div key={i} className="grid grid-cols-[1fr_70px_110px_auto] gap-2 items-start">
                         <input className={inputCls} maxLength={80} value={it.concepto} onChange={(e) => setItem(i, { concepto: e.target.value })} />
                         <input className={inputCls} inputMode="decimal" value={it.cantidad} disabled={esNC} onChange={(e) => setItem(i, { cantidad: Number(e.target.value.replace(',', '.')) || 0 })} title="Cantidad" />
-                        <input className={inputCls} inputMode="decimal" value={it.precio} disabled={esNC} onChange={(e) => setItem(i, { precio: Number(e.target.value.replace(',', '.')) || 0 })} title="Precio con IVA" />
+                        <input className={inputCls} inputMode="decimal" value={it.precio} disabled={esNC} onChange={(e) => setItem(i, { precio: Number(e.target.value.replace(',', '.')) || 0 })} title="Precio sin IVA" />
                         {!esNC && borrador.items.length > 1 ? (
                           <button type="button" onClick={() => setBorrador({ ...borrador, items: borrador.items.filter((_, j) => j !== i) })} className="p-1.5 text-[var(--color-text-muted)] hover:text-red-400" aria-label="Quitar renglón">
                             <Trash2 className="h-4 w-4" />
@@ -318,8 +446,8 @@ export function EmitirCfeModal(props: Props) {
                       </button>
                     )}
                     <div className="text-right text-[12px] text-[var(--color-text-secondary)] tabular-nums">
-                      Neto {fmtCurrency(redondear(total - ivaBasico), borrador.moneda)} · IVA 22 % {fmtCurrency(ivaBasico, borrador.moneda)} ·{' '}
-                      <span className="font-semibold text-[var(--color-text-primary)]">Total {fmtCurrency(total, borrador.moneda)}</span>
+                      Neto {fmtCurrency(t.neto, borrador.moneda)} · IVA {fmtCurrency(t.iva, borrador.moneda)} ·{' '}
+                      <span className="font-semibold text-[var(--color-text-primary)]">Total {fmtCurrency(t.total, borrador.moneda)}</span>
                     </div>
                   </div>
 
@@ -344,6 +472,8 @@ export function EmitirCfeModal(props: Props) {
                     )}
                   </div>
 
+                  </>)}
+
                   {problemas.length > 0 && (
                     <ul className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-200 list-disc pl-6">
                       {problemas.map((p) => <li key={p}>{p}</li>)}
@@ -351,7 +481,7 @@ export function EmitirCfeModal(props: Props) {
                   )}
                 </>
               ) : (
-                <Resumen borrador={borradorAEnviar()!} etiquetaTipo={etiquetaTipo} total={total} iva={ivaBasico} />
+                <Resumen borrador={borradorAEnviar()!} etiquetaTipo={etiquetaTipo} t={t} />
               )}
             </>
           )}
@@ -386,7 +516,7 @@ export function EmitirCfeModal(props: Props) {
                 </button>
                 <button
                   onClick={() => revisarMutation.mutate()}
-                  disabled={!borrador || revisarMutation.isPending || (esNC && !borrador.motivo?.trim())}
+                  disabled={!borrador || revisarMutation.isPending || (esNC ? !borrador.motivo?.trim() : !receptor)}
                   className="px-3 py-1.5 rounded-md bg-[var(--color-accent)] text-gray-900 text-sm font-semibold disabled:opacity-50"
                 >
                   {revisarMutation.isPending ? 'Revisando…' : 'Revisar'}
@@ -400,7 +530,7 @@ export function EmitirCfeModal(props: Props) {
   );
 }
 
-function Resumen({ borrador: b, etiquetaTipo, total, iva }: { borrador: BorradorCfe; etiquetaTipo: string; total: number; iva: number }) {
+function Resumen({ borrador: b, etiquetaTipo, t }: { borrador: BorradorCfe; etiquetaTipo: string; t: { neto: number; iva: number; total: number } }) {
   const fila = (k: string, v: React.ReactNode) => (
     <div className="grid grid-cols-[140px_1fr] gap-2 py-1 border-b border-[var(--color-border)] last:border-0">
       <span className="text-[12px] text-[var(--color-text-muted)]">{k}</span>
@@ -415,6 +545,11 @@ function Resumen({ borrador: b, etiquetaTipo, total, iva }: { borrador: Borrador
       </div>
       <div>
         {fila('Comprobante', etiquetaTipo)}
+        {fila('A nombre de', b.receptor === 'TERCERO'
+          ? <span>{b.cliente.nombre} <span className="text-amber-300">(no es el cliente del proyecto)</span></span>
+          : `${b.cliente.nombre} (el cliente del proyecto)`)}
+        {b.porcentaje != null && b.baseSinIva != null && (b.tipoCfe === 101 || b.tipoCfe === 111) &&
+          fila('Qué se factura', `${b.porcentaje} % de ${fmtCurrency(b.baseSinIva, b.moneda)} sin IVA`)}
         {fila(b.cliente.tipoDocumento === 2 ? 'RUT' : 'Cédula', b.cliente.documento)}
         {fila(b.cliente.tipoDocumento === 2 ? 'Razón social' : 'Nombre', b.cliente.nombre)}
         {fila('Dirección', `${b.cliente.direccion}, ${b.cliente.ciudad}, ${b.cliente.departamento}`)}
@@ -432,7 +567,7 @@ function Resumen({ borrador: b, etiquetaTipo, total, iva }: { borrador: Borrador
           <tr className="text-[11px] text-[var(--color-text-muted)]">
             <th className="text-left font-medium">Concepto</th>
             <th className="text-right font-medium">Cant.</th>
-            <th className="text-right font-medium">Precio c/IVA</th>
+            <th className="text-right font-medium">Precio s/IVA</th>
           </tr>
         </thead>
         <tbody>
@@ -446,8 +581,8 @@ function Resumen({ borrador: b, etiquetaTipo, total, iva }: { borrador: Borrador
         </tbody>
       </table>
       <div className="text-right text-sm tabular-nums text-[var(--color-text-secondary)]">
-        Neto {fmtCurrency(redondear(total - iva), b.moneda)} · IVA 22 % {fmtCurrency(iva, b.moneda)} ·{' '}
-        <span className="font-bold text-[var(--color-text-primary)]">Total {fmtCurrency(total, b.moneda)}</span>
+        Neto {fmtCurrency(t.neto, b.moneda)} · IVA {fmtCurrency(t.iva, b.moneda)} ·{' '}
+        <span className="font-bold text-[var(--color-text-primary)]">Total {fmtCurrency(t.total, b.moneda)}</span>
       </div>
     </div>
   );

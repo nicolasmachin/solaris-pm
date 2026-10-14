@@ -817,6 +817,9 @@ export interface CfeEmitido {
   tasaCambio: number | null;
   clienteNombre: string;
   clienteDocumento: string | null;
+  aNombreDeTercero: boolean;
+  baseSinIva: number | null;
+  porcentaje: number | null;
   motivo: string | null;
   error: string | null;
   tienePdf: boolean;
@@ -850,6 +853,9 @@ export interface BorradorCfe {
     precio: number;
     indicadorFacturacion: 1 | 2 | 3;
   }>;
+  receptor: 'CLIENTE' | 'TERCERO';
+  baseSinIva?: number | null;
+  porcentaje?: number | null;
   adenda: string | null;
   emailCliente: string | null;
   motivo: string | null;
@@ -864,6 +870,9 @@ export interface FacturacionResponse {
 export const getBorradorFactura = (projectId: string) =>
   apiClient.get<{
     borrador: BorradorCfe;
+    clienteProyecto: BorradorCfe['cliente'];
+    /** Monto sin IVA del que se parte: la última cotización publicada o, si no hay, el presupuesto sin IVA. */
+    base: { monto: number; fuente: 'COTIZACION' | 'PRESUPUESTO' | null; version: number | null };
     razonSocialDgi: string | null;
     proyecto: { id: string; code: string; clientName: string; budgetUsd: number | null };
     nota: string | null;
@@ -878,8 +887,14 @@ export const getBorradorNotaCredito = (cfeId: string, monto?: number) =>
 
 /** Valida el borrador sin mandarlo a Biller. */
 export const revisarBorradorCfe = (borrador: BorradorCfe) =>
-  apiClient.post<{ problemas: string[]; total: number }>('/api/finance/facturacion/revisar', { borrador })
+  apiClient.post<{ problemas: string[]; neto: number; iva: number; total: number }>('/api/finance/facturacion/revisar', { borrador })
     .then(r => r.data);
+
+/** Razón social y domicilio fiscal de un RUT según DGI. */
+export const getDatosRutDgi = (rut: string) =>
+  apiClient.get<{ rut: string; razonSocial: string; direccion: string; ciudad: string; departamento: string; email: string | null }>(
+    '/api/finance/facturacion/dgi-rut', { params: { rut } },
+  ).then(r => r.data);
 
 export const emitirFactura = (projectId: string, borrador: BorradorCfe) =>
   apiClient.post<{ cfe: CfeEmitido }>(`/api/finance/facturacion/${projectId}/emitir`, { borrador, confirmado: true })

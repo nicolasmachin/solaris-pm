@@ -305,8 +305,13 @@ emite por su cuenta. El motivo: **lo emitido no se edita**. Una factura con un
 error se corrige con una nota de crédito, y las dos quedan registradas en DGI.
 Es más barato revisar antes que corregir después.
 
-**Una factura por proyecto**, por el total de la obra. Si hay que rehacerla, se
-anula entera con una nota de crédito y se emite otra.
+**Una factura por proyecto.** Puede ser por toda la cotización o por una parte:
+se factura el porcentaje que se acordó. Si hay que rehacerla, se anula entera
+con una nota de crédito y se emite otra.
+
+**La factura puede ir a nombre de otro.** El cliente del proyecto es siempre la
+persona con la que se trabajó, pero la factura puede salir a nombre de su
+empresa o de otra persona. Por eso se pregunta en cada factura.
 
 ---
 
@@ -792,8 +797,20 @@ En **Finanzas → Facturación** están los proyectos que llevan factura, con
 hace falta entrar al sistema de facturación electrónica. Se toca **«Emitir
 factura»** en el proyecto y se abre el borrador, en dos pasos:
 
-1. **Datos.** Voltia PM lo arma con lo que tiene el proyecto, y todo se puede
-   corregir:
+1. **Datos.** Primero hay que contestar dos preguntas:
+   - **¿Cuánto se factura?** Se parte del **total sin IVA de la cotización**
+     que aceptó el cliente, y se elige **qué porcentaje** facturar: el 100 % o
+     menos, según lo que se haya acordado. El IVA se suma encima. Si el proyecto
+     no tiene cotización en Voltia PM, se parte del presupuesto de la obra sin
+     el IVA, y la pantalla lo avisa.
+   - **¿A nombre de quién va la factura?** Del cliente del proyecto, o de otra
+     persona o empresa: es común que el cliente la quiera a nombre de su
+     empresa. No viene marcada ninguna opción: se pregunta siempre. Con otra
+     empresa, se escribe su RUT y el botón **«Traer de DGI»** completa la razón
+     social y la dirección fiscal.
+
+   Después Voltia PM arma el resto con lo que tiene el proyecto, y todo se
+   puede corregir:
    - **El tipo de comprobante.** A una persona se le hace un **e-Ticket**, con su
      cédula. A una empresa, una **e-Factura**, con su RUT. Si el RUT está
      registrado en DGI, se ofrece la razón social que figura ahí.
@@ -802,8 +819,8 @@ factura»** en el proyecto y se abre el borrador, en dos pasos:
      instalación siempre lo es.
    - **La fecha de emisión** (puede ser anterior a hoy) y **la forma de pago**:
      contado o crédito, con su vencimiento.
-   - **Los renglones**, con el precio **con IVA incluido**. Viene uno solo, por
-     el presupuesto de la obra. Abajo se ve cuánto es neto, cuánto IVA y el total.
+   - **Los renglones**, con el precio **sin IVA**. Viene uno solo, por el
+     porcentaje elegido. Abajo se ve cuánto es neto, cuánto IVA y el total.
    - **La adenda**: un texto libre que sale impreso en la factura. Viene con el
      código del proyecto.
    - **Si se le manda el PDF al cliente por mail**, y a qué dirección.
@@ -836,8 +853,8 @@ El PDF oficial queda guardado en el proyecto y se abre desde la columna
 
 - **Total**: anula la factura entera. El proyecto vuelve a pendientes y se puede
   emitir una nueva.
-- **Parcial**: descuenta un monto (con IVA), por ejemplo un descuento acordado
-  después de facturar.
+- **Parcial**: descuenta un monto (sin IVA; el IVA se descuenta solo), por
+  ejemplo un descuento acordado después de facturar.
 
 En los dos casos el **motivo** es obligatorio, y se confirma igual que la
 factura.
@@ -1125,7 +1142,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.12 | 14 de octubre de 2026 | Las facturas a los clientes se emiten desde Voltia PM, con borrador y confirmación, y se corrigen con nota de crédito. Nuevo lineamiento: nada que va a DGI sale sin que una persona lo confirme, y una factura por proyecto. Qué hacer si DGI rechaza una factura o si queda «Verificando». |
+| 0.12 | 14 de octubre de 2026 | Las facturas a los clientes se emiten desde Voltia PM, con borrador y confirmación, y se corrigen con nota de crédito. Se factura un porcentaje del total sin IVA de la cotización, y en cada factura se pregunta a nombre de quién va (el cliente u otra persona o empresa). Nuevo lineamiento: nada que va a DGI sale sin que una persona lo confirme, y una factura por proyecto. Qué hacer si DGI rechaza una factura o si queda «Verificando». |
 | 0.11 | 12 de octubre de 2026 | En el detalle del cobro de cada cliente se agrega el bloque Comentarios y archivos, para anotar lo acordado y subir comprobantes desde ahí. |
 | 0.10 | 11 de octubre de 2026 | Con financiación bancaria, la gestión con el banco la sigue el asesor hasta que termina. |
 | 0.9 | 10 de octubre de 2026 | Pagos a instaladores: el 50 % al arrancar la obra y el 50 % al terminarla, con la orden del responsable de Administración y Finanzas o de Gerencia; el monto no se negocia. Quién aprueba las compras: lo de la lista de materiales, nadie (lo compra directo el encargado de compras); lo de fuera, el gerente de Operaciones hasta USD 200 por gasto, sin tope total y con rendición de cuentas, y por encima Finanzas o Gerencia. |

@@ -16,7 +16,9 @@
 
 #### Facturas al cliente con Biller
 
-- En **Finanzas → Facturación**, cada proyecto pendiente tiene el botón **Emitir factura**: Voltia PM arma la factura con los datos del proyecto (cédula o RUT, nombre, dirección, el presupuesto de la obra con IVA incluido) y se puede corregir todo antes de mandarla.
+- En **Finanzas → Facturación**, cada proyecto pendiente tiene el botón **Emitir factura**: Voltia PM arma la factura con los datos del proyecto y se puede corregir todo antes de mandarla.
+- El monto parte del **total sin IVA de la cotización** y se elige **qué porcentaje facturar** (el 100 % o menos). El IVA se suma encima.
+- Siempre se pregunta **a nombre de quién va la factura**: del cliente del proyecto o de otra persona o empresa (por ejemplo, la empresa del cliente). Con un RUT, el botón **Traer de DGI** completa la razón social y la dirección fiscal.
 - Antes de emitir hay un segundo paso, **Confirmar**, que muestra exactamente lo que se va a mandar. Nada sale hacia DGI sin ese OK.
 - A una persona se le hace un **e-Ticket** con su cédula; a una empresa, una **e-Factura** con su RUT. Si el RUT está registrado, se ofrece la razón social que figura en DGI.
 - Se puede elegir si Biller le manda el PDF al cliente por mail.

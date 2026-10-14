@@ -523,8 +523,11 @@ de Ingeniería y al de Operaciones.
 las manda a DGI por la facturación electrónica. **Nada que va a DGI sale sin
 que una persona vea el borrador completo y lo confirme**: ni una factura, ni una
 nota de crédito, ni (cuando los haya) un recibo. Ningún automatismo emite solo.
-Cada obra lleva **una factura**, por el total. Lo emitido no se edita: se
-corrige con una nota de crédito.
+Cada obra lleva **una factura**. Se factura un **porcentaje del total sin IVA
+de la cotización**, que puede ser menos que el 100 % según lo acordado, y la
+factura puede ir **a nombre de otra persona o empresa** que el cliente del
+proyecto (por ejemplo, su empresa): las dos cosas se preguntan en cada factura.
+Lo emitido no se edita: se corrige con una nota de crédito.
 
 **Por qué.** Una factura mal emitida no se puede borrar: se corrige con otro
 comprobante y los dos quedan registrados ante DGI. Revisar antes cuesta un
@@ -571,7 +574,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.18 | 14 de octubre de 2026 | Se registra que las facturas al cliente se emiten desde Voltia PM con un borrador que una persona confirma antes de que salga a DGI, una por obra, y que lo emitido se corrige con nota de crédito. |
+| 0.18 | 14 de octubre de 2026 | Se registra que las facturas al cliente se emiten desde Voltia PM con un borrador que una persona confirma antes de que salga a DGI, una por obra, por un porcentaje del total sin IVA de la cotización y a nombre del cliente o de quien él pida, y que lo emitido se corrige con nota de crédito. |
 | 0.17 | 14 de octubre de 2026 | Se registra que la Pre-Ingeniería no termina sin los datos de la instalación definidos (paneles, inversor, red, techo y si van coplanares o inclinados) y con la pre-ingeniería y el unifilar diciendo lo mismo. |
 | 0.16 | 12 de octubre de 2026 | Se registra que los videos para el cliente quedan en la pestaña Videos de su portal y se le mandan con el enlace que los abre ahí; todos los clientes ven los mismos, y las dudas van por ticket. |
 | 0.15 | 11 de octubre de 2026 | Se registra que la fecha tentativa deja de ser parte del procedimiento: al cliente se le da la quincena al vender, y en la Validación primero se confirma la fecha de obra y después el capataz hace su informe. Pagarle más a un tercerizado lo autoriza solo el CEO. |

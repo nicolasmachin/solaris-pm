@@ -463,6 +463,13 @@ function EstadoCfes({ p }: { p: FacturacionRow }) {
               {ESTADO_CFE[c.estado].label}
             </span>
           </div>
+          {!c.esNotaCredito && (c.aNombreDeTercero || (c.porcentaje != null && c.porcentaje < 100)) && (
+            <span className="text-[10px] text-[var(--color-text-muted)] max-w-[260px]">
+              {c.aNombreDeTercero && <>A nombre de {c.clienteNombre}</>}
+              {c.aNombreDeTercero && c.porcentaje != null && c.porcentaje < 100 && ' · '}
+              {c.porcentaje != null && c.porcentaje < 100 && <>{c.porcentaje} % de la cotización</>}
+            </span>
+          )}
           {(c.estado === 'ERROR' || c.estado === 'RECHAZADO') && (c.error || c.estadoDgi) && (
             <span className="text-[10px] text-red-300 max-w-[260px] break-words">{c.error ?? c.estadoDgi}</span>
           )}

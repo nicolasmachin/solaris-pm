@@ -637,17 +637,21 @@ factura** (se prende al crear o editar el proyecto).
 
 - **Emitir factura** (solo si Biller está habilitado, ver más abajo): abre el
   borrador en dos pasos.
-  1. **Datos**: tipo (e-Ticket con cédula o e-Factura con RUT), documento,
-     nombre o razón social, dirección, ciudad, departamento, fecha de emisión,
-     forma de pago (contado / crédito con vencimiento), renglones con precio
-     **con IVA incluido**, adenda y si Biller le manda el PDF al cliente. Arriba
-     se muestra la nota de facturación del proyecto. Para un RUT se ofrece la
-     razón social registrada en DGI.
+  1. **Datos**: primero, **¿cuánto se factura?** (monto sin IVA de la
+     cotización y porcentaje, 100 por defecto) y **¿a nombre de quién?** (el
+     cliente del proyecto u otra persona o empresa; no viene elegido y el resto
+     del formulario no aparece hasta contestarlo). Después: tipo (e-Ticket con
+     cédula o e-Factura con RUT), documento, nombre o razón social, dirección,
+     ciudad, departamento, fecha de emisión, forma de pago (contado / crédito
+     con vencimiento), renglones con precio **sin IVA**, adenda y si Biller le
+     manda el PDF al cliente. Arriba se muestra la nota de facturación del
+     proyecto. Con un RUT, **Traer de DGI** completa razón social, domicilio
+     fiscal y mail.
   2. **Confirmar**: muestra exactamente lo que se manda. Hay que tildar "Revisé
      los datos" para que se habilite **Emitir**.
 - **Nota de crédito** (en una factura emitida por Biller): total (copia los
   renglones y anula la factura) o parcial (un renglón "Nota de crédito" por el
-  monto con IVA). El motivo es obligatorio.
+  monto sin IVA). El motivo es obligatorio.
 - **Refrescar** (ícono): consulta el estado ante DGI en el momento.
 - **Marcar emitida / Revertir**: para facturas hechas por fuera de Voltia PM.
   **Revertir** se bloquea si la factura se emitió por Biller
@@ -670,12 +674,30 @@ Código: `services/biller/cfe-emitidos.service.ts`, rutas en
   `empresa` con un documento que no es cédula) → e-Factura con RUT; si no,
   e-Ticket con cédula. Nombre = `nombreCliente` o `clientName`; dirección =
   `calle` + `numCalle` o `clientAddress`; ciudad/departamento = `locationCity` /
-  `locationProvince`; precio = `budgetUsd`; mail = `clientEmail`. Contado por
-  defecto.
-- **IVA**: se manda `montos_brutos: 1` con tasa básica (indicador 3): Biller
-  separa neto e IVA del total. Equivale a la cotización, donde el precio con IVA
-  es siempre el sin IVA × 1,22. La tasa de cambio no se manda: Biller toma la del
-  cierre del día anterior a la emisión.
+  `locationProvince`; mail = `clientEmail`. Contado por defecto. Devuelve también
+  `clienteProyecto` (para volver a esos datos si se cambia el receptor) y `base`.
+- **Monto** (`montoSinIvaCotizacion()`): última `ProposalV2Version` PUBLISHED del
+  lead convertido en el proyecto (`SalesLead.convertedToProjectId`, mismo
+  criterio que la comisión): `calc.subtotalSinIva + calc.itemsAdicionalesTotalSinIva`.
+  Sin cotización (proyecto viejo o cargado a mano): `budgetUsd / 1,22`, avisado
+  en pantalla. El renglón = monto × porcentaje. `baseSinIva` y `porcentaje` se
+  guardan en `CfeEmitido` como dato; lo que se emite son los renglones.
+- **Receptor**: `receptor` = `CLIENTE` o `TERCERO` en el borrador, guardado como
+  `CfeEmitido.aNombreDeTercero`; en la lista se ve "A nombre de …" y el
+  porcentaje si es menor a 100. `GET /finance/facturacion/dgi-rut?rut=` arma
+  razón social, dirección, ciudad, departamento y mail desde
+  `/v2/dgi/empresas/datos-entidad` (`datosRutDgi()`).
+- **IVA**: los precios van **sin IVA** con `montos_brutos: 0` e indicador 3
+  (tasa básica): Biller suma el 22 %. El total que se guarda lo calcula
+  `totalesBorrador()` redondeando IVA por renglón, igual que Biller. La tasa de
+  cambio no se manda: Biller toma la del cierre del día anterior a la emisión.
+- **Nombre del receptor en Biller**: Biller guarda el cliente por documento la
+  primera vez y **en las siguientes emisiones ignora el nombre que viene en el
+  comprobante** (la dirección sí la toma). Visto en test el 14-oct-2026. Por eso
+  `emitirCfe()` llama antes a `POST /v2/clientes/crear` con los datos del
+  borrador (`actualizarClienteBiller()`), que sí actualiza el nombre guardado.
+  Si esa llamada falla, no se emite (`BILLER_CLIENTE`). Ojo: `comprobantes/obtener`
+  devuelve el cliente **como está hoy** en Biller, no lo que quedó impreso.
 - **Validación** (`validarBorrador()`): e-Factura ↔ RUT de 12 dígitos, e-Ticket
   ↔ cédula con dígito verificador válido (`esCiUruguayaValida()`), crédito con
   vencimiento, emisión hasta dos meses a futuro. `POST /finance/facturacion/revisar`
@@ -727,6 +749,7 @@ Código: `services/biller/cfe-emitidos.service.ts`, rutas en
 | Listado (incluye `cfes` y `emision`) | `GET /finance/facturacion` | `FINANZAS:VIEW` |
 | CFEs del proyecto | `GET /finance/facturacion/:projectId/cfes` | `FINANZAS:VIEW` |
 | Borrador de factura | `GET /finance/facturacion/:projectId/borrador` | `FINANZAS:EDIT` |
+| Datos de un RUT en DGI | `GET /finance/facturacion/dgi-rut?rut=` | `FINANZAS:EDIT` |
 | Revisar borrador (sin emitir) | `POST /finance/facturacion/revisar` | `FINANZAS:EDIT` |
 | Emitir factura (`confirmado: true`) | `POST /finance/facturacion/:projectId/emitir` | `FINANZAS:EDIT` |
 | Borrador de NC | `GET /finance/cfe/:id/borrador-nota-credito[?monto=]` | `FINANZAS:EDIT` |
@@ -745,6 +768,11 @@ Finanzas y no por `/files/:id/download` porque ese pide permiso de Operaciones.
   30-sep-2026): el endpoint exige `confirmado: true` y ningún job emite.
 - **Una factura por proyecto** (decidido el 14-oct-2026). Para facturar de nuevo
   hay que anular la anterior con una NC total.
+- **Se factura un porcentaje del monto sin IVA de la cotización**, no del
+  presupuesto: a veces se factura menos que lo vendido y el presupuesto del
+  sistema puede no tener relación (decidido por Nicolás el 14-oct-2026).
+- **El receptor se pregunta siempre**: el cliente del proyecto puede querer la
+  factura a nombre de su empresa u otra persona.
 - **Contado por defecto**: los cobros todavía no emiten recibo. Si un recibo
   (CFE de cobranza) o un pago registrado en Biller es lo que corresponde está
   pendiente con el contador; hasta entonces, los cobros siguen como antes y no

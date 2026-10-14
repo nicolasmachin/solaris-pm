@@ -18,10 +18,11 @@ import {
   borradorSchema,
   cfesDelProyecto,
   cuerpoBiller,
+  datosRutDgi,
   emitirCfe,
   estadoEmision,
   guardarPdf,
-  totalBorrador,
+  totalesBorrador,
   validarBorrador,
 } from "../services/biller/cfe-emitidos.service.js";
 import { getStoredFilePath } from "../services/file-storage.service.js";
@@ -59,9 +60,17 @@ export async function registerFacturacionClienteRoutes(app: FastifyInstance) {
     const { borrador } = z.object({ borrador: borradorSchema }).parse(request.body);
     return {
       problemas: validarBorrador(borrador),
-      total: totalBorrador(borrador),
+      ...totalesBorrador(borrador),
       cuerpo: cuerpoBiller(borrador, "(se asigna al emitir)", null),
     };
+  });
+
+  // Razón social y domicilio fiscal de un RUT, para facturar a otra empresa.
+  app.get("/finance/facturacion/dgi-rut", editar, async (request) => {
+    const { rut } = z.object({ rut: z.string().regex(/^\d{12}$/, "El RUT tiene 12 dígitos") }).parse(request.query);
+    const datos = await datosRutDgi(rut);
+    if (!datos) throw notFound("RUT_NO_ENCONTRADO", "DGI no tiene datos para ese RUT");
+    return datos;
   });
 
   app.post("/finance/facturacion/:projectId/emitir", editar, async (request, reply) => {

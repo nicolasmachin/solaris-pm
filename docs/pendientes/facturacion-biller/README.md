@@ -17,6 +17,11 @@ Verificado contra test (sucursal 889): e-Ticket MT-930441 por USD 6.100 con
 montos brutos (PDF: neto 5.000 + IVA 1.100), segundo intento frenado, NC parcial
 MA-116357, adopción de un CFE dudoso por `numero_interno`, PDF guardado.
 
+Hallazgo: **Biller guarda el cliente por documento y en las emisiones siguientes
+ignora el nombre del comprobante** (la dirección sí la toma). `clientes/crear` sí
+actualiza el nombre: Voltia PM lo llama antes de cada emisión. Y
+`comprobantes/obtener` devuelve el cliente como está hoy, no lo impreso.
+
 Hallazgo: un estado DGI más, **"Envío no corresponde"** (la NC chica de e-Ticket,
 que va en el reporte diario y no se manda sola). Se toma como válido.
 

@@ -17,7 +17,10 @@ const base: BorradorCfe = {
     ciudad: "Montevideo",
     departamento: "Montevideo",
   },
-  items: [{ concepto: "Instalación", descripcion: null, cantidad: 1, precio: 6100, indicadorFacturacion: 3 }],
+  items: [{ concepto: "Instalación", descripcion: null, cantidad: 1, precio: 5000, indicadorFacturacion: 3 }],
+  receptor: "CLIENTE",
+  baseSinIva: 10000,
+  porcentaje: 50,
   adenda: "Proyecto PRY-1",
   emailCliente: "cliente@ejemplo.com",
   motivo: null,
@@ -25,6 +28,7 @@ const base: BorradorCfe = {
 
 test("un borrador correcto no tiene problemas", () => {
   assert.deepEqual(validarBorrador(base), []);
+  // Precios sin IVA: 5000 + 22 % = 6100.
   assert.equal(totalBorrador(base), 6100);
 });
 
@@ -47,7 +51,8 @@ test("crédito sin vencimiento", () => {
 test("cuerpo para Biller: montos brutos, fechas dd/mm/aaaa, nombre de CI cortado a 30", () => {
   process.env.BILLER_SUCURSAL = "889";
   const c = cuerpoBiller({ ...base, formaPago: 2, fechaVencimiento: "2026-11-13" }, "PRY-1-abc", null) as Record<string, any>;
-  assert.equal(c.montos_brutos, 1);
+  assert.equal(c.montos_brutos, 0);
+  assert.equal(c.items[0].precio, 5000);
   assert.equal(c.fecha_emision, "14/10/2026");
   assert.equal(c.fecha_vencimiento, "13/11/2026");
   assert.equal(c.sucursal, 889);

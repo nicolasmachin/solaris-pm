@@ -143,7 +143,7 @@ const itemSchema = z.object({
   concepto: z.string().trim().min(1).max(80),
   descripcion: z.string().trim().max(500).optional().nullable(),
   cantidad: z.number().positive(),
-  // Precio unitario CON IVA (montos brutos).
+  // Precio unitario SIN IVA: Biller le suma el IVA según el indicador.
   precio: z.number().positive(),
   // 3 = tasa básica (22 %). Se deja elegir por si alguna vez hay un ítem exento.
   indicadorFacturacion: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(3),
@@ -164,6 +164,13 @@ export const borradorSchema = z.object({
     departamento: z.string().trim().min(1).max(30),
   }),
   items: z.array(itemSchema).min(1).max(20),
+  // A quién se le factura: el cliente del proyecto u otra persona o empresa
+  // (la empresa del cliente, por ejemplo). Se pregunta siempre al emitir.
+  receptor: z.enum(["CLIENTE", "TERCERO"]),
+  // Factura: el monto sin IVA de la cotización y qué porcentaje se factura.
+  // Informativo: lo que se emite son los renglones.
+  baseSinIva: z.number().nonnegative().nullable().optional(),
+  porcentaje: z.number().positive().max(100).nullable().optional(),
   adenda: z.string().trim().max(1000).optional().nullable(),
   // Si viene, Biller le manda el PDF a ese mail. Vacío = no se manda nada.
   emailCliente: z.string().trim().email().optional().nullable(),
@@ -174,8 +181,23 @@ export type BorradorCfe = z.infer<typeof borradorSchema>;
 const soloDigitos = (s: string) => s.replace(/\D/g, "");
 const redondear = (n: number) => Math.round(n * 100) / 100;
 
+const TASA_IVA: Record<number, number> = { 1: 0, 2: 0.1, 3: 0.22 };
+
+/** Neto, IVA y total del borrador (los precios van sin IVA). */
+export function totalesBorrador(b: Pick<BorradorCfe, "items">) {
+  let neto = 0;
+  let iva = 0;
+  for (const i of b.items) {
+    const linea = redondear(i.cantidad * i.precio);
+    neto += linea;
+    iva += redondear(linea * (TASA_IVA[i.indicadorFacturacion] ?? 0.22));
+  }
+  return { neto: redondear(neto), iva: redondear(iva), total: redondear(neto + iva) };
+}
+
+/** Total con IVA. */
 export function totalBorrador(b: Pick<BorradorCfe, "items">) {
-  return redondear(b.items.reduce((acc, i) => acc + i.cantidad * i.precio, 0));
+  return totalesBorrador(b).total;
 }
 
 /** Problemas que impiden emitir. Lista vacía = se puede. */
@@ -225,8 +247,8 @@ export function cuerpoBiller(b: BorradorCfe, numeroInterno: string, referenciaBi
     fecha_emision: ddmmaaaa(b.fechaEmision),
     sucursal: Number(process.env.BILLER_SUCURSAL),
     moneda: b.moneda,
-    // Los precios del borrador ya incluyen IVA: Biller separa neto e IVA.
-    montos_brutos: 1,
+    // Los precios van sin IVA: Biller le suma el IVA según el indicador de cada renglón.
+    montos_brutos: 0,
     cliente,
     items: b.items.map((i) => ({
       cantidad: i.cantidad,
@@ -242,6 +264,57 @@ export function cuerpoBiller(b: BorradorCfe, numeroInterno: string, referenciaBi
   if (b.emailCliente && esBillerProductivo()) cuerpo.emails_notificacion = [b.emailCliente];
   if (referenciaBillerId) cuerpo.referencias = [Number(referenciaBillerId)];
   return cuerpo;
+}
+
+/**
+ * Monto sin IVA de la última propuesta publicada del lead que se convirtió en
+ * este proyecto (mismo criterio que la comisión): subtotal + adicionales.
+ */
+async function montoSinIvaCotizacion(projectId: string): Promise<{ sinIva: number; version: number } | null> {
+  const lead = await prisma.salesLead.findFirst({ where: { convertedToProjectId: projectId }, select: { id: true } });
+  if (!lead) return null;
+  const v = await prisma.proposalV2Version.findFirst({
+    where: { leadId: lead.id, status: "PUBLISHED", discardedAt: null },
+    orderBy: { versionNumber: "desc" },
+    select: { snapshot: true, versionNumber: true },
+  });
+  const calc = (v?.snapshot as { calc?: Record<string, unknown> } | null)?.calc;
+  const subtotal = Number(calc?.subtotalSinIva);
+  if (!v || !Number.isFinite(subtotal)) return null;
+  const adicionales = Number(calc?.itemsAdicionalesTotalSinIva);
+  return { sinIva: redondear(subtotal + (Number.isFinite(adicionales) ? adicionales : 0)), version: v.versionNumber };
+}
+
+/** Datos de una empresa en DGI por RUT: razón social y domicilio fiscal. */
+export async function datosRutDgi(rut: string) {
+  if (!billerConfigurado()) return null;
+  const doc = soloDigitos(rut);
+  const r = await billerFetch("GET", `/v2/dgi/empresas/datos-entidad?rut=${encodeURIComponent(doc)}`);
+  if (r.status !== 200 || !r.body || typeof r.body !== "object") return null;
+  const b = r.body as Obj;
+  const texto = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  const dom = (b.WS_DomicilioFiscalPrincipal ?? {}) as Obj;
+  const nro = texto(dom.Dom_Pta_Nro);
+  const apto = texto(dom.Dom_Ap_Nro);
+  const direccion = [
+    texto(dom.Calle_Nom),
+    nro && nro !== "0" ? nro : "",
+    apto && apto !== "0" ? `apto ${apto}` : "",
+  ].filter(Boolean).join(" ");
+  const contactos = ((dom.Contactos as Obj | undefined)?.["WS_Entidad.WS_DomicilioFiscalPrincipal.Contacto"] ?? []) as Obj[] | Obj;
+  const lista = Array.isArray(contactos) ? contactos : [contactos];
+  const email = lista.find((c) => /correo/i.test(texto(c.TipoCtt_Des)))?.DomCtt_Val;
+  const capital = (s: string) => s.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+  const razonSocial = texto(b.RazonSocial) || (await buscarRazonSocial(doc)) || "";
+  if (!razonSocial && !direccion) return null;
+  return {
+    rut: doc,
+    razonSocial,
+    direccion: recortar(direccion, 70),
+    ciudad: recortar(capital(texto(dom.Loc_Nom)), 30),
+    departamento: recortar(capital(texto(dom.Dpto_Nom)), 30),
+    email: typeof email === "string" ? email.toLowerCase() : null,
+  };
 }
 
 /** Factura "viva" del proyecto (emitida, en curso o dudosa), si hay. */
@@ -282,6 +355,13 @@ export async function armarBorradorFactura(projectId: string) {
   const direccion = [p.calle, p.numCalle].filter((x) => x && x.trim()).join(" ").trim() || (p.clientAddress ?? "");
   const kwp = Number(p.capacityKwp);
   const kwpTxt = Number.isFinite(kwp) && kwp > 0 ? ` de ${kwp.toLocaleString("es-UY", { maximumFractionDigits: 2 })} kWp` : "";
+  const cotizacion = await montoSinIvaCotizacion(p.id);
+  // Sin cotización (proyecto viejo o cargado a mano): el presupuesto sin el IVA.
+  const base = cotizacion
+    ? { monto: cotizacion.sinIva, fuente: "COTIZACION" as const, version: cotizacion.version }
+    : p.budgetUsd != null && Number(p.budgetUsd) > 0
+      ? { monto: redondear(Number(p.budgetUsd) / 1.22), fuente: "PRESUPUESTO" as const, version: null }
+      : { monto: 0, fuente: null, version: null };
 
   const borrador: BorradorCfe = {
     tipoCfe: esRut ? TIPO_FACTURA_RUT : TIPO_FACTURA_CI,
@@ -302,9 +382,12 @@ export async function armarBorradorFactura(projectId: string) {
       concepto: recortar(`Suministro e instalación de sistema solar fotovoltaico${kwpTxt}`, 80),
       descripcion: null,
       cantidad: 1,
-      precio: p.budgetUsd != null ? Number(p.budgetUsd) : 0,
+      precio: base.monto,
       indicadorFacturacion: 3,
     }],
+    receptor: "CLIENTE",
+    baseSinIva: base.monto,
+    porcentaje: 100,
     adenda: `Proyecto ${p.code}`,
     emailCliente: p.clientEmail?.trim() || null,
     motivo: null,
@@ -316,6 +399,9 @@ export async function armarBorradorFactura(projectId: string) {
 
   return {
     borrador,
+    // Los datos del cliente del proyecto, para volver a ellos si se cambia el receptor.
+    clienteProyecto: borrador.cliente,
+    base,
     razonSocialDgi,
     proyecto: { id: p.id, code: p.code, clientName: p.clientName, budgetUsd: p.budgetUsd != null ? Number(p.budgetUsd) : null },
     nota: p.facturaNota,
@@ -334,6 +420,7 @@ export async function armarBorradorNotaCredito(cfeId: string, opciones: { monto?
   const total = opciones.monto == null;
   const borrador: BorradorCfe = {
     ...original,
+    receptor: original.receptor ?? "CLIENTE",
     tipoCfe: TIPO_NC[f.tipoCfe] as BorradorCfe["tipoCfe"],
     formaPago: original.formaPago,
     fechaEmision: hoyUruguay().iso,
@@ -344,9 +431,12 @@ export async function armarBorradorNotaCredito(cfeId: string, opciones: { monto?
           concepto: "Nota de crédito",
           descripcion: null,
           cantidad: 1,
-          precio: total ? disponible : redondear(opciones.monto!),
+          // `monto` viene sin IVA; lo disponible es con IVA (tasa básica).
+          precio: total ? redondear(disponible / 1.22) : redondear(opciones.monto!),
           indicadorFacturacion: 3,
         }],
+    baseSinIva: null,
+    porcentaje: null,
     adenda: `Corrige ${ETIQUETA_TIPO[f.tipoCfe]} ${f.serie}-${f.numero}`,
     motivo: null,
   };
@@ -398,6 +488,9 @@ export async function emitirCfe(input: {
     throw conflict("FACTURA_YA_EMITIDA", "Este proyecto ya tiene una factura emitida. Para corregirla, hacé una nota de crédito.");
   }
 
+  // Antes de crear la fila: si esto falla no se emitió nada y no queda nada colgado.
+  await enCola(() => actualizarClienteBiller(cuerpoBiller(b, "-", null)));
+
   const total = totalBorrador(b);
   const fila = await prisma.cfeEmitido.create({
     data: {
@@ -410,6 +503,9 @@ export async function emitirCfe(input: {
       total,
       clienteNombre: b.cliente.nombre,
       clienteDocumento: soloDigitos(b.cliente.documento),
+      aNombreDeTercero: b.receptor === "TERCERO",
+      baseSinIva: esNC ? null : b.baseSinIva ?? null,
+      porcentaje: esNC ? null : b.porcentaje ?? null,
       referenciaId: referencia?.id ?? null,
       motivo: b.motivo ?? null,
       payload: b as unknown as Prisma.InputJsonValue,
@@ -475,6 +571,31 @@ async function llamarEmitir(id: string, numeroInterno: string, cuerpo: Obj): Pro
     return "ERROR";
   }
   return resolverDudoso(id, numeroInterno, msg);
+}
+
+/**
+ * Biller guarda el cliente por documento la primera vez que se le factura y en
+ * las siguientes emisiones IGNORA el nombre que viene en el comprobante (la
+ * dirección sí la toma). Visto en test el 14-oct-2026. Dar de alta el cliente con
+ * `clientes/crear` actualiza el nombre guardado, así que se hace antes de cada
+ * emisión: lo que sale impreso es lo que se confirmó en el borrador.
+ */
+async function actualizarClienteBiller(cuerpo: Obj) {
+  const c = cuerpo.cliente as Obj;
+  const suc = (c.sucursal ?? {}) as Obj;
+  const r = await billerFetch("POST", "/v2/clientes/crear", {
+    tipo_documento: c.tipo_documento,
+    documento: c.documento,
+    pais: c.pais ?? "UY",
+    ...(c.razon_social ? { razon_social: c.razon_social } : {}),
+    ...(c.nombre_fantasia ? { nombre_fantasia: c.nombre_fantasia } : {}),
+    direccion: suc.direccion,
+    ciudad: suc.ciudad,
+    departamento: suc.departamento,
+  });
+  if (r.status !== 200 && r.status !== 201) {
+    throw new AppError(502, "BILLER_CLIENTE", `No se pudo actualizar el cliente en Biller: ${mensajeBiller(r)}`);
+  }
 }
 
 /** Busca en Biller por numero_interno: si está, lo adopta; si no, queda DUDOSO. */
@@ -680,7 +801,8 @@ export function serializarCfe(c: {
   id: string; tipoCfe: number; estado: EstadoCfeEmitido; estadoDgi: string | null;
   serie: string | null; numero: number | null; fechaEmision: Date; moneda: Moneda;
   total: Prisma.Decimal; tasaCambio?: Prisma.Decimal | null; clienteNombre: string;
-  clienteDocumento: string | null; referenciaId: string | null; motivo: string | null;
+  clienteDocumento: string | null; aNombreDeTercero?: boolean; baseSinIva?: Prisma.Decimal | null;
+  porcentaje?: Prisma.Decimal | null; referenciaId: string | null; motivo: string | null;
   error: string | null; pdfAttachmentId: string | null; createdAt: Date;
 }) {
   return {
@@ -699,6 +821,9 @@ export function serializarCfe(c: {
     tasaCambio: c.tasaCambio != null ? Number(c.tasaCambio) : null,
     clienteNombre: c.clienteNombre,
     clienteDocumento: c.clienteDocumento,
+    aNombreDeTercero: c.aNombreDeTercero ?? false,
+    baseSinIva: c.baseSinIva != null ? Number(c.baseSinIva) : null,
+    porcentaje: c.porcentaje != null ? Number(c.porcentaje) : null,
     motivo: c.motivo,
     error: c.error,
     tienePdf: c.pdfAttachmentId != null,
