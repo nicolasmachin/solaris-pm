@@ -185,8 +185,8 @@ Se suman `cantidadPaneles` y `potenciaInversorKw` de todos y se juntan las redes
 (`TipoRed` → `PhaseType`). Los suministros son 1 más los `order` de los
 `SolarSystem`; uno sin unifilar es un faltante.
 
-La propuesta (última `ProposalV2Version` publicada del lead) se muestra solo como
-referencia y **no bloquea**: la obra puede cambiar después de la venta, y su
+La propuesta (última `ProposalV2Version` publicada del lead) viaja en la respuesta
+pero la pantalla no la muestra, y **no bloquea**: la obra puede cambiar después de la venta, y su
 `tipoMontaje` es texto libre inservible para clasificar.
 
 `datos-tecnicos-obra.service.ts` → `getDatosTecnicosObra(projectId)` devuelve

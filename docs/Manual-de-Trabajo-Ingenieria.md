@@ -54,9 +54,8 @@ Voltia PM no deja cerrar la etapa hasta que esté todo.
 Coplanar o inclinado es una decisión aparte del techo: cualquier techo, incluso
 el suelo, puede ir de las dos formas.
 
-Lo que dijo la propuesta comercial se muestra como referencia, pero no manda: la
-obra puede haber cambiado después de la venta, y lo que vale es lo que definió
-Ingeniería.
+Lo que dijo la propuesta comercial no manda: la obra puede haber cambiado después
+de la venta, y lo que vale es lo que definió Ingeniería.
 
 ### La fecha de obra depende de la Ingeniería Final
 
