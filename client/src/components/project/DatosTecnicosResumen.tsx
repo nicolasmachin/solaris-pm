@@ -1,9 +1,7 @@
-import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { getDatosTecnicos } from "../../api/projects.api";
-import type { PhaseType } from "../../types/api.types";
 import { getPhaseTypeShortLabel } from "./SolarSystemFields";
 
 /**
@@ -23,18 +21,7 @@ export function DatosTecnicosResumen({ projectId, linkIngenieria = false }: { pr
   if (!dt) return null;
 
   const pre = dt.preIngenieria;
-  const uni = dt.unifilar;
-  const sis = dt.sistema;
-  const prop = dt.propuesta;
-  const fases = (red: PhaseType[]) => red.map((f) => getPhaseTypeShortLabel(f)).join(" + ");
-  const panelesOk = !pre || !uni || pre.cantidadPaneles == null || pre.cantidadPaneles === uni.cantidadPaneles;
-  const kwOk = !pre || !uni || pre.inversorKw == null || Math.abs(pre.inversorKw - uni.inversorKw) <= 0.05;
-  const faseOk = !pre || !uni || pre.red.length === 0 || uni.red.every((f) => pre.red.includes(f));
-  const panelWOk = (ws: number[]) => !pre || pre.potenciaPanelW == null || (ws.length > 0 && ws.every((w) => w === pre.potenciaPanelW));
-  // Sistema del proyecto contra la pre-ingeniería (la fuente).
-  const sisPanelesOk = !pre || !sis || pre.cantidadPaneles == null || sis.cantidadPaneles === pre.cantidadPaneles;
-  const sisKwOk = !pre || !sis || pre.inversorKw == null || (sis.inversorKw != null && Math.abs(sis.inversorKw - pre.inversorKw) <= 0.05);
-  const sisFaseOk = !pre || !sis || pre.red.length === 0 || (sis.red.length > 0 && sis.red.every((f) => pre.red.includes(f)));
+  const red = pre && pre.red.length > 0 ? pre.red.map((f) => getPhaseTypeShortLabel(f)).join(" + ") : null;
   const inclinacion = pre?.inclinacion === "COPLANAR" ? "Coplanar" : pre?.inclinacion === "INCLINADO" ? "Inclinado" : null;
 
   return (
@@ -42,7 +29,7 @@ export function DatosTecnicosResumen({ projectId, linkIngenieria = false }: { pr
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <Dato label="Paneles" value={pre?.cantidadPaneles != null ? String(pre.cantidadPaneles) : null} />
-          <Dato label="Red" value={pre && pre.red.length > 0 ? fases(pre.red) : null} />
+          <Dato label="Red" value={red} />
           <Dato label="Techo" value={pre?.techo ?? null} />
           <Dato label="Paneles" sub="coplanar / inclinado" value={inclinacion} />
         </div>
@@ -56,65 +43,10 @@ export function DatosTecnicosResumen({ projectId, linkIngenieria = false }: { pr
         ) : null}
       </div>
 
-      <div className="mt-3 space-y-1 text-xs text-[var(--color-text-secondary)]">
-        <p>
-          <span className="text-[var(--color-text-muted)]">
-            {pre ? `Pre-ingeniería v${pre.versionNumber}:` : "Pre-ingeniería:"}
-          </span>{" "}
-          {pre
-            ? [pre.inversor ? `inversor "${pre.inversor}"` : "inversor sin indicar", pre.potenciaPanelW ? `paneles de ${pre.potenciaPanelW} W` : null]
-                .filter(Boolean).join(" · ")
-            : "todavía no se hizo."}
-        </p>
-        <p>
-          <span className="text-[var(--color-text-muted)]">
-            {uni && uni.versiones.length === 1 ? `Unifilar v${uni.versiones[0].versionNumber}:` : "Unifilar:"}
-          </span>{" "}
-          {uni ? (
-            <>
-              <Cruce ok={panelesOk}>{uni.cantidadPaneles} paneles</Cruce>
-              {" · "}
-              <Cruce ok={panelWOk(uni.potenciasPanelW)}>de {uni.potenciasPanelW.join(" y ")} W</Cruce>
-              {" · "}
-              <Cruce ok={kwOk}>inversor {uni.inversorKw} kW</Cruce>
-              {" · "}
-              <Cruce ok={faseOk}>red {fases(uni.red)}</Cruce>
-            </>
-          ) : (
-            "todavía no se hizo."
-          )}
-        </p>
-        <p>
-          <span className="text-[var(--color-text-muted)]">Sistema del proyecto:</span>{" "}
-          {sis ? (
-            <>
-              <Cruce ok={sisPanelesOk}>{sis.cantidadPaneles ?? "—"} paneles</Cruce>
-              {" · "}
-              <Cruce ok={panelWOk(sis.potenciasPanelW)}>de {sis.potenciasPanelW.join(" y ") || "—"} W</Cruce>
-              {" · "}
-              <Cruce ok={sisKwOk}>inversor {sis.inversorKw ?? "—"} kW</Cruce>
-              {" · "}
-              <Cruce ok={sisFaseOk}>red {sis.red.length > 0 ? fases(sis.red) : "—"}</Cruce>
-            </>
-          ) : (
-            "sin cargar."
-          )}
-        </p>
-        {prop ? (
-          <p className="text-[var(--color-text-muted)]">
-            Propuesta v{prop.versionNumber} (referencia):{" "}
-            {[
-              prop.cantidadPaneles != null ? `${prop.cantidadPaneles} paneles` : null,
-              prop.potenciaInversorKw != null ? `inversor ${prop.potenciaInversorKw} kW` : null,
-              prop.tipoMontaje ? `montaje "${prop.tipoMontaje}"` : null,
-            ].filter(Boolean).join(" · ")}
-          </p>
-        ) : null}
-      </div>
-
+      {/* Solo si algo falta o no coincide: pre-ingeniería, unifilar y sistema. */}
       {dt.faltantes.length > 0 ? (
         <div className="mt-3 rounded-md border border-[var(--color-warning-text)]/40 bg-[var(--color-warning-text)]/10 px-3 py-2 text-xs text-[var(--color-text-primary)]">
-          <p className="font-semibold">Para cerrar la Pre-Ingeniería falta:</p>
+          <p className="font-semibold">⚠ Para cerrar la Pre-Ingeniería falta:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-4">
             {dt.faltantes.map((f, i) => <li key={`${f.codigo}-${i}`}>{f.mensaje}</li>)}
           </ul>
@@ -134,13 +66,5 @@ function Dato({ label, sub, value }: { label: string; sub?: string; value: strin
         {value ?? "Sin definir"}
       </p>
     </div>
-  );
-}
-
-function Cruce({ ok, children }: { ok: boolean; children: ReactNode }) {
-  return (
-    <span className={ok ? "" : "font-semibold text-[var(--color-warning-text)]"} title={ok ? undefined : "No coincide con la pre-ingeniería"}>
-      {ok ? "" : "⚠ "}{children}
-    </span>
   );
 }

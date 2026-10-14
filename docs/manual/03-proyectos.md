@@ -210,8 +210,21 @@ recorrido). Códigos:
 del deploy): un unifilar guardado **antes** de que existiera el volcado dejó la
 pre-ingeniería y el unifilar en 34 × 550 W / 20 kW y el sistema en 30 × 620 W /
 30 kW. El sistema es lo que ve Operaciones en la ficha y en la lista, así que
-también bloquea. Se arregla con "Editar sistema" o guardando de nuevo el
-unifilar.
+también bloquea. Se arregla guardando de nuevo el unifilar.
+
+**Los datos del sistema solo los carga Ingeniería** (pedido de Nicolás, 14-oct):
+editarlos desde la ficha era la forma de que quedaran distintos a la
+pre-ingeniería. `POST` y `PATCH /projects/:id/systems` pasaron a
+`INGENIERIA:EDIT` (antes `OPERACIONES:CREATE` y cualquier `EDIT` del recorrido).
+Los escriben el volcado del unifilar y "Documentos UTE" (marca y modelo). En la
+ficha, `SolarSystemsSection` quedó de solo lectura: sin "Editar sistema" ni
+"Agregar suministro" (que pasó al panel del unifilar); "Eliminar" de un
+suministro extra sigue ahí con `OPERACIONES:DELETE`. `SolarSystemModal` quedó sin
+uso. En prod, todos los roles con `INGENIERIA:VIEW` tienen `INGENIERIA:EDIT`, así
+que nadie que entre a Documentos UTE perdió la edición.
+
+El resumen (`DatosTecnicosResumen`) muestra solo los cuatro datos grandes y, si
+hay `faltantes`, el aviso con cada diferencia: no lista lo que dice cada fuente.
 
 `assertPreIngenieriaDefinida()` (en `api.routes.ts`) devuelve el mismo **409
 `DEFINICIONES_PENDIENTES`** que el Onboarding, con `etapa: "PRE_INGENIERIA"`.

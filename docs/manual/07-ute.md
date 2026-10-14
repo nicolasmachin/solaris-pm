@@ -185,8 +185,11 @@ Lo que se acordó con Nicolás (30-09-2026):
    inversor, el proyecto nace con **un sistema por inversor** (marca, potencia y
    paneles repartidos como en la propuesta) y un trámite UTE por cada uno. Eso
    vale también para la forma clásica de "varios inversores iguales".
-2. En un proyecto ya abierto, **"Agregar suministro"** en los datos técnicos
-   agrega un sistema más, y con él su trámite.
+2. En un proyecto ya abierto, **"+ Agregar suministro"** en el panel del
+   unifilar (espacio de Ingeniería) abre una pestaña nueva; el suministro se
+   crea —su sistema y su trámite— recién al guardar su primer unifilar
+   (`volcarUnifilarEnSistema()` → `asegurarTramiteSuministro()`). Desde
+   14-oct-2026 la ficha del proyecto ya no agrega suministros.
 3. En Onboarding, el botón de la consulta dice **"Enviar consultas a UTE (N
    suministros)"** y cuántas faltan. La pantalla de la consulta muestra una
    **pestaña por suministro**, cada una con su factura, su cuenta, su titular y

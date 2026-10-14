@@ -2182,7 +2182,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     },
   );
 
-  app.post("/projects/:projectId/systems", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
+  // Los datos del sistema solo los carga Ingeniería (oct-2026): el unifilar los
+  // vuelca y "Documentos UTE" completa marca y modelo. Desde la ficha del
+  // proyecto ya no se editan, para que no queden distintos a la pre-ingeniería.
+  app.post("/projects/:projectId/systems", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string() }).parse(request.params);
     const body = solarSystemCreateSchema.parse(request.body);
@@ -2222,7 +2225,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeSolarSystem(solarSystem);
   });
 
-  app.patch("/projects/:projectId/systems/:systemId", { preHandler: authorizeProjectEditAnyPipeline(Action.EDIT) }, async (request) => {
+  app.patch("/projects/:projectId/systems/:systemId", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({
       projectId: z.string(),

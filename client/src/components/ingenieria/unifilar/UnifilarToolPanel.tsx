@@ -35,9 +35,23 @@ export function UnifilarToolPanel({ projectId }: { projectId: string }) {
     queryKey: ["suministros", projectId],
     queryFn: () => getSuministros(projectId),
   });
-  const suministros = suministrosQ.data ?? [];
+  // Un suministro nuevo existe solo en pantalla hasta que se guarda su primer
+  // unifilar: ahí se crean su sistema y su trámite UTE. Es el único lugar donde
+  // se agregan suministros (la ficha del proyecto ya no lo hace).
+  const [nuevo, setNuevo] = useState<number | null>(null);
+  const cargados = suministrosQ.data ?? [];
+  const suministros: { numero: number; inversor: string | null; paneles: number | null; panelW: number | null; inversorKw: number | null; inversorMarca: string | null }[] =
+    nuevo != null && !cargados.some((s) => s.numero === nuevo)
+      ? [...cargados, { numero: nuevo, inversor: null, paneles: null, panelW: null, inversorKw: null, inversorMarca: null }]
+      : cargados;
   const varios = suministros.length > 1;
   const [suministro, setSuministro] = useState(1);
+
+  function agregarSuministro() {
+    const n = Math.max(1, ...suministros.map((s) => s.numero)) + 1;
+    setNuevo(n);
+    setSuministro(n);
+  }
   const actual = suministros.find((s) => s.numero === suministro) ?? null;
 
   const versionsQ = useQuery({
@@ -119,11 +133,22 @@ export function UnifilarToolPanel({ projectId }: { projectId: string }) {
                 <b>Suministro {s.numero}</b>
                 {s.inversor ? ` · ${s.inversor}` : ""}
                 {s.paneles ? ` · ${s.paneles} paneles` : ""}
+                {s.numero === nuevo && !cargados.some((c) => c.numero === nuevo) ? " · nuevo, sin guardar" : ""}
               </button>
             ))}
           </div>
         </div>
       )}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={agregarSuministro}
+          title="Un inversor más es un suministro más: otra cuenta UTE, con su consulta y su trámite. Se crea al guardar su primer unifilar."
+          className="text-[11px] text-[var(--color-accent)] hover:underline"
+        >
+          + Agregar suministro
+        </button>
+      </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-[var(--color-text-muted)]">
           Últimas 3 versiones generadas. Para ver el historial completo o aplicar filtros, abrí el
@@ -180,6 +205,7 @@ export function UnifilarToolPanel({ projectId }: { projectId: string }) {
             qc.invalidateQueries({ queryKey: ["unifilar-versions", projectId] });
             qc.invalidateQueries({ queryKey: ["project-documents", projectId] });
             qc.invalidateQueries({ queryKey: ["ingenieria-workspace", projectId] });
+            qc.invalidateQueries({ queryKey: ["suministros", projectId] });
             setPreviewVersion({ id: created.id, versionNumber: created.versionNumber });
           }}
         />

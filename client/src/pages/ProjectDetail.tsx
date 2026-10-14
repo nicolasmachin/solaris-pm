@@ -22,7 +22,6 @@ import { PortalClientsPanel } from "../components/project/PortalClientsPanel";
 import { ClienteDocsUpload } from "../components/projects/ClienteDocsUpload";
 import { AgendaDelProyecto } from "../components/calendario/AgendaDelProyecto";
 import { TaskDetailModal } from "../components/tasks/TaskDetailModal";
-import { SolarSystemModal } from "../components/project/SolarSystemModal";
 import { DatosTecnicosResumen } from "../components/project/DatosTecnicosResumen";
 import { AuditHistory } from "../components/project/AuditHistory";
 import { ProjectGantt } from "../components/project/ProjectGantt";
@@ -286,16 +285,16 @@ function EditProjectModal({
   );
 }
 
+// Solo lectura: los datos del sistema los carga Ingeniería (el unifilar los
+// vuelca y "Documentos UTE" completa marca y modelo). Desde acá ya no se editan
+// ni se agregan suministros, para que no queden distintos a la pre-ingeniería.
+// Borrar un suministro extra sigue acá, con OPERACIONES:DELETE.
 function SolarSystemsSection({
   project,
-  onEdit,
-  onCreate,
   onDelete,
   canDelete,
 }: {
   project: Project;
-  onEdit: (systemId: string) => void;
-  onCreate: () => void;
   onDelete: (systemId: string) => void;
   canDelete: boolean;
 }) {
@@ -303,76 +302,48 @@ function SolarSystemsSection({
 
   return (
     <section className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-            Sistema fotovoltaico
+      <div>
+        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+          Sistema fotovoltaico
+        </p>
+        <h2 className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">Datos técnicos</h2>
+        {systems.length > 1 && (
+          <p className="mt-1 max-w-xl text-xs text-[var(--color-text-secondary)]">
+            Un sistema por inversor: cada uno es un <b>suministro</b> con su propia cuenta UTE, su consulta y su trámite.
           </p>
-          <h2 className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">Datos técnicos</h2>
-          {systems.length > 1 && (
-            <p className="mt-1 max-w-xl text-xs text-[var(--color-text-secondary)]">
-              Un sistema por inversor: cada uno es un <b>suministro</b> con su propia cuenta UTE, su consulta y su trámite.
-            </p>
-          )}
-        </div>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={onCreate}
-          title={systems.length > 0 ? "Un sistema más es un suministro más: otra cuenta UTE, con su consulta y su trámite" : undefined}
-        >
-          {systems.length === 0 ? "Agregar sistema" : "Agregar suministro"}
-        </Button>
+        )}
       </div>
 
       <DatosTecnicosResumen projectId={project.id} linkIngenieria />
 
       {systems.length === 0 ? (
         <div className="mt-4 rounded-lg border border-dashed border-[var(--color-border)] px-4 py-5 text-sm text-[var(--color-text-secondary)]">
-          Todavía no hay sistemas cargados para este proyecto.
-        </div>
-      ) : systems.length === 1 ? (
-        <div className="mt-4 flex flex-col gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/30 p-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-[var(--color-text-primary)]">{formatSolarSystemPrimary(systems[0])}</span>
-            <Badge label={getPhaseTypeShortLabel(systems[0].inverterPhaseType)} className="bg-[var(--color-border)] text-[var(--color-text-primary)]" />
-            <span className="text-sm text-[var(--color-text-secondary)]">{formatSolarSystemPanels(systems[0])}</span>
-            {systems[0].description ? (
-              <span className="text-xs text-[var(--color-text-muted)]">{systems[0].description}</span>
-            ) : null}
-          </div>
-          <Button size="sm" variant="ghost" onClick={() => onEdit(systems[0].id)}>
-            ✎ Editar sistema
-          </Button>
+          Todavía no hay sistemas cargados: se cargan desde Ingeniería, al guardar el unifilar.
         </div>
       ) : (
         <div className="mt-4 space-y-3">
           {systems.map((system, index) => (
             <div key={system.id} className="flex flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/30 p-4 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
+                {systems.length > 1 ? (
                   <span className="text-sm font-medium text-[var(--color-text-primary)]">
                     Suministro {system.order}
                     {system.description && system.description !== `Suministro ${system.order}` ? ` · ${system.description}` : ""}
                   </span>
-                  <Badge label={getPhaseTypeShortLabel(system.inverterPhaseType)} className="bg-[var(--color-border)] text-[var(--color-text-primary)]" />
-                </div>
-                <div className="text-sm text-[var(--color-text-secondary)]">{formatSolarSystemPrimary(system)}</div>
-                <div className="text-xs text-[var(--color-text-muted)]">
-                  {getPhaseTypeLabel(system.inverterPhaseType)} · {formatSolarSystemPanels(system)}
-                </div>
+                ) : null}
+                <span className="text-sm text-[var(--color-text-primary)]">{formatSolarSystemPrimary(system)}</span>
+                <Badge label={getPhaseTypeShortLabel(system.inverterPhaseType)} className="bg-[var(--color-border)] text-[var(--color-text-primary)]" />
+                <span className="text-sm text-[var(--color-text-secondary)]">{formatSolarSystemPanels(system)}</span>
+                {system.inverterModel ? (
+                  <span className="text-xs text-[var(--color-text-muted)]">{system.inverterModel}</span>
+                ) : null}
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" onClick={() => onEdit(system.id)}>
-                  ✎ Editar sistema
+              {/* El primer sistema (principal) no se borra desde acá; solo los adicionales. */}
+              {canDelete && index > 0 && (
+                <Button size="sm" variant="ghost" onClick={() => onDelete(system.id)} title="Eliminar este suministro">
+                  🗑 Eliminar
                 </Button>
-                {/* El primer sistema (principal) no se borra desde acá; solo los adicionales. */}
-                {canDelete && index > 0 && (
-                  <Button size="sm" variant="ghost" onClick={() => onDelete(system.id)} title="Eliminar este sistema">
-                    🗑 Eliminar
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
           ))}
         </div>
@@ -793,8 +764,6 @@ export function ProjectDetail() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showEditProject, setShowEditProject] = useState(false);
   const [showAmpliacion, setShowAmpliacion] = useState(false);
-  const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
-  const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
   const [deletingSolarSystemId, setDeletingSolarSystemId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "contacto" | "timeline" | "materiales" | "compras" | "ute" | "costos">("activity");
   const canViewFinance = usePermission("FINANZAS", "VIEW");
@@ -953,11 +922,6 @@ export function ProjectDetail() {
     qc.invalidateQueries({ queryKey: ["project", id] });
   }
 
-  const editingSolarSystem =
-    editingSolarSystemId != null
-      ? project.solarSystems.find((system) => system.id === editingSolarSystemId) ?? null
-      : null;
-
   const deletingSolarSystem =
     deletingSolarSystemId != null
       ? project.solarSystems.find((system) => system.id === deletingSolarSystemId) ?? null
@@ -1007,8 +971,6 @@ export function ProjectDetail() {
       {/* Sistema fotovoltaico */}
       <SolarSystemsSection
         project={project}
-        onEdit={(systemId) => setEditingSolarSystemId(systemId)}
-        onCreate={() => setShowCreateSolarSystem(true)}
         onDelete={(systemId) => setDeletingSolarSystemId(systemId)}
         canDelete={canDeleteSystem}
       />
@@ -1217,22 +1179,6 @@ export function ProjectDetail() {
           onSaved={invalidate}
         />
       )}
-
-      {showCreateSolarSystem ? (
-        <SolarSystemModal
-          projectId={project.id}
-          nextOrder={(project.solarSystems.length > 0 ? project.solarSystems[project.solarSystems.length - 1].order : 0) + 1}
-          onClose={() => setShowCreateSolarSystem(false)}
-        />
-      ) : null}
-
-      {editingSolarSystem ? (
-        <SolarSystemModal
-          projectId={project.id}
-          system={editingSolarSystem}
-          onClose={() => setEditingSolarSystemId(null)}
-        />
-      ) : null}
 
       <DeleteConfirmModal
         open={deletingSolarSystem != null}

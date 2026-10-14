@@ -322,6 +322,7 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
       try {
         const cambios = await volcarUnifilarEnSistema({
           projectId: params.projectId,
+          userId: user.id,
           suministro,
           tipoRed: created.tipoRed,
           cantidadPaneles: created.cantidadPaneles,

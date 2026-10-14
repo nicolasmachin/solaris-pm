@@ -1,6 +1,7 @@
 import { PhaseType, Prisma, type TipoRed } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
+import { asegurarTramiteSuministro } from "./suministros.service.js";
 
 /**
  * Datos de la obra que Operaciones necesita para agendar: cuántos paneles, el
@@ -301,10 +302,10 @@ export async function getDatosTecnicosObra(projectId: string): Promise<DatosTecn
   }
 
   // Los datos del sistema del proyecto son los que ven Operaciones y la lista:
-  // tienen que decir lo mismo que la pre-ingeniería. Se corrigen con "Editar
-  // sistema" o guardando de nuevo el unifilar (que los vuelca).
+  // tienen que decir lo mismo que la pre-ingeniería. Solo los escribe
+  // Ingeniería: se corrigen guardando de nuevo el unifilar (que los vuelca).
   if (!sistema) {
-    faltantes.push({ codigo: "SISTEMA", mensaje: "Falta cargar el sistema del proyecto (Datos técnicos)." });
+    faltantes.push({ codigo: "SISTEMA", mensaje: "Falta el sistema del proyecto: se carga solo al guardar el unifilar." });
   } else if (preIngenieria) {
     const dif: string[] = [];
     if (preIngenieria.cantidadPaneles != null && sistema.cantidadPaneles !== preIngenieria.cantidadPaneles) {
@@ -322,7 +323,7 @@ export async function getDatosTecnicosObra(projectId: string): Promise<DatosTecn
     if (dif.length > 0) {
       faltantes.push({
         codigo: "SISTEMA_NO_COINCIDE",
-        mensaje: `Los datos del sistema del proyecto no coinciden con la pre-ingeniería v${preIngenieria.versionNumber}: ${dif.join(", ")}. Se corrigen con "Editar sistema" o guardando de nuevo el unifilar.`,
+        mensaje: `Los datos del sistema del proyecto no coinciden con la pre-ingeniería v${preIngenieria.versionNumber}: ${dif.join(", ")}. Se corrige guardando de nuevo el unifilar en Ingeniería.`,
       });
     }
   }
@@ -354,6 +355,7 @@ export function marcaDesdeModelo(modelo: string): string | null {
  */
 export async function volcarUnifilarEnSistema(input: {
   projectId: string;
+  userId: string;
   suministro: number;
   tipoRed: TipoRed;
   cantidadPaneles: number;
@@ -384,7 +386,10 @@ export async function volcarUnifilarEnSistema(input: {
 
   if (!actual) {
     await prisma.solarSystem.create({ data: { projectId: input.projectId, order: input.suministro, ...data } });
-    return ["sistema creado"];
+    // Un sistema más = un suministro más, con su propio trámite UTE (igual que
+    // POST /projects/:id/systems).
+    await asegurarTramiteSuministro(input.projectId, input.suministro, input.userId);
+    return [`suministro ${input.suministro} creado`];
   }
 
   const cambios: string[] = [];

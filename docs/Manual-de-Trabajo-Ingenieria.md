@@ -47,9 +47,9 @@ cada suministro, y **los dos tienen que decir lo mismo**: la misma cantidad de
 paneles, la misma potencia de inversor y la misma red. Si no coinciden, se
 corrige el que esté mal y se guarda una versión nueva. Lo mismo con los datos
 del sistema que se ven en la pantalla del proyecto (paneles, potencia del panel y
-del inversor, red): si no coinciden con la pre-ingeniería, se corrigen con
-**Editar sistema** o guardando de nuevo el unifilar. Voltia PM no deja cerrar la
-etapa hasta que esté todo.
+del inversor, red): los carga solo Ingeniería, y se actualizan al guardar el
+unifilar; si no coinciden con la pre-ingeniería, se guarda de nuevo el unifilar.
+Voltia PM no deja cerrar la etapa hasta que esté todo.
 
 Coplanar o inclinado es una decisión aparte del techo: cualquier techo, incluso
 el suelo, puede ir de las dos formas.
@@ -123,7 +123,9 @@ significa:
   dos suministros y describen los dos.
 
 **En Voltia PM:** los suministros se ven en los datos técnicos del proyecto (un
-sistema por inversor). **Documentos UTE** tiene una pestaña por suministro: la
+sistema por inversor). Uno nuevo se agrega desde el unifilar, con **+ Agregar
+suministro**: queda creado —con su trámite de UTE— al guardar su primer
+unifilar. **Documentos UTE** tiene una pestaña por suministro: la
 sección del cliente pasa a ser "Titular del suministro", y lo que se deja vacío
 toma los datos del proyecto. **El unifilar** también tiene una pestaña por
 suministro, cada una con sus versiones: el primero de cada suministro viene
@@ -172,12 +174,14 @@ los videos, que al ganar el lead pasan al proyecto).
 - **El resumen de la obra.** Arriba de todo en el espacio de Ingeniería del
   proyecto (y en la pantalla del proyecto, en **Datos técnicos**) se ven en
   grande los paneles, la red, el techo y si van coplanares o inclinados, tal como
-  están en la última pre-ingeniería. Debajo, lo que dice el unifilar, con lo que
-  no coincide marcado en amarillo, y un recuadro con lo que falta para poder
-  cerrar la Pre-Ingeniería. En el formulario de pre-ingeniería, el tipo de techo
+  están en la última pre-ingeniería. Si algo falta o no coincide entre la
+  pre-ingeniería, el unifilar y los datos del sistema, aparece debajo un aviso
+  con cada diferencia. En el formulario de pre-ingeniería, el tipo de techo
   tiene la opción **Suelo**, y hay una pregunta aparte: **coplanar o
   inclinado**. Al guardar un unifilar, los paneles, el inversor y la red pasan
   solos a los datos del sistema del proyecto: no hace falta cargarlos dos veces.
+  **Ingeniería es el único lugar donde se cargan los datos del sistema**: desde
+  la pantalla del proyecto ya no se editan.
 
 > Estas herramientas cambian seguido: por eso el detalle está acá y no en el PGT.
 
