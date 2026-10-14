@@ -142,7 +142,15 @@ export interface DatosTecnicosObra {
     versiones: { suministro: number; versionNumber: number }[];
     suministrosSinUnifilar: number[];
     cantidadPaneles: number;
+    potenciasPanelW: number[];
     inversorKw: number;
+    red: PhaseType[];
+  } | null;
+  /** Datos del sistema del proyecto (Datos técnicos / lista). */
+  sistema: {
+    cantidadPaneles: number | null;
+    potenciasPanelW: number[];
+    inversorKw: number | null;
     red: PhaseType[];
   } | null;
   propuesta: {

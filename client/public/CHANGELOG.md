@@ -8,8 +8,8 @@
 
 - En la pantalla de cada proyecto, en **Datos técnicos**, arriba de todo se ve cuántos **paneles** lleva la obra, si es **mono o trifásica**, el **tipo de techo** y si los paneles van **coplanares o inclinados**. Lo mismo aparece arriba de todo en el espacio de Ingeniería del proyecto.
 - Esos datos salen del **formulario de pre-ingeniería**, que suma dos cosas: la opción **Suelo** en el tipo de techo y la pregunta **coplanar o inclinado**, aparte del techo (cualquier techo puede ir de las dos formas).
-- Debajo se compara con el **unifilar**: si los paneles, la potencia del inversor o la red no coinciden con la pre-ingeniería, se marca en amarillo. Lo que decía la propuesta se muestra solo como referencia.
-- La **Pre-Ingeniería no se puede cerrar** sin la pre-ingeniería completa (paneles, inversor con su potencia, red, techo y coplanar o inclinado), sin el unifilar de cada suministro y con los dos documentos coincidiendo. Si se intenta cerrar con algo pendiente, se avisa qué falta y se ofrece ir a Ingeniería.
+- Debajo se comparan con la pre-ingeniería el **unifilar** y los **datos del sistema del proyecto** (los que se ven en la ficha y en la lista): si los paneles, la potencia del panel, la del inversor o la red no coinciden, se marca en amarillo. Lo que decía la propuesta se muestra solo como referencia.
+- La **Pre-Ingeniería no se puede cerrar** sin la pre-ingeniería completa (paneles, inversor con su potencia, red, techo y coplanar o inclinado), sin el unifilar de cada suministro y con la pre-ingeniería, el unifilar y los datos del sistema diciendo lo mismo. Si se intenta cerrar con algo pendiente, se avisa qué falta y se ofrece ir a Ingeniería.
 - Al guardar un unifilar, los paneles, el inversor y la red pasan solos a los datos del sistema del proyecto: no se cargan dos veces.
 - En la **lista de proyectos**, debajo de los paneles aparecen el techo y si es coplanar o inclinado, y cuando la obra tiene varios suministros, el total de paneles.
 

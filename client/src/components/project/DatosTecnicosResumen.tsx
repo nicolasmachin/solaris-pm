@@ -24,11 +24,17 @@ export function DatosTecnicosResumen({ projectId, linkIngenieria = false }: { pr
 
   const pre = dt.preIngenieria;
   const uni = dt.unifilar;
+  const sis = dt.sistema;
   const prop = dt.propuesta;
   const fases = (red: PhaseType[]) => red.map((f) => getPhaseTypeShortLabel(f)).join(" + ");
   const panelesOk = !pre || !uni || pre.cantidadPaneles == null || pre.cantidadPaneles === uni.cantidadPaneles;
   const kwOk = !pre || !uni || pre.inversorKw == null || Math.abs(pre.inversorKw - uni.inversorKw) <= 0.05;
   const faseOk = !pre || !uni || pre.red.length === 0 || uni.red.every((f) => pre.red.includes(f));
+  const panelWOk = (ws: number[]) => !pre || pre.potenciaPanelW == null || (ws.length > 0 && ws.every((w) => w === pre.potenciaPanelW));
+  // Sistema del proyecto contra la pre-ingeniería (la fuente).
+  const sisPanelesOk = !pre || !sis || pre.cantidadPaneles == null || sis.cantidadPaneles === pre.cantidadPaneles;
+  const sisKwOk = !pre || !sis || pre.inversorKw == null || (sis.inversorKw != null && Math.abs(sis.inversorKw - pre.inversorKw) <= 0.05);
+  const sisFaseOk = !pre || !sis || pre.red.length === 0 || (sis.red.length > 0 && sis.red.every((f) => pre.red.includes(f)));
   const inclinacion = pre?.inclinacion === "COPLANAR" ? "Coplanar" : pre?.inclinacion === "INCLINADO" ? "Inclinado" : null;
 
   return (
@@ -68,12 +74,30 @@ export function DatosTecnicosResumen({ projectId, linkIngenieria = false }: { pr
             <>
               <Cruce ok={panelesOk}>{uni.cantidadPaneles} paneles</Cruce>
               {" · "}
+              <Cruce ok={panelWOk(uni.potenciasPanelW)}>de {uni.potenciasPanelW.join(" y ")} W</Cruce>
+              {" · "}
               <Cruce ok={kwOk}>inversor {uni.inversorKw} kW</Cruce>
               {" · "}
               <Cruce ok={faseOk}>red {fases(uni.red)}</Cruce>
             </>
           ) : (
             "todavía no se hizo."
+          )}
+        </p>
+        <p>
+          <span className="text-[var(--color-text-muted)]">Sistema del proyecto:</span>{" "}
+          {sis ? (
+            <>
+              <Cruce ok={sisPanelesOk}>{sis.cantidadPaneles ?? "—"} paneles</Cruce>
+              {" · "}
+              <Cruce ok={panelWOk(sis.potenciasPanelW)}>de {sis.potenciasPanelW.join(" y ") || "—"} W</Cruce>
+              {" · "}
+              <Cruce ok={sisKwOk}>inversor {sis.inversorKw ?? "—"} kW</Cruce>
+              {" · "}
+              <Cruce ok={sisFaseOk}>red {sis.red.length > 0 ? fases(sis.red) : "—"}</Cruce>
+            </>
+          ) : (
+            "sin cargar."
           )}
         </p>
         {prop ? (

@@ -24,6 +24,9 @@ export interface FaltanteDatosTecnicos {
     | "INCLINACION"
     | "UNIFILAR"
     | "PANELES_NO_COINCIDEN"
+    | "PANEL_W_NO_COINCIDE"
+    | "SISTEMA"
+    | "SISTEMA_NO_COINCIDE"
     | "INVERSOR_NO_COINCIDE"
     | "FASE_NO_COINCIDE";
   mensaje: string;
@@ -47,7 +50,15 @@ export interface DatosTecnicosObra {
     /** Suministros del proyecto que todavía no tienen unifilar. */
     suministrosSinUnifilar: number[];
     cantidadPaneles: number;
+    potenciasPanelW: number[];
     inversorKw: number;
+    red: PhaseType[];
+  } | null;
+  /** Datos del sistema del proyecto (lo que se ve en "Datos técnicos" y en la lista). */
+  sistema: {
+    cantidadPaneles: number | null;
+    potenciasPanelW: number[];
+    inversorKw: number | null;
     red: PhaseType[];
   } | null;
   propuesta: {
@@ -114,7 +125,17 @@ export async function getDatosTecnicosObra(projectId: string): Promise<DatosTecn
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: {
-      solarSystems: { where: { deletedAt: null }, select: { order: true } },
+      solarSystems: {
+        where: { deletedAt: null },
+        select: {
+          order: true,
+          panelQuantity: true,
+          panelPowerW: true,
+          inverterPowerKw: true,
+          inverterQuantity: true,
+          inverterPhaseType: true,
+        },
+      },
       preIngenieriaVersions: {
         orderBy: { versionNumber: "desc" },
         take: 1,
@@ -133,7 +154,7 @@ export async function getDatosTecnicosObra(projectId: string): Promise<DatosTecn
       },
       unifilarVersions: {
         orderBy: [{ suministro: "asc" }, { versionNumber: "desc" }],
-        select: { suministro: true, versionNumber: true, cantidadPaneles: true, potenciaInversorKw: true, tipoRed: true },
+        select: { suministro: true, versionNumber: true, cantidadPaneles: true, potenciaPanelW: true, potenciaInversorKw: true, tipoRed: true },
       },
       convertedLeads: {
         select: {
@@ -147,7 +168,7 @@ export async function getDatosTecnicosObra(projectId: string): Promise<DatosTecn
       },
     },
   });
-  if (!project) return { preIngenieria: null, unifilar: null, propuesta: null, faltantes: [] };
+  if (!project) return { preIngenieria: null, unifilar: null, sistema: null, propuesta: null, faltantes: [] };
 
   // ── Pre-ingeniería (la fuente) ──
   const pre = project.preIngenieriaVersions[0];
@@ -181,8 +202,24 @@ export async function getDatosTecnicosObra(projectId: string): Promise<DatosTecn
         versiones: [...vigentes.values()].map((v) => ({ suministro: v.suministro, versionNumber: v.versionNumber })),
         suministrosSinUnifilar: suministros.filter((n) => !vigentes.has(n)),
         cantidadPaneles: [...vigentes.values()].reduce((s, v) => s + v.cantidadPaneles, 0),
+        potenciasPanelW: [...new Set([...vigentes.values()].map((v) => v.potenciaPanelW))],
         inversorKw: round2([...vigentes.values()].reduce((s, v) => s + v.potenciaInversorKw, 0)),
         red: [...new Set([...vigentes.values()].map((v) => FASE_DE_RED[v.tipoRed]))],
+      }
+    : null;
+
+  // ── Sistema del proyecto ──
+  const systems = project.solarSystems;
+  const sistema = systems.length > 0
+    ? {
+        cantidadPaneles: systems.every((x) => x.panelQuantity != null)
+          ? systems.reduce((sum, x) => sum + (x.panelQuantity ?? 0), 0)
+          : null,
+        potenciasPanelW: [...new Set(systems.map((x) => x.panelPowerW).filter((w): w is number => w != null))],
+        inversorKw: systems.every((x) => x.inverterPowerKw != null)
+          ? round2(systems.reduce((sum, x) => sum + Number(x.inverterPowerKw) * (x.inverterQuantity ?? 1), 0))
+          : null,
+        red: [...new Set(systems.map((x) => x.inverterPhaseType).filter((f): f is PhaseType => f != null))],
       }
     : null;
 
@@ -254,10 +291,43 @@ export async function getDatosTecnicosObra(projectId: string): Promise<DatosTecn
           mensaje: `La red no coincide: ${pv} marca ${preIngenieria.red.map((f) => FASE_LABEL[f]).join(" y ")} y ${uv} ${unifilar.red.map((f) => FASE_LABEL[f]).join(" y ")}.`,
         });
       }
+      if (preIngenieria.potenciaPanelW != null && unifilar.potenciasPanelW.some((w) => w !== preIngenieria.potenciaPanelW)) {
+        faltantes.push({
+          codigo: "PANEL_W_NO_COINCIDE",
+          mensaje: `La potencia del panel no coincide: ${pv} dice ${preIngenieria.potenciaPanelW} W y ${uv} ${unifilar.potenciasPanelW.join(" y ")} W.`,
+        });
+      }
     }
   }
 
-  return { preIngenieria, unifilar, propuesta, faltantes };
+  // Los datos del sistema del proyecto son los que ven Operaciones y la lista:
+  // tienen que decir lo mismo que la pre-ingeniería. Se corrigen con "Editar
+  // sistema" o guardando de nuevo el unifilar (que los vuelca).
+  if (!sistema) {
+    faltantes.push({ codigo: "SISTEMA", mensaje: "Falta cargar el sistema del proyecto (Datos técnicos)." });
+  } else if (preIngenieria) {
+    const dif: string[] = [];
+    if (preIngenieria.cantidadPaneles != null && sistema.cantidadPaneles !== preIngenieria.cantidadPaneles) {
+      dif.push(`paneles ${sistema.cantidadPaneles ?? "sin cargar"} (la pre-ingeniería dice ${preIngenieria.cantidadPaneles})`);
+    }
+    if (preIngenieria.potenciaPanelW != null && (sistema.potenciasPanelW.length === 0 || sistema.potenciasPanelW.some((w) => w !== preIngenieria.potenciaPanelW))) {
+      dif.push(`panel de ${sistema.potenciasPanelW.join(" y ") || "—"} W (dice ${preIngenieria.potenciaPanelW} W)`);
+    }
+    if (preIngenieria.inversorKw != null && (sistema.inversorKw == null || Math.abs(sistema.inversorKw - preIngenieria.inversorKw) > 0.05)) {
+      dif.push(`inversor ${sistema.inversorKw ?? "sin cargar"} kW (dice ${preIngenieria.inversorKw} kW)`);
+    }
+    if (preIngenieria.red.length > 0 && (sistema.red.length === 0 || sistema.red.some((f) => !preIngenieria.red.includes(f)))) {
+      dif.push(`red ${sistema.red.map((f) => FASE_LABEL[f]).join(" y ") || "sin cargar"} (dice ${preIngenieria.red.map((f) => FASE_LABEL[f]).join(" y ")})`);
+    }
+    if (dif.length > 0) {
+      faltantes.push({
+        codigo: "SISTEMA_NO_COINCIDE",
+        mensaje: `Los datos del sistema del proyecto no coinciden con la pre-ingeniería v${preIngenieria.versionNumber}: ${dif.join(", ")}. Se corrigen con "Editar sistema" o guardando de nuevo el unifilar.`,
+      });
+    }
+  }
+
+  return { preIngenieria, unifilar, sistema, propuesta, faltantes };
 }
 
 const FASE_DE_RED: Record<TipoRed, PhaseType> = {

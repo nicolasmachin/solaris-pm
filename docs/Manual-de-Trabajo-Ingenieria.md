@@ -45,8 +45,11 @@ formulario de pre-ingeniería tiene que tener todo eso cargado —el inversor co
 potencia, por ejemplo "Growatt de 10 kW"—, tiene que estar hecho el unifilar de
 cada suministro, y **los dos tienen que decir lo mismo**: la misma cantidad de
 paneles, la misma potencia de inversor y la misma red. Si no coinciden, se
-corrige el que esté mal y se guarda una versión nueva. Voltia PM no deja cerrar
-la etapa hasta que esté todo.
+corrige el que esté mal y se guarda una versión nueva. Lo mismo con los datos
+del sistema que se ven en la pantalla del proyecto (paneles, potencia del panel y
+del inversor, red): si no coinciden con la pre-ingeniería, se corrigen con
+**Editar sistema** o guardando de nuevo el unifilar. Voltia PM no deja cerrar la
+etapa hasta que esté todo.
 
 Coplanar o inclinado es una decisión aparte del techo: cualquier techo, incluso
 el suelo, puede ir de las dos formas.

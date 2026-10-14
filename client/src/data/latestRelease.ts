@@ -31,8 +31,8 @@ export const LATEST_RELEASE: Release = {
       items: [
         "En Datos técnicos de cada proyecto y en el espacio de Ingeniería: cuántos paneles, mono o trifásica, el tipo de techo y si van coplanares o inclinados.",
         "Salen del formulario de pre-ingeniería, que suma la opción Suelo y la pregunta coplanar o inclinado.",
-        "Se comparan con el unifilar y lo que no coincide se marca en amarillo.",
-        "La Pre-Ingeniería no se puede cerrar sin la pre-ingeniería completa, el unifilar y los dos coincidiendo.",
+        "Se comparan con el unifilar y con los datos del sistema del proyecto; lo que no coincide se marca en amarillo.",
+        "La Pre-Ingeniería no se puede cerrar sin la pre-ingeniería completa, el unifilar y todo coincidiendo.",
         "Al guardar un unifilar, los datos del sistema del proyecto se actualizan solos.",
       ],
     },

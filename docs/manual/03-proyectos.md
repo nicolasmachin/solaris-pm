@@ -202,6 +202,16 @@ recorrido). Códigos:
 | `PANELES_NO_COINCIDEN` | Total de paneles distinto |
 | `INVERSOR_NO_COINCIDE` | Diferencia de kW > 0,05 |
 | `FASE_NO_COINCIDE` | Alguna red del unifilar no está marcada en la pre-ingeniería |
+| `PANEL_W_NO_COINCIDE` | La potencia del panel del unifilar no es la de la pre-ingeniería (`potenciaPaneles`) |
+| `SISTEMA` | El proyecto no tiene ningún `SolarSystem` |
+| `SISTEMA_NO_COINCIDE` | Los `SolarSystem` (suma de paneles y de kW, potencia de panel, fases) no dicen lo mismo que la pre-ingeniería. Un solo faltante con todas las diferencias |
+
+**Por qué se compara también el sistema** (14-oct, caso visto en prod el mismo día
+del deploy): un unifilar guardado **antes** de que existiera el volcado dejó la
+pre-ingeniería y el unifilar en 34 × 550 W / 20 kW y el sistema en 30 × 620 W /
+30 kW. El sistema es lo que ve Operaciones en la ficha y en la lista, así que
+también bloquea. Se arregla con "Editar sistema" o guardando de nuevo el
+unifilar.
 
 `assertPreIngenieriaDefinida()` (en `api.routes.ts`) devuelve el mismo **409
 `DEFINICIONES_PENDIENTES`** que el Onboarding, con `etapa: "PRE_INGENIERIA"`.
