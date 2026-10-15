@@ -2,6 +2,14 @@
 
 ## v12.6
 
+### 15 de octubre de 2026
+
+#### Reportes de generación para comercios y empresas
+
+- Voltia PM ahora tiene la **tarifa General Simple** de UTE, la de comercios y empresas. En **Configuración → Tarifas UTE** se ven sus tramos de consumo, el cargo fijo y el cargo por potencia, y en un cuadro nuevo se pueden cargar.
+- En el reporte de un generador marcado como **empresa** se puede elegir **General Simple** como tarifa contratada. El reporte calcula la factura con esos precios, incluido el IVA sobre el cargo fijo, que en esa tarifa también se cobra.
+- Las plantas con inversor **Huawei** que tienen cargado su **día de corte** ahora traen los datos de su ciclo de lectura de UTE (por ejemplo, del 17 de agosto al 16 de septiembre) y no los del mes calendario, así que los kWh del reporte coinciden con los de su factura.
+
 ### 14 de octubre de 2026
 
 #### Paneles, red y montaje a la vista para agendar

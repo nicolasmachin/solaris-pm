@@ -1,15 +1,16 @@
 import { apiClient } from "./axios";
 
-export type TarifaUte = "SIMPLE" | "DOBLE" | "TRIPLE" | "ZAFRAL";
+export type TarifaUte = "SIMPLE" | "DOBLE" | "TRIPLE" | "ZAFRAL" | "GENERAL_SIMPLE";
 export type FranjaHoraria = "PUNTA" | "LLANO" | "VALLE" | "FUERA_PUNTA";
 
-export const TARIFAS: TarifaUte[] = ["SIMPLE", "DOBLE", "TRIPLE", "ZAFRAL"];
+export const TARIFAS: TarifaUte[] = ["SIMPLE", "DOBLE", "TRIPLE", "ZAFRAL", "GENERAL_SIMPLE"];
 
 export const TARIFA_LABEL: Record<TarifaUte, string> = {
   SIMPLE: "Simple",
   DOBLE: "Doble horario",
   TRIPLE: "Triple horario",
   ZAFRAL: "Zafral",
+  GENERAL_SIMPLE: "General Simple",
 };
 
 export const FRANJA_LABEL: Record<FranjaHoraria, string> = {
@@ -26,6 +27,7 @@ export const FRANJAS_POR_TARIFA: Record<TarifaUte, FranjaHoraria[]> = {
   DOBLE: ["PUNTA", "FUERA_PUNTA"],
   TRIPLE: ["PUNTA", "LLANO", "VALLE"],
   ZAFRAL: ["PUNTA", "LLANO", "VALLE"],
+  GENERAL_SIMPLE: [],
 };
 
 export interface TarifaVersionRow {
@@ -180,7 +182,7 @@ export interface DetalleGenerador {
   config: {
     habilitado: boolean;
     tipoCliente: "residencial" | "empresa";
-    tarifaContratada: "simple" | "doble" | "triple" | "zafral" | null;
+    tarifaContratada: "simple" | "doble" | "triple" | "zafral" | "general_simple" | null;
     origenDatos: "GROWATT" | "HUAWEI" | "MANUAL";
     growattPlantId: string | null;
     potenciaContratadaKw: number | null;
@@ -217,7 +219,7 @@ export interface DetalleGenerador {
 export interface GuardarConfigInput {
   habilitado?: boolean;
   tipoCliente?: "residencial" | "empresa";
-  tarifaContratada?: "simple" | "doble" | "triple" | "zafral" | null;
+  tarifaContratada?: "simple" | "doble" | "triple" | "zafral" | "general_simple" | null;
   potenciaContratadaKw?: number | null;
   pctPunta?: number | null;
   pctLlano?: number | null;

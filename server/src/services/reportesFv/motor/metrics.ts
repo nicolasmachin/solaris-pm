@@ -185,6 +185,11 @@ export function calcularFactura(params: {
   creditoExportacion?: number;
   tasaIva?: number;
   tasaIrpf?: number;
+  /**
+   * En la General Simple el cargo fijo también grava IVA (verificado en la
+   * factura de UTE de Estilo, ciclo 16-ago a 16-sep-2026); en las residenciales no.
+   */
+  cargoFijoGravado?: boolean;
 }): Factura {
   const {
     cargoFijo,
@@ -193,10 +198,11 @@ export function calcularFactura(params: {
     creditoExportacion = 0,
     tasaIva = 0.22,
     tasaIrpf = 0.12,
+    cargoFijoGravado = false,
   } = params;
 
-  // Solo potencia + energía gravan IVA (el cargo fijo no).
-  const baseGravada = cargoPotencia + cargoEnergia;
+  // En las residenciales solo potencia + energía gravan IVA (el cargo fijo no).
+  const baseGravada = cargoPotencia + cargoEnergia + (cargoFijoGravado ? cargoFijo : 0);
   const iva = round2(baseGravada * tasaIva);
 
   // La energía vendida no grava IVA, pero sí IRPF.

@@ -36,6 +36,13 @@ const num = `${inp} text-right tabular-nums`;
 
 const SIN_TOPE = 9999999;
 
+/** Tarifas que se cobran por tramos de consumo (las otras van por franja). */
+const TARIFAS_CON_TRAMOS: TarifaUte[] = ["SIMPLE", "GENERAL_SIMPLE"];
+const TRAMOS_TITULO: Partial<Record<TarifaUte, string>> = {
+  SIMPLE: "Tarifa simple — tramos de consumo",
+  GENERAL_SIMPLE: "Tarifa General Simple — tramos de consumo",
+};
+
 interface Draft {
   nombre: string;
   vigenteDesde: string;
@@ -170,7 +177,10 @@ export function TabTarifasUte() {
   const setCargo = (tarifa: TarifaUte, campo: "cargoFijo" | "cargoPotenciaKw", valor: number) =>
     setDraft((d) => ({
       ...d,
-      cargos: d.cargos.map((c) => (c.tarifa === tarifa ? { ...c, [campo]: valor } : c)),
+      // Los cuadros anteriores a la General Simple no traen su fila: se agrega.
+      cargos: d.cargos.some((c) => c.tarifa === tarifa)
+        ? d.cargos.map((c) => (c.tarifa === tarifa ? { ...c, [campo]: valor } : c))
+        : [...d.cargos, { tarifa, cargoFijo: 0, cargoPotenciaKw: 0, [campo]: valor }],
     }));
 
   const setFranja = (tarifa: TarifaUte, franja: FranjaHoraria, precioKwh: number) =>
@@ -185,7 +195,10 @@ export function TabTarifasUte() {
       tramos: d.tramos.map((t, idx) => (idx === i ? { ...t, [campo]: valor } : t)),
     }));
 
-  const tramosSimple = useMemo(() => draft.tramos.filter((t) => t.tarifa === "SIMPLE"), [draft.tramos]);
+  // Tramos de una tarifa con su posición en `draft.tramos`, que mezcla los de
+  // la simple y los de la General Simple.
+  const tramosDe = (tarifa: TarifaUte) =>
+    draft.tramos.map((t, idx) => ({ t, idx })).filter(({ t }) => t.tarifa === tarifa);
 
   if (isLoading) return <Spinner />;
 
@@ -367,101 +380,114 @@ export function TabTarifasUte() {
             </div>
           </section>
 
-          {/* Tramos escalonados de la tarifa simple */}
-          <section>
-            <div className="mb-2 flex items-center justify-between">
-              <h4 className="font-display text-sm font-semibold text-[var(--color-text-primary)]">
-                Tarifa simple — tramos de consumo
-              </h4>
-              {!soloLectura && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDraft((d) => ({
-                      ...d,
-                      tramos: [
-                        ...d.tramos,
-                        {
-                          tarifa: "SIMPLE",
-                          orden: d.tramos.length,
-                          desdeKwh: (d.tramos[d.tramos.length - 1]?.hastaKwh ?? 0) + 1,
-                          hastaKwh: SIN_TOPE,
-                          precioKwh: 0,
-                        },
-                      ],
-                    }))
-                  }
-                  className="flex items-center gap-1 text-xs text-[var(--color-accent)]"
-                >
-                  <Plus size={12} /> Agregar tramo
-                </button>
-              )}
-            </div>
-            <p className="mb-2 text-xs text-[var(--color-text-muted)]">
-              Los tramos tienen que ser continuos: cada uno arranca donde termina el anterior. Usá{" "}
-              {SIN_TOPE.toLocaleString("es-UY")} en el último para indicar que no tiene tope.
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[420px] text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--color-border)] text-left font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
-                    <th className="py-1.5">Desde (kWh)</th>
-                    <th className="py-1.5">Hasta (kWh)</th>
-                    <th className="py-1.5 text-right">Precio por kWh ($)</th>
-                    <th className="w-8" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {tramosSimple.map((t, i) => (
-                    <tr key={i} className="border-b border-[var(--color-border)]/50">
-                      <td className="py-1 pr-2">
-                        <input
-                          type="number"
-                          className={num}
-                          value={t.desdeKwh}
-                          disabled={soloLectura}
-                          onChange={(e) => setTramo(i, "desdeKwh", Number(e.target.value))}
-                        />
-                      </td>
-                      <td className="py-1 pr-2">
-                        <input
-                          type="number"
-                          className={num}
-                          value={t.hastaKwh}
-                          disabled={soloLectura}
-                          onChange={(e) => setTramo(i, "hastaKwh", Number(e.target.value))}
-                        />
-                      </td>
-                      <td className="py-1 pl-2">
-                        <input
-                          type="number"
-                          step="0.0001"
-                          className={num}
-                          value={t.precioKwh}
-                          disabled={soloLectura}
-                          onChange={(e) => setTramo(i, "precioKwh", Number(e.target.value))}
-                        />
-                      </td>
-                      <td className="py-1 text-right">
-                        {!soloLectura && tramosSimple.length > 1 && (
-                          <button
-                            type="button"
-                            aria-label="Quitar tramo"
-                            onClick={() =>
-                              setDraft((d) => ({ ...d, tramos: d.tramos.filter((_, idx) => idx !== i) }))
-                            }
-                            className="text-[var(--color-text-muted)] hover:text-red-500"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          {/* Tramos escalonados: simple residencial y General Simple */}
+          {TARIFAS_CON_TRAMOS.map((tarifaTramos) => {
+            const tramos = tramosDe(tarifaTramos);
+            return (
+              <section key={tarifaTramos}>
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="font-display text-sm font-semibold text-[var(--color-text-primary)]">
+                    {TRAMOS_TITULO[tarifaTramos]}
+                  </h4>
+                  {!soloLectura && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraft((d) => {
+                          const previos = d.tramos.filter((t) => t.tarifa === tarifaTramos);
+                          return {
+                            ...d,
+                            tramos: [
+                              ...d.tramos,
+                              {
+                                tarifa: tarifaTramos,
+                                orden: d.tramos.length,
+                                desdeKwh: (previos[previos.length - 1]?.hastaKwh ?? 0) + 1,
+                                hastaKwh: SIN_TOPE,
+                                precioKwh: 0,
+                              },
+                            ],
+                          };
+                        })
+                      }
+                      className="flex items-center gap-1 text-xs text-[var(--color-accent)]"
+                    >
+                      <Plus size={12} /> Agregar tramo
+                    </button>
+                  )}
+                </div>
+                <p className="mb-2 text-xs text-[var(--color-text-muted)]">
+                  Los tramos tienen que ser continuos: cada uno arranca donde termina el anterior. Usá{" "}
+                  {SIN_TOPE.toLocaleString("es-UY")} en el último para indicar que no tiene tope.
+                  {tarifaTramos === "GENERAL_SIMPLE" && " Es opcional: solo hace falta si algún generador la tiene contratada."}
+                </p>
+                {tramos.length === 0 ? (
+                  <p className="text-xs text-[var(--color-text-muted)]">Sin tramos cargados.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[420px] text-sm">
+                      <thead>
+                        <tr className="border-b border-[var(--color-border)] text-left font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+                          <th className="py-1.5">Desde (kWh)</th>
+                          <th className="py-1.5">Hasta (kWh)</th>
+                          <th className="py-1.5 text-right">Precio por kWh ($)</th>
+                          <th className="w-8" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tramos.map(({ t, idx }) => (
+                          <tr key={idx} className="border-b border-[var(--color-border)]/50">
+                            <td className="py-1 pr-2">
+                              <input
+                                type="number"
+                                className={num}
+                                value={t.desdeKwh}
+                                disabled={soloLectura}
+                                onChange={(e) => setTramo(idx, "desdeKwh", Number(e.target.value))}
+                              />
+                            </td>
+                            <td className="py-1 pr-2">
+                              <input
+                                type="number"
+                                className={num}
+                                value={t.hastaKwh}
+                                disabled={soloLectura}
+                                onChange={(e) => setTramo(idx, "hastaKwh", Number(e.target.value))}
+                              />
+                            </td>
+                            <td className="py-1 pl-2">
+                              <input
+                                type="number"
+                                step="0.0001"
+                                className={num}
+                                value={t.precioKwh}
+                                disabled={soloLectura}
+                                onChange={(e) => setTramo(idx, "precioKwh", Number(e.target.value))}
+                              />
+                            </td>
+                            <td className="py-1 text-right">
+                              {!soloLectura && (tramos.length > 1 || tarifaTramos === "GENERAL_SIMPLE") && (
+                                <button
+                                  type="button"
+                                  aria-label="Quitar tramo"
+                                  onClick={() =>
+                                    setDraft((d) => ({ ...d, tramos: d.tramos.filter((_, i) => i !== idx) }))
+                                  }
+                                  className="text-[var(--color-text-muted)] hover:text-red-500"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                )}
+              </section>
+            );
+          })}
 
           {/* Precios por franja horaria */}
           <section>

@@ -17,12 +17,18 @@
 //      porque los totales salen incoherentes — mayo de Marianela daba 141 kWh
 //      generados contra 874 exportados, que es imposible.
 //      La generación nunca se toca: es un contador del inversor, no del medidor.
+//
+// Período: si el generador tiene día de corte del medidor, la lectura cubre su
+// ciclo (`rangoDelPeriodo()`), igual que la factura de UTE: con corte 16,
+// `2026-09` es del 17 de agosto al 16 de septiembre. Como la API da la serie
+// por mes calendario, se piden los dos meses que toca el ciclo y se suman sólo
+// sus días. Sin corte, mes calendario.
 
 import { ReporteFvFuente } from "@prisma/client";
 
 import { prisma } from "../../../lib/prisma.js";
-import { periodoADate, periodoCerrado, type Periodo } from "../periodo.js";
-import { serieDiariaDelMes } from "./client.js";
+import { periodoADate, periodoCerrado, rangoDelPeriodo, type Periodo } from "../periodo.js";
+import { type DiaHuawei, huaweiPausa, serieDiariaDelMes } from "./client.js";
 import { plantasHuaweiVinculadas } from "./plantas.service.js";
 
 const COBERTURA_MINIMA = Number(process.env.HUAWEI_MIN_COVERAGE || "") || 0.5;
@@ -58,33 +64,68 @@ export async function ingerirPeriodoHuawei(
   opts: { force?: boolean; projectIds?: string[] } = {},
 ): Promise<ResumenIngestaHuawei> {
   const force = opts.force ?? false;
-  // Huawei siempre va por mes calendario: el mes en curso no se ingiere.
-  if (!periodoCerrado(periodo, null)) {
-    return { periodo, plantas: 0, guardadas: 0, omitidas: 0, items: [] };
-  }
   let plantas = await plantasHuaweiVinculadas();
   if (opts.projectIds) {
     plantas = plantas.filter((p) => opts.projectIds!.includes(p.projectId!));
   }
   const items: ItemIngestaHuawei[] = [];
 
+  // Día de corte de cada generador: define qué días cubre su lectura.
+  const configs = await prisma.reporteFvConfig.findMany({
+    where: { projectId: { in: plantas.map((p) => p.projectId!) } },
+    select: { projectId: true, diaCorteMedidor: true },
+  });
+  const cortePorProyecto = new Map(configs.map((c) => [c.projectId, c.diaCorteMedidor]));
+  const rangoDe = (projectId: string) => rangoDelPeriodo(periodo, cortePorProyecto.get(projectId) ?? null);
+
+  // Un ciclo abierto no se ingiere: sus totales todavía cambian.
+  plantas = plantas.filter((p) => periodoCerrado(periodo, cortePorProyecto.get(p.projectId!) ?? null));
+
   if (!plantas.length) {
     return { periodo, plantas: 0, guardadas: 0, omitidas: 0, items };
   }
 
-  const [anio, mes] = periodo.split("-").map(Number);
-  const { series, diasReportados } = await serieDiariaDelMes(
-    plantas.map((p) => p.plantCode),
-    anio,
-    mes,
-  );
+  // Los meses calendario que tocan los ciclos (uno sin corte, dos con corte).
+  const meses = new Map<string, { anio: number; mes: number }>();
+  for (const p of plantas) {
+    const r = rangoDe(p.projectId!);
+    for (const fecha of [r.desde, r.hasta]) {
+      const [anio, mes] = fecha.split("-").map(Number);
+      meses.set(`${anio}-${mes}`, { anio, mes });
+    }
+  }
+
+  const seriePorPlanta = new Map<string, DiaHuawei[]>();
+  const fechasPorPlanta = new Map<string, Set<string>>();
+  let primera = true;
+  for (const { anio, mes } of meses.values()) {
+    if (!primera) await huaweiPausa();
+    primera = false;
+    const { series, fechasReportadas } = await serieDiariaDelMes(
+      plantas.map((p) => p.plantCode),
+      anio,
+      mes,
+    );
+    for (const [code, dias] of series) {
+      seriePorPlanta.set(code, [...(seriePorPlanta.get(code) ?? []), ...dias]);
+    }
+    for (const [code, fechas] of fechasReportadas) {
+      const acc = fechasPorPlanta.get(code) ?? new Set<string>();
+      for (const f of fechas) acc.add(f);
+      fechasPorPlanta.set(code, acc);
+    }
+  }
 
   let guardadas = 0;
   let omitidas = 0;
 
   for (const planta of plantas) {
-    const dias = series.get(planta.plantCode) ?? [];
-    const diasEsperados = diasReportados.get(planta.plantCode) ?? 0;
+    const { desde, hasta } = rangoDe(planta.projectId!);
+    const enCiclo = (fecha: string) => fecha >= desde && fecha <= hasta;
+    const dias = (seriePorPlanta.get(planta.plantCode) ?? []).filter((d) => enCiclo(d.fecha));
+    // FusionSolar lista los días desde la conexión a red: una planta que arrancó
+    // a mitad del ciclo no figura como si le faltaran datos.
+    const diasEsperados = [...(fechasPorPlanta.get(planta.plantCode) ?? [])].filter(enCiclo).length;
     const diasConDatos = dias.length;
 
     const base = {
@@ -106,7 +147,7 @@ export async function ingerirPeriodoHuawei(
         consumoKwh: null,
         exportacionKwh: null,
         motivo: null,
-        omitido: `sin datos en todo el mes (0 de ${diasEsperados} días)`,
+        omitido: `sin datos en todo el período (0 de ${diasEsperados} días)`,
       });
       continue;
     }

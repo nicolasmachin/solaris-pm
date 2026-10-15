@@ -15,6 +15,7 @@ const ETIQUETA_TARIFA: Record<TarifaKey, string> = {
   doble: "Tarifa doble horario",
   triple: "Tarifa triple horario",
   zafral: "Tarifa zafral",
+  general_simple: "Tarifa General Simple",
 };
 
 /** Datos del generador que no están en el ResultadoPeriodo. */

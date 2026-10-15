@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "TarifaUte" ADD VALUE 'GENERAL_SIMPLE';

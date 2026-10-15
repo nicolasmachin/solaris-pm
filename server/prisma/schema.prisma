@@ -3986,6 +3986,9 @@ enum TarifaUte {
   DOBLE
   TRIPLE
   ZAFRAL
+  // Tarifa General Simple (comercios y empresas chicas): tramos de consumo como
+  // la simple residencial pero con otros precios, y el cargo fijo grava IVA.
+  GENERAL_SIMPLE
 }
 
 enum FranjaHoraria {

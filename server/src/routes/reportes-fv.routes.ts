@@ -76,7 +76,7 @@ const periodoSchema = z
   .string()
   .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "El periodo debe tener formato YYYY-MM");
 
-const tarifaKeySchema = z.enum(["simple", "doble", "triple", "zafral"]);
+const tarifaKeySchema = z.enum(["simple", "doble", "triple", "zafral", "general_simple"]);
 
 const fechaISO = z
   .string()

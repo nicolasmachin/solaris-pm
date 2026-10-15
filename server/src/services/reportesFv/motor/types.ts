@@ -5,9 +5,10 @@
 // se las pasan ya materializadas. Eso es lo que permite testear el motor contra
 // las 282 filas de histórico real sin levantar nada.
 
-export type TarifaKey = "simple" | "doble" | "triple" | "zafral";
+/** `general_simple` = Tarifa General Simple de UTE (comercios y empresas). */
+export type TarifaKey = "simple" | "doble" | "triple" | "zafral" | "general_simple";
 
-export const TARIFAS: readonly TarifaKey[] = ["simple", "doble", "triple", "zafral"] as const;
+export const TARIFAS: readonly TarifaKey[] = ["simple", "doble", "triple", "zafral", "general_simple"] as const;
 
 export interface TramoEscalonado {
   desdeKwh: number;
@@ -24,6 +25,8 @@ export interface CargosTarifa {
 export interface TarifaSnapshot {
   cargos: Record<TarifaKey, CargosTarifa>;
   tramosSimple: TramoEscalonado[];
+  /** Vacío si el cuadro no la tiene cargada (los cuadros anteriores a oct-2026). */
+  tramosGeneralSimple: TramoEscalonado[];
   franjasDoble: { punta: number; fuera_punta: number };
   franjasTriple: { punta: number; llano: number; valle: number };
   franjasZafral: { punta: number; llano: number; valle: number };

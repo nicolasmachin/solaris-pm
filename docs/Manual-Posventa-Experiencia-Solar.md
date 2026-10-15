@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.23 · del 13/10/26
+**Voltia · Uruguay** · Versión 1.24 · del 15/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1766,6 +1766,7 @@ partes:
 **Qué explicar:**
 
 - Puede cambiar la tarifa en el portal para que el reporte calcule bien. El reporte muestra **los tres escenarios a propósito**, para que vea la diferencia con sus propios números.
+- **Un comercio o una empresa** con tarifa **General Simple** (la que figura así en su factura de UTE) no la encuentra en el portal: la carga Experiencia Solar en la configuración del reporte del generador, marcándolo como empresa. A una empresa el reporte le muestra **solo su tarifa**, sin comparar con las otras.
 - **Con paneles suele convenir la simple.** En la doble horario la generación cae siempre en el horario barato, así que siempre vende barato. En la simple, como baja el consumo, se pasa menos de los escalones y vende un poco más caro.
 
 **Política interna:** **no cambiar en caliente**: esperar varios meses de datos reales antes de recomendar un cambio.
@@ -1899,6 +1900,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.24 | 15 de octubre de 2026 | En el tema de la tarifa se agrega el caso de comercios y empresas con tarifa General Simple: la carga Experiencia Solar en la configuración del reporte, porque el portal no la ofrece. |
 | 1.23 | 13 de octubre de 2026 | En la ficha del cliente y en el portal de Voltia se agrega Generación y consumo: la curva del día, los días, los meses y los años, como en la aplicación del inversor. Se usa para contestar "genera poco" con la curva de un día soleado. |
 | 1.22 | 12 de octubre de 2026 | Crear el acceso al portal, reenviarlo, copiar el enlace y ver el portal como el cliente se pueden hacer también desde la ficha del cliente. Al pie de la ficha del cliente se agrega el bloque Comentarios y archivos; cada área registra desde su propia pantalla (Ingeniería, Tramitación UTE, Finanzas); los archivos se abren desde el historial, y los contactos con el cliente se ven también desde el proyecto. |
 | 1.21 | 12 de octubre de 2026 | El portal tiene una pestaña de Videos: los videos al cliente se mandan con el enlace del portal, para que le queden guardados y los pueda volver a ver. |

@@ -28,6 +28,9 @@ const SESION_MS = 20 * 60 * 1000;
 
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Pausa entre dos llamadas seguidas, para no chocar con el rate limit. */
+export const huaweiPausa = () => dormir(PAUSA_MS);
+
 let token: string | null = null;
 let tokenVence = 0;
 
@@ -180,10 +183,16 @@ export async function serieDiariaDelMes(
   plantCodes: string[],
   anio: number,
   mes: number, // 1-12
-): Promise<{ series: SerieDiariaPorPlanta; diasReportados: Map<string, number> }> {
+): Promise<{
+  series: SerieDiariaPorPlanta;
+  diasReportados: Map<string, number>;
+  /** Fechas (YYYY-MM-DD) que FusionSolar listó por planta, con o sin datos. */
+  fechasReportadas: Map<string, Set<string>>;
+}> {
   const series: SerieDiariaPorPlanta = new Map();
   const diasReportados = new Map<string, number>();
-  if (!plantCodes.length) return { series, diasReportados };
+  const fechasReportadas = new Map<string, Set<string>>();
+  if (!plantCodes.length) return { series, diasReportados, fechasReportadas };
 
   // Mediodía del 15: cae dentro del mes en cualquier huso horario.
   const collectTime = Date.UTC(anio, mes - 1, 15, 12);
@@ -201,13 +210,17 @@ export async function serieDiariaDelMes(
     for (const fila of r?.data ?? []) {
       const code = fila.stationCode;
       diasReportados.set(code, (diasReportados.get(code) ?? 0) + 1);
+      const fecha = new Date(Number(fila.collectTime)).toISOString().slice(0, 10);
+      const fechas = fechasReportadas.get(code) ?? new Set<string>();
+      fechas.add(fecha);
+      fechasReportadas.set(code, fechas);
 
       const m = fila.dataItemMap ?? {};
       if (Object.keys(m).length === 0) continue; // día sin datos
 
       const arr = series.get(code) ?? [];
       arr.push({
-        fecha: new Date(Number(fila.collectTime)).toISOString().slice(0, 10),
+        fecha,
         // PVYield e inverterYield vienen iguales; PVYield es el canónico.
         generacionKwh: Number(m.PVYield ?? m.inverterYield ?? 0),
         consumoKwh: Number(m.use_power ?? 0),
@@ -218,7 +231,7 @@ export async function serieDiariaDelMes(
     }
   }
 
-  return { series, diasReportados };
+  return { series, diasReportados, fechasReportadas };
 }
 
 /** 1 = sin comunicación, 2 = con falla, 3 = sana. */

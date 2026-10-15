@@ -263,6 +263,7 @@ function ConfigTab({
               <option value="doble">Doble horario</option>
               <option value="triple">Triple horario</option>
               <option value="zafral">Zafral</option>
+              <option value="general_simple">General Simple (comercio / empresa)</option>
             </select>
           </div>
         )}

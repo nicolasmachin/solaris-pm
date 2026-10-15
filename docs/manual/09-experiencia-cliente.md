@@ -1004,6 +1004,18 @@ comercial y postventa.
 
 ## Reglas y decisiones
 
+- **Tarifa General Simple** (`TarifaUte.GENERAL_SIMPLE`, clave
+  `general_simple` del motor). Es la de comercios y empresas chicas: va por
+  tramos de consumo como la simple residencial, con otros precios, y **el cargo
+  fijo grava IVA** (`calcularFactura()` con `cargoFijoGravado`), cosa que en las
+  residenciales no pasa. Es **opcional** en el cuadro tarifario: los cuadros
+  viejos no la tienen, el motor la toma en cero y solo omite el mes de un cliente
+  que la tenga contratada (`Faltan datos: la tarifa General Simple…`). Como el
+  cuadro 2026 ya estaba publicado cuando entró, sus precios se cargaron por
+  script (`scripts/reportes-fv/cargar-general-simple.ts`), tomados de la factura
+  de UTE de Estilo SAS del ciclo 16-ago a 16-sep-2026; `generalSimple.test.ts`
+  reproduce esa factura ($16.615). Solo se elige para clientes **empresa**, desde
+  la configuración del reporte; el portal del cliente no la ofrece.
 - **Regenerar crea una versión nueva y deja la anterior en LISTO.** Por eso el
   lote no puede confiar solo en "está LISTO y no se envió": en agosto de 2026
   José Percovich tenía v1 LISTO y v2 ENVIADO, y "Enviar todos" le iba a volver a
@@ -1027,8 +1039,17 @@ comercial y postventa.
   menos de `COBERTURA_MINIMA` (la mitad) de los días del período. La ingesta ya no
   guarda esos consumos, pero lecturas viejas sí los tienen: en julio de 2026
   quedaron seis así, y la de Wilfredo Gabitto (3 de 31 días) llegó a enviarse.
-- **Clientes con corte y Huawei.** La ingesta Huawei es siempre por mes
-  calendario; el proceso diario de ciclos solo consulta Growatt.
+- **Clientes con corte y Huawei.** Desde el 15-oct-2026 la ingesta Huawei
+  respeta el día de corte: `ingerirPeriodoHuawei()` pide la serie de los dos
+  meses calendario que toca el ciclo (`serieDiariaDelMes()` por cada uno, con
+  `huaweiPausa()` en el medio) y suma solo los días de `rangoDelPeriodo()`. Los
+  días esperados salen de las fechas que lista FusionSolar dentro del ciclo
+  (`fechasReportadas`). Verificado con Estilo, ciclo 17-ago a 16-sep-2026:
+  472,08 kWh exportados contra 472 de la factura de UTE. Lo que **no** cambió: el
+  proceso diario de ciclos sigue consultando solo Growatt, así que a un cliente
+  Huawei con corte su ciclo se levanta con el proceso del mes anterior (días 2 a
+  7) o a mano desde el panel. Las lecturas tomadas antes de cargar el corte
+  quedan por mes calendario hasta que se vuelvan a ingerir.
 - **Cambiar el día de corte** cambia qué días cubre cada período para la lista de
   pendientes, pero no regenera nada solo.
 - **Snapshots viejos.** El PDF se puede regenerar desde el snapshot guardado en

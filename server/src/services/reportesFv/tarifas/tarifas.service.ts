@@ -26,6 +26,7 @@ const TARIFA_A_KEY: Record<TarifaUte, TarifaKey> = {
   [TarifaUte.DOBLE]: "doble",
   [TarifaUte.TRIPLE]: "triple",
   [TarifaUte.ZAFRAL]: "zafral",
+  [TarifaUte.GENERAL_SIMPLE]: "general_simple",
 };
 
 export const KEY_A_TARIFA: Record<TarifaKey, TarifaUte> = {
@@ -33,6 +34,7 @@ export const KEY_A_TARIFA: Record<TarifaKey, TarifaUte> = {
   doble: TarifaUte.DOBLE,
   triple: TarifaUte.TRIPLE,
   zafral: TarifaUte.ZAFRAL,
+  general_simple: TarifaUte.GENERAL_SIMPLE,
 };
 
 export function tarifaAKey(t: TarifaUte): TarifaKey {
@@ -130,11 +132,19 @@ export async function getSnapshot(versionId: string): Promise<TarifaSnapshot> {
     return out;
   };
 
+  // La General Simple es opcional en el cuadro (los cuadros viejos no la
+  // tienen): sin cargos cuenta como cero y el motor no emite a quien la usa.
+  cargos.general_simple ??= { cargoFijo: 0, cargoPotenciaKw: 0 };
+
+  const tramosDe = (tarifa: TarifaUte) =>
+    version.tramos
+      .filter((t) => t.tarifa === tarifa)
+      .map((t) => ({ desdeKwh: t.desdeKwh, hastaKwh: t.hastaKwh, precioKwh: dec(t.precioKwh) }));
+
   const snapshot: TarifaSnapshot = {
     cargos,
-    tramosSimple: version.tramos
-      .filter((t) => t.tarifa === TarifaUte.SIMPLE)
-      .map((t) => ({ desdeKwh: t.desdeKwh, hastaKwh: t.hastaKwh, precioKwh: dec(t.precioKwh) })),
+    tramosSimple: tramosDe(TarifaUte.SIMPLE),
+    tramosGeneralSimple: tramosDe(TarifaUte.GENERAL_SIMPLE),
     franjasDoble: franjasDe(TarifaUte.DOBLE) as TarifaSnapshot["franjasDoble"],
     franjasTriple: franjasDe(TarifaUte.TRIPLE) as TarifaSnapshot["franjasTriple"],
     franjasZafral: franjasDe(TarifaUte.ZAFRAL) as TarifaSnapshot["franjasZafral"],
@@ -480,6 +490,24 @@ export function validarCuadroCompleto(cuadro: CuadroTarifario) {
     if (i === 0 && t.desdeKwh !== 0) faltan.push("el primer tramo de la simple tiene que arrancar en 0");
     if (i > 0 && t.desdeKwh !== tramosSimple[i - 1].hastaKwh + 1) {
       faltan.push(`hay un salto entre el tramo ${i} y el ${i + 1} de la simple`);
+    }
+  }
+
+  // La General Simple es opcional; si se cargó, sus tramos tienen que ser
+  // continuos y tiene que tener cargos.
+  const tramosGeneral = cuadro.tramos
+    .filter((t) => t.tarifa === TarifaUte.GENERAL_SIMPLE)
+    .sort((a, b) => a.orden - b.orden);
+  if (tramosGeneral.length > 0) {
+    if (!cuadro.cargos.some((c) => c.tarifa === TarifaUte.GENERAL_SIMPLE)) {
+      faltan.push("cargos de la tarifa GENERAL_SIMPLE");
+    }
+    for (let i = 0; i < tramosGeneral.length; i++) {
+      const t = tramosGeneral[i];
+      if (t.hastaKwh < t.desdeKwh) faltan.push(`el tramo ${i + 1} de la General Simple termina antes de empezar`);
+      if (i > 0 && t.desdeKwh !== tramosGeneral[i - 1].hastaKwh + 1) {
+        faltan.push(`hay un salto entre el tramo ${i} y el ${i + 1} de la General Simple`);
+      }
     }
   }
 

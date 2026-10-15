@@ -176,6 +176,8 @@ interface FilaHistorico {
 
 const N = Number.NaN;
 
+const SIN_CARGOS = { cargoFijo: 0, cargoPotenciaKw: 0 };
+
 /** null → NaN, para que la aritmética propague igual que en Python. */
 function num(v: number | null | undefined): number {
   return v == null ? N : v;
@@ -210,6 +212,9 @@ function costoEnergia(
         kwh, f.pctPunta, f.pctLlano, f.pctValle,
         t.franjasZafral.punta, t.franjasZafral.llano, t.franjasZafral.valle,
       );
+    case "general_simple":
+      // Mismo mecanismo que la simple residencial, con sus propios tramos.
+      return calcularCostoEnergiaSimple(kwh, t.tramosGeneralSimple ?? []);
   }
 }
 
@@ -243,6 +248,8 @@ function creditoExportacion(tarifa: TarifaKey, kwhMesAnterior: number, t: Tarifa
       return calcularCreditoExportacionTriple(kwhMesAnterior, t.franjasTriple.llano);
     case "zafral":
       return calcularCreditoExportacionTriple(kwhMesAnterior, t.franjasZafral.llano);
+    case "general_simple":
+      return calcularCreditoExportacionSimple(kwhMesAnterior, t.tramosGeneralSimple ?? []);
   }
 }
 
@@ -305,7 +312,7 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
   const tarifaPrincipal: TarifaKey = tarifasMostradas[0] ?? "simple";
 
   // Saldo de cuenta corriente arrastrado, uno por tarifa.
-  const saldos: Record<TarifaKey, number> = { simple: 0, doble: 0, triple: 0, zafral: 0 };
+  const saldos: Record<TarifaKey, number> = { simple: 0, doble: 0, triple: 0, zafral: 0, general_simple: 0 };
   // Histórico que se va llenando; los acumulados lo leen entero en cada vuelta.
   const historico: FilaHistorico[] = [];
   const resultados: ResultadoPeriodo[] = [];
@@ -332,6 +339,9 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
     if (config.tipoCliente === "empresa" && !config.tarifaContratada) {
       faltantes.push("tarifa contratada (cliente empresa)");
     }
+    if (tarifaPrincipal === "general_simple" && !tarifaSnapshot.tramosGeneralSimple?.length) {
+      faltantes.push("la tarifa General Simple en el cuadro tarifario de UTE");
+    }
 
     // Crédito por exportación: se valúa con lo exportado el MES ANTERIOR.
     // La exportación ausente se trata como 0, exista o no la lectura del mes
@@ -349,11 +359,12 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
     // de punta / llano según la tarifa. Se calcula una vez por periodo.
     const franjas = franjasHabiles(config, fraccionDiasHabiles(periodo));
 
-    // Las 4 tarifas se calculan siempre; el reporte muestra 3 (residencial) o 1
+    // Las 5 tarifas se calculan siempre; el reporte muestra 3 (residencial) o 1
     // (empresa). Tenerlas todas permite cambiar de tarifa sin recalcular nada.
     const tarifas = {} as Record<TarifaKey, ResultadoTarifa>;
     for (const tarifa of TARIFAS) {
-      const cargos = tarifaSnapshot.cargos[tarifa];
+      // Los snapshots anteriores a la General Simple no la traen: cuenta como cero.
+      const cargos = tarifaSnapshot.cargos[tarifa] ?? SIN_CARGOS;
       const cargoPotencia = calcularCargoPotencia(config.potenciaContratadaKw, cargos);
       const credito = creditoExportacion(tarifa, exportacionMesAnterior, tarifaSnapshot);
 
@@ -364,6 +375,7 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
         creditoExportacion: 0,
         tasaIva: tarifaSnapshot.ivaPct,
         tasaIrpf: tarifaSnapshot.irpfPct,
+        cargoFijoGravado: tarifa === "general_simple",
       });
 
       const facturaCon = calcularFactura({
@@ -373,6 +385,7 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
         creditoExportacion: credito,
         tasaIva: tarifaSnapshot.ivaPct,
         tasaIrpf: tarifaSnapshot.irpfPct,
+        cargoFijoGravado: tarifa === "general_simple",
       });
 
       // QUIRK: se usa facturaCon PRE cuenta corriente (ver ResultadoTarifa).
