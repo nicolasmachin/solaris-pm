@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.19 — 16 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.20 — 16 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -561,6 +561,22 @@ mezclan.
 **A qué manuales afecta.** Al Manual de Posventa (el historial de la ficha del
 cliente).
 
+### Los reportes mensuales salen sin revisión
+
+**Qué se decidió.** Los reportes mensuales de generación se les mandan a los
+clientes automáticamente, todos los días a las 10, apenas están listos. Nadie
+los revisa uno por uno antes de que salgan.
+
+**Por qué.** La revisión manual hacía que se acumularan: hubo reportes que
+salieron un mes tarde, dos juntos. Voltia PM ya controla lo que más importa
+(que haya datos suficientes del mes y que el ahorro no sea disparatado) y
+retiene los que no pasan ese control.
+
+**Desde cuándo rige.** Desde el 16 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de Posventa (el alta en los reportes
+mensuales).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -592,6 +608,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.20 | 16 de octubre de 2026 | Se registra que los reportes mensuales salen solos, sin revisión previa, apenas están listos. |
 | 0.19 | 16 de octubre de 2026 | Se registra que lo que comenta Gerencia aparece con el rótulo GERENCIA, y no con el del área de la pantalla donde se escribió. |
 | 0.18 | 14 de octubre de 2026 | Se registra que las facturas al cliente se emiten desde Voltia PM con un borrador que una persona confirma antes de que salga a DGI, una por obra, por un porcentaje del total sin IVA de la cotización y a nombre del cliente o de quien él pida, y que lo emitido se corrige con nota de crédito. |
 | 0.17 | 14 de octubre de 2026 | Se registra que la Pre-Ingeniería no termina sin los datos de la instalación definidos (paneles, inversor, red, techo y si van coplanares o inclinados) y con la pre-ingeniería y el unifilar diciendo lo mismo. |

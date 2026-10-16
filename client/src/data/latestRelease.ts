@@ -34,6 +34,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Reportes mensuales: salen solos",
+      items: [
+        "Los reportes de generación se mandan solos todos los días a las 10, apenas están listos, sin tener que apretar Enviar pendientes.",
+      ],
+    },
+    {
       title: "Pagos a instaladores: solo las obras agendadas",
       items: [
         "En Instaladores y en Mis cobros solo aparecen las obras agendadas en el calendario con un equipo tercerizado.",

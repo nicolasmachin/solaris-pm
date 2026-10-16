@@ -7,11 +7,12 @@
 //                           4 y 6 sólo reintentan lo incompleto (skip inteligente).
 //   Emisión (día 7)       → recalcula y genera los PDF de los que están completos;
 //                           notifica al equipo el resumen del mes.
-//   Envío   (día 9)       → DESACTIVADO por default. El envío arranca con
-//                           aprobación humana (primer mail saliente del sistema,
-//                           datos económicos con la marca). Se prende con
-//                           REPORTES_FV_ENVIO_AUTO=true cuando el pipeline esté
-//                           probado unos meses.
+//   Envío   (diario 10:00) → manda todo lo pendiente (mismo criterio que
+//                           "Enviar pendientes" del panel). Prendido desde el
+//                           16-oct-2026, por pedido de Nicolás: los reportes ya
+//                           no se revisan uno por uno. Diario y no mensual porque
+//                           los clientes con día de corte generan su reporte
+//                           cualquier día. REPORTES_FV_ENVIO_AUTO=false lo apaga.
 
 import cron from "node-cron";
 import { ReporteFvIngestaModo } from "@prisma/client";
@@ -330,7 +331,7 @@ export function startReportesFvCiclosJob() {
   );
 }
 
-// ─── Envío mensual (desactivado por default) ──────────────────────────────────
+// ─── Envío automático (diario) ─────────────────────────────────────────────────
 
 export async function ejecutarEnvioMensual(now: Date = new Date()): Promise<{ hasta: string; resumen: Record<string, number> } | null> {
   const userId = await usuarioSistema();
@@ -342,20 +343,24 @@ export async function ejecutarEnvioMensual(now: Date = new Date()): Promise<{ ha
 }
 
 export function startReportesFvEnvioJob() {
-  const expr = process.env.CRON_REPORTES_FV_ENVIO || "0 12 9 * *";
-  return cron.schedule(expr, async () => {
-    // El envío automático está apagado hasta que el pipeline lleve unos meses
-    // estable. Mientras, el envío es manual desde el panel.
-    if (process.env.REPORTES_FV_ENVIO_AUTO !== "true") return;
-    try {
-      const r = await ejecutarEnvioMensual();
-      if (r) {
-        console.log(`[reportes-fv] envío de pendientes al ${r.hasta}: ${JSON.stringify(r.resumen)}`);
+  // Después del proceso de ciclos (7:30), que es el que genera los PDF de los
+  // clientes con día de corte.
+  const expr = process.env.CRON_REPORTES_FV_ENVIO || "0 10 * * *";
+  return cron.schedule(
+    expr,
+    async () => {
+      if (process.env.REPORTES_FV_ENVIO_AUTO === "false") return;
+      try {
+        const r = await ejecutarEnvioMensual();
+        if (r) {
+          console.log(`[reportes-fv] envío de pendientes al ${r.hasta}: ${JSON.stringify(r.resumen)}`);
+        }
+      } catch (err) {
+        console.error("[reportes-fv] envío automático error:", err);
       }
-    } catch (err) {
-      console.error("[reportes-fv] envío mensual error:", err);
-    }
-  });
+    },
+    { timezone: "America/Montevideo" },
+  );
 }
 
 /** Arranca los tres crons del módulo. Llamado desde index.ts. */

@@ -943,9 +943,13 @@ Lo automático (`reportes-fv.job.ts`):
   Uruguay): para cada cliente con corte toma su último ciclo cerrado; entre 2 y 6
   días después del cierre trae los datos (solo si están incompletos), entre 7 y 25
   genera el PDF si falta, y avisa al equipo con los nombres de lo generado.
-- **Envío**: manual. El cron del día 9 existe pero no hace nada salvo que
-  `REPORTES_FV_ENVIO_AUTO=true` (apagado en producción); si se prende, manda los
-  pendientes a la fecha, con el mismo criterio que el panel.
+- **Envío** (`startReportesFvEnvioJob()`): **automático, diario a las 10:00**
+  hora Uruguay, después del proceso de ciclos. Llama a `enviarPendientes(hoy)`:
+  manda todo lo pendiente con el mismo criterio que el panel. Prendido el
+  16-oct-2026 por decisión de Nicolás ("no los voy a revisar, mandalos"); antes
+  corría solo el día 9 y apagado. `REPORTES_FV_ENVIO_AUTO=false` lo apaga (la
+  variable se forwardea en `docker-compose.prod.yml`). Solo salen los
+  generadores habilitados y con destinatarios; los demás quedan OMITIDO.
 
 **Traer datos de un solo generador.** En el detalle del generador
 (`ReporteFvDetalle.tsx` → `TraerDatosButton`, pestaña PDF, al lado de "Generar
@@ -1036,8 +1040,10 @@ comercial y postventa.
   José Percovich tenía v1 LISTO y v2 ENVIADO, y "Enviar todos" le iba a volver a
   mandar la v1. Reenviar una corrección se hace a propósito desde el detalle.
 - **El envío arrancó con aprobación humana** (primer mail saliente a clientes
-  del sistema, con datos económicos). El automático se prende cuando el circuito
-  lleve unos meses estable.
+  del sistema, con datos económicos) y pasó a automático el 16-oct-2026. Las
+  guardas de `enviarEmision()` (PDF de tamaño razonable, ahorro no disparatado
+  frente al promedio, cobertura mínima al emitir) son ahora el único control
+  antes de que un reporte llegue al cliente.
 
 ## Casos borde
 

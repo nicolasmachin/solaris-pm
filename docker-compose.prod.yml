@@ -71,6 +71,9 @@ services:
       # Copia oculta de TODO reporte que se le manda a un cliente. Oculta y no
       # CC: el cliente no tiene por qué ver a quién más le llega su reporte.
       REPORTES_FV_BCC: ${REPORTES_FV_BCC:-}
+      # Envío automático diario de los reportes (10:00). Prendido por default;
+      # "false" lo apaga y el envío vuelve a ser manual desde el panel.
+      REPORTES_FV_ENVIO_AUTO: ${REPORTES_FV_ENVIO_AUTO:-}
       # Monitoreo diario de plantas. El digest sale prendido, a la casilla de
       # FV_MONITOR_EMAIL (default nicolas@voltia.com.uy). Si algún día genera
       # ruido, FV_MONITOR_EMAIL_ENABLED=false lo apaga sin frenar el monitoreo.

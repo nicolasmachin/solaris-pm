@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.26 · del 16/10/26
+**Voltia · Uruguay** · Versión 1.27 · del 16/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -748,8 +748,11 @@ años**. Vale la pena decírselo así: no es spam, es su resumen mensual.
 
 **Cuándo le llega.** No es a fin de mes: **cada generador tiene su fecha de
 corte**, el día en que UTE le cierra la factura, y su reporte sale cuando le toca
-a él. En la pantalla de Reportes, el botón **Enviar pendientes** manda los que
-están en fecha. Por eso no hay un día del mes en que salgan todos juntos.
+a él. **Voltia PM los manda solo, todos los días a las 10 de la mañana**: cada
+reporte sale el primer día después de que se generó. Nadie los revisa antes de
+salir. Por eso no hay un día del mes en que salgan todos juntos. El botón
+**Enviar pendientes** de la pantalla de Reportes sigue estando, para mandar en
+el momento uno que no puede esperar al día siguiente.
 
 **Traer los datos de un solo cliente.** Voltia PM trae solo los datos de
 generación y consumo de cada inversor. Si a un cliente le falta el reporte de su
@@ -1915,6 +1918,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.27 | 16 de octubre de 2026 | Los reportes mensuales salen solos, todos los días a las 10, sin revisión previa; el botón Enviar pendientes queda para lo que no puede esperar. |
 | 1.26 | 16 de octubre de 2026 | En el historial de la ficha, lo que comenta o registra Gerencia (comentarios y contactos con el cliente) aparece con el rótulo GERENCIA y no con el del área de la pantalla donde se escribió. |
 | 1.25 | 16 de octubre de 2026 | En el alta en los reportes mensuales se agrega cómo traer los datos de un solo cliente desde su reporte, sin pasar por todos. |
 | 1.24 | 15 de octubre de 2026 | En el tema de la tarifa se agrega el caso de comercios y empresas con tarifa General Simple: la carga Experiencia Solar en la configuración del reporte, porque el portal no la ofrece. |

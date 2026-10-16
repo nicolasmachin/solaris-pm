@@ -10,6 +10,10 @@
 - Sirve para levantar a un cliente puntual. El botón **Traer datos** del panel sigue consultando todas las plantas que tengan algún dato vacío, y por eso vuelve a pasar por las que no tienen el medidor reportando.
 - Trae el período entero de nuevo aunque ya estuviera completo, y **reemplaza lo que se haya cargado a mano**: por eso pide confirmación antes.
 
+#### Reportes mensuales: salen solos
+
+- Los reportes mensuales de generación ahora se mandan **solos, todos los días a las 10 de la mañana**: cada cliente lo recibe el día después de que su reporte quedó listo, sin que nadie tenga que apretar **Enviar pendientes**. El botón sigue estando para mandar uno en el momento.
+
 #### Pagos a instaladores: solo las obras agendadas
 
 - En **Finanzas → Instaladores** (y en **Mis cobros** del instalador) ahora solo aparecen las obras **agendadas en el calendario con un equipo tercerizado**: el instalador toma el cargo desde ahí. Las ventas ganadas que todavía no se agendaron, o que van con equipo propio, ya no figuran "sin asignar".
