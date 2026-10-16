@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.0 · del 14/10/26
+**Voltia · Uruguay** · Versión 1.1 · del 16/10/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -811,9 +811,16 @@ inversores.
 
 **Se pueden ajustar los costos de esa cotización.** El **ícono de calculadora**
 del encabezado abre el costeo: el precio de cada ítem, la mano de obra, los
-costos fijos y variables. **Lo que se cambia vale solo para esa cotización**, no
-toca las demás ni la configuración general, y se guarda solo. Un campo en blanco
-usa el valor de siempre.
+costos fijos y variables, la comisión del vendedor y la comisión del BBVA. **Lo
+que se cambia vale solo para esa cotización**, no toca las demás ni la
+configuración general, y se guarda solo. Un campo en blanco usa el valor de
+siempre.
+
+Las comisiones se cambian sobre todo para **sacarlas**, poniéndolas en cero: la
+del vendedor, en una venta que no lleva asesor; la del BBVA, cuando el cliente
+no va a pagar con financiación del banco. El precio al cliente baja en lo mismo
+y la ganancia de Voltia no cambia. Si la venta se gana con la comisión del
+vendedor en cero, el asesor no cobra comisión por esa venta.
 
 ### Ganar la venta y crear el proyecto
 
@@ -1045,6 +1052,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.1 | 16 de octubre de 2026 | En el costeo de la propuesta se pueden cambiar la comisión del vendedor y la del BBVA; ponerlas en cero las saca del precio. |
 | 1.0 | 14 de octubre de 2026 | Primera versión completa del manual: el procedimiento, los lineamientos, las herramientas de Voltia PM, a quién se le pregunta qué y qué hacer cuando algo sale mal quedan cerrados. Lo que todavía depende de algo pendiente queda marcado en el texto (la firma de los asesores por Voltia). |
 | 0.10 | 12 de octubre de 2026 | Lo que se adjunta en el lead después de ganado pasa también al proyecto. |
 | 0.9 | 11 de octubre de 2026 | La fecha tentativa ya no la agenda nadie como parte del procedimiento: al vender, el asesor le da al cliente solo la quincena estimada, y en la tarea de Voltia PM que todavía se llama «Fecha tentativa de obra» registra esa quincena. |

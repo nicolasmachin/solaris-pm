@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.14 · del 16/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.15 · del 16/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -166,7 +166,8 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
 ### 3.4 · El recorrido de la plata de un proyecto
 
 1. **El asesor gana la venta.** Se registra sola la **comisión**, como un
-   pendiente en Finanzas.
+   pendiente en Finanzas. Si la propuesta se cotizó sin comisión del vendedor
+   (se la puede sacar en el costeo), no aparece ningún pendiente.
 2. **Onboarding** (la etapa del proyecto en la que el asesor confirma la venta,
    firma el contrato y cobra la seña). El asesor deja definida la modalidad de
    pago: con **pago directo**, el plan de pagos; con **financiación bancaria**,
@@ -1151,6 +1152,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.15 | 16 de octubre de 2026 | Una venta cotizada sin comisión del vendedor no deja un pago pendiente de comisión. |
 | 0.14 | 16 de octubre de 2026 | En el resumen de WhatsApp al instalador, los últimos trabajos saldados son los que se terminaron de pagar más recientemente, con la fecha de ese pago. |
 | 0.13 | 16 de octubre de 2026 | En Instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado; las demás no cuentan como deuda. |
 | 0.12 | 14 de octubre de 2026 | Las facturas a los clientes se emiten desde Voltia PM, con borrador y confirmación, y se corrigen con nota de crédito. Se factura un porcentaje del total sin IVA de la cotización, y en cada factura se pregunta a nombre de quién va (el cliente u otra persona o empresa). Nuevo lineamiento: nada que va a DGI sale sin que una persona lo confirme, y una factura por proyecto. Qué hacer si DGI rechaza una factura o si queda «Verificando». |

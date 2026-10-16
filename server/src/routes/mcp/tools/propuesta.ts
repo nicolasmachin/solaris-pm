@@ -167,6 +167,12 @@ function bloqueCargado(d: DraftDataPublish): string {
           : "—",
       ],
       ["Notas", d.notas || "—"],
+      ...(d.costos?.comisionVentas !== undefined
+        ? [["Comisión del asesor (fijada a mano)", usd(d.costos.comisionVentas)] as [string, string]]
+        : []),
+      ...(d.costos?.comisionBbva !== undefined
+        ? [["Comisión BBVA (fijada a mano)", usd(d.costos.comisionBbva)] as [string, string]]
+        : []),
     ])
   );
 }
@@ -245,6 +251,25 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
           .optional()
           .describe("Margen del asesor. Solo si lo pide explícitamente."),
         notas: z.string().optional(),
+        comision_vendedor_usd: z
+          .number()
+          .min(0)
+          .nullable()
+          .optional()
+          .describe(
+            "Comisión del asesor en USD sin IVA, solo para esta cotización. 0 = la venta no " +
+              "lleva comisión. null = volver al cálculo normal. Solo si lo pide explícitamente.",
+          ),
+        comision_bbva_usd: z
+          .number()
+          .min(0)
+          .nullable()
+          .optional()
+          .describe(
+            "Comisión del BBVA en USD sin IVA, solo para esta cotización. 0 = no la lleva " +
+              "(por ejemplo, el cliente no paga con el BBVA). null = volver al cálculo normal. " +
+              "Solo si lo pide explícitamente.",
+          ),
       },
     },
     async (args) => {
@@ -308,6 +333,22 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         },
         ...(args.notas !== undefined && { notas: args.notas }),
       };
+      // Comisiones fijadas a mano: viven en los ajustes del costeo, igual que
+      // cuando se pisan en la aplicación. null borra el ajuste (vuelve al
+      // cálculo normal) y, si no queda ningún ajuste, se saca el objeto entero.
+      if (args.comision_vendedor_usd !== undefined || args.comision_bbva_usd !== undefined) {
+        const costos: NonNullable<DraftDataPublish["costos"]> = { ...(actual.costos ?? {}) };
+        for (const [clave, valor] of [
+          ["comisionVentas", args.comision_vendedor_usd],
+          ["comisionBbva", args.comision_bbva_usd],
+        ] as const) {
+          if (valor === undefined) continue;
+          if (valor === null) delete costos[clave];
+          else costos[clave] = valor;
+        }
+        if (Object.keys(costos).length > 0) data.costos = costos;
+        else delete data.costos;
+      }
       // Inversores. Una lista de 2+ pasa a inversores distintos; una lista vacía
       // o de uno vuelve a inversores iguales (con los datos del primero, si
       // vino). Si no vino la lista pero sí algún dato de los inversores

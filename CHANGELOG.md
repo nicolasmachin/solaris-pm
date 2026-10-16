@@ -4,6 +4,13 @@
 
 ### 16 de octubre de 2026
 
+#### Cotizador: comisiones que se pueden cambiar
+
+- En el costeo de la propuesta (el **ícono de calculadora** del cotizador), en el bloque **Pricing**, ahora se pueden cambiar la **comisión del vendedor** y la **comisión del BBVA**, igual que la mano de obra. Poniendo **0** se saca: sirve para una venta sin asesor o para un cliente que no paga con el BBVA. El precio final baja en lo mismo.
+- Como el resto del costeo, el cambio vale **solo para esa cotización**. Dejando el campo en blanco, o con la flechita, vuelve al cálculo de siempre.
+- También se puede pedir desde el chat con Claude, al preparar la propuesta.
+- Si la propuesta ganadora va sin comisión del vendedor, al ganar la venta no se le carga a Finanzas un pago de US$ 0.
+
 #### Traer los datos de un solo generador
 
 - En el reporte de cada generador (Experiencia Solar → Reportes FV, al abrir un cliente) hay un botón nuevo, **Traer datos**, al lado de **Generar PDF**. Pide a Growatt o a Huawei los datos del período **solo de ese cliente**, sin pasar por todas las plantas.

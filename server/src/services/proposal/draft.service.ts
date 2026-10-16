@@ -350,6 +350,7 @@ export async function computeDraftComision(
   comisionTotalUsd: number;
   comisionPctEfectivo: number;
   comisionEnReferenciaUsd: number;
+  comisionFijadaAMano: boolean;
 } | null> {
   const draft = await getDraft(leadId, variante);
   if (!draft) return null;
@@ -387,5 +388,7 @@ export async function computeDraftComision(
     comisionTotalUsd: calc.comisionVentasUsdSinIva,
     comisionPctEfectivo: calc.comisionVentasPctEfectivo,
     comisionEnReferenciaUsd: enReferencia.comisionVentasUsdSinIva,
+    // Fijada a mano en el costeo: el desglose base + excedente no aplica.
+    comisionFijadaAMano: parsed.data.costos?.comisionVentas !== undefined,
   };
 }

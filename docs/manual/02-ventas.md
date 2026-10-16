@@ -458,7 +458,8 @@ cotiza. Abre un panel lateral que replica la planilla original en tres bloques:
 
 - **Costeo** (editable): los cinco ítems con su costo unitario y su cantidad,
   más los costos fijos y los variables.
-- **Pricing**: costos, mano de obra (editable), markup, comisiones, IVA y total.
+- **Pricing**: costos, mano de obra (editable), markup, comisión de ventas
+  (editable), comisión BBVA (editable), IVA y total.
 - **Flujo de caja**: cobros, pagos, ganancia final, margen y USD por watt.
 
 Un campo en blanco usa el valor de lista; el placeholder muestra cuál es. Al
@@ -514,6 +515,19 @@ no un descuido.
 - **Paneles y estructuras arrastran la cantidad del sistema** salvo que se la
   pise. La eléctrica, el inversor y el meter van en cantidad 1 porque su precio
   de lista ya es el total de la línea.
+- **Las dos comisiones se pueden fijar a mano** (`costos.comisionVentas` y
+  `costos.comisionBbva`, en USD sin IVA). El caso de uso es **sacarlas** con un
+  0: una venta sin asesor, o un cliente que no financia con el BBVA. Son un
+  costo dentro del precio, así que sacarlas baja el total y **no** toca la
+  ganancia (`gananciaFinal ≡ markupUsdSinIva` se mantiene). Una comisión del
+  asesor fijada a mano **reemplaza el cálculo entero**: en B2B queda toda como
+  base y el excedente en 0, y el panel "Tu comisión" lo dice en vez de mostrar
+  un desglose que ya no aplica (`comisionFijadaAMano` en `/draft/comision`).
+- **El placeholder de las comisiones es el valor que daría hoy**, no el de
+  fábrica: las comisiones son un porcentaje sobre costo + mano de obra +
+  markup, así que si se pisó otro costo el valor de fábrica (calculado sin
+  ningún ajuste) no es el que correspondería. Las otras líneas no dependen de
+  nada y muestran el de fábrica.
 - **Subir un costo sube el precio final, no la ganancia relativa**: el markup es
   un porcentaje sobre costo + mano de obra, así que se mueven juntos. El
   invariante del motor (`gananciaFinal ≡ markupUsdSinIva`) se mantiene.
@@ -708,6 +722,13 @@ comisión se deriva de ahí y no al revés.
 - Es **best-effort**: si algo falla, el cambio de etapa no se cae. La venta queda
   ganada y la comisión se puede cargar después.
 - Es **idempotente**: si el lead ya tiene comisión, no la toca.
+- **Comisión en 0** (se la sacó en el costeo de la propuesta): la comisión se
+  congela igual —es de donde los informes leen el monto de la venta— pero **sin
+  gasto previsto** en Finanzas (`financeMovementId` null). Si se re-congela
+  desde el modal pasando a una propuesta sin comisión, el gasto previsto que
+  había se borra. El caso inverso (de una propuesta en 0 a una con comisión) no
+  crea el gasto: hay que cargarlo a mano. Suposición de que es raro; no se
+  cubrió.
 - El modal "Comisión del asesor" (`CommissionCaptureModal`) sigue abriéndose al
   ganar, pero ya **no es lo que hace que la comisión exista**: muestra cuál
   propuesta quedó tomada y sirve para **cambiarla**. Al elegir otra versión,

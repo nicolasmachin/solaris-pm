@@ -141,6 +141,8 @@ export interface ProposalCostosOverride {
   costoFijoAsignado?: number;
   costoVariable?: number;
   manoDeObra?: number;
+  comisionVentas?: number;
+  comisionBbva?: number;
 }
 
 /** Desglose de la comisión del asesor (explicativo del cotizador B2B). */
@@ -158,6 +160,8 @@ export interface ComisionDesglose {
   comisionPctEfectivo: number;
   /** Lo que cobraría la misma propuesta cotizada al markup de referencia. */
   comisionEnReferenciaUsd: number;
+  /** La comisión se fijó a mano en el costeo: no sale del markup. */
+  comisionFijadaAMano?: boolean;
 }
 
 export interface ProposalDraftResponse {

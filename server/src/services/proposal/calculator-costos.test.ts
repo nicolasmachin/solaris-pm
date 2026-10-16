@@ -189,3 +189,32 @@ test("un ajuste manual del costeo gana sobre la cantidad del sistema", () => {
   assert.equal(r.inversorCantidad, 3);
   assert.equal(r.electricaCantidad, 1);
 });
+
+test("las comisiones se pueden sacar: en 0 bajan el precio y el pago en el flujo", () => {
+  const normal = calculate(base, defaultsFixture);
+  const sin = calculate(
+    { ...base, costos: { comisionVentas: 0, comisionBbva: 0 } },
+    defaultsFixture,
+  );
+  assert.equal(sin.comisionVentasUsdSinIva, 0);
+  assert.equal(sin.comisionBbvaUsdSinIva, 0);
+  assert.equal(sin.pagoVendedor === 0, true);
+  assert.equal(sin.pagoBbva === 0, true);
+  const esperado =
+    normal.subtotalSinIva - normal.comisionVentasUsdSinIva - normal.comisionBbvaUsdSinIva;
+  assert.equal(Math.round(sin.subtotalSinIva * 100), Math.round(esperado * 100));
+  // La ganancia del negocio sigue siendo el markup: la comisión es un costo
+  // dentro del precio, no un descuento sobre la ganancia.
+  assert.equal(Math.round(sin.gananciaFinal), Math.round(normal.gananciaFinal));
+});
+
+test("una comisión del asesor fijada a mano en B2B reemplaza base + excedente", () => {
+  const empresa: ProposalData = {
+    ...base,
+    variante: "EMPRESA",
+    cotizacion: { ...base.cotizacion, markupPorcentaje: 40 },
+  };
+  const fijada = calculate({ ...empresa, costos: { comisionVentas: 300 } }, defaultsFixture);
+  assert.equal(fijada.comisionVentasUsdSinIva, 300);
+  assert.equal(fijada.comisionVentasExcedenteUsdSinIva, 0);
+});

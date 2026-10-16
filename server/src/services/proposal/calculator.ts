@@ -228,17 +228,26 @@ export function calculate(
   const markupExcedenteUsdSinIva = esEmpresa
     ? Math.max(0, markupPct - defaults.b2bMarkupReferenciaPorcentaje / 100) * baseCostoMo
     : 0;
+  //
+  // Las dos comisiones se pueden fijar a mano en el costeo de la cotización
+  // (ajustes.comisionVentas / comisionBbva, en USD). Sirve sobre todo para
+  // sacarlas: una venta sin asesor o que no pasa por el BBVA va con 0. Una
+  // comisión del asesor fijada a mano reemplaza el cálculo entero, así que
+  // queda toda como "base" y el excedente B2B en 0.
   const comisionVentasBaseUsdSinIva =
+    ajustes.comisionVentas ??
     baseComision *
-    (esEmpresa ? defaults.b2bComisionBasePorcentaje : defaults.comisionVendedorPorcentaje);
-  const comisionVentasExcedenteUsdSinIva = esEmpresa
-    ? markupExcedenteUsdSinIva * defaults.b2bComisionExcedentePorcentaje
-    : 0;
+      (esEmpresa ? defaults.b2bComisionBasePorcentaje : defaults.comisionVendedorPorcentaje);
+  const comisionVentasExcedenteUsdSinIva =
+    esEmpresa && ajustes.comisionVentas === undefined
+      ? markupExcedenteUsdSinIva * defaults.b2bComisionExcedentePorcentaje
+      : 0;
   const comisionVentasUsdSinIva =
     comisionVentasBaseUsdSinIva + comisionVentasExcedenteUsdSinIva;
   const comisionVentasPctEfectivo =
     baseComision > 0 ? comisionVentasUsdSinIva / baseComision : 0;
-  const comisionBbvaUsdSinIva = baseComision * defaults.comisionBbvaPorcentaje;
+  const comisionBbvaUsdSinIva =
+    ajustes.comisionBbva ?? baseComision * defaults.comisionBbvaPorcentaje;
   const subtotalSinIva =
     costoTotalSinIva +
     manoDeObraUsdSinIva +

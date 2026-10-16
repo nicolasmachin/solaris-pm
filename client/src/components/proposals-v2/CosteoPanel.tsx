@@ -383,12 +383,24 @@ export function CosteoPanel({
                 <td className={tdNum}>{usd(c.markupUsdSinIva)}</td>
               </tr>
               <tr className="border-b border-[var(--color-border)]/60">
-                <td className={td}>Comisión ventas</td>
-                <td className={tdNum}>{usd(c.comisionVentasUsdSinIva)}</td>
+                <td className={`${td} font-medium`}>Comisión ventas</td>
+                <td className={tdNum}>
+                  <CostoInput
+                    valor={ajustes.comisionVentas}
+                    fabrica={ajustes.comisionVentas === undefined ? c.comisionVentasUsdSinIva : f.comisionVentasUsdSinIva}
+                    onChange={(v) => setAjuste("comisionVentas", v)}
+                  />
+                </td>
               </tr>
               <tr className="border-b border-[var(--color-border)]/60">
-                <td className={td}>Comisión BBVA</td>
-                <td className={tdNum}>{usd(c.comisionBbvaUsdSinIva)}</td>
+                <td className={`${td} font-medium`}>Comisión BBVA</td>
+                <td className={tdNum}>
+                  <CostoInput
+                    valor={ajustes.comisionBbva}
+                    fabrica={ajustes.comisionBbva === undefined ? c.comisionBbvaUsdSinIva : f.comisionBbvaUsdSinIva}
+                    onChange={(v) => setAjuste("comisionBbva", v)}
+                  />
+                </td>
               </tr>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-app)]/40">
                 <td className={`${td} font-semibold`}>Subtotal</td>

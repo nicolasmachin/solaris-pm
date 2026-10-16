@@ -58,6 +58,9 @@ const costosOverrideSchema = z
     costoFijoAsignado: z.number().min(0).optional(),
     costoVariable: z.number().min(0).optional(),
     manoDeObra: z.number().min(0).optional(),
+    // ── Comisiones, en USD sin IVA. 0 = esta venta no la lleva ──
+    comisionVentas: z.number().min(0).optional(),
+    comisionBbva: z.number().min(0).optional(),
   })
   .strict();
 

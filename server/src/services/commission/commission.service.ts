@@ -249,7 +249,10 @@ export async function confirmCommission(input: ConfirmCommissionInput): Promise<
   });
 
   const { commission, movement } = await prisma.$transaction(async (tx) => {
-    const movement = await tx.financeMovement.create({
+    // Una propuesta cotizada sin comisión del asesor (se la sacó en el costeo)
+    // igual congela la comisión —es de donde los informes leen el monto de la
+    // venta—, pero sin gasto previsto: un pago de US$ 0 solo ensucia Finanzas.
+    const movement = !(montoUsd > 0) ? null : await tx.financeMovement.create({
       data: {
         fecha: fechaVenta,
         mes: fechaVenta.getUTCMonth() + 1,
@@ -282,7 +285,7 @@ export async function confirmCommission(input: ConfirmCommissionInput): Promise<
         fechaVenta,
         dueDate,
         status: CommissionStatus.PENDIENTE,
-        financeMovementId: movement.id,
+        financeMovementId: movement?.id ?? null,
         createdById: userId,
       },
     });
@@ -297,7 +300,7 @@ export async function confirmCommission(input: ConfirmCommissionInput): Promise<
     userId,
     action: AuditAction.commission_created,
     description: `Comisión congelada para ${lead.clientName} (USD ${montoUsd.toFixed(2)})`,
-    metadata: { leadId, financeMovementId: movement.id, origenManual },
+    metadata: { leadId, financeMovementId: movement?.id ?? null, origenManual },
   });
 
   return { commission: serializeCommission(commission), created: true };
@@ -341,13 +344,20 @@ async function recongelarDesdePropuesta(params: {
         montoUsd: new Prisma.Decimal(montoUsd),
         porcentaje: porcentaje != null ? new Prisma.Decimal(porcentaje) : null,
         origenManual: false,
+        // Pasar a una propuesta sin comisión: el gasto previsto se va (abajo).
+        ...(!(montoUsd > 0) && { financeMovementId: null }),
       },
     });
     if (commission.financeMovementId) {
-      await tx.financeMovement.update({
-        where: { id: commission.financeMovementId },
-        data: { monto: new Prisma.Decimal(montoUsd) },
-      });
+      // Sigue PREVISTO: la comisión no está pagada (se chequeó arriba).
+      if (montoUsd > 0) {
+        await tx.financeMovement.update({
+          where: { id: commission.financeMovementId },
+          data: { monto: new Prisma.Decimal(montoUsd) },
+        });
+      } else {
+        await tx.financeMovement.delete({ where: { id: commission.financeMovementId } });
+      }
     }
   });
 

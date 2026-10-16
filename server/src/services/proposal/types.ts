@@ -73,6 +73,8 @@ export interface ProposalCostosOverride {
   costoFijoAsignado?: number;
   costoVariable?: number;
   manoDeObra?: number;
+  comisionVentas?: number;
+  comisionBbva?: number;
 }
 
 export interface ProposalItemAdicional {

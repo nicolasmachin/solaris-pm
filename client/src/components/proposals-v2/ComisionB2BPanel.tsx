@@ -63,7 +63,12 @@ export function ComisionB2BPanel({
         </span>
       </button>
 
-      {abierto ? (
+      {abierto && data.comisionFijadaAMano ? (
+        <div className="border-t border-indigo-500/20 px-3 py-2.5 text-[11px] text-[var(--color-text-secondary)]">
+          La comisión de esta cotización se fijó a mano en el costeo, así que no depende del
+          markup. Para volver al cálculo normal, borrala ahí.
+        </div>
+      ) : abierto ? (
         <div className="space-y-2 border-t border-indigo-500/20 px-3 py-2.5 text-[11px]">
           <p className="text-[var(--color-text-secondary)]">
             En las propuestas a empresas cobrás la comisión de siempre más una parte del markup

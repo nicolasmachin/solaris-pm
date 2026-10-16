@@ -194,6 +194,13 @@ Los faltantes de un inversor puntual (`sistema.inversores.1.marca`) se traducen
 a un único "los inversores: marca y potencia de cada uno, y que los paneles
 asignados sumen los del sistema".
 
+**Comisiones.** `comision_vendedor_usd` y `comision_bbva_usd` (USD sin IVA)
+escriben los mismos ajustes que el costeo de la aplicación
+(`costos.comisionVentas` / `costos.comisionBbva`): `0` saca la comisión, `null`
+vuelve al cálculo normal. Mismo permiso que el resto de la herramienta
+(`VENTAS:EDIT`), igual que el costeo en la aplicación. Cuando hay alguna fijada,
+el bloque "Cargado en el borrador" la muestra como "(fijada a mano)".
+
 **La cotización del dólar no se expone.** Es el único parámetro que mueve el
 precio y que el asesor no debería tocar. El markup sí: es su holgura para
 cotizar más caro o más barato.
