@@ -33,6 +33,13 @@ export const LATEST_RELEASE: Release = {
         "Vuelve a traer el período entero aunque ya estuviera completo, y reemplaza lo cargado a mano: por eso pide confirmación.",
       ],
     },
+    {
+      title: "Pagos a instaladores: solo las obras agendadas",
+      items: [
+        "En Instaladores y en Mis cobros solo aparecen las obras agendadas en el calendario con un equipo tercerizado.",
+        "Las ventas sin agendar o con equipo propio ya no figuran sin asignar ni cuentan como deuda.",
+      ],
+    },
   ],
 };
 

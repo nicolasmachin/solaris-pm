@@ -10,6 +10,12 @@
 - Sirve para levantar a un cliente puntual. El botón **Traer datos** del panel sigue consultando todas las plantas que tengan algún dato vacío, y por eso vuelve a pasar por las que no tienen el medidor reportando.
 - Trae el período entero de nuevo aunque ya estuviera completo, y **reemplaza lo que se haya cargado a mano**: por eso pide confirmación antes.
 
+#### Pagos a instaladores: solo las obras agendadas
+
+- En **Finanzas → Instaladores** (y en **Mis cobros** del instalador) ahora solo aparecen las obras **agendadas en el calendario con un equipo tercerizado**: el instalador toma el cargo desde ahí. Las ventas ganadas que todavía no se agendaron, o que van con equipo propio, ya no figuran "sin asignar".
+- Lo mismo vale para lo que se le debe a los instaladores en la posición de Finanzas.
+- Si una obra se saca del calendario o pasa a equipo propio, su pago deja de verse, salvo que ya tenga algo pagado. Los cargados a mano para trabajos fuera de una obra se siguen viendo.
+
 ## v12.6
 
 ### 15 de octubre de 2026

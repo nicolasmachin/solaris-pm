@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.1 · del 14/10/26
+**Voltia · Uruguay** · Versión 1.2 · del 16/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -433,7 +433,7 @@ En **Capacitación** (menú de usuario) están los videos de puesta en marcha de
 
 Es una pantalla aparte, **Pagos a instaladores**: por obra, el instalador, la fecha, cuánto se pagó, el saldo y el estado (pendiente, parcial o pagado). El instalador tercerizado ve sus cobros en **Mis cobros**.
 
-**El pago lo genera el calendario.** La primera vez que el gerente de Operaciones agenda una obra con un equipo **tercerizado**, el pago de la mano de obra aparece solo, a nombre de la persona que cobra por ese equipo y con la fecha de la obra. Los equipos propios no se pagan aparte, así que con ellos no aparece nada. **Después el pago ya no cambia**: si la obra se reagenda, cambia de equipo o se saca del calendario, el pago queda como estaba, y si hay que corregirlo lo corrige Finanzas. Por eso **la obra se agenda desde el principio con el equipo que de verdad la va a hacer**.
+**El pago lo genera el calendario.** La primera vez que el gerente de Operaciones agenda una obra con un equipo **tercerizado**, el pago de la mano de obra aparece solo, a nombre de la persona que cobra por ese equipo y con la fecha de la obra. Los equipos propios no se pagan aparte, así que con ellos no aparece nada. **Después el pago ya no cambia**: si la obra se reagenda, cambia de equipo o se saca del calendario, el pago queda como estaba, y si hay que corregirlo lo corrige Finanzas. Por eso **la obra se agenda desde el principio con el equipo que de verdad la va a hacer**. En la pantalla **solo aparecen las obras agendadas con un equipo tercerizado**: el instalador toma el cargo desde el calendario, así que una obra sin agendar no le figura como cobro a nadie. Si la obra se saca del calendario o pasa a la cuadrilla propia, su pago deja de verse, salvo que ya tenga algo pagado.
 
 Quién cobra por cada equipo tercerizado se elige una sola vez, en **Admin → Equipos**.
 
@@ -1078,6 +1078,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.2 | 16 de octubre de 2026 | En Pagos a instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado. |
 | 1.1 | 14 de octubre de 2026 | La Validación de Operaciones recibe los datos de la obra ya definidos (paneles, inversor, red, techo y si van coplanares o inclinados), porque Ingeniería no puede cerrar la Pre-Ingeniería sin ellos. En la pantalla del proyecto, el bloque del sistema fotovoltaico los muestra arriba y dice si la pre-ingeniería y el unifilar coinciden. En la lista de proyectos, el techo y si es coplanar o inclinado aparecen debajo de los paneles. |
 | 1.0 | 12 de octubre de 2026 | Primera versión completa del manual: se recorrieron y se cerraron todos los capítulos de las tres partes (Operaciones, Obra y Logística). Lo que todavía depende de algo pendiente queda marcado en el texto como «en definición» o «a completar». En la pantalla del proyecto se agrega la pestaña Contacto con el cliente, y los comentarios muestran de qué área vienen. |
 | 0.11 | 11 de octubre de 2026 | La fecha tentativa deja de ser un paso obligatorio. En la Validación, primero se confirma la fecha de obra y después el capataz hace su informe, sobre la pre-ingeniería. Donde decía «Gerencia» ahora dice «el CEO», y pagarle más a un tercerizado lo autoriza solo él. Con la cuadrilla propia los materiales salen con ella el día de la obra; el envío al cliente es solo para tercerizados. Se agregan el informe post-obra y la seguridad en las obras tercerizadas, con «La seguridad es innegociable, también con los tercerizados» como regla destacada. Todos los proyectos tienen las subetapas nuevas de Validación y de Ejecución de Obra. Cambian de nombre los capítulos 3 («Del proyecto a la obra: plazos»), 7 («Las herramientas de Voltia PM y cómo se usan») y 17 («El checklist de obra»); en el 7, cada captura va primero y con números. Ensayos de 180 segundos (encendido y reconexión), anti-isla con la llave bajada y subida casi en el mismo segundo, grampas en la zona segura del panel, smartmeter sin pines fijos y verificado midiendo positiva la energía de UTE. |

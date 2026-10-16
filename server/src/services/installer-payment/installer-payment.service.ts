@@ -770,8 +770,34 @@ export interface ListFilter {
   sinAsignar?: boolean;
 }
 
+/**
+ * Qué pagos se muestran (listado, métricas y lo que se debe en Finanzas): los de
+ * obras agendadas en el calendario con un equipo tercerizado, que es de donde
+ * toman el cargo. Decidido el 16-oct-2026: los que nacieron con la regla vieja
+ * (al ganar la venta, sin agenda o con equipo propio) no son deuda con nadie.
+ * Se siguen viendo los cargados a mano sin obra y los que ya tienen algo pagado,
+ * para no perder la historia.
+ */
+export const PAGO_VISIBLE_WHERE: Prisma.InstallerPaymentWhereInput = {
+  OR: [
+    { projectId: null },
+    { movimientos: { some: { deletedAt: null } } },
+    {
+      project: {
+        installationSchedule: {
+          deletedAt: null,
+          OR: [
+            { team: { type: "TERCERIZADO" } },
+            { teamId: null, teamType: "TERCERIZADO" },
+          ],
+        },
+      },
+    },
+  ],
+};
+
 export async function listInstallerPayments(filter: ListFilter): Promise<SerializedInstallerPayment[]> {
-  const where: Prisma.InstallerPaymentWhereInput = { deletedAt: null };
+  const where: Prisma.InstallerPaymentWhereInput = { deletedAt: null, AND: [PAGO_VISIBLE_WHERE] };
   if (filter.installerId) where.installerId = filter.installerId;
   if (filter.sinAsignar) where.installerId = null;
   if (filter.status) where.status = filter.status;
@@ -804,6 +830,7 @@ export async function installerPaymentMetrics(filter: {
 }): Promise<InstallerPaymentMetrics> {
   const where: Prisma.InstallerPaymentWhereInput = {
     deletedAt: null,
+    AND: [PAGO_VISIBLE_WHERE],
     fechaTrabajo: {
       gte: new Date(Date.UTC(filter.year, 0, 1)),
       lt: new Date(Date.UTC(filter.year + 1, 0, 1)),

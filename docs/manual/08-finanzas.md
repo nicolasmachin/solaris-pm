@@ -111,6 +111,19 @@ desde `--desde`. **Nicolás decidió "de ahora en adelante"**: en prod se corre 
 obra del 7-oct, a Fernando Leal). Las obras anteriores se pagaron por fuera (el
 módulo existe desde el 20-ago); si hace falta alguna, se carga a mano.
 
+**Qué pagos se ven** (`PAGO_VISIBLE_WHERE` en `installer-payment.service.ts`,
+aplicado en `listInstallerPayments()`, `installerPaymentMetrics()` y en lo que
+se debe a instaladores de `posicion.service.ts`): los de obras con
+`InstallationSchedule` vigente y equipo tercerizado (`team.type`, o `teamType`
+si no hay equipo), más los que no tienen proyecto (cargados a mano) y los que ya
+tienen alguna entrega. Decidido el 16-oct-2026: el instalador toma el cargo desde
+el calendario. Choca a propósito con "después no se toca": si la obra sale del
+calendario o pasa a equipo propio, el pago **no se borra pero deja de verse**
+(salvo que tenga entregas), y vuelve si se agenda de nuevo con un tercerizado.
+Los pagos ocultos siguen existiendo, así que bloquean la creación de otro
+(`projectId` `@unique`). El conector MCP (`pagos_instaladores`) usa las mismas
+funciones y ve lo mismo.
+
 **El saldo no se guarda**: se deriva de los movimientos con `calcularSaldo()`,
 que es también el único lugar donde se decide el estado.
 

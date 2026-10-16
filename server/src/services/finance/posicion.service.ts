@@ -26,6 +26,7 @@ import {
 import { prisma } from "../../lib/prisma.js";
 import { diffInDays, todayUtc } from "../../utils/dates.js";
 import { listarCobrosPorProyecto, movimientoEnUsd } from "./cobros.service.js";
+import { PAGO_VISIBLE_WHERE } from "../installer-payment/installer-payment.service.js";
 import { getCuentasPorPagar, tramoDe, type Tramo } from "./cuentas-por-pagar.service.js";
 import { ultimoUsdToUyu } from "./tipo-cambio.js";
 
@@ -117,7 +118,11 @@ export async function getPosicionFinanciera(hoy: Date = todayUtc()) {
   for (const c of comisionesPend) sumar(comisiones, Number(c.montoUsd), c.dueDate, hoy);
 
   const instaladoresPend = await prisma.installerPayment.findMany({
-    where: { deletedAt: null, status: { in: [InstallerPaymentStatus.PENDIENTE, InstallerPaymentStatus.PARCIAL] } },
+    where: {
+      deletedAt: null,
+      status: { in: [InstallerPaymentStatus.PENDIENTE, InstallerPaymentStatus.PARCIAL] },
+      AND: [PAGO_VISIBLE_WHERE],
+    },
     select: {
       montoUsd: true, dueDate: true,
       movimientos: {
