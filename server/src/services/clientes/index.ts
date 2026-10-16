@@ -718,7 +718,7 @@ const INTERACTION_SELECT = {
   content: true,
   createdAt: true,
   updatedAt: true,
-  author: { select: { id: true, name: true } },
+  author: { select: { id: true, name: true, role: { select: { name: true } } } },
 } satisfies Prisma.ClientInteractionSelect;
 
 type InteractionRow = Prisma.ClientInteractionGetPayload<{ select: typeof INTERACTION_SELECT }>;
@@ -731,6 +731,8 @@ function serializeInteraction(i: InteractionRow) {
     reason: i.reason,
     content: i.content,
     autor: { id: i.author.id, nombre: i.author.name },
+    // Lo que registra un ADMIN se rotula GERENCIA, como sus comentarios.
+    gerencia: i.author.role?.name === "ADMIN",
     automatico: false,
     createdAt: serializeDate(i.createdAt),
     updatedAt: serializeDate(i.updatedAt),
@@ -1027,6 +1029,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       kind: "interaction",
       text: i.content,
       autor: { id: i.author.id, nombre: i.author.name },
+      ...(i.author.role?.name === "ADMIN" ? { gerencia: true } : {}),
       automatico: false,
       createdAt: serializeDate(i.createdAt) ?? "",
       meta: { channel: i.channel, direction: i.direction, reason: i.reason },

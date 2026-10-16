@@ -44,6 +44,7 @@ export const LATEST_RELEASE: Release = {
       title: "Comentarios de Gerencia",
       items: [
         "Lo que comenta Gerencia, desde cualquier pantalla, aparece con el rótulo GERENCIA destacado y el nombre, en vez del área de esa pantalla.",
+        "Lo mismo con los contactos con el cliente que registra Gerencia.",
       ],
     },
   ],

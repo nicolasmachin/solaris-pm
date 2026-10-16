@@ -345,8 +345,10 @@ saca el área de la línea de origen. En la línea de tiempo, `getClienteTimelin
 marca `gerencia: true` y `ClienteTimeline.tsx` usa ese rótulo en lugar del de
 `source`. `source` y `Comment.area` **no cambian**: el filtro "De Ingeniería" de
 `ComentariosYArchivos` y los filtros de la línea de tiempo siguen tomando el área.
-Se decide por el rol **actual** del autor, no por el que tenía al comentar. No
-alcanza a los comentarios de Capacitación (otro listado).
+Se decide por el rol **actual** del autor, no por el que tenía al comentar. Lo mismo con las **interacciones** de la ficha (`ClientInteraction`): `INTERACTION_SELECT` lee el rol,
+`serializeInteraction()` devuelve `gerencia` (lo usa `ContactoClienteTab`) y la
+línea de tiempo las marca igual. No alcanza a los comentarios de Capacitación
+(otro listado).
 
 **Permisos de archivos** (antes todo era `OPERACIONES`, y Tramitación UTE, que no
 lo tiene, no podía ni ver los documentos):

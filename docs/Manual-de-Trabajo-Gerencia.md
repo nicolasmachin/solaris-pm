@@ -547,7 +547,7 @@ de 2026.
 
 **Qué se decidió.** Cuando Gerencia comenta en Voltia PM, desde cualquier
 pantalla (el proyecto, el espacio de Ingeniería, el trámite de UTE, la ficha del
-cliente, el cobro, un lead), el comentario no lleva el nombre del área de esa
+cliente, el cobro, un lead), o registra un contacto con el cliente, no lleva el nombre del área de esa
 pantalla: lleva destacado el rótulo **GERENCIA**, y al lado el nombre de quien lo
 escribió.
 

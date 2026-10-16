@@ -19,6 +19,7 @@
 #### Comentarios de Gerencia
 
 - Lo que comenta un usuario de **Gerencia** (rol Administrador), desde cualquier pantalla, ya no aparece con el área de esa pantalla: lleva destacado el rótulo **GERENCIA** y, al lado, el nombre de quien lo escribió. Se ve igual en el proyecto, en las pantallas de cada área, en el lead y en el historial de la ficha del cliente.
+- Lo mismo con los **contactos con el cliente** que registra Gerencia (llamadas, WhatsApp, mails): en el historial de la ficha y en la pestaña Contacto con el cliente del proyecto salen como **GERENCIA**, no como Experiencia Solar.
 
 #### Arreglos
 

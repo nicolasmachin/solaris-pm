@@ -83,6 +83,8 @@ export interface ClienteInteraction {
   reason: InteractionReason | null;
   content: string;
   autor: { id: string; nombre: string };
+  /** Lo registró un ADMIN: se rotula GERENCIA. */
+  gerencia?: boolean;
   createdAt: string;
   updatedAt: string;
 }

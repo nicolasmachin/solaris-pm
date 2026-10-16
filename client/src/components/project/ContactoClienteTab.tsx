@@ -29,6 +29,11 @@ export function ContactoClienteTab({ projectId }: { projectId: string }) {
       {ordenadas.map((i) => (
         <li key={i.id} className="rounded-lg border border-[var(--color-border)] px-3 py-2">
           <p className="text-[10px] text-[var(--color-text-muted)]">
+            {i.gerencia && (
+              <span className="mr-1.5 rounded bg-[var(--color-accent)] px-1.5 py-0.5 font-bold uppercase tracking-wide text-gray-900">
+                Gerencia
+              </span>
+            )}
             {new Date(i.createdAt).toLocaleString("es-UY", { dateStyle: "short", timeStyle: "short" })} ·{" "}
             {CHANNEL_LABELS[i.channel]}
             {i.direction ? ` · ${DIRECTION_LABELS[i.direction]}` : ""}
