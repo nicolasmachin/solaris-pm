@@ -3,7 +3,7 @@ import type { InstallerPayment } from "../../api/pagosInstalador.api";
 // Resumen para pegarle al instalador por WhatsApp (los *...* son su negrita).
 //
 // Muestra lo que está en curso —lo que todavía se le debe— y de lo ya saldado
-// solo **las últimas tres obras** (por fecha de obra): un instalador con veinte
+// solo **las últimas tres obras** (por fecha en que se terminaron de pagar): un instalador con veinte
 // obras cerradas generaría un mensaje ilegible, y lo que importa es dónde quedó
 // la cuenta.
 
@@ -43,10 +43,13 @@ export function buildResumenInstalador(nombre: string, payments: InstallerPaymen
     .filter((p) => p.status !== "PAGADO")
     .sort((a, b) => a.fechaTrabajo.localeCompare(b.fechaTrabajo));
 
-  // Las últimas tres saldadas, ordenadas por fecha de obra (más reciente primero).
+  // Las últimas tres saldadas, por fecha del pago que las saldó (más reciente
+  // primero). Antes se ordenaba por fecha de obra: una obra de agosto pagada hoy
+  // (Machado, 16-oct-2026) quedaba detrás de tres más nuevas y no salía.
+  const fechaSaldada = (p: InstallerPayment) => p.paidAt ?? p.fechaTrabajo;
   const ultimasPagadas = asignados
     .filter((p) => p.status === "PAGADO")
-    .sort((a, b) => b.fechaTrabajo.localeCompare(a.fechaTrabajo))
+    .sort((a, b) => fechaSaldada(b).localeCompare(fechaSaldada(a)))
     .slice(0, 3);
 
   const saldoTotal = enCurso.reduce((acc, p) => acc + p.saldoUsd, 0);
@@ -83,8 +86,8 @@ export function buildResumenInstalador(nombre: string, payments: InstallerPaymen
     lineas.push("");
     lineas.push(ultimasPagadas.length === 1 ? "*Último trabajo saldado*" : "*Últimos trabajos saldados*");
     for (const p of ultimasPagadas) {
-      const cuando = fmtDate(p.fechaTrabajo);
-      lineas.push(`✅ ${etiqueta(p)} — ${fmtUsd(p.montoUsd)}${cuando ? ` (${cuando})` : ""}`);
+      const cuando = fmtDate(fechaSaldada(p));
+      lineas.push(`✅ ${etiqueta(p)} — ${fmtUsd(p.montoUsd)}${cuando ? ` (pagado el ${cuando})` : ""}`);
     }
   }
 
