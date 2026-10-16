@@ -16,6 +16,14 @@
 - Lo mismo vale para lo que se le debe a los instaladores en la posición de Finanzas.
 - Si una obra se saca del calendario o pasa a equipo propio, su pago deja de verse, salvo que ya tenga algo pagado. Los cargados a mano para trabajos fuera de una obra se siguen viendo.
 
+#### Comentarios de Gerencia
+
+- Lo que comenta un usuario de **Gerencia** (rol Administrador), desde cualquier pantalla, ya no aparece con el área de esa pantalla: lleva destacado el rótulo **GERENCIA** y, al lado, el nombre de quien lo escribió. Se ve igual en el proyecto, en las pantallas de cada área, en el lead y en el historial de la ficha del cliente.
+
+#### Arreglos
+
+- En el **resumen de WhatsApp** al instalador, los **últimos trabajos saldados** ahora son los que se terminaron de pagar más recientemente, con la fecha de ese pago. Antes se elegían por fecha de obra, y una obra vieja pagada hoy no aparecía.
+
 ## v12.6
 
 ### 15 de octubre de 2026

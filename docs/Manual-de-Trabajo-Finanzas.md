@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.13 · del 16/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.14 · del 16/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -762,7 +762,8 @@ Finanzas:
 - **Carga a mano** trabajos que no salen de un proyecto (una reparación en
   garantía, una obra anterior), con **«Cargar pago manual»**.
 - **Filtra por instalador** y copia un **resumen para WhatsApp** con las obras en
-  curso y lo que falta de cada una, más las últimas tres saldadas. El botón
+  curso y lo que falta de cada una, más las últimas tres saldadas (las que se
+  terminaron de pagar más recientemente, no las de obra más nueva). El botón
   aparece solo con un instalador elegido, y arma el mensaje con lo que muestra
   la lista: para que salga completo, el filtro de estado tiene que estar en
   **Todos**. Sale así:
@@ -776,7 +777,7 @@ Finanzas:
   > • [código del proyecto] · [cliente] — [monto de la obra] — cobrado [lo ya entregado], falta [lo que queda]<br>
   > <br>
   > \*Últimos trabajos saldados\*<br>
-  > ✅ [código del proyecto] · [cliente] — [monto] ([día y mes de la obra])</small>
+  > ✅ [código del proyecto] · [cliente] — [monto] (pagado el [día y mes en que se terminó de pagar])</small>
 
   Va un renglón por obra; el detalle «cobrado…, falta…» aparece solo si ya se le
   entregó una parte. Si no se le debe nada, en lugar del pendiente dice
@@ -1150,6 +1151,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.14 | 16 de octubre de 2026 | En el resumen de WhatsApp al instalador, los últimos trabajos saldados son los que se terminaron de pagar más recientemente, con la fecha de ese pago. |
 | 0.13 | 16 de octubre de 2026 | En Instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado; las demás no cuentan como deuda. |
 | 0.12 | 14 de octubre de 2026 | Las facturas a los clientes se emiten desde Voltia PM, con borrador y confirmación, y se corrigen con nota de crédito. Se factura un porcentaje del total sin IVA de la cotización, y en cada factura se pregunta a nombre de quién va (el cliente u otra persona o empresa). Nuevo lineamiento: nada que va a DGI sale sin que una persona lo confirme, y una factura por proyecto. Qué hacer si DGI rechaza una factura o si queda «Verificando». |
 | 0.11 | 12 de octubre de 2026 | En el detalle del cobro de cada cliente se agrega el bloque Comentarios y archivos, para anotar lo acordado y subir comprobantes desde ahí. |

@@ -40,6 +40,12 @@ export const LATEST_RELEASE: Release = {
         "Las ventas sin agendar o con equipo propio ya no figuran sin asignar ni cuentan como deuda.",
       ],
     },
+    {
+      title: "Comentarios de Gerencia",
+      items: [
+        "Lo que comenta Gerencia, desde cualquier pantalla, aparece con el rótulo GERENCIA destacado y el nombre, en vez del área de esa pantalla.",
+      ],
+    },
   ],
 };
 

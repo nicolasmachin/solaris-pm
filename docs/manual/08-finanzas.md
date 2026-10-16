@@ -37,7 +37,11 @@ Desde **Finanzas → Instaladores** (o `/pagos-instalador`), quien gestiona:
    nota opcional.
 3. Puede **cargar pagos a mano** para trabajos que no salen de un proyecto (una
    reparación en garantía, una obra anterior a esta funcionalidad).
-4. Puede **filtrar por instalador** y copiar un **resumen para WhatsApp**.
+4. Puede **filtrar por instalador** y copiar un **resumen para WhatsApp**
+   (`resumenWhatsApp.ts` → `buildResumenInstalador()`): las últimas tres
+   saldadas salen por `paidAt` (fecha de la entrega que las saldó), con
+   `fechaTrabajo` de respaldo; hasta el 16-oct-2026 iban por fecha de obra y una
+   obra vieja pagada hoy no aparecía.
 
 **El resumen de WhatsApp** (`resumenWhatsApp.ts`) lista las obras en curso con lo
 que falta de cada una, y de las saldadas **las últimas tres** (ordenadas por
