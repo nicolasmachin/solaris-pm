@@ -50,6 +50,10 @@ const SOURCE_META: Record<TimelineItem["source"], { label: string; className: st
   survey: { label: "Encuesta", className: "bg-teal-500/15 text-teal-400" },
 };
 
+// Los comentarios de un ADMIN van destacados como Gerencia, en lugar del área
+// de la pantalla donde se escribieron.
+const GERENCIA_META = { label: "Gerencia", className: "bg-[var(--color-accent)] text-gray-900" };
+
 function KindIcon({ kind }: { kind: TimelineItem["kind"] }) {
   const cls = "text-[var(--color-text-muted)]";
   if (kind === "stage_change") return <GitBranch size={14} className={cls} />;
@@ -159,7 +163,7 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
     <>
       <ol className="space-y-2">
       {agrupar(items).map(({ lider: it, resto }) => {
-        const src = SOURCE_META[it.source];
+        const src = it.gerencia ? GERENCIA_META : SOURCE_META[it.source];
         const metaLine = it.kind === "interaction" ? interactionMeta(it.meta) : null;
         // Comentarios dejados dentro de una etapa/subetapa/tarea: mostrar de dónde
         // salieron, para que no lleguen sueltos a la ficha.

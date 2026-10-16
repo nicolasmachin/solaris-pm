@@ -337,6 +337,17 @@ trámite de `TramitesUte.tsx` (`area="ute"`), la ficha del cliente
 "Operaciones". Comentarios y archivos anteriores tienen `area` null y se
 etiquetan como antes.
 
+**Comentarios de Gerencia** (16-oct-2026): si el autor tiene rol `ADMIN`, el
+comentario se rotula **GERENCIA** en vez del área. `serializeComment()` en
+`api.routes.ts` devuelve `author.gerencia` (lee el rol con
+`COMMENT_AUTHOR_SELECT`); `CommentThread` muestra el rótulo antes del nombre y
+saca el área de la línea de origen. En la línea de tiempo, `getClienteTimeline()`
+marca `gerencia: true` y `ClienteTimeline.tsx` usa ese rótulo en lugar del de
+`source`. `source` y `Comment.area` **no cambian**: el filtro "De Ingeniería" de
+`ComentariosYArchivos` y los filtros de la línea de tiempo siguen tomando el área.
+Se decide por el rol **actual** del autor, no por el que tenía al comentar. No
+alcanza a los comentarios de Capacitación (otro listado).
+
 **Permisos de archivos** (antes todo era `OPERACIONES`, y Tramitación UTE, que no
 lo tiene, no podía ni ver los documentos):
 

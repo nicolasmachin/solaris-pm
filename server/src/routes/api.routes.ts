@@ -827,12 +827,7 @@ async function findCommentOrThrow(commentId: string) {
       deletedAt: null,
     },
     include: {
-      author: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
+      author: { select: COMMENT_AUTHOR_SELECT },
     },
   });
 
@@ -1112,6 +1107,7 @@ function serializeComment(comment: {
   author: {
     id: string;
     name: string;
+    role?: { name: string } | null;
   };
 }) {
   return {
@@ -1128,9 +1124,18 @@ function serializeComment(comment: {
     editedAt: serializeDate(comment.editedAt),
     createdAt: serializeDate(comment.createdAt),
     updatedAt: serializeDate(comment.updatedAt),
-    author: comment.author,
+    // Lo que comenta un ADMIN se muestra como de Gerencia, no del área de la
+    // pantalla donde lo escribió (pedido de Nicolás, 16-oct-2026).
+    author: {
+      id: comment.author.id,
+      name: comment.author.name,
+      gerencia: comment.author.role?.name === "ADMIN",
+    },
   };
 }
+
+/** Autor de un comentario: con el rol, para marcar los de Gerencia. */
+const COMMENT_AUTHOR_SELECT = { id: true, name: true, role: { select: { name: true } } } as const;
 
 function serializeUserSummary(user: {
   id: string;
@@ -4126,7 +4131,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const comments = await prisma.comment.findMany({
       where: { taskId: params.taskId, deletedAt: null },
-      include: { author: { select: { id: true, name: true } } },
+      include: { author: { select: COMMENT_AUTHOR_SELECT } },
       orderBy: { createdAt: "asc" },
     });
     return comments.map(serializeComment);
@@ -4151,7 +4156,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // proyecto. Tareas sueltas → projectId null.
         projectId: task.projectId,
       },
-      include: { author: { select: { id: true, name: true } } },
+      include: { author: { select: COMMENT_AUTHOR_SELECT } },
     });
 
     if (task.projectId) {
@@ -4193,7 +4198,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const updated = await prisma.comment.update({
       where: { id: existing.id },
       data: { content: body.content, isEdited: true, editedAt: new Date() },
-      include: { author: { select: { id: true, name: true } } },
+      include: { author: { select: COMMENT_AUTHOR_SELECT } },
     });
     return serializeComment(updated);
   });
@@ -7081,12 +7086,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         area: body.area ?? null,
       },
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        author: { select: COMMENT_AUTHOR_SELECT },
       },
     });
 
@@ -7170,12 +7170,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           : {}),
       },
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        author: { select: COMMENT_AUTHOR_SELECT },
       },
       orderBy: { createdAt: "desc" },
       skip: (query.page - 1) * query.limit,
@@ -7208,12 +7203,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ],
       },
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        author: { select: COMMENT_AUTHOR_SELECT },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -7239,12 +7229,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         editedAt: new Date(),
       },
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        author: { select: COMMENT_AUTHOR_SELECT },
       },
     });
 
@@ -7601,7 +7586,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           orderBy: { createdAt: "desc" },
           include: {
             author: {
-              select: { id: true, name: true },
+              select: COMMENT_AUTHOR_SELECT,
             },
           },
         },

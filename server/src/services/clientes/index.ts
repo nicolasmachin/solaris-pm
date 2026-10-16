@@ -919,6 +919,11 @@ export interface TimelineItem {
   text: string;
   autor: { id: string; nombre: string } | null;
   /**
+   * Comentario de un ADMIN: se muestra como de Gerencia en lugar del área de la
+   * pantalla donde se escribió (`source` no cambia, así los filtros siguen igual).
+   */
+  gerencia?: boolean;
+  /**
    * Lo produjo el sistema, no una persona. Se deriva de que no haya autor: todo
    * lo que hace alguien queda firmado. Importa para no leer un avance automático
    * como si fuera una decisión que alguien tomó.
@@ -973,7 +978,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
     },
     select: {
       id: true, content: true, leadId: true, createdAt: true, area: true,
-      author: { select: { id: true, name: true } },
+      author: { select: { id: true, name: true, role: { select: { name: true } } } },
       stage: { select: { name: true } },
       substage: { select: { name: true, stage: { select: { name: true } } } },
       checklistItem: { select: { label: true } },
@@ -1003,6 +1008,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       kind: "comment",
       text: c.content,
       autor: c.author ? { id: c.author.id, nombre: c.author.name } : null,
+      ...(c.author?.role?.name === "ADMIN" ? { gerencia: true } : {}),
       automatico: false,
       createdAt: serializeDate(c.createdAt) ?? "",
       ...(origen ? { meta: { origen } } : {}),

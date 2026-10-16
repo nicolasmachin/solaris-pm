@@ -116,7 +116,9 @@ function getCommentOrigin(comment: Comment, props: CommentThreadProps) {
   const taskLabel = comment.taskId ? props.context?.taskTitlesById?.[comment.taskId] : null;
 
   if (props.level === "project") {
-    if (comment.area) {
+    // Lo de Gerencia no lleva el área de la pantalla: va el rótulo GERENCIA
+    // junto al nombre.
+    if (comment.area && !comment.author.gerencia) {
       parts.push(AREA_TRABAJO_LABEL[comment.area]);
     }
     if (stageLabel) {
@@ -151,6 +153,14 @@ function getCommentOrigin(comment: Comment, props: CommentThreadProps) {
   }
 
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+function GerenciaBadge() {
+  return (
+    <span className="rounded bg-[var(--color-accent)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-900">
+      Gerencia
+    </span>
+  );
 }
 
 export const CommentThread = memo(function CommentThread(props: CommentThreadProps) {
@@ -327,6 +337,7 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
 
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2">
+                      {comment.author.gerencia && <GerenciaBadge />}
                       <span className="text-sm font-medium text-[var(--color-text-primary)]">{comment.author.name}</span>
                       <span
                         className="font-mono text-[10px] text-[var(--color-text-muted)]"

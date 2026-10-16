@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.18 — 14 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.19 — 16 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -543,6 +543,24 @@ de 2026.
 
 **A qué manuales afecta.** Al de Finanzas.
 
+### Lo que comenta Gerencia se ve como de Gerencia
+
+**Qué se decidió.** Cuando Gerencia comenta en Voltia PM, desde cualquier
+pantalla (el proyecto, el espacio de Ingeniería, el trámite de UTE, la ficha del
+cliente, el cobro, un lead), el comentario no lleva el nombre del área de esa
+pantalla: lleva destacado el rótulo **GERENCIA**, y al lado el nombre de quien lo
+escribió.
+
+**Por qué.** Un comentario de Gerencia escrito en la pantalla de Ingeniería no
+es de Ingeniería. Si aparece con el rótulo del área, quien lo lee no distingue
+una indicación de Gerencia de una nota del área, y en la ficha del cliente se
+mezclan.
+
+**Desde cuándo rige.** Desde el 16 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de Posventa (el historial de la ficha del
+cliente).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -574,6 +592,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.19 | 16 de octubre de 2026 | Se registra que lo que comenta Gerencia aparece con el rótulo GERENCIA, y no con el del área de la pantalla donde se escribió. |
 | 0.18 | 14 de octubre de 2026 | Se registra que las facturas al cliente se emiten desde Voltia PM con un borrador que una persona confirma antes de que salga a DGI, una por obra, por un porcentaje del total sin IVA de la cotización y a nombre del cliente o de quien él pida, y que lo emitido se corrige con nota de crédito. |
 | 0.17 | 14 de octubre de 2026 | Se registra que la Pre-Ingeniería no termina sin los datos de la instalación definidos (paneles, inversor, red, techo y si van coplanares o inclinados) y con la pre-ingeniería y el unifilar diciendo lo mismo. |
 | 0.16 | 12 de octubre de 2026 | Se registra que los videos para el cliente quedan en la pestaña Videos de su portal y se le mandan con el enlace que los abre ahí; todos los clientes ven los mismos, y las dudas van por ticket. |

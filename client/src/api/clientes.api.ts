@@ -156,6 +156,8 @@ export interface TimelineItem {
   kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket" | "survey";
   text: string;
   autor: { id: string; nombre: string } | null;
+  /** Comentario de un ADMIN: se rotula GERENCIA en lugar del área. */
+  gerencia?: boolean;
   /** Lo produjo el sistema, no una persona. */
   automatico: boolean;
   createdAt: string;

@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.25 · del 16/10/26
+**Voltia · Uruguay** · Versión 1.26 · del 16/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -209,6 +209,11 @@ alcanza**.
 > **Si registrar cuesta, no se registra.** Un comentario de dos líneas desde el
 > celular en la obra vale infinitamente más que un informe prolijo que nadie
 > escribe.
+
+**Lo que comenta Gerencia** aparece en el historial con el rótulo destacado
+**GERENCIA** y el nombre de quien lo escribió, no con el del área de la pantalla
+donde se escribió. Así se distingue una indicación de Gerencia de una nota del
+área.
 
 ### Lo que aparece solo, sin que nadie lo escriba
 
@@ -1910,6 +1915,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.26 | 16 de octubre de 2026 | En el historial de la ficha, lo que comenta Gerencia aparece con el rótulo GERENCIA y no con el del área de la pantalla donde se escribió. |
 | 1.25 | 16 de octubre de 2026 | En el alta en los reportes mensuales se agrega cómo traer los datos de un solo cliente desde su reporte, sin pasar por todos. |
 | 1.24 | 15 de octubre de 2026 | En el tema de la tarifa se agrega el caso de comercios y empresas con tarifa General Simple: la carga Experiencia Solar en la configuración del reporte, porque el portal no la ofrece. |
 | 1.23 | 13 de octubre de 2026 | En la ficha del cliente y en el portal de Voltia se agrega Generación y consumo: la curva del día, los días, los meses y los años, como en la aplicación del inversor. Se usa para contestar "genera poco" con la curva de un día soleado. |

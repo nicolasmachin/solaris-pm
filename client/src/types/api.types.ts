@@ -281,6 +281,8 @@ export interface Comment {
   author: {
     id: string;
     name: string;
+    /** Es ADMIN: el comentario se muestra como de Gerencia, no del área. */
+    gerencia?: boolean;
   };
 }
 
