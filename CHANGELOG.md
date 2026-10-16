@@ -1,5 +1,15 @@
 # Novedades
 
+## v12.7
+
+### 16 de octubre de 2026
+
+#### Traer los datos de un solo generador
+
+- En el reporte de cada generador (Experiencia Solar → Reportes FV, al abrir un cliente) hay un botón nuevo, **Traer datos**, al lado de **Generar PDF**. Pide a Growatt o a Huawei los datos del período **solo de ese cliente**, sin pasar por todas las plantas.
+- Sirve para levantar a un cliente puntual. El botón **Traer datos** del panel sigue consultando todas las plantas que tengan algún dato vacío, y por eso vuelve a pasar por las que no tienen el medidor reportando.
+- Trae el período entero de nuevo aunque ya estuviera completo, y **reemplaza lo que se haya cargado a mano**: por eso pide confirmación antes.
+
 ## v12.6
 
 ### 15 de octubre de 2026

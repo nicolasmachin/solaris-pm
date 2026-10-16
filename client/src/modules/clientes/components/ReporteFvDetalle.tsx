@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Download, FileText, Plus, RefreshCw, Send, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -8,8 +8,10 @@ import { downloadAuthenticated, useAuthBlobUrl } from "../../../hooks/useAuthBlo
 import { LargeModal } from "../../../components/ui/LargeModal";
 import { Spinner } from "../../../components/ui/Spinner";
 import {
+  dispararIngesta,
   emitirReporte,
   enviarReporte,
+  getIngesta,
   getDetalleGenerador,
   guardarConfig,
   guardarLectura,
@@ -519,6 +521,99 @@ function LecturaTab({
   );
 }
 
+// ─── Traer datos de un solo generador ─────────────────────────────────────────
+
+/**
+ * Pide a Growatt o Huawei los datos del período sólo para este generador. El
+ * botón del panel recorre todas las plantas con algún dato vacío —que son
+ * siempre las mismas cuando el medidor no reporta—; esto sirve para levantar un
+ * cliente puntual sin esperar a las demás.
+ *
+ * Va siempre con `force`: si la lectura ya estaba completa, sin force la
+ * ingesta la saltea y el botón no haría nada. Por eso se confirma antes, porque
+ * force también reemplaza lo cargado a mano.
+ */
+function TraerDatosButton({
+  detalle,
+  periodo,
+  onTraido,
+}: {
+  detalle: DetalleGenerador;
+  periodo: string;
+  onTraido: () => void;
+}) {
+  const origen = detalle.config?.origenDatos ?? null;
+  const [ingestaId, setIngestaId] = useState<string | null>(null);
+  const [trayendo, setTrayendo] = useState(false);
+  const onTraidoRef = useRef(onTraido);
+  onTraidoRef.current = onTraido;
+
+  // Growatt: polling de la corrida hasta que termina.
+  useEffect(() => {
+    if (!ingestaId) return;
+    const t = setInterval(async () => {
+      try {
+        const i = await getIngesta(ingestaId);
+        if (i.estado === "EN_CURSO") return;
+        clearInterval(t);
+        setIngestaId(null);
+        setTrayendo(false);
+        if (i.plantasTotal === 0) toast.error(`El período ${periodo} todavía no cerró para este cliente`);
+        else if (i.plantasOk > 0) toast.success("Datos traídos de Growatt");
+        else toast.error(`Growatt devolvió un error${i.errores[0]?.error ? `: ${i.errores[0].error}` : ""}`);
+        onTraidoRef.current();
+      } catch {
+        clearInterval(t);
+        setIngestaId(null);
+        setTrayendo(false);
+      }
+    }, 2500);
+    return () => clearInterval(t);
+  }, [ingestaId, periodo]);
+
+  if (origen !== "GROWATT" && origen !== "HUAWEI") return null;
+  if (origen === "GROWATT" && !detalle.config?.growattPlantId) return null;
+
+  async function traer() {
+    if (
+      !window.confirm(
+        `¿Traer de ${origen === "HUAWEI" ? "Huawei" : "Growatt"} los datos de ${periodo} de ${detalle.clientName}? ` +
+          "Reemplaza lo que haya del período, incluido lo cargado a mano.",
+      )
+    )
+      return;
+    setTrayendo(true);
+    try {
+      const { ingestaId: id } = await dispararIngesta(periodo, { projectIds: [detalle.projectId], force: true });
+      if (origen === "GROWATT") {
+        setIngestaId(id);
+        return;
+      }
+      // Huawei corre aparte, sin corrida que consultar: tarda unos segundos.
+      toast.success("Pedido a Huawei, los datos aparecen en unos segundos");
+      setTimeout(() => {
+        setTrayendo(false);
+        onTraido();
+      }, 12000);
+    } catch (e: any) {
+      setTrayendo(false);
+      toast.error(e?.response?.data?.message ?? "No se pudieron traer los datos");
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={trayendo}
+      onClick={traer}
+      className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)] disabled:opacity-50"
+    >
+      {trayendo ? <Spinner size={14} /> : <Download size={14} />}
+      {trayendo ? "Trayendo…" : "Traer datos"}
+    </button>
+  );
+}
+
 // ─── PDF / emisión ────────────────────────────────────────────────────────────
 
 function PdfTab({
@@ -610,6 +705,7 @@ function PdfTab({
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
+        {canCreate && <TraerDatosButton detalle={detalle} periodo={periodo} onTraido={refrescar} />}
         {canCreate && (
           <button
             type="button"

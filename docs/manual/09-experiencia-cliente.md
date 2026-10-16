@@ -947,6 +947,21 @@ Lo automático (`reportes-fv.job.ts`):
   `REPORTES_FV_ENVIO_AUTO=true` (apagado en producción); si se prende, manda los
   pendientes a la fecha, con el mismo criterio que el panel.
 
+**Traer datos de un solo generador.** En el detalle del generador
+(`ReporteFvDetalle.tsx` → `TraerDatosButton`, pestaña PDF, al lado de "Generar
+PDF") hay un botón **Traer datos** que llama a `POST /reportes-fv/ingesta` con
+`projectIds: [projectId]` y `force: true`. Se agregó porque el "1. Traer datos"
+del panel re-consulta todas las plantas con algún campo de la lectura en null, y
+las plantas sin smart meter (o con el medidor sin reportar) quedan así para
+siempre: con cada click pasaban de nuevo las mismas. Va con `force` porque sin él
+la ingesta saltea una lectura completa y el botón no haría nada; el costo es que
+pisa los valores MANUAL, y por eso se confirma antes. Requiere
+`EXPERIENCIA_CLIENTES:CREATE` (el mismo permiso que el panel) y solo aparece si el
+origen es GROWATT con planta vinculada o HUAWEI. En Growatt hace polling de la
+corrida; si `plantasTotal` vuelve en 0 avisa que el período todavía no cerró para
+ese cliente. Huawei no deja corrida que consultar (`ingerirPeriodoHuawei()` se
+lanza sin await), así que el detalle se refresca a los 12 segundos, a ciegas.
+
 ## Cómo funciona
 
 **Período.** Internamente un reporte es un mes `"YYYY-MM"`. Los días que cubre

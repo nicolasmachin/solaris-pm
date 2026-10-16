@@ -23,9 +23,30 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.7",
+  date: "16 de octubre de 2026",
+  sections: [
+    {
+      title: "Traer los datos de un solo generador",
+      items: [
+        "En el reporte de cada generador hay un botón Traer datos que pide a Growatt o Huawei los datos del período solo de ese cliente, sin esperar a los demás.",
+        "Vuelve a traer el período entero aunque ya estuviera completo, y reemplaza lo cargado a mano: por eso pide confirmación.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_6: Release = {
   version: "12.6",
   date: "14 de octubre de 2026",
   sections: [
+    {
+      title: "Reportes de generación para comercios y empresas",
+      items: [
+        "Nueva tarifa General Simple de UTE, la de comercios y empresas, para los generadores marcados como empresa.",
+        "Las plantas Huawei con día de corte traen los datos de su ciclo de lectura de UTE y no los del mes calendario.",
+      ],
+    },
     {
       title: "Paneles, red y montaje a la vista para agendar",
       items: [
@@ -618,6 +639,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.6",
+    shortDate: "15 oct",
+    highlights: RELEASE_12_6.sections.map((sec) => sec.title),
+  },
   {
     version: "12.5",
     shortDate: "13 oct",

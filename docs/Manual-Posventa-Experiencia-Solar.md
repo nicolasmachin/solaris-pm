@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.24 · del 15/10/26
+**Voltia · Uruguay** · Versión 1.25 · del 16/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -745,6 +745,16 @@ años**. Vale la pena decírselo así: no es spam, es su resumen mensual.
 corte**, el día en que UTE le cierra la factura, y su reporte sale cuando le toca
 a él. En la pantalla de Reportes, el botón **Enviar pendientes** manda los que
 están en fecha. Por eso no hay un día del mes en que salgan todos juntos.
+
+**Traer los datos de un solo cliente.** Voltia PM trae solo los datos de
+generación y consumo de cada inversor. Si a un cliente le falta el reporte de su
+período, se abre su reporte en la pantalla de Reportes y se usa **Traer datos**,
+al lado de **Generar PDF**: pide los datos solo de ese cliente. El botón del
+mismo nombre que está arriba del tablero vuelve a pasar por todos los que tengan
+algún dato vacío, y algunos lo tienen siempre (por ejemplo, un medidor que no
+reporta), así que para un cliente puntual conviene el de adentro. Ojo: trae el
+período entero de nuevo y reemplaza lo que se haya cargado a mano desde la
+factura; por eso pide confirmación.
 
 **El reporte dice qué días cubre.** Arriba de todo aparece el período exacto —del
 tal al tal, tantos días—, porque un ciclo de UTE no arranca el 1 ni termina el
@@ -1900,6 +1910,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.25 | 16 de octubre de 2026 | En el alta en los reportes mensuales se agrega cómo traer los datos de un solo cliente desde su reporte, sin pasar por todos. |
 | 1.24 | 15 de octubre de 2026 | En el tema de la tarifa se agrega el caso de comercios y empresas con tarifa General Simple: la carga Experiencia Solar en la configuración del reporte, porque el portal no la ofrece. |
 | 1.23 | 13 de octubre de 2026 | En la ficha del cliente y en el portal de Voltia se agrega Generación y consumo: la curva del día, los días, los meses y los años, como en la aplicación del inversor. Se usa para contestar "genera poco" con la curva de un día soleado. |
 | 1.22 | 12 de octubre de 2026 | Crear el acceso al portal, reenviarlo, copiar el enlace y ver el portal como el cliente se pueden hacer también desde la ficha del cliente. Al pie de la ficha del cliente se agrega el bloque Comentarios y archivos; cada área registra desde su propia pantalla (Ingeniería, Tramitación UTE, Finanzas); los archivos se abren desde el historial, y los contactos con el cliente se ven también desde el proyecto. |
