@@ -107,10 +107,16 @@ function Conversacion({
   const plantilla = aprobadas.find((p) => p.id === plantillaId) ?? aprobadas[0];
   const huecos = cantidadHuecos(cuerpoDe(plantilla));
 
-  useEffect(() => setVariables((v) => Array.from({ length: huecos }, (_, i) => v[i] ?? "")), [huecos]);
+  useEffect(() => {
+    setVariables((v) => Array.from({ length: huecos }, (_, i) => v[i] ?? ""));
+  }, [huecos]);
 
   const fin = useRef<HTMLDivElement>(null);
-  useEffect(() => fin.current?.scrollIntoView({ block: "end" }), [mensajes.length]);
+  // Con llaves y sin devolver nada: en los Chrome nuevos scrollIntoView devuelve
+  // una promesa, y un efecto que devuelve algo que no es una función rompe React.
+  useEffect(() => {
+    fin.current?.scrollIntoView({ block: "end" });
+  }, [mensajes.length]);
 
   const enviar = useMutation({
     mutationFn: () =>
@@ -232,7 +238,9 @@ function NuevaPlantilla() {
   const [cuerpo, setCuerpo] = useState("");
   const [ejemplos, setEjemplos] = useState<string[]>([]);
   const huecos = cantidadHuecos(cuerpo);
-  useEffect(() => setEjemplos((e) => Array.from({ length: huecos }, (_, i) => e[i] ?? "")), [huecos]);
+  useEffect(() => {
+    setEjemplos((e) => Array.from({ length: huecos }, (_, i) => e[i] ?? ""));
+  }, [huecos]);
 
   const crear = useMutation({
     mutationFn: () => crearWhatsAppPlantilla({ nombre, categoria, idioma, cuerpo, ejemplos }),
