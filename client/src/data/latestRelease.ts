@@ -58,7 +58,7 @@ export const LATEST_RELEASE: Release = {
       items: [
         "El resumen de Experiencia Solar suma la sección Para contactar hoy y cuenta en días hábiles.",
         "Un reclamo nuevo desde el portal avisa a Experiencia Solar en el momento.",
-        "Los plazos en días hábiles ya no cuentan los feriados no laborables.",
+        "Los plazos en días hábiles ya no cuentan los feriados no laborables, el Carnaval ni la Semana de Turismo.",
       ],
     },
   ],

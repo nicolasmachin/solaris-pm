@@ -94,7 +94,8 @@ desactivada simplemente no marca. Hay **un día de margen**: el día después de
 cumplida la cadencia el cliente aparece como **"toca hoy"**, en amarillo, y
 escribiéndole ese día sigue al día. Recién al día siguiente queda **fuera de
 cadencia**, en rojo. Los días hábiles no cuentan los feriados no laborables (1 de
-enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre).
+enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre), el Carnaval ni la
+Semana de Turismo.
 
 **Por qué no se promete cadencia:** una promesa incumplida daña más que el
 silencio explicado. Si le decimos "te escribo todas las semanas" y pasan diez
@@ -1953,7 +1954,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.28 | 17 de octubre de 2026 | La conversación de expectativa inicial se hace por WhatsApp, no por teléfono: ningún paso del recorrido exige una llamada. Si el cliente prefiere hablar, se habla y se registra. La bienvenida la manda Experiencia Solar, después de que el asesor le presentó al referente como última tarea del onboarding de venta; antes la mandaba el vendedor. Todos los pasos tienen plazo. Mandar un mensaje modelo da el paso por hecho, y el acceso al portal, el contrato firmado y el alta en reportes se dan por hechos solos. Botón Abrir en WhatsApp. Un día de margen en la cadencia ("toca hoy") y la sección Para contactar hoy en el correo de la mañana. Los reclamos del portal avisan en el momento. Los feriados no laborables no cuentan como días hábiles. |
+| 1.28 | 17 de octubre de 2026 | La conversación de expectativa inicial se hace por WhatsApp, no por teléfono: ningún paso del recorrido exige una llamada. Si el cliente prefiere hablar, se habla y se registra. La bienvenida la manda Experiencia Solar, después de que el asesor le presentó al referente como última tarea del onboarding de venta; antes la mandaba el vendedor. Todos los pasos tienen plazo. Mandar un mensaje modelo da el paso por hecho, y el acceso al portal, el contrato firmado y el alta en reportes se dan por hechos solos. Botón Abrir en WhatsApp. Un día de margen en la cadencia ("toca hoy") y la sección Para contactar hoy en el correo de la mañana. Los reclamos del portal avisan en el momento. Los feriados no laborables, el Carnaval y la Semana de Turismo no cuentan como días hábiles. |
 | 1.27 | 16 de octubre de 2026 | Los reportes mensuales salen solos, todos los días a las 10, sin revisión previa; el botón Enviar pendientes queda para lo que no puede esperar. |
 | 1.26 | 16 de octubre de 2026 | En el historial de la ficha, lo que comenta o registra Gerencia (comentarios y contactos con el cliente) aparece con el rótulo GERENCIA y no con el del área de la pantalla donde se escribió. |
 | 1.25 | 16 de octubre de 2026 | En el alta en los reportes mensuales se agrega cómo traer los datos de un solo cliente desde su reporte, sin pasar por todos. |

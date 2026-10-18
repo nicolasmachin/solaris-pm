@@ -42,7 +42,7 @@
 
 #### Feriados
 
-- Los plazos en días hábiles ya no cuentan los feriados no laborables: 1 de enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre.
+- Los plazos en días hábiles ya no cuentan los feriados no laborables (1 de enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre), ni el Carnaval ni la Semana de Turismo, que Voltia no trabaja.
 
 ## v12.7
 

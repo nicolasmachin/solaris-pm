@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Versión 1.1 — 14 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.2 — 17 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -68,7 +68,9 @@ Así, quien ya lo leyó sabe qué cambió sin tener que leerlo entero de nuevo.
 Un cliente pasa por **ocho etapas**, desde que hace su primera consulta hasta
 que su instalación queda **habilitada**: es decir, hasta que UTE la aprueba y el cliente ya puede
 encenderla y empezar a generar su energía. Cada etapa tiene un área dueña y un
-**plazo**: cuánto puede durar, en días hábiles. Voltia PM muestra en cada
+**plazo**: cuánto puede durar, en días hábiles (de lunes a viernes, sin contar
+los feriados no laborables, el Carnaval ni la Semana de Turismo, que Voltia no
+trabaja). Voltia PM muestra en cada
 proyecto cuánto le queda a su etapa.
 
 | | Etapa | Área dueña | Plazo |
@@ -642,5 +644,6 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.2 | 17 de octubre de 2026 | Se aclara qué es un día hábil: de lunes a viernes, sin feriados no laborables, Carnaval ni Semana de Turismo. |
 | 1.1 | 14 de octubre de 2026 | En el traspaso de Ingeniería a Operaciones se suman los datos de la instalación (paneles, inversor, red, techo y si van coplanares o inclinados), coincidiendo en la pre-ingeniería y el unifilar: la Pre-Ingeniería no se da por terminada sin ellos. |
 | 1.0 | 12 de octubre de 2026 | Primera versión aprobada. De los borradores anteriores no hay registro de cambios. |

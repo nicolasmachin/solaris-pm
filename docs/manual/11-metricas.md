@@ -72,8 +72,8 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
   `Dashboard.tsx` con `usePermission("OPERACIONES","VIEW")`.
 - **Unidades**: el SLA por etapa y "sin comunicación hace X días" van en días
   **hábiles**; "días desde la venta" va en días **calendario**. Los días hábiles
-  descuentan los feriados no laborables de fecha fija y los de `FERIADOS_EXTRA`
-  (`utils/business-days.ts` → `esFeriado()`).
+  descuentan los feriados no laborables de fecha fija, el Carnaval, la Semana de
+  Turismo y los de `FERIADOS_EXTRA` (`utils/business-days.ts` → `esFeriado()`).
 - **Las etapas de Experiencia Solar no tienen plazo.** Post-habilitación y los
   dos seguimientos paralelos (preobra y habilitación) no aparecen en
   Administración → Plazos por etapa (`STAGE_TYPES_CON_SLA` las excluye), así que
@@ -112,8 +112,8 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
 - Cliente nunca contactado → "Sin contacto" (siempre aparece, sin importar el
   objetivo).
 - Cadencia inactiva para un recorrido → ese recorrido no dispara "Sin comunicación".
-- Los feriados que no son de fecha fija (Carnaval, Semana de Turismo) no se
-  descuentan salvo que se carguen en `FERIADOS_EXTRA`.
+- Un día no laborable que no es feriado fijo, Carnaval ni Turismo (un puente) se
+  descuenta solo si se carga en `FERIADOS_EXTRA`.
 
 ---
 

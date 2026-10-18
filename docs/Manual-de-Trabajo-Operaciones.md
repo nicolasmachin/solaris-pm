@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.2 · del 16/10/26
+**Voltia · Uruguay** · Versión 1.3 · del 17/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -99,7 +99,7 @@ Después de la obra, Operaciones vuelve a la casa del cliente por dos motivos di
 
 **Cuánto tarda.** El reloj arranca cuando el proyecto llega de Ingeniería, con la pre-ingeniería hecha, y entra a Validación de Operaciones. Desde ahí hasta la obra pasan, **como mínimo, 12 días hábiles**, porque cada etapa trabaja después de la otra: Validación 4, Ingeniería Final 3 y Compras 5.
 
-La obra se puede hacer, como muy temprano, el **día hábil 13**, el siguiente al último de Compras. Por eso **la fecha de obra nunca puede quedar antes de ese día**. Los días hábiles se cuentan de lunes a viernes, sin contar los feriados no laborables.
+La obra se puede hacer, como muy temprano, el **día hábil 13**, el siguiente al último de Compras. Por eso **la fecha de obra nunca puede quedar antes de ese día**. Los días hábiles se cuentan de lunes a viernes, sin contar los feriados no laborables, el Carnaval ni la Semana de Turismo, que Voltia no trabaja.
 
 > **Un día de atraso es un día más de obra.**
 
@@ -1078,6 +1078,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.3 | 17 de octubre de 2026 | El Carnaval y la Semana de Turismo no cuentan como días hábiles. |
 | 1.2 | 16 de octubre de 2026 | En Pagos a instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado. |
 | 1.1 | 14 de octubre de 2026 | La Validación de Operaciones recibe los datos de la obra ya definidos (paneles, inversor, red, techo y si van coplanares o inclinados), porque Ingeniería no puede cerrar la Pre-Ingeniería sin ellos. En la pantalla del proyecto, el bloque del sistema fotovoltaico los muestra arriba y dice si la pre-ingeniería y el unifilar coinciden. En la lista de proyectos, el techo y si es coplanar o inclinado aparecen debajo de los paneles. |
 | 1.0 | 12 de octubre de 2026 | Primera versión completa del manual: se recorrieron y se cerraron todos los capítulos de las tres partes (Operaciones, Obra y Logística). Lo que todavía depende de algo pendiente queda marcado en el texto como «en definición» o «a completar». En la pantalla del proyecto se agrega la pestaña Contacto con el cliente, y los comentarios muestran de qué área vienen. |

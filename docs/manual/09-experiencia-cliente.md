@@ -348,8 +348,10 @@ y la pantalla usa ese veredicto, en vez del umbral fijo de 7 días que tenía an
 
 **Se cuenta en días hábiles**, con `businessDaysBetween()` de
 `utils/business-days.ts`: excluye sábados, domingos y los feriados no laborables
-de fecha fija (1-ene, 1-may, 18-jul, 25-ago y 25-dic, `esFeriado()`); los días que
-Voltia no trabaja sin ser feriado (Carnaval, Turismo) se agregan con la variable
+de fecha fija (1-ene, 1-may, 18-jul, 25-ago y 25-dic), el Carnaval (lunes y
+martes) y la Semana de Turismo (lunes a viernes), que Voltia no trabaja. Los dos
+últimos se calculan cada año desde la Pascua (`domingoDePascua()`); todo en
+`esFeriado()`. Un puente u otro día suelto se agrega con la variable
 `FERIADOS_EXTRA`.
 
 **Un día de tolerancia.** El criterio vive en un solo lugar,

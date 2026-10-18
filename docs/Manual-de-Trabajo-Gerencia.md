@@ -630,6 +630,20 @@ con tiempo.
 **A qué manuales afecta.** Al Manual de Posventa (la cadencia y el correo de la
 mañana).
 
+### Voltia no trabaja en Carnaval ni en Semana de Turismo
+
+**Qué se decidió.** Además de los feriados no laborables, Voltia no trabaja los
+dos días de Carnaval ni la Semana de Turismo (de lunes a viernes). Para todos los
+plazos en días hábiles, esos días no cuentan.
+
+**Por qué.** Son días en los que, en la práctica, no se trabaja. Si contaran como
+hábiles, los plazos vencerían en días en los que nadie puede cumplirlos.
+
+**Desde cuándo rige.** Desde el 17 de octubre de 2026.
+
+**A qué manuales afecta.** Al Procedimiento General (qué es un día hábil), al
+Manual de trabajo de Operaciones y al Manual de Posventa.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -661,7 +675,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.21 | 17 de octubre de 2026 | Se registra que con el cliente se habla por WhatsApp y que ningún paso del procedimiento exige una llamada; si se llama, se registra. Se registra que la bienvenida la manda Experiencia Solar, después de que el asesor presentó al referente. Se registra que la cadencia de contacto tiene un día de margen ("toca hoy") antes de contar como atraso. |
+| 0.21 | 17 de octubre de 2026 | Se registra que con el cliente se habla por WhatsApp y que ningún paso del procedimiento exige una llamada; si se llama, se registra. Se registra que la bienvenida la manda Experiencia Solar, después de que el asesor presentó al referente. Se registra que la cadencia de contacto tiene un día de margen ("toca hoy") antes de contar como atraso. Se registra que Voltia no trabaja en Carnaval ni en Semana de Turismo, y que esos días no cuentan como hábiles. |
 | 0.20 | 16 de octubre de 2026 | Se registra que los reportes mensuales salen solos, sin revisión previa, apenas están listos. |
 | 0.19 | 16 de octubre de 2026 | Se registra que lo que comenta Gerencia aparece con el rótulo GERENCIA, y no con el del área de la pantalla donde se escribió. |
 | 0.18 | 14 de octubre de 2026 | Se registra que las facturas al cliente se emiten desde Voltia PM con un borrador que una persona confirma antes de que salga a DGI, una por obra, por un porcentaje del total sin IVA de la cotización y a nombre del cliente o de quien él pida, y que lo emitido se corrige con nota de crédito. |
