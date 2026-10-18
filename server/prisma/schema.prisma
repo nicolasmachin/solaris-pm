@@ -627,6 +627,7 @@ model User {
   @@index([deletedAt])
   @@index([tenantId])
   @@map("users")
+  whatsappMensajesEnviados WhatsAppMensaje[] @relation("WhatsAppMensajeEnviadoPor")
 }
 
 model Project {
@@ -5561,4 +5562,63 @@ model ConciliacionProveedor {
 
   @@index([supplierId, createdAt])
   @@map("conciliaciones_proveedor")
+}
+
+// ─── WhatsApp (Cloud API de Meta) ───────────────────────────────────────────
+// Mensajes que entran y salen por los números conectados a la Cloud API. Es la
+// base de la pantalla de conversaciones; hoy solo la usa Administración →
+// WhatsApp para las pruebas y la revisión de Meta. Ver docs/manual/15-whatsapp.md.
+
+/// Un mensaje de WhatsApp, entrante o saliente. Idempotente por el id de Meta.
+model WhatsAppMensaje {
+  id            String   @id @default(cuid())
+  /// Id del mensaje en WhatsApp ("wamid…"). Único: Meta reintenta los webhooks.
+  waMessageId   String   @unique
+  /// "ENTRANTE" (lo mandó el cliente) | "SALIENTE" (lo mandamos nosotros).
+  direccion     String
+  /// Teléfono del otro lado, en formato internacional sin "+" (598…).
+  telefono      String
+  /// Id del número de Voltia en Meta por el que entró o salió.
+  phoneNumberId String
+  /// text | template | image | audio | document | video | sticker | location | …
+  tipo          String
+  texto         String?
+  /// Nombre de la plantilla, en los salientes de tipo template.
+  plantilla     String?
+  /// Último estado conocido de un saliente: sent | delivered | read | failed.
+  estado        String?
+  estadoEn      DateTime? @db.Timestamptz(6)
+  errorCodigo   String?
+  errorDetalle  String?
+  /// Quién lo mandó desde Voltia PM (solo salientes).
+  enviadoPorId  String?
+  enviadoPor    User?     @relation("WhatsAppMensajeEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: SetNull)
+  /// Cuándo lo mandó el cliente o cuándo salió (hora de WhatsApp).
+  ocurridoEn    DateTime  @db.Timestamptz(6)
+  /// Lo que mandó Meta o lo que respondió al enviar, tal cual.
+  payload       Json
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([telefono, ocurridoEn])
+  @@map("whatsapp_mensajes")
+}
+
+/// Cada cambio de estado de un saliente, tal como lo informa Meta. El estado
+/// puede llegar antes que la fila del mensaje (carrera entre la respuesta del
+/// envío y el webhook), por eso vive aparte y no depende de ella.
+model WhatsAppEstado {
+  id          String   @id @default(cuid())
+  waMessageId String
+  /// sent | delivered | read | failed
+  estado      String
+  ocurridoEn  DateTime @db.Timestamptz(6)
+  /// Precio informado por Meta (si se cobra y de qué categoría).
+  pricing     Json?
+  errores     Json?
+  payload     Json
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([waMessageId, estado])
+  @@index([waMessageId])
+  @@map("whatsapp_estados")
 }

@@ -38,6 +38,8 @@ import { registerTraspasosRoutes } from "./traspasos.routes.js";
 import { registerUnifilarRoutes } from "./unifilar.routes.js";
 import { registerUteSuministroRoutes } from "./ute-suministro.routes.js";
 import { registerVisitasRoutes } from "./visitas.routes.js";
+import { registerWhatsAppRoutes } from "./whatsapp.routes.js";
+import { registerWhatsAppWebhookRoutes } from "./whatsapp-webhook.routes.js";
 
 export async function registerRoutes(app: FastifyInstance) {
   app.get("/health", async () => {
@@ -52,6 +54,9 @@ export async function registerRoutes(app: FastifyInstance) {
   // El conector MCP va sin prefijo: los documentos de descubrimiento de OAuth
   // tienen que colgar de la raíz del dominio. Trae su propia autenticación.
   await app.register(registerMcpRoutes);
+  // Webhook de WhatsApp (Meta): público, sin prefijo, con firma propia.
+  await app.register(registerWhatsAppWebhookRoutes);
+  await app.register(registerWhatsAppRoutes, { prefix: "/api" });
   await app.register(registerApiRoutes, { prefix: "/api" });
   await app.register(registerCuentasPorPagarRoutes, { prefix: "/api" });
   await app.register(registerFacturacionClienteRoutes, { prefix: "/api" });

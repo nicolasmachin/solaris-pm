@@ -40,6 +40,11 @@
 
 - Cuando un cliente abre un reclamo desde el portal, a Experiencia Solar le llega el aviso **en el momento**, en la campanita, y no recién en el resumen del día siguiente.
 
+#### WhatsApp: primera conexión con Meta (en prueba)
+
+- En **Administración → WhatsApp** hay una pantalla nueva para la conexión de Voltia PM con WhatsApp: mandar un mensaje (una plantilla aprobada, o texto libre si la persona escribió en las últimas 24 horas), ver la conversación con las tildes de enviado, entregado y leído, y crear plantillas y mandarlas a aprobar a Meta.
+- Por ahora es solo para probar la conexión con el número de prueba de Meta: todavía no hay ningún número de Voltia conectado.
+
 #### Feriados
 
 - Los plazos en días hábiles ya no cuentan los feriados no laborables (1 de enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre), ni el Carnaval ni la Semana de Turismo, que Voltia no trabaja.

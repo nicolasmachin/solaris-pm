@@ -36,6 +36,13 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 | `BILLER_TOKEN` | token de la API de Biller (facturación electrónica). Trae las facturas que nos emiten los proveedores a Finanzas → Cuentas por pagar. Vacío = el job no corre y la bandeja avisa que no está configurada |
 | `BILLER_URL` | `https://biller.uy` en producción (default del compose de prod); `https://test.biller.uy` es la cuenta de prueba |
 | `BILLER_SUCURSAL` | ID de la sucursal de Voltia en Biller productivo (Ajustes → Sucursales). Sin esto no se emiten facturas a clientes. En test es la 889 |
+| `WHATSAPP_TOKEN` | token permanente del usuario del sistema `voltia-pm` de Meta (permisos de mensajes y de administración de WhatsApp). **Secreto** |
+| `META_APP_SECRET` | clave secreta de la aplicación "Voltia PM" (developers.facebook.com → Configuración → Básica). Valida la firma de cada aviso de Meta: sin ella el webhook rechaza todo. **Secreto** |
+| `WHATSAPP_VERIFY_TOKEN` | texto al azar que se inventa uno (`openssl rand -hex 24`) y se carga igual en Meta al guardar el webhook |
+| `WHATSAPP_PHONE_NUMBER_ID` | id del número de WhatsApp en Meta por el que se manda |
+| `WHATSAPP_WABA_ID` | id de la cuenta de WhatsApp Business (plantillas y suscripción) |
+| `GRAPH_API_VERSION` | opcional; vacío = `v26.0` |
+| `FERIADOS_EXTRA` | opcional; días no laborables sueltos (puentes), `AAAA-MM-DD` separados por coma. Los feriados fijos, Carnaval y Turismo ya están en el código |
 | `BUNNY_STREAM_REFERER` | opcional. Referer con el que el server pide las miniaturas; default `BASE_URL`. Tiene que estar en los *Allowed domains* de Bunny |
 
 > ⚠️ **Gap conocido del compose de prod**: el bloque `server.environment` de
@@ -267,6 +274,7 @@ empiezan con `/api`**:
 /oauth/*
 /.well-known/oauth-protected-resource*
 /.well-known/oauth-authorization-server*
+/webhooks/*
 ```
 
 Si el `Caddyfile` rutea solo `/api/*` al server y todo lo demás al frontend,
@@ -278,6 +286,10 @@ app.voltia.com.uy {
         reverse_proxy 127.0.0.1:4000
     }
     handle /auth/* {
+        reverse_proxy 127.0.0.1:4000
+    }
+    # Webhook de WhatsApp (Meta). Sin esto Meta cae en la SPA y la verificación falla.
+    handle /webhooks/* {
         reverse_proxy 127.0.0.1:4000
     }
     # Conector MCP
@@ -318,6 +330,25 @@ Después, desde Claude en la web: Configuración → Conectores → agregar
 `https://app.voltia.com.uy/mcp`. Se abre la pantalla de autorización de Voltia
 PM, se entra con email y contraseña, y queda. **Desde el celular no se puede
 agregar, pero sí usar** una vez agregado desde la computadora.
+
+## 6c. WhatsApp (Cloud API de Meta)
+
+Detalle en `docs/manual/15-whatsapp.md`. Después del primer deploy con WhatsApp:
+
+1. Cargar en el `.env` del VPS las variables de §2 (`WHATSAPP_*`, `META_APP_SECRET`)
+   y reiniciar el server.
+2. Confirmar que Caddy manda `/webhooks/*` al backend (§6b.2). Probar:
+   `curl -s -o /dev/null -w "%{http_code}" "https://app.voltia.com.uy/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=x&hub.challenge=1"`
+   tiene que dar **403** (llegó al server y rechazó el token). Si da 200 con HTML,
+   está cayendo en el frontend.
+3. En developers.facebook.com → Voltia PM → WhatsApp → Configuración → Webhook:
+   URL `https://app.voltia.com.uy/webhooks/whatsapp` y el `WHATSAPP_VERIFY_TOKEN` →
+   Verificar y guardar → suscribir el campo `messages`.
+4. Suscribir la aplicación a la cuenta de WhatsApp:
+   `docker compose -f docker-compose.prod.yml exec server npx tsx scripts/whatsapp-suscribir-app.ts`
+   (con `--ver` lista las suscriptas).
+5. Prueba punta a punta: desde Administración → WhatsApp, mandar `hello_world` al
+   celular de prueba, contestar desde el celular y ver la respuesta y las tildes.
 
 ## 7. Verificar que el deploy salió bien
 

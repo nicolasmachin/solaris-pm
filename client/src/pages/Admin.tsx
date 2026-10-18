@@ -39,6 +39,7 @@ import { TabDeadlineRules } from "./AdminDeadlineRules";
 import { TabStageSlas } from "./admin/StageSlasPage";
 import { TabSalesStageSlas } from "./admin/SalesStageSlasPage";
 import { TabCadenciaRecorrido } from "./admin/RecorridoCadenciasPage";
+import { TabWhatsApp } from "./admin/WhatsAppAdminPage";
 import { TabDigestConfig } from "./admin/DigestConfigPage";
 import { TabGastoIA } from "./admin/GastoIAPage";
 import { TabClientes } from "./AdminClientes";
@@ -3339,6 +3340,7 @@ export function Admin() {
           {activeTab === "permisos" && <TabPermisos />}
           {activeTab === "configuracion" && <TabConfiguracion />}
           {activeTab === "gasto-ia" && <TabGastoIA />}
+          {activeTab === "whatsapp" && <TabWhatsApp />}
           {activeTab === "objetivos" && <TabObjetivos />}
           {activeTab === "finanzas" && <TabFinanzas />}
           {activeTab === "costos-fijos" && <TabCostosFijos />}

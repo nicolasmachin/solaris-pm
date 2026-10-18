@@ -69,6 +69,7 @@ export const ADMIN_GROUPS: AdminSidebarGroup[] = [
     items: [
       { tab: "configuracion", label: "Configuración del sistema" },
       { tab: "gasto-ia", label: "Gasto de IA" },
+      { tab: "whatsapp", label: "WhatsApp" },
     ],
   },
 ];

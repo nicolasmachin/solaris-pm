@@ -55,6 +55,16 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_ENCRYPTION_KEY: ${SMTP_ENCRYPTION_KEY:-}
       # IA (Claude) y transcripción de audios (Whisper).
+      # WhatsApp Cloud API de Meta (docs/manual/15-whatsapp.md, DEPLOY.md §2). Sin
+      # estas, el webhook rechaza todo y Administración → WhatsApp no manda nada.
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_WABA_ID: ${WHATSAPP_WABA_ID:-}
+      GRAPH_API_VERSION: ${GRAPH_API_VERSION:-}
+      # Días no laborables sueltos (puentes), AAAA-MM-DD separados por coma.
+      FERIADOS_EXTRA: ${FERIADOS_EXTRA:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       # Growatt Open API. Sin el token, la ingesta mensual de reportes

@@ -49,6 +49,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 12 | [Infraestructura](12-infraestructura.md) | Docker, base de datos, storage, jobs, correo, IA, respaldos | 🟡 Parcial (resumen diario por correo, con contratos pendientes de firma · gasto de IA) |
 | 13 | [Conector MCP](13-conector-mcp.md) | Voltia PM dentro del chat de Claude: autorización, herramientas, permisos | ✅ Completo |
 | 14 | [Capacitación](14-capacitacion.md) | Videos (Bunny Stream) y documentos por área, permisos por sección, progreso y seguimiento; videos para clientes en el portal | ✅ Completo |
+| 15 | [WhatsApp](15-whatsapp.md) | Cloud API de Meta: webhook, envío, plantillas, Administración → WhatsApp | 🟡 Parcial (base para la revisión de Meta; sin números reales conectados) |
 
 Los capítulos pendientes existen con su esqueleto y se completan a medida que se
 trabaja sobre cada módulo. Un capítulo marcado ⬜ **no significa que la
