@@ -491,6 +491,8 @@ export async function registerClientesRoutes(app: FastifyInstance) {
           content: z.string().trim().min(1).max(2000),
           direction: z.nativeEnum(InteractionDirection).optional(),
           reason: z.nativeEnum(InteractionReason).optional(),
+          // Pasos del recorrido que resuelve el mensaje (los de la plantilla usada).
+          checks: z.array(z.string().max(60)).max(10).optional(),
         })
         .parse(request.body);
 
@@ -499,6 +501,7 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const interaction = await createInteraction(projectId, body.channel, body.content, user.id, {
         direction: body.direction,
         reason: body.reason,
+        checks: body.checks,
       });
 
       await createAuditEntry({

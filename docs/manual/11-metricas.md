@@ -34,10 +34,15 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
   plazo contra el SLA de su etapa actual.
 - **Sin fecha de instalación**: vendidos sin agenda de obra, ordenados por días
   desde la venta (más demorado arriba). Cada fila linkea a la ficha.
-- **Sin comunicación hace X días**: clientes cuya última interacción registrada
-  superó la cadencia objetivo de su recorrido, contada en **días hábiles**. Hoy
-  son E1 y E2 (5 días hábiles); **E3 no tiene cadencia**, así que los habilitados
-  no aparecen acá. "Sin contacto" si nunca se registró una.
+- **Sin comunicación hace X días**: los clientes **fuera de cadencia**, los mismos
+  que ve Experiencia Solar: la última interacción registrada superó la cadencia de
+  su recorrido más un día hábil de tolerancia, contada en **días hábiles**. El día
+  de tolerancia no aparece acá ("toca hoy" se ve en Experiencia Solar). "Sin
+  contacto" si nunca se registró una. Sale de `clientesFueraDeCadencia()` en
+  `services/clientes/index.ts` (ver capítulo 09), así que la cartera, la etapa de
+  cada cliente y el criterio son los del listado de Experiencia Solar. Qué
+  recorridos tienen cadencia depende de Administración (lo decidido es E1 y E2,
+  E3 sin cadencia; verificar la configuración de producción).
 - **¿Dónde se rompe el proceso?**: promedio real + % cumplimiento SLA por etapa, y
   el cliente más trabado en cada una.
 - **Trámites UTE** (banda): sin habilitar por demora desde la venta + reparto de
@@ -65,14 +70,15 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
   el responsable de la etapa; `resumenRiesgo()` cuenta sobre esa lista.
 - Frontend: `client/src/components/dashboard/OperationsPanel.tsx`, montado en
   `Dashboard.tsx` con `usePermission("OPERACIONES","VIEW")`.
-- **Unidades**: el SLA por etapa va en días **hábiles** (motor existente); "días
-  desde la venta" y "sin comunicación hace X días" van en días **calendario** (así
-  se lee "hace X días").
+- **Unidades**: el SLA por etapa y "sin comunicación hace X días" van en días
+  **hábiles**; "días desde la venta" va en días **calendario**. Los días hábiles
+  descuentan los feriados no laborables de fecha fija y los de `FERIADOS_EXTRA`
+  (`utils/business-days.ts` → `esFeriado()`).
 - **Las etapas de Experiencia Solar no tienen plazo.** Post-habilitación y los
   dos seguimientos paralelos (preobra y habilitación) no aparecen en
   Administración → Plazos por etapa (`STAGE_TYPES_CON_SLA` las excluye), así que
   nunca figuran como vencidas. El control de Experiencia Solar es la cadencia de
-  contacto por recorrido (hoy solo E1 y E2): "Sin comunicación".
+  contacto por recorrido: "Sin comunicación".
 - **Universo distinto al listado de Proyectos.** "En riesgo ahora" y el chat
   cuentan solo obras **activas** (sin las cargadas por planilla ni las omitidas).
   El filtro "Solo vencidos" de Proyectos trabaja sobre los estados que estén
@@ -88,7 +94,9 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
   EXPERIENCIA_SOLAR, FINANZAS ni CLIENT.
 - La cadencia de contacto se edita en **Administración → Cadencia de contacto**
   (`CONFIGURACION:EDIT`), modelo `RecorridoCadencia` (una fila por E1/E2/E3, en
-  días calendario), con seed `seed-recorrido-cadencias.ts` (defaults 3/5/10).
+  días hábiles; el comentario del schema que dice "calendario" está mal), con seed
+  `seed-recorrido-cadencias.ts` (defaults 3/5/10). La tolerancia de un día se
+  cambia con la variable `CADENCIA_TOLERANCIA_DIAS`.
 
 ### Reglas y decisiones
 
@@ -97,14 +105,15 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
   quedan fuera del semáforo.
 - "¿Dónde se rompe?" ordena por el pipeline canónico (`PIPELINE_DEFINITIONS`) y
   solo muestra etapas con dato histórico o alguien trabado.
-- Los generadores livianos (CSV / Experiencia Solar) quedan fuera del panel.
+- Los generadores livianos (CSV / Experiencia Solar) quedan fuera del panel, salvo en "Sin comunicación", que muestra toda la cartera de Experiencia Solar.
 
 ### Casos borde
 
 - Cliente nunca contactado → "Sin contacto" (siempre aparece, sin importar el
   objetivo).
 - Cadencia inactiva para un recorrido → ese recorrido no dispara "Sin comunicación".
-- El motor de días hábiles no contempla feriados (solo fines de semana).
+- Los feriados que no son de fecha fija (Carnaval, Semana de Turismo) no se
+  descuentan salvo que se carguen en `FERIADOS_EXTRA`.
 
 ---
 

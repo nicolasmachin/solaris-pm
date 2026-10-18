@@ -25,6 +25,14 @@ import {
 import { STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "./traspasos/catalogo.js";
 import { crearTraspasoSiNoExiste } from "./traspasos/traspasos.service.js";
 import { fireStageSurveys } from "./encuestas/encuestas.service.js";
+import { activarPorHecho } from "./clientes/recorrido.service.js";
+import type { HechoRecorrido } from "./clientes/recorrido-checks.js";
+
+/** Etapas cuyo cierre arranca el plazo de avisos de Experiencia Solar. */
+const STAGE_A_HECHO_RECORRIDO: Partial<Record<StageType, HechoRecorrido>> = {
+  ONBOARDING: "onboarding",
+  EJECUCION_OBRA: "obra_terminada",
+};
 import { addDays, diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
 import { computeStageCountdown } from "./stage-sla.service.js";
@@ -242,6 +250,10 @@ export async function syncStageProgress(stageId: string, opts?: { actorUserId?: 
     // Encuestas de satisfacción por hito (obra / habilitación). No requieren
     // actor (las genera el sistema). Idempotente y best-effort.
     await fireStageSurveys(updatedStage.name, stage.projectId);
+    // Arranca el plazo de los avisos de Experiencia Solar que dispara esta etapa
+    // (la bienvenida al cerrar el onboarding, el de obra terminada).
+    const hecho = STAGE_A_HECHO_RECORRIDO[updatedStage.name];
+    if (hecho) await activarPorHecho(stage.projectId, hecho);
   }
 
   return updatedStage;

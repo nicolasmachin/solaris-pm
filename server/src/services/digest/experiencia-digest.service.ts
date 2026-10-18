@@ -48,13 +48,19 @@ import { TicketEstado } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { getRecorrido } from "../clientes/index.js";
 import { sendEmail } from "../email.service.js";
+import { businessDaysBetween } from "../../utils/business-days.js";
+import { CODIGO_AVISO_HABILITACION } from "../clientes/recorrido-checks.js";
 import { emailExperienciaDigest, type ExpAlerta, type ExpBloque } from "../email.templates.js";
 import { getEnabledByRole } from "./digest-config.service.js";
 
-const DIA_MS = 24 * 60 * 60 * 1000;
-
+// En días hábiles, como todos los plazos del recorrido: un paso que venció el
+// viernes no lleva "3 días" vencido el lunes, lleva uno.
 function diasDesde(fecha: Date, now: Date): number {
-  return Math.max(0, Math.floor((now.getTime() - fecha.getTime()) / DIA_MS));
+  return businessDaysBetween(fecha, now);
+}
+
+function haceDias(dias: number): string {
+  return dias === 0 ? "hoy" : `hace ${dias} día${dias === 1 ? "" : "s"} hábil${dias === 1 ? "" : "es"}`;
 }
 
 export type ResumenExperiencia = {
@@ -68,6 +74,12 @@ export type ResumenExperiencia = {
   cadencia: ExpBloque[];
   /** Todos los que están fuera de cadencia, incluidos los listados en `novedades`. */
   cadenciaTotal: number;
+  /**
+   * Clientes a los que hoy se les cumple la cadencia (día de tolerancia): hay que
+   * escribirles hoy, todavía no están fuera de cadencia. Sin novedad (esos ya van
+   * arriba).
+   */
+  tocaHoy: ExpBloque[];
   /** Alertas + clientes listados (sin repetir). 0 = no se manda nada. */
   total: number;
 };
@@ -97,8 +109,12 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
         projectId: c.projectId,
         cliente: c.nombre,
         titulo: "Avisar la habilitación: ya puede encender",
-        detalle: c.diasSinContacto === null ? "Sin contacto registrado" : `${c.diasSinContacto} días sin contacto`,
-        dias: c.diasSinContacto,
+        // Lo que importa es cuánto hace que UTE habilitó (la Regla de Oro corre
+        // desde ahí), no cuánto hace del último contacto.
+        detalle: c.fechaHabilitacion
+          ? `UTE habilitó ${haceDias(diasDesde(new Date(c.fechaHabilitacion), now))}`
+          : "UTE habilitó",
+        dias: c.fechaHabilitacion ? diasDesde(new Date(c.fechaHabilitacion), now) : null,
       });
     }
   }
@@ -111,18 +127,21 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
           completadoEn: null,
           venceEn: { not: null, lt: now },
         },
-        select: { projectId: true, titulo: true, venceEn: true, recorrido: true },
+        select: { projectId: true, codigo: true, titulo: true, venceEn: true, recorrido: true },
         orderBy: { venceEn: "asc" },
       })
     : [];
+  // El aviso de habilitación ya sale arriba como Regla de Oro: no se repite.
+  const conAvisoPendiente = new Set(alertas.filter((a) => a.tipo === "habilitacion").map((a) => a.projectId));
   for (const c of checksVencidos) {
+    if (c.codigo === CODIGO_AVISO_HABILITACION && conAvisoPendiente.has(c.projectId)) continue;
     const dias = c.venceEn ? diasDesde(c.venceEn, now) : 0;
     alertas.push({
       tipo: "check",
       projectId: c.projectId,
       cliente: nombrePorProyecto.get(c.projectId) ?? "—",
       titulo: c.titulo,
-      detalle: `${c.recorrido} · vencido hace ${dias} día${dias === 1 ? "" : "s"}`,
+      detalle: `${c.recorrido} · venció ${haceDias(dias)}`,
       dias,
     });
   }
@@ -161,7 +180,7 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
       projectId: t.projectId,
       cliente: t.project?.clientName ?? "—",
       titulo: `Reclamo sin responder: ${t.titulo}`,
-      detalle: `Abierto hace ${dias} día${dias === 1 ? "" : "s"}`,
+      detalle: `Abierto ${haceDias(dias)}`,
       dias,
     });
   }
@@ -190,6 +209,7 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
           nombre: c.nombre,
           diasSinContacto: c.diasSinContacto,
           fueraDeCadencia: c.fueraDeCadencia,
+          tocaContactoHoy: c.tocaContactoHoy,
           hayNovedad: c.hayNovedad,
         })),
       }))
@@ -201,14 +221,15 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
   // cuántos están fuera de cadencia, no cuántos lo están y además no tienen nada.
   const novedades = agrupar((c) => c.hayNovedad);
   const cadencia = agrupar((c) => c.fueraDeCadencia && !c.hayNovedad);
+  const tocaHoy = agrupar((c) => c.tocaContactoHoy && !c.hayNovedad);
   const cadenciaTotal = bloquesRecorrido.reduce(
     (acc, b) => acc + b.clientes.filter((c) => c.fueraDeCadencia).length,
     0,
   );
 
   const contar = (bs: ExpBloque[]) => bs.reduce((acc, b) => acc + b.clientes.length, 0);
-  const total = alertas.length + contar(novedades) + contar(cadencia);
-  return { alertas, novedades, cadencia, cadenciaTotal, total };
+  const total = alertas.length + contar(novedades) + contar(cadencia) + contar(tocaHoy);
+  return { alertas, novedades, cadencia, cadenciaTotal, tocaHoy, total };
 }
 
 /**

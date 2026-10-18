@@ -21,9 +21,13 @@ export function useCreateInteraction(projectId: string) {
       content: string;
       direction?: InteractionDirection;
       reason?: InteractionReason;
+      checks?: string[];
     }) => createInteraction(projectId, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cliente", projectId] });
+      // El contacto puede cerrar pasos del recorrido (los de la plantilla usada,
+      // el aviso de habilitación): hay que refrescar la lista de pasos.
+      qc.invalidateQueries({ queryKey: ["cliente-checks", projectId] });
       qc.invalidateQueries({ queryKey: ["clientes"] });
       // Registrar un contacto mueve el historial y apaga el semáforo de días sin
       // contacto, así que también hay que refrescar el timeline y el Recorrido.

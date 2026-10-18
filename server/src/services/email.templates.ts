@@ -168,6 +168,7 @@ export type ExpBloque = {
     nombre: string;
     diasSinContacto: number | null;
     fueraDeCadencia: boolean;
+    tocaContactoHoy?: boolean;
     hayNovedad: boolean;
   }>;
 };
@@ -196,6 +197,7 @@ export function emailExperienciaDigest(params: {
   novedades: ExpBloque[];
   cadencia: ExpBloque[];
   cadenciaTotal: number;
+  tocaHoy?: ExpBloque[];
   total: number;
 }) {
   const alertasHtml = params.alertas.length
@@ -266,11 +268,13 @@ export function emailExperienciaDigest(params: {
   const nCadencia = params.cadenciaTotal;
   const cadenciaListados = contar(params.cadencia);
   const cadenciaArriba = nCadencia - cadenciaListados;
+  const nTocaHoy = contar(params.tocaHoy ?? []);
   const plural = (n: number, sing: string, plur: string) => `${n} ${n === 1 ? sing : plur}`;
   const resumenCorto = [
     pendientes > 0 ? plural(pendientes, "pendiente", "pendientes") : null,
     nNovedades > 0 ? plural(nNovedades, "novedad", "novedades") : null,
     nCadencia > 0 ? `${nCadencia} fuera de cadencia` : null,
+    nTocaHoy > 0 ? `${nTocaHoy} para contactar hoy` : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -307,12 +311,22 @@ export function emailExperienciaDigest(params: {
         )
       : "";
 
+  const tocaHoyHtml =
+    nTocaHoy > 0
+      ? seccion(
+          `Para contactar hoy (${nTocaHoy})`,
+          "Hoy se les cumple la cadencia. Escribiéndoles hoy siguen al día.",
+          renderBloques(params.tocaHoy ?? [], (c) => sinContacto(c.diasSinContacto)),
+        )
+      : "";
+
   const contentHtml =
     `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que hay ` +
     `en el recorrido de los Generadores:</p>` +
     alertasHtml +
     novedadesHtml +
     cadenciaHtml +
+    tocaHoyHtml +
     `<p style="margin:18px 0 0;color:#8a9099;font-size:12px;">Este resumen es la misma vista del Recorrido ` +
     `en Experiencia Solar. Si no hay nada pendiente, no se manda.</p>`;
 

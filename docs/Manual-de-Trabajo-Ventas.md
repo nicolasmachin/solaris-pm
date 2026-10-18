@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.1 · del 16/10/26
+**Voltia · Uruguay** · Versión 1.2 · del 17/10/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -454,8 +454,10 @@ que está listo para copiar en el panel del lead cuando la venta está ganada:
 mensaje de alguien que no conoce y desconfía. La presentación previa convierte
 ese mensaje en la continuación de una relación, no en un contacto frío.
 
-**En Voltia PM:** en la ficha del cliente, etapa **E1** → paso **«Bienvenida y
-presentación»**. Tiene el mensaje modelo listo para copiar.
+**La bienvenida no la manda el asesor.** La manda Experiencia Solar, después de la
+presentación: en la ficha del cliente, el paso **«Bienvenida y presentación»** de
+la etapa **E1** es de Experiencia Solar. Lo que le toca al asesor es la
+presentación, con el mensaje de arriba.
 
 ## Las reglas de Ventas
 
@@ -1052,6 +1054,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.2 | 17 de octubre de 2026 | Se aclara que la bienvenida al cliente la manda Experiencia Solar: al asesor le toca presentarle al referente, como última tarea del onboarding. |
 | 1.1 | 16 de octubre de 2026 | En el costeo de la propuesta se pueden cambiar la comisión del vendedor y la del BBVA; ponerlas en cero las saca del precio. |
 | 1.0 | 14 de octubre de 2026 | Primera versión completa del manual: el procedimiento, los lineamientos, las herramientas de Voltia PM, a quién se le pregunta qué y qué hacer cuando algo sale mal quedan cerrados. Lo que todavía depende de algo pendiente queda marcado en el texto (la firma de los asesores por Voltia). |
 | 0.10 | 12 de octubre de 2026 | Lo que se adjunta en el lead después de ganado pasa también al proyecto. |

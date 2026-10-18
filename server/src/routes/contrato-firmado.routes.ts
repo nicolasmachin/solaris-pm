@@ -26,6 +26,7 @@ import { deleteStoredFile, saveUploadedFile } from "../services/file-storage.ser
 import { esHeic } from "../services/heic.service.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
+import { cerrarChecks } from "../services/clientes/recorrido.service.js";
 
 // PDF o foto. HEIC/HEIF (iPhone) se acepta y `saveUploadedFile` lo pasa a JPEG.
 const EXTENSIONES = new Set([".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]);
@@ -150,6 +151,14 @@ export async function registerContratoFirmadoRoutes(app: FastifyInstance) {
         action: AuditAction.file_uploaded,
         description:
           `${anteriores.length > 0 ? "Reemplazó" : "Subió"} el contrato firmado de ${project.clientName} ('${saved.filename}')`,
+      });
+
+      await cerrarChecks({
+        projectId,
+        codigos: ["e1_contrato_firmado"],
+        userId: user.id,
+        fuente: "hecho",
+        motivo: "se subió el contrato firmado",
       });
 
       reply.code(201);

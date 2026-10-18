@@ -168,11 +168,17 @@ Tres decisiones del catálogo de la app:
   `{marcador}` a la vista, y el modal lista abajo los que falten completar. Un
   hueco sin llenar se nota al leer; uno inventado por el sistema se manda mal.
 - **El texto es editable antes de copiar.** Son un piso de tono, no un molde.
-- **Al copiar se registra el contacto en la bitácora**, tildado por defecto (se
-  puede destildar). No es una comodidad: la bitácora es 100% manual y por eso está
-  casi vacía, así que copiar el mensaje es la única oportunidad realista de que
-  quede registrado. Se registra como WhatsApp saliente, con el motivo de la
-  plantilla, reusando el mismo hook que la carga manual.
+- **Al mandar el mensaje se registra el contacto en la bitácora y se cierran los
+  pasos que resuelve**, tildado por defecto (se puede destildar). Hay dos formas
+  de mandarlo: **Copiar mensaje** y **Abrir en WhatsApp**, que abre
+  `https://wa.me/<teléfono>?text=…` con el teléfono del cliente normalizado a
+  598 (`whatsapp.ts` → `telefonoWhatsApp()`; sin un teléfono válido el botón no
+  aparece). Las dos registran un WhatsApp saliente con el motivo de la plantilla y
+  mandan en `checks` los pasos de `plantilla.checks`, que el backend cierra con
+  `cerrarChecks()` (fuente `contacto`). No es una comodidad: hasta el 17-oct-2026
+  copiar la plantilla registraba el contacto pero dejaba el paso abierto, y la
+  lista de vencidos se llenaba de cosas ya hechas. La bienvenida ya no cierra la
+  conversación de expectativa: son pasos distintos.
 - **La plantilla de acceso al portal sale con las credenciales reales.** El paso
   `e1_portal` lleva el botón de crear (o reenviar) el acceso, y al terminar abre
   esa plantilla ya completa. La contraseña se pasa por callback y no por la ficha
@@ -326,7 +332,11 @@ salieron de la pantalla en septiembre de 2026 porque eran dos selects que había
 que tocar en cada registro y con los que no se filtraba ni se decidía nada. Los
 campos siguen en el modelo y el motivo lo pone el sistema donde significa algo —
 `AVISO_HABILITACION` desde el botón de la Regla de Oro, y el motivo de la
-plantilla al copiar un mensaje. Se carga desde la ficha del cliente
+plantilla al copiar un mensaje. **Un contacto saliente cierra pasos**: los que
+manda en `checks` y el que corresponde a su motivo (`CHECK_POR_MOTIVO` en
+`recorrido-checks.ts`: `BIENVENIDA` → bienvenida, `AVISO_HABILITACION` → aviso de
+habilitación). Antes el aviso de habilitación registrado por la bitácora apagaba
+la alerta del cron pero dejaba el paso abierto: dos fuentes que no se hablaban. Se carga desde la ficha del cliente
 (`ClienteInteractionForm`) o por el conector MCP. Es **100 % manual**: lo que no
 se transcribe no existe para el sistema. Alimenta la columna "Último contacto".
 
@@ -337,7 +347,20 @@ del criterio: el backend calcula `diasSinContacto` y `fueraDeCadencia` por clien
 y la pantalla usa ese veredicto, en vez del umbral fijo de 7 días que tenía antes.
 
 **Se cuenta en días hábiles**, con `businessDaysBetween()` de
-`utils/business-days.ts` (excluye sábados y domingos; los feriados todavía no).
+`utils/business-days.ts`: excluye sábados, domingos y los feriados no laborables
+de fecha fija (1-ene, 1-may, 18-jul, 25-ago y 25-dic, `esFeriado()`); los días que
+Voltia no trabaja sin ser feriado (Carnaval, Turismo) se agregan con la variable
+`FERIADOS_EXTRA`.
+
+**Un día de tolerancia.** El criterio vive en un solo lugar,
+`clientes/cadencia.ts` → `estadoCadencia()`: hasta el objetivo el cliente está al
+día; el día siguiente (`TOLERANCIA_CADENCIA_DIAS`, 1 por defecto, variable
+`CADENCIA_TOLERANCIA_DIAS`) **toca contactarlo hoy** (`tocaContactoHoy`, amarillo
+y "toca hoy" en el Recorrido, el listado y la ficha); recién después cuenta como
+`fueraDeCadencia`. Se decidió el 17-oct-2026: el aviso de que le toca contacto
+llega el día en que se cumple el plazo, y que figurara en rojo mientras se lo
+estaba contactando era injusto y llenaba el número de falsos atrasos. Los
+proyectos omitidos de métricas (`excludedFromMetrics`) no se marcan.
 `diasSinContacto` **es** ese número hábil, no el corrido: se decidió así para que
 el número que se muestra sea el mismo que decide el color, y no se vea un 7 sin
 marcar al lado de un 6 marcado. La UI lo rotula "d háb.".
@@ -358,7 +381,11 @@ Se usa en tres lugares:
 - La columna **Último contacto** del listado, que muestra los días y se pinta
   cuando el cliente está fuera de umbral.
 - El filtro **"Fuera de cadencia"** del listado.
-- El endpoint `/ops/sin-comunicacion` del panel de Operaciones del Dashboard.
+- El endpoint `/ops/sin-comunicacion` del panel de Operaciones del Dashboard y la
+  herramienta `sin_comunicacion` del conector. Desde el 17-oct-2026 salen de
+  `clientesFueraDeCadencia()`, sobre el mismo listado: antes Operaciones calculaba
+  por su cuenta, con otro universo (sin PAUSED) y otra etapa para los importados
+  (E1 por defecto), y el mismo cliente daba distinto en cada lado.
 
 Las tres son **vistas de consulta**: mirarlas no dispara nada por sí mismo. Lo que
 empuja es el **resumen diario del recorrido** por correo (ver más abajo), que sale
@@ -398,10 +425,29 @@ cliente) y no se tocó.
   piden para un proyecto. Así los ~95 clientes que ya existen entran sin backfill,
   y un cambio del catálogo alcanza a todos.
 - **Nacen sin plazo.** El reloj lo arranca el **hecho** que los dispara
-  (`activarCheck`): confirmar la fecha de obra abre el aviso al cliente (2 días
-  hábiles); que Tramitación marque el trámite terminado abre el aviso de "ya podés
-  encender" y los cinco del cierre (15 días). Si el plazo corriera desde la
-  creación, todo nacería vencido.
+  (`activarPorHecho()` con `HECHO_ACTIVA_CHECKS`). Si el plazo corriera desde la
+  creación, todo nacería vencido. Desde el 17-oct-2026 todos tienen plazo:
+
+  | Hecho | Dónde se dispara | Pasos (días hábiles) |
+  |---|---|---|
+  | Cierre del onboarding | `project.service` al completarse ONBOARDING | bienvenida (1), expectativa (3), acceso al portal (2), contrato firmado (5) |
+  | Fecha de obra confirmada | `PATCH /calendar/:id/confirm` | aviso de fecha (2), capataz (2) |
+  | Fin de obra | `project.service` al completarse EJECUCION_OBRA | obra terminada (1) |
+  | Encuesta generada | `crearEncuestaSiNoExiste()` | aviso de encuesta de obra o de habilitación (2) |
+  | UTE finalizó | `ute-sync.service` | aviso de habilitación (**48 horas reales**, `plazoHoras`), los cuatro de E3 (15) |
+
+  El aviso de habilitación es el único en horas: corre desde `finalizedAt`, con
+  fines de semana, porque cada día que pasa el cliente deja de ahorrar. Los pasos
+  que ya estaban abiertos sin plazo antes del cambio siguen sin plazo hasta que
+  ocurra su hecho: no hay backfill.
+- **Se cierran solos cuando Voltia PM ve el hecho** (`cerrarChecks()`, fuente
+  `hecho`): acceso al portal al crear o vincular el usuario
+  (`createPortalUserForProject`), contrato firmado al subirlo
+  (`contrato-firmado.routes`), alta en reportes cuando la config queda habilitada
+  y con al menos un destinatario (`upsertConfig`). Cada cierre automático queda en
+  auditoría ("Se completó solo el paso…") y en `RecorridoCheck.cierreFuente`
+  (`manual` / `contacto` / `hecho`; null en los cerrados antes del 17-oct-2026),
+  que es la base para medir cuánto se cierra solo y cuánto a mano.
 - **Vencido solo aplica a lo pendiente**: uno completado tarde no es un pendiente,
   es historia.
 - **No hay check de "contacto semanal"**: el cumplimiento se calcula desde las
@@ -672,12 +718,16 @@ empujada al mail, con su misma estructura y su mismo orden, para que el correo y
 la app no cuenten dos historias distintas:
 
 1. **Pendientes** — lo que tiene reloj y ya venció: avisos de habilitación
-   pendientes, checks del recorrido con el plazo pasado y reclamos del cliente sin
-   respuesta. Ordenados por días vencidos, de más a menos.
+   pendientes ("UTE habilitó hace N días hábiles"), checks del recorrido con el
+   plazo pasado y reclamos del cliente sin respuesta, en días hábiles. Ordenados
+   por días vencidos, de más a menos. El check del aviso de habilitación no se
+   repite si el cliente ya está como Regla de Oro.
 2. **Novedades**, por etapa (E1 → E2 → E3) — clientes con algo nuevo que nadie
    miró.
 3. **Fuera de cadencia**, por etapa — clientes sin novedad a los que les debemos
    el contacto del período.
+4. **Para contactar hoy**, por etapa — clientes sin novedad a los que hoy se les
+   cumple la cadencia (el día de tolerancia). No suman a "fuera de cadencia".
 
 Las dos últimas usan el orden que ya resuelve `getRecorrido`; no se reordena en el
 mail.
@@ -891,16 +941,18 @@ historial de la ficha. Ver "historia clínica" arriba.
   de por vida: se emite el aviso de 24 h una vez y el de 48 h una vez, y después
   el sistema no vuelve a insistir nunca. Queda sólo el badge "⚠ Aviso pendiente"
   en el listado, que no filtra ni ordena.
-- **Un reclamo abierto desde el portal no notifica a nadie internamente.** La
-  única forma de enterarse es entrar a la pantalla de tickets y mirar. Es el
-  pendiente que hace falta cerrar para sostener el compromiso de responder el
-  mismo día.
+- **Un reclamo abierto desde el portal avisa en el momento.** Desde el
+  17-oct-2026 `crearTicket()` con `origenCliente` manda una notificación in-app
+  (tipo `ticket_actualizado`, "Reclamo nuevo de …") a cada usuario del rol
+  EXPERIENCIA_SOLAR, con enlace a Mis tareas → Tickets. Antes no avisaba a nadie y
+  se enteraban recién en el resumen del día siguiente.
 - **El correo enviado al cliente no cuenta como contacto.** Los envíos quedan en
   `EmailLog` pero no crean `ClientInteraction`, así que no mueven "Último
   contacto" ni aparecen en el historial de la ficha.
-- **El panel de clientes sin comunicación excluye a los proyectos `COMPLETED` y a
-  los generadores importados por CSV**, que es justamente buena parte de la
-  cartera post-habilitación.
+- **El panel "sin comunicación" de Operaciones muestra la misma cartera que
+  Experiencia Solar**, importados por CSV y terminados incluidos (sale de
+  `clientesFueraDeCadencia()`). Los clientes sin etapa de recorrido no se miden:
+  sin etapa no hay cadencia contra la cual comparar.
 - **El "seguimiento semanal" del pipeline es una casilla de una sola vez.** Se
   tilda y queda tildada para siempre: no es un contador recurrente ni vence.
 - **Las encuestas se depositan en el portal sin avisar por correo**, y el 76 % de

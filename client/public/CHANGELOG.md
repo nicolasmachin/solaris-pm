@@ -1,12 +1,92 @@
 # Novedades
 
+## v12.8
+
+### 17 de octubre de 2026
+
+#### Experiencia Solar: los pasos se dan por hechos solos
+
+- Al mandar un mensaje modelo y registrar el contacto, el paso que ese mensaje resuelve **queda hecho**: no hace falta tildarlo aparte. Vale también para el aviso de habilitación: el cliente deja de figurar en rojo apenas se registra que se le avisó.
+- También se dan por hechos solos, sin que nadie los tilde: el **acceso al portal**, cuando se le crea el usuario al cliente; el **contrato firmado**, cuando se sube; y el **alta en los reportes mensuales**, cuando el reporte queda habilitado y con alguien a quien mandarlo.
+- En el historial de la ficha queda anotado que el paso se completó solo y por qué.
+- El mensaje de bienvenida ya no da por hecha también la conversación de expectativa: son dos pasos distintos.
+
+#### Abrir en WhatsApp
+
+- En los mensajes modelo hay un botón nuevo, **Abrir en WhatsApp**: abre el chat del cliente con el mensaje ya escrito, en el celular o en la computadora, y registra el contacto en el mismo clic. Copiar el mensaje sigue estando.
+
+#### Todos los pasos del recorrido tienen plazo
+
+- Cada paso tiene su plazo, que arranca cuando pasa lo que lo dispara:
+  - cuando el asesor cierra el onboarding: bienvenida (1 día hábil), conversación de expectativa (3), acceso al portal (2) y contrato firmado (5);
+  - cuando se confirma la fecha de obra: aviso de la fecha y presentación del capataz (2);
+  - cuando se termina la obra: aviso de obra terminada (1);
+  - cuando se genera una encuesta: su aviso (2).
+- El **aviso de habilitación** se mide en horas: 48 horas desde que UTE habilitó, fines de semana incluidos.
+- La bienvenida la manda Experiencia Solar, después de que el asesor le presentó al cliente su referente.
+
+#### Cadencia de contacto: un día de margen
+
+- El día en que se le cumple la cadencia, el cliente aparece como **"toca hoy"**, en amarillo, y no en rojo. Recién al día siguiente cuenta como fuera de cadencia.
+- "Sin comunicación" del panel de Operaciones y "fuera de cadencia" de Experiencia Solar ahora salen de la misma cuenta y dan lo mismo.
+
+#### Resumen diario de Experiencia Solar
+
+- Nueva sección **"Para contactar hoy"**, con los clientes a los que hoy se les cumple la cadencia.
+- Los días de atraso se cuentan en días hábiles.
+- El aviso de habilitación dice cuánto hace que UTE habilitó, y ya no aparece dos veces para el mismo cliente.
+
+#### Reclamos del portal
+
+- Cuando un cliente abre un reclamo desde el portal, a Experiencia Solar le llega el aviso **en el momento**, en la campanita, y no recién en el resumen del día siguiente.
+
+#### Feriados
+
+- Los plazos en días hábiles ya no cuentan los feriados no laborables: 1 de enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre.
+
+## v12.7
+
+### 16 de octubre de 2026
+
+#### Cotizador: comisiones que se pueden cambiar
+
+- En el costeo de la propuesta (el **ícono de calculadora** del cotizador), en el bloque **Pricing**, ahora se pueden cambiar la **comisión del vendedor** y la **comisión del BBVA**, igual que la mano de obra. Poniendo **0** se saca: sirve para una venta sin asesor o para un cliente que no paga con el BBVA. El precio final baja en lo mismo.
+- Como el resto del costeo, el cambio vale **solo para esa cotización**. Dejando el campo en blanco, o con la flechita, vuelve al cálculo de siempre.
+- También se puede pedir desde el chat con Claude, al preparar la propuesta.
+- Si la propuesta ganadora va sin comisión del vendedor, al ganar la venta no se le carga a Finanzas un pago de US$ 0.
+
+#### Traer los datos de un solo generador
+
+- En el reporte de cada generador (Experiencia Solar → Reportes FV, al abrir un cliente) hay un botón nuevo, **Traer datos**, al lado de **Generar PDF**. Pide a Growatt o a Huawei los datos del período **solo de ese cliente**, sin pasar por todas las plantas.
+- Sirve para levantar a un cliente puntual. El botón **Traer datos** del panel sigue consultando todas las plantas que tengan algún dato vacío, y por eso vuelve a pasar por las que no tienen el medidor reportando.
+- Trae el período entero de nuevo aunque ya estuviera completo, y **reemplaza lo que se haya cargado a mano**: por eso pide confirmación antes.
+
+#### Reportes mensuales: salen solos
+
+- Los reportes mensuales de generación ahora se mandan **solos, todos los días a las 10 de la mañana**: cada cliente lo recibe el día después de que su reporte quedó listo, sin que nadie tenga que apretar **Enviar pendientes**. El botón sigue estando para mandar uno en el momento.
+
+#### Pagos a instaladores: solo las obras agendadas
+
+- En **Finanzas → Instaladores** (y en **Mis cobros** del instalador) ahora solo aparecen las obras **agendadas en el calendario con un equipo tercerizado**: el instalador toma el cargo desde ahí. Las ventas ganadas que todavía no se agendaron, o que van con equipo propio, ya no figuran "sin asignar".
+- Lo mismo vale para lo que se le debe a los instaladores en la posición de Finanzas.
+- Si una obra se saca del calendario o pasa a equipo propio, su pago deja de verse, salvo que ya tenga algo pagado. Los cargados a mano para trabajos fuera de una obra se siguen viendo.
+
+#### Comentarios de Gerencia
+
+- Lo que comenta un usuario de **Gerencia** (rol Administrador), desde cualquier pantalla, ya no aparece con el área de esa pantalla: lleva destacado el rótulo **GERENCIA** y, al lado, el nombre de quien lo escribió. Se ve igual en el proyecto, en las pantallas de cada área, en el lead y en el historial de la ficha del cliente.
+- Lo mismo con los **contactos con el cliente** que registra Gerencia (llamadas, WhatsApp, mails): en el historial de la ficha y en la pestaña Contacto con el cliente del proyecto salen como **GERENCIA**, no como Experiencia Solar.
+
+#### Arreglos
+
+- En el **resumen de WhatsApp** al instalador, los **últimos trabajos saldados** ahora son los que se terminaron de pagar más recientemente, con la fecha de ese pago. Antes se elegían por fecha de obra, y una obra vieja pagada hoy no aparecía.
+
 ## v12.6
 
 ### 15 de octubre de 2026
 
 #### Reportes de generación para comercios y empresas
 
-- Voltia PM ahora tiene la **tarifa General Simple** de UTE, la de comercios y empresas. En **Configuración → Tarifas UTE** se ven sus tramos de consumo, el cargo fijo y el cargo por potencia, y en un cuadro nuevo se pueden cargar.
+- Voltia PM ahora tiene la **tarifa General Simple** de UTE, la de comercios y empresas. En **Administración → Tarifas UTE** se ven sus tramos de consumo, el cargo fijo y el cargo por potencia, y en un cuadro nuevo se pueden cargar.
 - En el reporte de un generador marcado como **empresa** se puede elegir **General Simple** como tarifa contratada. El reporte calcula la factura con esos precios, incluido el IVA sobre el cargo fijo, que en esa tarifa también se cobra.
 - Las plantas con inversor **Huawei** que tienen cargado su **día de corte** ahora traen los datos de su ciclo de lectura de UTE (por ejemplo, del 17 de agosto al 16 de septiembre) y no los del mes calendario, así que los kWh del reporte coinciden con los de su factura.
 

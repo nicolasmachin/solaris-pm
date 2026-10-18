@@ -49,6 +49,8 @@ export interface ClienteListItem {
   planGranizo: ResumenPlan | null;
   diasSinContacto: number | null; // null = nunca hubo contacto registrado
   fueraDeCadencia: boolean; // supera la cadencia de su etapa (config. en Admin)
+  /** Hoy se le cumple la cadencia (día de tolerancia): hay que escribirle hoy. */
+  tocaContactoHoy?: boolean;
   /** Avisos clave pendientes con el reloj corriendo. Vacío = nada urgente. */
   avisosClavePendientes: string[];
   hayNovedad: boolean; // pasó algo posterior al último contacto registrado
@@ -326,6 +328,8 @@ export async function createInteraction(
     content: string;
     direction?: InteractionDirection;
     reason?: InteractionReason;
+    /** Pasos del recorrido que resuelve el mensaje: se cierran solos al registrarlo. */
+    checks?: string[];
   },
 ): Promise<ClienteInteraction> {
   const { data } = await apiClient.post<ClienteInteraction>(

@@ -20,6 +20,7 @@ import {
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
+import { cerrarChecks } from "../clientes/recorrido.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { dateAPeriodo, type Periodo, periodoADate } from "./periodo.js";
 import { KEY_A_TARIFA, tarifaAKey } from "./tarifas/tarifas.service.js";
@@ -368,6 +369,22 @@ export async function upsertConfig(
       ? `Editó la config de reporte fotovoltaico`
       : `Dio de alta el reporte fotovoltaico del generador`,
   });
+
+  // El paso "Alta en reportes mensuales" se cierra solo cuando el reporte queda
+  // de verdad en condiciones de salir: habilitado y con alguien a quien mandarlo.
+  const alta = await prisma.reporteFvConfig.findUnique({
+    where: { projectId },
+    select: { habilitado: true, _count: { select: { destinatarios: true } } },
+  });
+  if (alta?.habilitado && alta._count.destinatarios > 0) {
+    await cerrarChecks({
+      projectId,
+      codigos: ["e3_alta_reportes"],
+      userId,
+      fuente: "hecho",
+      motivo: "el reporte mensual quedó configurado y habilitado",
+    });
+  }
 }
 
 /**

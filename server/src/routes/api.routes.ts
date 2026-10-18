@@ -72,7 +72,7 @@ import {
 import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { clearUmbralNotaBajaCache } from "../services/encuestas/encuestas.service.js";
-import { activarCheck, crearCheckReagenda } from "../services/clientes/recorrido.service.js";
+import { activarPorHecho, crearCheckReagenda } from "../services/clientes/recorrido.service.js";
 import {
   completarPorEvidencia,
   despintarPorEvidencia,
@@ -9965,10 +9965,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
     });
 
-    // Confirmar la fecha arranca el plazo del aviso al cliente (2 días hábiles).
-    // Antes, confirmar en el calendario no generaba ninguna obligación visible:
-    // de 33 obras agendadas, 6 quedaron sin confirmar y sus fechas ya pasaron.
-    await activarCheck(existing.projectId, "e1_fecha_obra");
+    // Confirmar la fecha arranca el plazo del aviso al cliente y de la
+    // presentación del capataz (2 días hábiles). Antes, confirmar en el
+    // calendario no generaba ninguna obligación visible: de 33 obras agendadas, 6
+    // quedaron sin confirmar y sus fechas ya pasaron.
+    await activarPorHecho(existing.projectId, "fecha_confirmada");
 
     await createAuditEntry({
       entityType: AuditEntityType.installation_schedule,

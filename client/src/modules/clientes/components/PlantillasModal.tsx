@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
-import { Check, Copy, X } from "lucide-react";
+import { Check, Copy, MessageCircle, X } from "lucide-react";
 
 import { type ClienteRecorrido } from "../../../api/clientes.api";
 import { Button } from "../../../components/ui/Button";
@@ -15,6 +15,7 @@ import {
   type CredencialesPortal,
   type Plantilla,
 } from "../plantillas";
+import { enlaceWhatsApp, telefonoWhatsApp } from "../whatsapp";
 
 // Los mensajes modelo de una etapa, listos para copiar. El texto se puede editar
 // antes de copiar: son un piso de tono, no un molde.
@@ -26,6 +27,7 @@ import {
 export function PlantillasModal({
   projectId,
   cliente,
+  telefono,
   recorrido,
   plantillaInicial,
   portal,
@@ -33,6 +35,8 @@ export function PlantillasModal({
 }: {
   projectId: string;
   cliente: string;
+  /** Teléfono del cliente, para abrir el chat de WhatsApp con el mensaje cargado. */
+  telefono?: string | null;
   recorrido: ClienteRecorrido;
   /** Id de la plantilla a abrir seleccionada (cuando se entra desde un paso). */
   plantillaInicial?: string;
@@ -70,16 +74,13 @@ export function PlantillasModal({
 
   const pendientes = marcadoresPendientes(texto);
 
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(texto);
-    } catch {
-      toast.error("El navegador no dejó copiar. Seleccioná el texto y copialo a mano.");
-      return;
-    }
-    setCopiado(true);
+  const telWa = telefonoWhatsApp(telefono);
+
+  // Registrar el contacto también cierra los pasos que resuelve la plantilla:
+  // mandar el mensaje es hacer el paso, no hace falta tildarlo aparte.
+  function registrarContacto(hecho: string) {
     if (!registrar || !canRegistrar) {
-      toast.success("Mensaje copiado");
+      toast.success(hecho);
       return;
     }
     registro.mutate(
@@ -88,12 +89,30 @@ export function PlantillasModal({
         direction: "SALIENTE",
         reason: seleccionada?.motivo === "OTRO" ? undefined : seleccionada?.motivo,
         content: texto,
+        checks: seleccionada?.checks,
       },
       {
-        onSuccess: () => toast.success("Mensaje copiado y contacto registrado"),
-        onError: () => toast.error("Se copió el mensaje, pero no se pudo registrar el contacto"),
+        onSuccess: () => toast.success(`${hecho} y contacto registrado`),
+        onError: () => toast.error(`${hecho}, pero no se pudo registrar el contacto`),
       },
     );
+  }
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      toast.error("El navegador no dejó copiar. Seleccioná el texto y copialo a mano.");
+      return;
+    }
+    setCopiado(true);
+    registrarContacto("Mensaje copiado");
+  }
+
+  function abrirWhatsApp() {
+    if (!telWa) return;
+    window.open(enlaceWhatsApp(telWa, texto), "_blank", "noopener");
+    registrarContacto("WhatsApp abierto con el mensaje");
   }
 
   return (
@@ -170,17 +189,28 @@ export function PlantillasModal({
                       onChange={(e) => setRegistrar(e.target.checked)}
                       className="h-3.5 w-3.5 accent-[var(--color-accent)]"
                     />
-                    Registrar el contacto en la bitácora al copiar
+                    Registrar el contacto en la bitácora al mandarlo
+                    {seleccionada.checks.length > 0 ? " y dar el paso por hecho" : ""}
                   </label>
                 )}
                 <div className="flex justify-end gap-2">
                   <Button size="sm" variant="secondary" onClick={onClose}>
                     Cerrar
                   </Button>
-                  <Button size="sm" onClick={copiar}>
+                  <Button size="sm" variant={telWa ? "secondary" : "primary"} onClick={copiar}>
                     {copiado ? <Check size={14} className="mr-1.5" /> : <Copy size={14} className="mr-1.5" />}
                     {copiado ? "Copiado" : "Copiar mensaje"}
                   </Button>
+                  {telWa ? (
+                    <Button size="sm" onClick={abrirWhatsApp}>
+                      <MessageCircle size={14} className="mr-1.5" />
+                      Abrir en WhatsApp
+                    </Button>
+                  ) : (
+                    <span className="self-center text-[11px] text-[var(--color-text-muted)]">
+                      Sin teléfono válido para abrir WhatsApp
+                    </span>
+                  )}
                 </div>
               </>
             ) : (

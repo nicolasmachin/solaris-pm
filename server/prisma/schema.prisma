@@ -990,6 +990,11 @@ model RecorridoCheck {
   completadoEn    DateTime? @db.Timestamptz(6)
   completadoPorId String?
   completadoPor   User?     @relation("RecorridoCheckCompletadoPor", fields: [completadoPorId], references: [id], onDelete: SetNull)
+  /// Cómo se cerró: "manual" (lo tildó una persona), "contacto" (se registró un
+  /// contacto o se usó una plantilla que lo resuelve) o "hecho" (Voltia PM vio el
+  /// hecho: usuario del portal creado, contrato subido, reporte configurado).
+  /// Null en los cerrados antes de que existiera el campo.
+  cierreFuente    String?
 
   /// Contexto del hecho que lo generó (motivo de la reagenda, fecha nueva…).
   nota       String?

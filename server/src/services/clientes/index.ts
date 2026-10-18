@@ -19,7 +19,7 @@
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
 import { resumenPlanPorProyecto, type ResumenPlan } from "../seguro-granizo/polizas.service.js";
-import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType, SubstageStatus, TipoMovimiento, FinanceMovementStatus } from "@prisma/client";
+import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, InteractionDirection, type StageType, AuditEntityType, SubstageStatus, TipoMovimiento, FinanceMovementStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { UTE_PRINCIPAL } from "../suministros.service.js";
@@ -33,6 +33,9 @@ import { TRASPASO_CATALOGO, TRASPASO_LABEL } from "../traspasos/catalogo.js";
 import { getCadenciaMap } from "../ops-panel.service.js";
 import { createAuditEntry } from "../audit.service.js";
 import { ACCIONES_NOVEDAD, textoEvento } from "./eventos.js";
+import { CHECK_POR_MOTIVO } from "./recorrido-checks.js";
+import { estadoCadencia } from "./cadencia.js";
+import { cerrarChecks } from "./recorrido.service.js";
 
 export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // "Etapa" del CRM = recorrido del cliente en 3 etapas (E1/E2/E3), derivado de la
@@ -117,6 +120,8 @@ const DEFAULT_STATUSES: ProjectStatus[] = [
 
 export type ClienteListItem = {
   projectId: string;
+  /** Código del proyecto (PRY-…). */
+  codigo: string | null;
   nombre: string;
   mail: string | null;
   telefono: string | null;
@@ -146,6 +151,13 @@ export type ClienteListItem = {
   // contacto). Lo resuelve el backend para que no convivan dos criterios: antes
   // la pantalla usaba 7 días fijos y el backend la cadencia configurable.
   fueraDeCadencia: boolean;
+  /**
+   * Se cumplió su cadencia y está dentro del día de tolerancia: hay que
+   * contactarlo hoy, pero todavía no cuenta como fuera de cadencia.
+   */
+  tocaContactoHoy: boolean;
+  /** Omitido de métricas y SLA en el panel de Operaciones: no se le mide cadencia. */
+  omitidoDeMetricas: boolean;
   // Los avisos clave del recorrido (bienvenida, fecha de obra, habilitación) que
   // están pendientes y con el reloj corriendo. Vacío = nada urgente. Es lo que
   // pinta la fila de rojo: el resto del recorrido se puede hacer con más o menos
@@ -179,6 +191,8 @@ export type ClienteFiltros = {
 
 const LIST_SELECT = {
   id: true,
+  code: true,
+  excludedFromMetrics: true,
   clientName: true,
   clientEmail: true,
   clientPhone: true,
@@ -278,6 +292,7 @@ function buildEtapa(p: ProjectListRow): EtapaInfo | null {
 function toListItem(p: ProjectListRow): ClienteListItem {
   return {
     projectId: p.id,
+    codigo: p.code,
     nombre: p.clientName,
     mail: p.clientEmail,
     telefono: p.clientPhone,
@@ -297,21 +312,56 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     planGranizo: null, // lo resuelve marcarPlanGranizo()
     diasSinContacto: diasDesde(p.clientInteractions[0]?.createdAt ?? null),
     fueraDeCadencia: false, // lo resuelve marcarCadencia() con la config real
+    tocaContactoHoy: false,
+    omitidoDeMetricas: p.excludedFromMetrics,
     avisosClavePendientes: [], // lo resuelve marcarAvisosClave()
     hayNovedad: false, // lo resuelve marcarNovedades()
   };
 }
 
-// Marca `fueraDeCadencia` según el umbral de la etapa de cada cliente. Un cliente
-// sin ningún contacto registrado siempre está fuera. Si la etapa no tiene
-// cadencia configurada o el cliente no tiene etapa, no se lo marca.
+// Marca `fueraDeCadencia` y `tocaContactoHoy` con el criterio único de
+// `cadencia.ts`. Si la etapa no tiene cadencia configurada, el cliente no tiene
+// etapa o está omitido de métricas, no se lo marca.
 async function marcarCadencia(items: ClienteListItem[]): Promise<ClienteListItem[]> {
   const cadencia = await getCadenciaMap();
   for (const i of items) {
-    const umbral = cadencia.get(i.etapa?.recorrido.codigo ?? "");
-    i.fueraDeCadencia = umbral != null && (i.diasSinContacto === null || i.diasSinContacto > umbral);
+    const umbral = i.omitidoDeMetricas ? null : cadencia.get(i.etapa?.recorrido.codigo ?? "") ?? null;
+    const estado = estadoCadencia(i.diasSinContacto, umbral);
+    i.fueraDeCadencia = estado === "fuera";
+    i.tocaContactoHoy = estado === "toca_hoy";
   }
   return items;
+}
+
+/**
+ * Los clientes fuera de cadencia, en el formato del panel de Operaciones y del
+ * conector. Sale del mismo listado que usa Experiencia Solar, para que el número
+ * sea el mismo en todas partes.
+ */
+export async function clientesFueraDeCadencia() {
+  const cadencia = await getCadenciaMap();
+  const items = await projectAndFilter({});
+  const rows = items
+    .filter((i) => i.fueraDeCadencia && i.etapa)
+    .map((i) => {
+      const recorrido = i.etapa!.recorrido.codigo;
+      const objetivo = cadencia.get(recorrido) ?? null;
+      return {
+        id: i.projectId,
+        code: i.codigo,
+        clientName: i.nombre,
+        recorrido,
+        stageLabel: i.etapa!.pipeline.label,
+        cadenciaObjetivo: objetivo,
+        diasSinContacto: i.diasSinContacto,
+        ultimoContactoEn: i.ultimoContactoEn,
+        atraso: i.diasSinContacto == null || objetivo == null ? null : i.diasSinContacto - objetivo,
+        sinContacto: i.diasSinContacto == null,
+      };
+    })
+    // Los nunca contactados primero; después, de más atrasado a menos.
+    .sort((a, b) => (b.atraso ?? Number.MAX_SAFE_INTEGER) - (a.atraso ?? Number.MAX_SAFE_INTEGER));
+  return { rows };
 }
 
 // Días HÁBILES transcurridos desde una fecha. null si no hay fecha (nunca hubo
@@ -1378,7 +1428,12 @@ export async function createInteraction(
   channel: InteractionChannel,
   content: string,
   authorId: string,
-  opts?: { direction?: InteractionDirection; reason?: InteractionReason },
+  opts?: {
+    direction?: InteractionDirection;
+    reason?: InteractionReason;
+    /** Pasos del recorrido que resuelve este contacto (los de la plantilla que se usó). */
+    checks?: string[];
+  },
 ) {
   const row = await prisma.clientInteraction.create({
     data: {
@@ -1391,12 +1446,20 @@ export async function createInteraction(
     },
     select: INTERACTION_SELECT,
   });
-  // Regla de Oro: si se registra el aviso de habilitación al cliente, se marca
-  // en el proyecto para cortar las alertas del cron (idempotente: no repisa).
-  if (opts?.reason === InteractionReason.AVISO_HABILITACION) {
-    await prisma.project.updateMany({
-      where: { id: projectId, avisoHabilitacionEn: null },
-      data: { avisoHabilitacionEn: new Date() },
+  // El contacto cierra los pasos que resuelve: los de la plantilla que se usó y
+  // el que corresponde a su motivo (bienvenida, aviso de habilitación). Antes el
+  // aviso de habilitación registrado por acá apagaba la alerta de la Regla de Oro
+  // pero dejaba el paso abierto, y el cliente seguía en rojo como si nadie le
+  // hubiera escrito. `cerrarChecks` también marca el aviso en el proyecto.
+  const porMotivo = opts?.reason ? CHECK_POR_MOTIVO[opts.reason] : undefined;
+  const codigos = [...(opts?.checks ?? []), ...(porMotivo ? [porMotivo] : [])];
+  if (opts?.direction !== InteractionDirection.ENTRANTE && codigos.length > 0) {
+    await cerrarChecks({
+      projectId,
+      codigos,
+      userId: authorId,
+      fuente: "contacto",
+      motivo: "se registró el contacto con el cliente",
     });
   }
   return serializeInteraction(row);

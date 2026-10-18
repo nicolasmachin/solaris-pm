@@ -275,6 +275,7 @@ export function RecorridoChecks({
         <PlantillasModal
           projectId={projectId}
           cliente={ficha.nombre}
+          telefono={ficha.telefono}
           recorrido={recorrido}
           plantillaInicial={plantillaAbierta.id}
           portal={portal}

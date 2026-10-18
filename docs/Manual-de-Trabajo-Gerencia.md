@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.20 — 16 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.21 — 17 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -577,6 +577,59 @@ retiene los que no pasan ese control.
 **A qué manuales afecta.** Al Manual de Posventa (el alta en los reportes
 mensuales).
 
+### Con el cliente se habla por WhatsApp, y ningún paso exige una llamada
+
+**Qué se decidió.** El canal estándar con el cliente es **WhatsApp** (o el mail,
+cuando corresponde). Ningún paso del procedimiento puede exigir una llamada
+telefónica: todo se puede hacer por mensaje. Llamar no está prohibido: si el
+cliente prefiere hablar, se habla, y lo que se dijo se registra igual que un
+mensaje.
+
+**Por qué.** Lo que se dice por teléfono no deja rastro: si nadie lo registra, para
+Voltia PM no existió, y no se puede controlar ni medir. Un mensaje queda escrito,
+el cliente lo puede volver a leer, y es lo que permite que Voltia PM se entere solo
+de lo que ya se hizo.
+
+**Desde cuándo rige.** Desde el 17 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de Posventa (la conversación de expectativa
+inicial).
+
+### La bienvenida la da Experiencia Solar, después de que el asesor la presenta
+
+**Qué se decidió.** El primer mensaje de bienvenida al cliente lo manda
+Experiencia Solar, no el asesor. Antes, como última tarea del onboarding de
+venta, el asesor le presenta al cliente a quien va a ser su referente en
+Experiencia Solar. Experiencia Solar no escribe hasta que esa presentación se hizo.
+
+**Por qué.** Desde la bienvenida en adelante el cliente habla con su referente, y
+conviene que el primer mensaje ya venga de él. La presentación del asesor evita
+que ese primer mensaje llegue en frío, de alguien que el cliente no conoce.
+
+**Desde cuándo rige.** Desde el 17 de octubre de 2026. Antes, la bienvenida la
+mandaba el vendedor.
+
+**A qué manuales afecta.** Al Manual de Posventa (la bienvenida) y al Manual de
+trabajo de Ventas (el pase del cliente a Experiencia Solar).
+
+### La cadencia de contacto tiene un día de margen
+
+**Qué se decidió.** Cuando a un cliente se le cumplen los días sin contacto de su
+etapa, ese día no figura como atrasado: aparece como **"toca hoy"**. Recién al
+día hábil siguiente cuenta como **fuera de cadencia**. Con 5 días de cadencia,
+escribirle el día 5 o el 6 está bien; el 7 ya es atraso.
+
+**Por qué.** El aviso de que le toca contacto llega justo el día en que se cumple
+el plazo. Marcarlo en rojo mientras se lo está contactando no es justo y llena el
+número de atrasos falsos. Lo que sí se mide aparte, sin margen, son los días
+reales entre un contacto y el siguiente, para ver si se contacta en el límite o
+con tiempo.
+
+**Desde cuándo rige.** Desde el 17 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de Posventa (la cadencia y el correo de la
+mañana).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -608,6 +661,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.21 | 17 de octubre de 2026 | Se registra que con el cliente se habla por WhatsApp y que ningún paso del procedimiento exige una llamada; si se llama, se registra. Se registra que la bienvenida la manda Experiencia Solar, después de que el asesor presentó al referente. Se registra que la cadencia de contacto tiene un día de margen ("toca hoy") antes de contar como atraso. |
 | 0.20 | 16 de octubre de 2026 | Se registra que los reportes mensuales salen solos, sin revisión previa, apenas están listos. |
 | 0.19 | 16 de octubre de 2026 | Se registra que lo que comenta Gerencia aparece con el rótulo GERENCIA, y no con el del área de la pantalla donde se escribió. |
 | 0.18 | 14 de octubre de 2026 | Se registra que las facturas al cliente se emiten desde Voltia PM con un borrador que una persona confirma antes de que salga a DGI, una por obra, por un porcentaje del total sin IVA de la cotización y a nombre del cliente o de quien él pida, y que lo emitido se corrige con nota de crédito. |

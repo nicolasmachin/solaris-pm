@@ -12,6 +12,7 @@ import { prisma } from "../../lib/prisma.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
 import { createNotification } from "../notification.service.js";
+import { usuariosPorRol } from "../usuarios-por-rol.js";
 import { crearTraspaso } from "../traspasos/traspasos.service.js";
 
 type TicketWithComments = Prisma.TicketGetPayload<{ include: { comentarios: true } }>;
@@ -122,7 +123,32 @@ export async function crearTicket(params: {
     description: `Ticket abierto: ${params.titulo}${params.origenCliente ? " (desde el portal)" : ""}`,
   });
 
+  // Un reclamo del cliente se responde el mismo día hábil: Experiencia Solar se
+  // tiene que enterar en el momento, no en el resumen de la mañana siguiente.
+  if (params.origenCliente) await avisarReclamoNuevo(ticket);
+
   return ticket;
+}
+
+async function avisarReclamoNuevo(ticket: TicketWithComments) {
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id: ticket.projectId },
+      select: { clientName: true },
+    });
+    for (const u of await usuariosPorRol("EXPERIENCIA_SOLAR")) {
+      await createNotification({
+        userId: u.id,
+        projectId: ticket.projectId,
+        type: NotificationType.ticket_actualizado,
+        title: `Reclamo nuevo de ${project?.clientName ?? "un cliente"}`,
+        message: `"${ticket.titulo}". Se responde el mismo día hábil.`,
+        link: "/mis-tareas/tickets",
+      });
+    }
+  } catch (err) {
+    console.error("[tickets] no se pudo avisar el reclamo nuevo:", err);
+  }
 }
 
 export async function agregarComentario(params: {

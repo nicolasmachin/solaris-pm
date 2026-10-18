@@ -1,12 +1,29 @@
 // Cálculo de días hábiles (Uruguay).
 //
-// MVP: excluye solo sábados y domingos. Los feriados nacionales NO se
-// contemplan todavía — cuando exista una tabla `Feriado` se engancha acá.
-// TODO(traspasos): sumar feriados nacionales al cálculo (ver plan Traspasos §10.2).
+// No son hábiles los sábados, los domingos y los feriados no laborables de
+// Uruguay, que tienen fecha fija: 1 de enero, 1 de mayo, 18 de julio, 25 de
+// agosto y 25 de diciembre. Los días que Voltia no trabaja sin ser feriado no
+// laborable (Carnaval, Semana de Turismo, un puente) se agregan con la variable
+// FERIADOS_EXTRA, fechas AAAA-MM-DD separadas por coma.
+// TODO: pasar FERIADOS_EXTRA a una pantalla de Admin.
+
+const FERIADOS_FIJOS = new Set(["01-01", "05-01", "07-18", "08-25", "12-25"]);
+const FERIADOS_EXTRA = new Set(
+  (process.env.FERIADOS_EXTRA ?? "")
+    .split(",")
+    .map((f) => f.trim())
+    .filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(f)),
+);
+
+export function esFeriado(d: Date): boolean {
+  const iso = d.toISOString().slice(0, 10);
+  return FERIADOS_FIJOS.has(iso.slice(5)) || FERIADOS_EXTRA.has(iso);
+}
 
 function isWeekend(d: Date): boolean {
   const day = d.getUTCDay();
-  return day === 0 || day === 6; // domingo=0, sábado=6
+  // domingo=0, sábado=6. Los feriados cuentan igual que un fin de semana.
+  return day === 0 || day === 6 || esFeriado(d);
 }
 
 // Suma (o resta si `n` es negativo) `n` días hábiles a `start`.

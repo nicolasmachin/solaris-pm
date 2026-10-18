@@ -17,8 +17,16 @@ export type ChecklistDef = {
   codigo: string;
   titulo: string;
   orden: number;
-  /** Días hábiles de plazo desde que se crea. Null = sin plazo. */
+  /**
+   * Días hábiles de plazo desde el hecho que lo activa (ver `activarCheck` y
+   * `HECHO_ACTIVA_CHECKS`). Null = sin plazo.
+   */
   plazoDiasHabiles: number | null;
+  /**
+   * Plazo en horas reales, para el único aviso que se mide en horas: la Regla de
+   * Oro (24-48 h desde la habilitación). Si está, manda sobre `plazoDiasHabiles`.
+   */
+  plazoHoras?: number;
   /** Ayuda para quien lo ejecuta. */
   detalle?: string;
   /**
@@ -36,29 +44,31 @@ export const CHECKS_E1: ChecklistDef[] = [
     codigo: "e1_bienvenida",
     titulo: "Bienvenida y presentación",
     orden: 1,
-    plazoDiasHabiles: null,
+    plazoDiasHabiles: 1,
     clave: true,
-    detalle: "La manda el vendedor al cerrar. Sin esto, Experiencia Solar contacta en frío.",
+    detalle:
+      "La manda Experiencia Solar, después de que el asesor le presentó al referente al cerrar el onboarding.",
   },
   {
     codigo: "e1_expectativa",
     titulo: "Conversación de expectativa inicial",
     orden: 2,
-    plazoDiasHabiles: null,
-    detalle: "El recorrido completo y los plazos reales, incluido UTE. Obligatoria: no se promete cadencia.",
+    plazoDiasHabiles: 3,
+    detalle:
+      "Por WhatsApp: el recorrido completo y los plazos reales, incluido UTE. Obligatoria: no se promete cadencia.",
   },
   {
     codigo: "e1_portal",
     titulo: "Envío del acceso al portal",
     orden: 3,
-    plazoDiasHabiles: null,
-    detalle: "Por WhatsApp. Sin plazo, pero aparece pendiente hasta que se haga.",
+    plazoDiasHabiles: 2,
+    detalle: "Por WhatsApp. Se tilda solo al crearle el usuario del portal.",
   },
   {
     codigo: "e1_contrato_firmado",
     titulo: "Contrato firmado por las dos partes, recabado y archivado",
     orden: 4,
-    plazoDiasHabiles: null,
+    plazoDiasHabiles: 5,
     detalle:
       "Coordinarlo con el cliente: si está en Montevideo, que pase a firmarlo; si es del interior, " +
       "por correo (va el nuestro firmado y vuelve con su firma). Va al principio, no al final.",
@@ -67,7 +77,7 @@ export const CHECKS_E1: ChecklistDef[] = [
     codigo: "e1_capataz",
     titulo: "Presentación del capataz",
     orden: 5,
-    plazoDiasHabiles: null,
+    plazoDiasHabiles: 2,
     detalle: "Con el alcance explícito: obra con él, todo lo demás con Experiencia Solar.",
   },
   {
@@ -82,14 +92,14 @@ export const CHECKS_E1: ChecklistDef[] = [
     codigo: "e1_obra_terminada",
     titulo: "Aviso de obra terminada y qué sigue",
     orden: 7,
-    plazoDiasHabiles: null,
+    plazoDiasHabiles: 1,
     detalle: "Que terminó y que ahora arranca el trámite, con su plazo. Va ANTES que la encuesta.",
   },
   {
     codigo: "e1_encuesta_obra",
     titulo: "Aviso de la encuesta de obra",
     orden: 8,
-    plazoDiasHabiles: null,
+    plazoDiasHabiles: 2,
     detalle: "Contacto propio, nunca pegado a otro mensaje.",
   },
 ];
@@ -100,6 +110,7 @@ export const CHECKS_E2: ChecklistDef[] = [
     titulo: "Aviso de habilitación otorgada",
     orden: 1,
     plazoDiasHabiles: 2,
+    plazoHoras: 48,
     clave: true,
     detalle: "Regla de Oro: dentro de 24-48 h. Cada día que pasa el cliente deja de ahorrar.",
   },
@@ -107,7 +118,7 @@ export const CHECKS_E2: ChecklistDef[] = [
     codigo: "e2_encuesta_habilitacion",
     titulo: "Aviso de la encuesta de habilitación",
     orden: 2,
-    plazoDiasHabiles: null,
+    plazoDiasHabiles: 2,
   },
 ];
 
@@ -171,3 +182,37 @@ export const CODIGO_AVISO_HABILITACION = "e2_habilitacion";
 
 /** Prefijo de los checks dinámicos por reprogramación de obra. */
 export const CODIGO_REAGENDA = "e1_reagenda";
+
+/**
+ * Qué hecho arranca el reloj de cada paso. Un paso nace sin plazo y lo recibe
+ * cuando pasa esto: poner el reloj a correr desde la creación haría que todo
+ * naciera vencido.
+ *
+ *  - `onboarding`: el asesor cerró el onboarding (y presentó al referente).
+ *  - `fecha_confirmada`: Operaciones confirmó la fecha de obra en el calendario.
+ *  - `obra_terminada`: se cerró la etapa de obra.
+ *  - `encuesta_obra` / `encuesta_habilitacion`: se generó esa encuesta.
+ *  - `habilitacion`: UTE finalizó el trámite.
+ */
+export const HECHO_ACTIVA_CHECKS = {
+  onboarding: ["e1_bienvenida", "e1_expectativa", "e1_portal", "e1_contrato_firmado"],
+  fecha_confirmada: ["e1_fecha_obra", "e1_capataz"],
+  obra_terminada: ["e1_obra_terminada"],
+  encuesta_obra: ["e1_encuesta_obra"],
+  encuesta_habilitacion: ["e2_encuesta_habilitacion"],
+  habilitacion: [
+    "e2_habilitacion",
+    "e3_capacitacion",
+    "e3_acceso_inversor",
+    "e3_alta_reportes",
+    "e3_portal_recorrido",
+  ],
+} as const;
+
+export type HechoRecorrido = keyof typeof HECHO_ACTIVA_CHECKS;
+
+/** Pasos que se cierran solos con el motivo con que se registra un contacto. */
+export const CHECK_POR_MOTIVO: Partial<Record<string, string>> = {
+  BIENVENIDA: "e1_bienvenida",
+  AVISO_HABILITACION: CODIGO_AVISO_HABILITACION,
+};

@@ -12,7 +12,16 @@ import { prisma } from "../../lib/prisma.js";
 import { addBusinessDays } from "../../utils/business-days.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
-import { CHECKS_POR_RECORRIDO, CODIGO_AVISO_HABILITACION, CODIGO_REAGENDA } from "./recorrido-checks.js";
+import {
+  CHECKS_POR_RECORRIDO,
+  CODIGO_AVISO_HABILITACION,
+  CODIGO_REAGENDA,
+  HECHO_ACTIVA_CHECKS,
+  type HechoRecorrido,
+} from "./recorrido-checks.js";
+
+/** Cómo se cerró un paso (ver `RecorridoCheck.cierreFuente`). */
+export type CierreFuente = "manual" | "contacto" | "hecho";
 
 export type CheckSerializado = {
   id: string;
@@ -26,6 +35,7 @@ export type CheckSerializado = {
   completado: boolean;
   completadoEn: string | null;
   completadoPor: string | null;
+  cierreFuente: string | null;
   nota: string | null;
   esDinamico: boolean;
   /** Uno de los tres avisos que el cliente sí o sí tiene que recibir. */
@@ -51,6 +61,7 @@ function serializar(c: RecorridoCheck & { completadoPor?: { name: string } | nul
     completado: !!c.completadoEn,
     completadoEn: c.completadoEn?.toISOString() ?? null,
     completadoPor: c.completadoPor?.name ?? null,
+    cierreFuente: c.cierreFuente,
     nota: c.nota,
     esDinamico: c.esDinamico,
     clave: defDe(c.recorrido, c.codigo)?.clave ?? false,
@@ -83,17 +94,120 @@ export async function ensureChecks(projectId: string): Promise<void> {
  * confirmó la fecha de obra, UTE habilitó...). Si ya está completado o ya tenía
  * plazo, no lo toca.
  */
-export async function activarCheck(projectId: string, codigo: string): Promise<void> {
+export async function activarCheck(projectId: string, codigo: string, desde: Date = new Date()): Promise<void> {
   const def = Object.values(CHECKS_POR_RECORRIDO)
     .flat()
     .find((d) => d.codigo === codigo);
-  if (!def?.plazoDiasHabiles) return;
+  if (!def?.plazoDiasHabiles && !def?.plazoHoras) return;
+
+  // La Regla de Oro se mide en horas reales (24-48 h): es el único aviso donde
+  // un fin de semana no corre el plazo, porque el cliente deja de ahorrar igual.
+  const venceEn = def.plazoHoras
+    ? new Date(desde.getTime() + def.plazoHoras * 60 * 60 * 1000)
+    : addBusinessDays(desde, def.plazoDiasHabiles!);
 
   await ensureChecks(projectId);
   await prisma.recorridoCheck.updateMany({
     where: { projectId, codigo, completadoEn: null, venceEn: null },
-    data: { venceEn: addBusinessDays(new Date(), def.plazoDiasHabiles) },
+    data: { venceEn },
   });
+}
+
+/**
+ * Arranca el reloj de todos los pasos que dispara un hecho. Best-effort: un
+ * fallo acá nunca interrumpe el flujo que lo llamó (cerrar una etapa, confirmar
+ * una fecha), porque el recorrido acompaña, no frena.
+ */
+export async function activarPorHecho(projectId: string, hecho: HechoRecorrido, desde?: Date): Promise<void> {
+  try {
+    for (const codigo of HECHO_ACTIVA_CHECKS[hecho]) {
+      await activarCheck(projectId, codigo, desde);
+    }
+  } catch (err) {
+    console.error(`[recorrido] no se pudo activar "${hecho}" en ${projectId}:`, err);
+  }
+}
+
+/**
+ * Cierra pasos abiertos porque pasó algo que prueba que se hicieron: se registró
+ * un contacto que los resuelve, o Voltia PM vio el hecho (usuario del portal
+ * creado, contrato subido, reporte configurado).
+ *
+ * Existe porque el sistema marcaba como pendiente lo que ya se había hecho: copiar
+ * la plantilla de habilitación registraba el contacto pero dejaba el paso abierto,
+ * y el cliente seguía en rojo. Ningún paso tiene que esperar a que alguien lo
+ * tilde si Voltia PM ya sabe que se hizo.
+ *
+ * `codigo` de reagenda (`e1_reagenda`) cierra la reprogramación abierta más vieja:
+ * cada una se avisa con su propio mensaje. Idempotente: los ya cerrados no se
+ * tocan. Best-effort.
+ */
+export async function cerrarChecks(params: {
+  projectId: string;
+  codigos: string[];
+  /** Quien hizo lo que cierra el paso: el que registró el contacto, subió el contrato, creó el usuario. */
+  userId: string;
+  fuente: Exclude<CierreFuente, "manual">;
+  motivo: string;
+}): Promise<number> {
+  try {
+    const validos = new Set(
+      Object.values(CHECKS_POR_RECORRIDO)
+        .flat()
+        .map((d) => d.codigo),
+    );
+    await ensureChecks(params.projectId);
+    let cerrados = 0;
+    for (const codigo of new Set(params.codigos)) {
+      let ids: string[] = [];
+      if (codigo === CODIGO_REAGENDA) {
+        const masVieja = await prisma.recorridoCheck.findFirst({
+          where: { projectId: params.projectId, codigo: { startsWith: `${CODIGO_REAGENDA}_` }, completadoEn: null },
+          orderBy: { createdAt: "asc" },
+          select: { id: true },
+        });
+        if (masVieja) ids = [masVieja.id];
+      } else if (validos.has(codigo)) {
+        const abiertos = await prisma.recorridoCheck.findMany({
+          where: { projectId: params.projectId, codigo, completadoEn: null },
+          select: { id: true },
+        });
+        ids = abiertos.map((c) => c.id);
+      }
+      if (ids.length === 0) continue;
+
+      const ahora = new Date();
+      const checks = await prisma.recorridoCheck.findMany({ where: { id: { in: ids } }, select: { titulo: true } });
+      await prisma.recorridoCheck.updateMany({
+        where: { id: { in: ids }, completadoEn: null },
+        data: { completadoEn: ahora, completadoPorId: params.userId, cierreFuente: params.fuente },
+      });
+      cerrados += ids.length;
+
+      if (codigo === CODIGO_AVISO_HABILITACION) {
+        await prisma.project.updateMany({
+          where: { id: params.projectId, avisoHabilitacionEn: null },
+          data: { avisoHabilitacionEn: ahora },
+        });
+      }
+
+      for (const c of checks) {
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: params.projectId,
+          projectId: params.projectId,
+          userId: params.userId,
+          action: AuditAction.updated,
+          description: `Se completó solo el paso de Experiencia Solar "${c.titulo}": ${params.motivo}`,
+          metadata: { cierreFuente: params.fuente, codigo },
+        });
+      }
+    }
+    return cerrados;
+  } catch (err) {
+    console.error(`[recorrido] no se pudieron cerrar pasos en ${params.projectId}:`, err);
+    return 0;
+  }
 }
 
 /**
@@ -152,8 +266,8 @@ export async function completarCheck(params: {
   const updated = await prisma.recorridoCheck.update({
     where: { id: params.checkId },
     data: params.completado
-      ? { completadoEn: new Date(), completadoPorId: params.userId }
-      : { completadoEn: null, completadoPorId: null },
+      ? { completadoEn: new Date(), completadoPorId: params.userId, cierreFuente: "manual" }
+      : { completadoEn: null, completadoPorId: null, cierreFuente: null },
     include: { completadoPor: { select: { name: true } } },
   });
 

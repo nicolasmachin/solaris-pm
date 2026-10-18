@@ -135,12 +135,16 @@ export function ClienteFichaPage() {
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                 ficha.fueraDeCadencia
                   ? "bg-[var(--color-danger-bg)] text-[var(--color-danger-text)]"
-                  : "bg-[var(--color-bg-card)] text-[var(--color-text-muted)]"
+                  : ficha.tocaContactoHoy
+                    ? "bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]"
+                    : "bg-[var(--color-bg-card)] text-[var(--color-text-muted)]"
               }`}
               title={
                 ficha.fueraDeCadencia
                   ? "Supera los días sin contacto definidos para su etapa"
-                  : "Días desde el último contacto registrado"
+                  : ficha.tocaContactoHoy
+                    ? "Hoy se le cumple la cadencia: escribiéndole hoy sigue al día"
+                    : "Días desde el último contacto registrado"
               }
             >
               <Phone className="h-3 w-3" />

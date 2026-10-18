@@ -219,65 +219,14 @@ export async function obrasSinFechaInstalacion() {
   return { rows };
 }
 
-// "Sin comunicación hace X días": última interacción registrada vs. cadencia
-// objetivo del recorrido (E1/E2/E3, configurable en Admin). Devuelve los que
-// superan el objetivo (o nunca tuvieron contacto), ordenados por atraso.
+// "Sin comunicación": los clientes fuera de su cadencia de contacto. Sale del
+// mismo listado que Experiencia Solar (`clientesFueraDeCadencia`), con el criterio
+// único de `clientes/cadencia.ts`. Antes se calculaba aparte, con otro universo y
+// otra etapa para los importados, y el mismo cliente daba distinto acá y allá.
+// Import dinámico: el listado de clientes importa este módulo (getCadenciaMap).
 export async function clientesSinComunicacion() {
-  // Incluye COMPLETED y los importados por planilla a propósito: la cartera de
-  // post-habilitación vive justamente ahí, y excluirla dejaba a E3 invisible —
-  // que es donde más fácil se pierde el contacto, porque el cliente ya no
-  // espera nada. `excludedFromMetrics` sí se respeta (son bajas explícitas).
-  const projects = await prisma.project.findMany({
-    where: {
-      deletedAt: null,
-      excludedFromMetrics: false,
-      status: { in: [ProjectStatus.ACTIVE, ProjectStatus.COMPLETED] },
-    },
-    select: {
-      id: true, code: true, clientName: true, recorridoManual: true, stageOverride: true,
-      stages: { select: OPS_STAGE_SELECT, orderBy: { order: "asc" } },
-    },
-  });
-  const cadenciaMap = await getCadenciaMap();
-  const now = todayUtc();
-  // Última interacción no borrada por proyecto en una sola query.
-  const lastByProject = new Map<string, Date>();
-  if (projects.length > 0) {
-    const grouped = await prisma.clientInteraction.groupBy({
-      by: ["projectId"],
-      where: { deletedAt: null, projectId: { in: projects.map((p) => p.id) } },
-      _max: { createdAt: true },
-    });
-    for (const g of grouped) {
-      if (g._max.createdAt) lastByProject.set(g.projectId, g._max.createdAt);
-    }
-  }
-  const rows = projects
-    .map((p) => {
-      const displayStage = getDisplayStage(p.stages, p.stageOverride);
-      const recorrido = recorridoForProject(displayStage?.name ?? null, p.recorridoManual);
-      const objetivo = cadenciaMap.get(recorrido) ?? null;
-      const last = lastByProject.get(p.id) ?? null;
-      // Hábiles, igual que el umbral de cadencia contra el que se compara.
-      const diasSinContacto = last ? businessDaysBetween(last, now) : null;
-      return {
-        id: p.id,
-        code: p.code,
-        clientName: p.clientName,
-        recorrido,
-        stageLabel: displayStage ? getStageLabel(displayStage.name) : null,
-        cadenciaObjetivo: objetivo,
-        diasSinContacto,
-        ultimoContactoEn: last ? last.toISOString() : null,
-        atraso: objetivo == null ? null : diasSinContacto == null ? Infinity : diasSinContacto - objetivo,
-      };
-    })
-    // Solo los que tienen objetivo definido Y lo superan (o nunca contactados).
-    .filter((r) => r.cadenciaObjetivo != null && r.atraso != null && (r.atraso as number) > 0)
-    .sort((a, b) => (b.atraso as number) - (a.atraso as number))
-    // Infinity no serializa a JSON: los "sin contacto" van con atraso=null +bandera.
-    .map((r) => ({ ...r, atraso: r.atraso === Infinity ? null : r.atraso, sinContacto: r.diasSinContacto == null }));
-  return { rows };
+  const { clientesFueraDeCadencia } = await import("./clientes/index.js");
+  return clientesFueraDeCadencia();
 }
 
 // "¿Dónde se rompe el proceso?": promedio real + % cumplimiento por etapa

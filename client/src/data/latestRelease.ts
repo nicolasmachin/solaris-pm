@@ -23,6 +23,48 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.8",
+  date: "17 de octubre de 2026",
+  sections: [
+    {
+      title: "Experiencia Solar: los pasos se dan por hechos solos",
+      items: [
+        "Al mandar un mensaje modelo y registrar el contacto, el paso que resuelve queda hecho: no hace falta tildarlo aparte. También el aviso de habilitación.",
+        "El acceso al portal, el contrato firmado y el alta en reportes se dan por hechos solos cuando Voltia PM ve que pasaron.",
+      ],
+    },
+    {
+      title: "Abrir en WhatsApp",
+      items: [
+        "Los mensajes modelo tienen un botón que abre el chat del cliente con el mensaje ya escrito y registra el contacto.",
+      ],
+    },
+    {
+      title: "Todos los pasos del recorrido tienen plazo",
+      items: [
+        "Cada paso tiene su plazo desde lo que lo dispara: el cierre del onboarding, la fecha de obra confirmada, el fin de la obra o la encuesta.",
+        "El aviso de habilitación se mide en horas: 48 horas desde que UTE habilitó.",
+      ],
+    },
+    {
+      title: "Cadencia de contacto: un día de margen",
+      items: [
+        "El día en que se cumple la cadencia el cliente aparece como \"toca hoy\", en amarillo; recién al día siguiente cuenta como fuera de cadencia.",
+        "Operaciones y Experiencia Solar muestran la misma cuenta de clientes sin comunicación.",
+      ],
+    },
+    {
+      title: "Resumen diario, reclamos y feriados",
+      items: [
+        "El resumen de Experiencia Solar suma la sección Para contactar hoy y cuenta en días hábiles.",
+        "Un reclamo nuevo desde el portal avisa a Experiencia Solar en el momento.",
+        "Los plazos en días hábiles ya no cuentan los feriados no laborables.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_7: Release = {
   version: "12.7",
   date: "16 de octubre de 2026",
   sections: [
@@ -659,6 +701,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.7",
+    shortDate: "16 oct",
+    highlights: RELEASE_12_7.sections.map((sec) => sec.title),
+  },
   {
     version: "12.6",
     shortDate: "15 oct",

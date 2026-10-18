@@ -17,6 +17,7 @@ import { createAuditEntry } from "../audit.service.js";
 import { esNotaBaja, promedioNotas } from "./preguntas.js";
 import { createNotification } from "../notification.service.js";
 import { crearTraspasoSiNoExiste } from "../traspasos/traspasos.service.js";
+import { activarPorHecho } from "../clientes/recorrido.service.js";
 
 // Nota <= a este umbral dispara el traspaso T11 a Experiencia Solar. Configurable
 // en Administración (SettingKey.ENCUESTA_NOTA_BAJA_MAX); este es el valor por
@@ -143,6 +144,10 @@ export async function crearEncuestaSiNoExiste(params: {
         createdById: params.createdById ?? null,
       },
     });
+
+    // Arranca el plazo del paso "aviso de la encuesta" del recorrido.
+    if (params.tipo === SurveyTipo.OBRA) await activarPorHecho(params.projectId, "encuesta_obra");
+    if (params.tipo === SurveyTipo.HABILITACION) await activarPorHecho(params.projectId, "encuesta_habilitacion");
 
     // Solo auditamos si la disparó un usuario concreto; las generadas por sistema
     // (hooks de etapa / cron de aniversario) dejan traza en la propia fila.

@@ -1,5 +1,49 @@
 # Novedades
 
+## v12.8
+
+### 17 de octubre de 2026
+
+#### Experiencia Solar: los pasos se dan por hechos solos
+
+- Al mandar un mensaje modelo y registrar el contacto, el paso que ese mensaje resuelve **queda hecho**: no hace falta tildarlo aparte. Vale también para el aviso de habilitación: el cliente deja de figurar en rojo apenas se registra que se le avisó.
+- También se dan por hechos solos, sin que nadie los tilde: el **acceso al portal**, cuando se le crea el usuario al cliente; el **contrato firmado**, cuando se sube; y el **alta en los reportes mensuales**, cuando el reporte queda habilitado y con alguien a quien mandarlo.
+- En el historial de la ficha queda anotado que el paso se completó solo y por qué.
+- El mensaje de bienvenida ya no da por hecha también la conversación de expectativa: son dos pasos distintos.
+
+#### Abrir en WhatsApp
+
+- En los mensajes modelo hay un botón nuevo, **Abrir en WhatsApp**: abre el chat del cliente con el mensaje ya escrito, en el celular o en la computadora, y registra el contacto en el mismo clic. Copiar el mensaje sigue estando.
+
+#### Todos los pasos del recorrido tienen plazo
+
+- Cada paso tiene su plazo, que arranca cuando pasa lo que lo dispara:
+  - cuando el asesor cierra el onboarding: bienvenida (1 día hábil), conversación de expectativa (3), acceso al portal (2) y contrato firmado (5);
+  - cuando se confirma la fecha de obra: aviso de la fecha y presentación del capataz (2);
+  - cuando se termina la obra: aviso de obra terminada (1);
+  - cuando se genera una encuesta: su aviso (2).
+- El **aviso de habilitación** se mide en horas: 48 horas desde que UTE habilitó, fines de semana incluidos.
+- La bienvenida la manda Experiencia Solar, después de que el asesor le presentó al cliente su referente.
+
+#### Cadencia de contacto: un día de margen
+
+- El día en que se le cumple la cadencia, el cliente aparece como **"toca hoy"**, en amarillo, y no en rojo. Recién al día siguiente cuenta como fuera de cadencia.
+- "Sin comunicación" del panel de Operaciones y "fuera de cadencia" de Experiencia Solar ahora salen de la misma cuenta y dan lo mismo.
+
+#### Resumen diario de Experiencia Solar
+
+- Nueva sección **"Para contactar hoy"**, con los clientes a los que hoy se les cumple la cadencia.
+- Los días de atraso se cuentan en días hábiles.
+- El aviso de habilitación dice cuánto hace que UTE habilitó, y ya no aparece dos veces para el mismo cliente.
+
+#### Reclamos del portal
+
+- Cuando un cliente abre un reclamo desde el portal, a Experiencia Solar le llega el aviso **en el momento**, en la campanita, y no recién en el resumen del día siguiente.
+
+#### Feriados
+
+- Los plazos en días hábiles ya no cuentan los feriados no laborables: 1 de enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre.
+
 ## v12.7
 
 ### 16 de octubre de 2026

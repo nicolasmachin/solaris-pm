@@ -60,10 +60,14 @@ function FilaCliente({ c, onClick }: { c: ClienteListItem; onClick: () => void }
         className={`shrink-0 text-[11px] tabular-nums ${
           c.fueraDeCadencia
             ? "font-semibold text-[var(--color-danger-text)]"
-            : "text-[var(--color-text-muted)]"
+            : c.tocaContactoHoy
+              ? "font-semibold text-[var(--color-warning-text)]"
+              : "text-[var(--color-text-muted)]"
         }`}
+        title={c.tocaContactoHoy ? "Hoy se le cumple la cadencia: escribiéndole hoy sigue al día" : undefined}
       >
         {diasTexto(c.diasSinContacto)}
+        {c.tocaContactoHoy ? " · toca hoy" : ""}
       </span>
     </button>
   );

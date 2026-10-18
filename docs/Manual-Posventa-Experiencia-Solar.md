@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.27 · del 16/10/26
+**Voltia · Uruguay** · Versión 1.28 · del 17/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -20,7 +20,7 @@
 |---|---|---|
 | **Experiencia Solar** | Todo | — |
 | **Capataz / Operaciones** | 1, 4, 5 (obra), 13 | 12 (Voltia PM) |
-| **Comercial** | 1, 4, 5.1 (bienvenida), 13 | — |
+| **Comercial** | 1, 4, 5.1 (la presentación del referente), 13 | — |
 | **Ingeniería** | 4, 13 | 12 |
 | **Tramitación UTE** | 4, 6, 13 | — |
 | **Gerencia / Administración** | 1, 8, 13, 14 | Todo |
@@ -90,7 +90,11 @@ Si te preguntan algo que no es tuyo, no se deriva al cliente. Se responde
 
 **La cadencia se mide en días hábiles** y hoy es de **5 en E1 y E2**; **E3 no
 tiene**. Se configura en Administración → Cadencia de contacto, y una etapa
-desactivada simplemente no marca.
+desactivada simplemente no marca. Hay **un día de margen**: el día después de
+cumplida la cadencia el cliente aparece como **"toca hoy"**, en amarillo, y
+escribiéndole ese día sigue al día. Recién al día siguiente queda **fuera de
+cadencia**, en rojo. Los días hábiles no cuentan los feriados no laborables (1 de
+enero, 1 de mayo, 18 de julio, 25 de agosto y 25 de diciembre).
 
 **Por qué no se promete cadencia:** una promesa incumplida daña más que el
 silencio explicado. Si le decimos "te escribo todas las semanas" y pasan diez
@@ -256,9 +260,9 @@ gestión para que nadie quede olvidado.
 
 | | |
 |---|---|
-| **Cuándo** | Al cerrar la venta, apenas se convierte el lead en proyecto |
-| **Quién** | El vendedor que cerró (es quien tiene la relación) |
-| **Plazo** | Sin plazo formal, pero **antes de cualquier otro contacto** |
+| **Cuándo** | Después de que el asesor le presentó al referente, como última tarea del onboarding de venta |
+| **Quién** | Experiencia Solar: el referente del cliente |
+| **Plazo** | **1 día hábil** desde que el asesor cierra el onboarding, y **antes de cualquier otro contacto** |
 | **En Voltia PM** | Ficha del cliente → **Pasos** → E1 → *"Bienvenida y presentación"* |
 | **Qué decir** | Plantilla **"Bienvenida y presentación"** |
 
@@ -269,9 +273,18 @@ gestión para que nadie quede olvidado.
 >> Te cuento cómo sigue: primero preparamos la ingeniería y los materiales, después hacemos la instalación (te aviso la fecha apenas la tengamos), y cuando la obra está pronta arranca el trámite con UTE, que es el paso más largo y depende de ellos — suele llevar {plazo UTE}. Cuando UTE habilita, te aviso enseguida para que puedas encender.
 >>
 >> No te voy a escribir todas las semanas porque muchas veces no hay novedades, pero cada vez que pase algo te aviso. Y si querés saber cómo viene, me preguntás cuando quieras.
-**Por qué la manda el vendedor y no Experiencia Solar:** el cliente ya lo conoce.
-Si el primer mensaje después de firmar viene de alguien que nunca vio, arranca en
-frío. La bienvenida **presenta** a Experiencia Solar; no la reemplaza.
+**Antes, el asesor presenta al referente.** La bienvenida la manda Experiencia
+Solar, pero no en frío: la última tarea del onboarding de venta es que el asesor le
+presente al cliente a quien va a ser su referente. Lo hace con este mensaje, que el
+asesor copia desde el panel del lead cuando la venta está ganada:
+
+> <small>{nombre}, te presento a {responsable}, de Experiencia Solar. Desde ahora es tu contacto para todo lo que sigue: la fecha de obra, la instalación y el trámite con UTE. Te comparto su contacto; en estos días te va a escribir. Cualquier cosa, seguí con ella.</small>
+
+**Por qué en ese orden:** el cliente ya conoce al asesor. Si el primer mensaje
+después de firmar viene de alguien que nunca vio, desconfía. Con la presentación
+previa, la bienvenida del referente es la continuación de una relación, no un
+contacto frío. Experiencia Solar no manda la bienvenida hasta que el asesor hizo
+la presentación.
 
 **Sin este paso, todo lo demás arranca mal.** Es la que explica que no va a haber
 contacto semanal y por qué. Si no se manda, el cliente espera un ritmo que nunca
@@ -285,7 +298,7 @@ va a llegar.
 |---|---|
 | **Cuándo** | Junto con la bienvenida o inmediatamente después |
 | **Quién** | Experiencia Solar |
-| **Plazo** | Sin plazo formal — pero es **obligatoria** |
+| **Plazo** | **3 días hábiles** desde que el asesor cierra el onboarding. Es **obligatoria** |
 | **En Voltia PM** | Ficha del cliente → **E1** → *"Conversación de expectativa inicial"* |
 
 Es el paso más importante de toda la etapa y el que más se saltea. Hay que
@@ -305,8 +318,11 @@ notificación que UTE le va a mandar al aprobar la consulta: **parece un pedido 
 aumento de potencia**, y si no la esperaba lo asusta. Con el ejemplo, cuando le
 llegue ya sabe que es normal (Anexo E, tema 8).
 
-> **Es una conversación, no un mensaje.** Idealmente por teléfono. Lo que se busca
-> es que el cliente pueda repetir con sus palabras cuánto va a demorar y por qué.
+> **Es una conversación, no un mensaje suelto.** Se hace por **WhatsApp**, que es
+> el canal de siempre con el cliente: se le mandan los cuatro temas y se espera que
+> responda. Lo que se busca es que el cliente pueda repetir con sus palabras cuánto
+> va a demorar y por qué. No hace falta llamarlo; si el cliente prefiere hablar por
+> teléfono, se habla, y lo que se dijo se registra igual.
 
 Después, se registra en **Interacciones** qué se le dijo. Esto no es burocracia:
 si cuatro meses después el cliente reclama que "nadie le avisó que iba a demorar
@@ -320,7 +336,7 @@ tanto", la ficha tiene que poder responder esa pregunta.
 |---|---|
 | **Cuándo** | Apenas se crea el proyecto |
 | **Quién** | Experiencia Solar |
-| **Plazo** | Sin plazo, pero queda pendiente hasta que se haga |
+| **Plazo** | **2 días hábiles** desde que el asesor cierra el onboarding. **Se da por hecho solo** cuando se le crea el usuario del portal al cliente |
 | **En Voltia PM** | El **ícono de crear usuario** en el propio paso, el botón **Crear acceso al portal** arriba en la ficha, o la columna de acceso del listado |
 | **Qué decir** | Plantilla **"Acceso al portal"**, que sale con el usuario y la contraseña reales |
 
@@ -372,7 +388,7 @@ reclamo por ahí** en vez de por WhatsApp.
 |---|---|
 | **Cuándo** | Apenas el asesor manda el contrato. **Va al principio, no al final.** |
 | **Quién** | El asesor que cerró la venta hace el intercambio; Experiencia Solar controla que quede archivado |
-| **Plazo** | Sin plazo formal, pero queda pendiente hasta que esté |
+| **Plazo** | **5 días hábiles** desde que el asesor cierra el onboarding. **Se da por hecho solo** cuando se sube el contrato firmado |
 | **En Voltia PM** | Ficha del cliente → **E1** → *"Contrato firmado por las dos partes, recabado y archivado"* |
 
 **El problema que resuelve:** antes el contrato se mandaba y nadie lo recababa
@@ -398,6 +414,7 @@ entrada de una persona no existe para la empresa.
 |---|---|
 | **Cuándo** | Al arrancar la obra, o junto con la fecha confirmada |
 | **Quién** | Experiencia Solar |
+| **Plazo** | **2 días hábiles** desde que se confirma la fecha de obra |
 | **En Voltia PM** | Ficha del cliente → **E1** → *"Presentación del capataz"* |
 | **Qué decir** | Plantilla **"Presentación del capataz"** |
 
@@ -514,6 +531,7 @@ aunque se avise sobre la hora: avisar tarde es malo, no avisar es mucho peor.
 |---|---|
 | **Cuándo** | El mismo día que termina la instalación |
 | **Quién** | Experiencia Solar |
+| **Plazo** | **1 día hábil** desde que se cierra la etapa de obra |
 | **En Voltia PM** | Ficha del cliente → **E1** → *"Aviso de obra terminada y qué sigue"* |
 | **Qué decir** | Plantilla **"Obra terminada y qué sigue"** |
 
@@ -544,6 +562,7 @@ El punto 3 es de seguridad y de expectativa a la vez.
 |---|---|
 | **Cuándo** | Después del aviso de obra terminada, como **contacto propio** |
 | **Quién** | Experiencia Solar |
+| **Plazo** | **2 días hábiles** desde que el sistema genera la encuesta |
 | **En Voltia PM** | Ficha del cliente → **E1** → *"Aviso de la encuesta de obra"* |
 
 **La encuesta la genera el sistema solo** al completarse la etapa de obra: aparece
@@ -587,7 +606,7 @@ es tolerable. Si no, cada día es una traición.
 |---|---|
 | **Cuándo** | Apenas UTE habilita |
 | **Quién** | Experiencia Solar |
-| **Plazo** | **24-48 horas. El más corto de todo el recorrido.** |
+| **Plazo** | **24-48 horas. El más corto de todo el recorrido.** Se cuenta en horas, fines de semana incluidos: vence a las 48 horas de que UTE habilitó |
 | **En Voltia PM** | Ficha del cliente → **E2** → *"Aviso de habilitación otorgada"* |
 | **Qué decir** | Plantilla **"Ya podés encender + capacitación"** |
 
@@ -619,7 +638,10 @@ de Oro, con su reloj de 24-48 horas, arranca **cuando se habilita la última**:
 ese es el aviso de que la obra entera quedó habilitada. En la ficha, el trámite
 UTE muestra en qué anda cada suministro.
 
-**Cómo se apaga la alerta:** **tildando el paso** *"Aviso de habilitación
+**Cómo se apaga la alerta:** mandando el mensaje desde la plantilla **"Ya podés
+encender + capacitación"** con el contacto registrado, o registrando a mano un
+contacto con el motivo de aviso de habilitación: cualquiera de las dos cosas da
+el paso por hecho solo. También se puede tildar el paso *"Aviso de habilitación
 otorgada"* en E2. Destildarlo la vuelve a encender, y queda registrado quién lo
 marcó y cuándo.
 
@@ -650,7 +672,8 @@ Y después, **confirmá que quedó generando**. Con eso confirmado, se le recuer
 ### 6.2 · Aviso de la encuesta de habilitación
 
 Contacto propio, unos días después de que encendió. Misma regla que la de obra:
-**nunca pegada a otro mensaje**. Plantilla **"Aviso de la encuesta de habilitación"**.
+**nunca pegada a otro mensaje**. Plazo: **2 días hábiles** desde que el sistema
+genera la encuesta. Plantilla **"Aviso de la encuesta de habilitación"**.
 
 > **El texto, tal como sale en Voltia PM:**
 >
@@ -735,7 +758,7 @@ problema es anterior y hay que ir a buscarlo a Operaciones.
 
 | | |
 |---|---|
-| **Plazo** | 15 días hábiles |
+| **Plazo** | 15 días hábiles. **Se da por hecho solo** cuando el reporte queda habilitado y con alguien a quien mandárselo |
 | **Qué decir** | Plantilla **"Alta en los reportes mensuales"** |
 
 > **El texto, tal como sale en Voltia PM:**
@@ -819,7 +842,7 @@ a empezar de cero.
 **3. Bajás a las Novedades y decidís una sola cosa por cliente: ¿esto le importa?**
 Abrís el cliente, mirás el historial (lo nuevo está arriba) y:
 
-- **Le importa** → se le avisa, con la plantilla de su etapa. Al copiarla queda
+- **Le importa** → se le avisa, con la plantilla de su etapa. Al mandarla queda
   registrado el contacto, y con eso el punto se apaga.
 - **No le importa** → no se le escribe nada (un archivo interno o un movimiento
   administrativo no son motivo para molestarlo) y se aprieta **"Ya lo vi"**, el
@@ -870,6 +893,12 @@ la pantalla del Recorrido, en tres secciones de arriba abajo por urgencia:
    del período. Acá **solo entran E1 y E2**: E3 no tiene cadencia, así que un
    cliente habilitado nunca aparece en esta lista por tiempo. Si aparece, es
    porque pasó algo, y entonces va en una de las dos secciones de arriba.
+4. **Para contactar hoy**, por etapa — clientes a los que hoy se les cumple la
+   cadencia. Escribiéndoles hoy siguen al día; si no, mañana pasan a Fuera de
+   cadencia.
+
+Los días de atraso se cuentan en **días hábiles**. El aviso de habilitación dice
+cuánto hace que UTE habilitó, que es desde donde corre la Regla de Oro.
 
 **El asunto ya dice los tres números**: *"2 pendientes · 12 novedades · 71 fuera de
 cadencia"*. No se suman a propósito. Antes venía un total único —"85 pendientes"—
@@ -877,7 +906,7 @@ que asustaba y, peor, escondía las dos o tres cosas que de verdad hay que hacer
 hoy entre setenta que pueden esperar.
 
 **Un cliente aparece una sola vez.** Si tiene novedad va en Novedades aunque
-además esté fuera de cadencia: llamarlo por la novedad salda las dos cosas, y ahí
+además esté fuera de cadencia: escribirle por la novedad salda las dos cosas, y ahí
 mismo se le marcan los días sin contacto.
 
 **Si no hay nada pendiente, no llega.** Un correo vacío todos los días enseña a
@@ -1020,11 +1049,17 @@ Tres cosas para saber:
   puede saber —la fecha, el motivo, el plazo, el nombre del capataz— queda marcado
   como `{fecha}` a la vista, y abajo dice **qué falta completar**. Un hueco sin
   llenar se nota al leer; uno inventado por el sistema se manda mal.
-- **El texto se edita antes de copiar.** Son un piso de tono y de información, no
-  un molde. Lo que no se puede perder es lo que el hito exige.
-- **Al copiar queda registrado el contacto en la bitácora** (se puede destildar).
-  Es la diferencia entre que el historial del cliente refleje la relación o quede
-  vacío.
+- **El texto se edita antes de mandarlo.** Son un piso de tono y de información,
+  no un molde. Lo que no se puede perder es lo que el hito exige.
+- **Se manda con un botón.** **Abrir en WhatsApp** abre el chat del cliente con
+  el mensaje ya escrito, en el celular o en la computadora; **Copiar mensaje**
+  queda para pegarlo en otro lado. Si el cliente no tiene un teléfono válido
+  cargado, solo se puede copiar.
+- **Al mandarlo queda registrado el contacto y el paso queda hecho** (se puede
+  destildar). No hace falta volver a la lista y tildar el paso: el mensaje modelo
+  ya sabe qué paso resuelve. Es la diferencia entre que el historial del cliente
+  refleje la relación o quede vacío, y entre una lista de pendientes real o una
+  llena de cosas que ya se hicieron.
 
 Los 14 mensajes: bienvenida · acceso al portal · presentación del capataz · fecha
 tentativa · fecha confirmada · reprogramación · visita a la propiedad · obra
@@ -1049,7 +1084,7 @@ el cliente nunca queda sin respuesta.**
 
 | Vía | Qué pasa |
 |---|---|
-| **Portal del cliente** (tickets) | Queda registrado, notifica a Experiencia Solar y **aparece en el correo de la mañana** si no se respondió |
+| **Portal del cliente** (tickets) | Queda registrado, **avisa a Experiencia Solar en el momento** en la campanita de Voltia PM, y **aparece en el correo de la mañana** si no se respondió |
 | **WhatsApp** | Es por donde entra la mayoría hoy. **No queda registrado solo**: hay que abrirlo como ticket o al menos registrarlo en la bitácora |
 
 **Un reclamo cuenta como sin responder** cuando está abierto, lo abrió el cliente
@@ -1490,7 +1525,7 @@ obra, el capataz lo resuelve internamente — no lo manda a otro lado.
 |---|---|
 | **Generador** | El cliente, una vez que su instalación existe. Es como lo llama UTE y como lo llama Voltia PM. |
 | **E1 / E2 / E3** | Las tres etapas del recorrido del cliente. No son las etapas del proyecto. |
-| **Cadencia** | Los días hábiles sin contacto a partir de los cuales un cliente se marca. E1 y E2: 5; E3 no tiene. **Es una alarma interna, no una promesa al cliente.** |
+| **Cadencia** | Los días hábiles sin contacto a partir de los cuales un cliente se marca, con un día de margen ("toca hoy"). E1 y E2: 5; E3 no tiene. **Es una alarma interna, no una promesa al cliente.** |
 | **Paso** | Un hito de acompañamiento del recorrido. Algunos tienen plazo. **Vencer no bloquea.** |
 | **Novedad** | Pasó algo en el proyecto después del último contacto registrado: hay algo que contarle. No quiere decir que el cliente haya hecho algo (casi siempre es algo nuestro) ni que nadie lo haya mirado. |
 | **Pendiente** | En el correo de la mañana: algo que tiene plazo y ya se venció. Es lo único obligatorio del día. |
@@ -1918,6 +1953,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.28 | 17 de octubre de 2026 | La conversación de expectativa inicial se hace por WhatsApp, no por teléfono: ningún paso del recorrido exige una llamada. Si el cliente prefiere hablar, se habla y se registra. La bienvenida la manda Experiencia Solar, después de que el asesor le presentó al referente como última tarea del onboarding de venta; antes la mandaba el vendedor. Todos los pasos tienen plazo. Mandar un mensaje modelo da el paso por hecho, y el acceso al portal, el contrato firmado y el alta en reportes se dan por hechos solos. Botón Abrir en WhatsApp. Un día de margen en la cadencia ("toca hoy") y la sección Para contactar hoy en el correo de la mañana. Los reclamos del portal avisan en el momento. Los feriados no laborables no cuentan como días hábiles. |
 | 1.27 | 16 de octubre de 2026 | Los reportes mensuales salen solos, todos los días a las 10, sin revisión previa; el botón Enviar pendientes queda para lo que no puede esperar. |
 | 1.26 | 16 de octubre de 2026 | En el historial de la ficha, lo que comenta o registra Gerencia (comentarios y contactos con el cliente) aparece con el rótulo GERENCIA y no con el del área de la pantalla donde se escribió. |
 | 1.25 | 16 de octubre de 2026 | En el alta en los reportes mensuales se agrega cómo traer los datos de un solo cliente desde su reporte, sin pasar por todos. |

@@ -39,7 +39,9 @@ export const PLANTILLAS: Plantilla[] = [
     recorrido: "E1",
     titulo: "Bienvenida y presentación",
     cuando: "Al cerrar la venta. Es la que sostiene todo: sin ella, el silencio se lee como abandono.",
-    checks: ["e1_bienvenida", "e1_expectativa"],
+    // Solo la bienvenida: la conversación de expectativa es otro paso, que se
+    // cierra cuando el cliente responde, no al mandar este mensaje.
+    checks: ["e1_bienvenida"],
     motivo: "BIENVENIDA",
     cuerpo: `Hola {nombre}, soy {referente} de Voltia. Voy a ser tu contacto durante todo el proceso, así que cualquier cosa escribime directo a mí.
 

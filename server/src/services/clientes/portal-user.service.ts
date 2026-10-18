@@ -13,6 +13,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
+import { cerrarChecks } from "./recorrido.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import {
   esUsernameValido,
@@ -251,6 +252,16 @@ export async function createPortalUserForProject(
     description: result.linked
       ? `Vinculó el Generador '${result.user.name}' (${identificadorDe(result.user)}) al proyecto desde Experiencia Solar`
       : `Creó el usuario de portal '${result.user.name}' (${identificadorDe(result.user)}) desde Experiencia Solar`,
+  });
+
+  // Con el usuario creado (o vinculado), el paso "Envío del acceso al portal" se
+  // cierra solo: el acceso existe y Voltia PM lo sabe.
+  await cerrarChecks({
+    projectId: params.projectId,
+    codigos: ["e1_portal"],
+    userId: params.actorUserId,
+    fuente: "hecho",
+    motivo: "se creó el usuario del portal",
   });
 
   return {

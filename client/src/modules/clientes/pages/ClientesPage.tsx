@@ -273,13 +273,22 @@ export function ClientesPage() {
               className={
                 c.fueraDeCadencia
                   ? "font-medium text-[var(--color-danger-text)]"
-                  : "text-[var(--color-text-muted)]"
+                  : c.tocaContactoHoy
+                    ? "font-medium text-[var(--color-warning-text)]"
+                    : "text-[var(--color-text-muted)]"
               }
-              title={c.fueraDeCadencia ? "Supera la cadencia de contacto de su etapa (se mide en días hábiles)" : undefined}
+              title={
+                c.fueraDeCadencia
+                  ? "Supera la cadencia de contacto de su etapa (se mide en días hábiles)"
+                  : c.tocaContactoHoy
+                    ? "Hoy se le cumple la cadencia: escribiéndole hoy sigue al día"
+                    : undefined
+              }
             >
               {c.ultimoContactoEn
                 ? `${fmtDate(c.ultimoContactoEn)}${d != null ? ` · ${d} d háb.` : ""}`
                 : "Sin contacto"}
+              {c.tocaContactoHoy ? " · toca hoy" : ""}
             </span>
             {c.avisoHabilitacionPendiente && (
               <span className="inline-flex w-fit items-center rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]">
