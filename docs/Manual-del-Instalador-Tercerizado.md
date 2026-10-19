@@ -690,7 +690,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 ## Anexo · El contrato
 
-> *Por armar:* el contrato entre Voltia y cada instalador tercerizado: la relación (empresa a empresa), el presupuesto por obra y la forma de pago, la documentación mensual de su gente, la exclusividad frente a la competencia y los clientes de Voltia, y las correcciones a su cargo. Lo revisa el abogado antes de usarlo.
+> *En borrador:* el contrato entre Voltia y cada instalador tercerizado está en `Contrato-Instalador-Tercerizado-borrador.md` (versión 0.1, del 19/10/26). Lo revisa el abogado antes de usarlo.
 
 ## Anexo · Registro de cambios
 
