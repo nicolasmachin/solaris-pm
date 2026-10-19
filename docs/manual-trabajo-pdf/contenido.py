@@ -3257,15 +3257,33 @@ def hoja_reglas(lineas, numero, titulo="Las reglas en una página", rotulo="ANEX
             continue
         m = re.match(r"### (\d+)\. (.+)", c[0])
         reglas.append((int(m.group(1)), m.group(2), " ".join(c[1:]) or None))
+    if not reglas:
+        # El del instalador tercerizado las escribe como lista numerada
+        # ("1. **La regla.** Lo que la explica."): la negrita es la regla y lo
+        # que sigue, la línea de abajo.
+        for l in lineas:
+            m = re.match(r"^(\d+)\. \*\*(.+?)\*\*\s*(.*)$", l)
+            if m:
+                # La línea de abajo no arranca con la puntuación que cerraba la
+                # frase ("…sin tensión**, con las cinco reglas…").
+                resto = re.sub(r"^[,;:]\s*", "", m.group(3).strip())
+                regla = m.group(2).rstrip(":")
+                if resto:
+                    resto = resto[0].upper() + resto[1:]
+                reglas.append((int(m.group(1)), regla, resto or None))
     items = ""
+    # Con muchas reglas (15 en el del instalador) no entran con el aire de
+    # siempre: se juntan un poco, sin bajar de 16 px la regla.
+    compacto = len(reglas) > 12
+    pad, fs = ("8px", 16) if compacto else ("15px", 18)
     for n, t, d in reglas:
-        sub = (f'\n        <p style="margin: 5px 0 0 32px; font-size: 13px; line-height: 1.45; color: #b8bdd4">'
+        sub = (f'\n        <p style="margin: {"3" if compacto else "5"}px 0 0 32px; font-size: 13px; line-height: 1.4; color: #b8bdd4">'
                f'{en_linea(d)}</p>' if d else "")
-        items += (f'      <div style="padding: 15px 0; border-bottom: 1px solid #2a2f45">\n'
+        items += (f'      <div style="padding: {pad} 0; border-bottom: 1px solid #2a2f45">\n'
                   f'        <div style="display: flex; gap: 12px; align-items: baseline">\n'
                   f'          <span style="font-family: {SANS}; font-size: 15px; font-weight: 700; color: #7f8fd8; '
                   f'width: 20px; flex-shrink: 0">{n:02d}</span>\n'
-                  f'          <span style="font-family: {SANS}; font-size: 18px; font-weight: 600; color: #ffffff; '
+                  f'          <span style="font-family: {SANS}; font-size: {fs}px; font-weight: 600; color: #ffffff; '
                   f'line-height: 1.3">{en_linea(t)}</span>\n'
                   f'        </div>{sub}\n'
                   f'      </div>\n')
