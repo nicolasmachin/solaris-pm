@@ -1,6 +1,6 @@
 # Manual del Instalador Tercerizado
 
-**Voltia · Uruguay** · Versión 0.3 · del 19/10/26 · *borrador*
+**Voltia · Uruguay** · Versión 0.4 · del 19/10/26 · *borrador*
 
 > Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es el manual **de consulta de todos los instaladores tercerizados**, en cada obra: no hace falta leer ningún otro manual.
 
@@ -105,7 +105,7 @@ Voltia no le dice con qué herramientas trabajar: le exige lo que hace a la **se
 ## 3 · Cómo llega una obra
 
 1. **El gerente de Operaciones le ofrece la obra** con su **presupuesto de mano de obra**: lo que Voltia le paga por esa obra.
-2. **El presupuesto no se negocia.** Sale del costeo de la venta, que se hizo antes de que la obra existiera. El instalador **acepta o no**. Pagar más lo autoriza solo el CEO de Voltia.
+2. **El presupuesto sale del costeo de la venta**, que se hizo antes de que la obra existiera. El instalador **lo acepta o no**. Pagar más lo autoriza solo el CEO de Voltia.
 3. **Si acepta**, el gerente agenda la obra con su equipo. Desde ese momento, el pago queda a su nombre en Voltia PM.
 4. **En los 2 días hábiles siguientes a que se confirma la fecha**, el instalador revisa el proyecto y deja su **informe** (capítulo 5).
 5. **La fecha confirmada se defiende.** Si algo puede moverla, se le avisa al gerente de Operaciones en cuanto se sabe, no el día de la obra.
@@ -637,15 +637,14 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 4. **El casco, sobre todo para el que está abajo.** Nadie trabaja debajo del borde mientras hay alguien en el techo.
 5. **La escalera, atada o sostenida.**
 6. **Lo eléctrico, sin tensión**, con las cinco reglas de oro. Los paneles siempre tienen tensión con luz.
-7. **El presupuesto de mano de obra no se negocia:** se acepta o no.
-8. **La fecha confirmada se defiende.**
-9. **El informe, en 2 días hábiles** desde que se confirma la fecha.
-10. **El kit se revisa al recibirlo**, y lo que falta se avisa en el momento.
-11. **Lo que más se cuida en un techo es que no entre agua.** El isopanel no se perfora; la losa, solo si el proyecto lo dice.
-12. **En obra manda el criterio del instalador**, salvo en lo que dice «siempre»: ahí se consulta con Ingeniería.
-13. **La obra se entrega llave en mano**: si falta algo de lo que se entrega, no está terminada, y las correcciones corren por cuenta del instalador.
-14. **El lugar queda mejor de como se encontró.**
-15. **Al cliente se le habla de horarios y accesos**; de fechas y de cómo sigue todo, le habla Experiencia Solar.
+7. **La fecha confirmada se defiende.**
+8. **El informe, en 2 días hábiles** desde que se confirma la fecha.
+9. **El kit se revisa al recibirlo**, y lo que falta se avisa en el momento.
+10. **Lo que más se cuida en un techo es que no entre agua.** El isopanel no se perfora; la losa, solo si el proyecto lo dice.
+11. **En obra manda el criterio del instalador**, salvo en lo que dice «siempre»: ahí se consulta con Ingeniería.
+12. **La obra se entrega llave en mano**: si falta algo de lo que se entrega, no está terminada, y las correcciones corren por cuenta del instalador.
+13. **El lugar queda mejor de como se encontró.**
+14. **Al cliente se le habla de horarios y accesos**; de fechas y de cómo sigue todo, le habla Experiencia Solar.
 
 ## Anexo · Glosario
 
@@ -662,7 +661,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 | Informe del instalador | Lo que deja el instalador al revisar la pre-ingeniería. En Voltia PM se llama **Informe del capataz** |
 | Ingeniería Final | La etapa en que Ingeniería aplica lo que marcó el instalador y cierra la lista de materiales definitiva |
 | Kit | Los materiales de una obra, que Logística manda a la casa del cliente |
-| Presupuesto de mano de obra | Lo que Voltia le paga al instalador por una obra. Sale del costeo de la venta y no se negocia |
+| Presupuesto de mano de obra | Lo que Voltia le paga al instalador por una obra. Sale del costeo de la venta. Pagar más lo autoriza solo el CEO de Voltia |
 | Control de obra | La revisión que hace el gerente de Operaciones de que la obra se hizo según el proyecto y están todos los entregables. Con ella se cierra la obra |
 | Llave en mano | Terminada del todo, con todo lo que se entrega y con el estándar de Voltia |
 | Experiencia Solar | El área que acompaña al cliente; es la que le habla de fechas y de cómo sigue todo |
@@ -688,6 +687,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
+| 0.4 | 19 de octubre de 2026 | Se saca que el presupuesto de mano de obra «no se negocia»: queda que sale del costeo de la venta y que pagar más lo autoriza solo el CEO de Voltia. |
 | 0.3 | 19 de octubre de 2026 | Lo de no trabajar para la competencia y no ofrecerles servicios directo a los clientes de Voltia sale del manual: queda en el contrato. |
 | 0.2 | 19 de octubre de 2026 | El manual pasa a ser de consulta para todos los instaladores tercerizados, los nuevos y los que ya trabajan con Voltia, y no solo para el que empieza. |
 | 0.1 | 19 de octubre de 2026 | Primer borrador. El perfil, la capacitación, la primera obra, las herramientas exigidas y recomendadas, la competencia, cómo llega una obra, cómo se cobra y las correcciones a cargo del instalador. La guía de techos, los errores que ya pasaron, la seguridad con los casos reales (casco, escalera, cinco reglas de oro), lo que se entrega y cómo se evalúa, el video final y la limpieza del terreno. La parte de obra que comparte con la cuadrilla propia (el informe, los criterios técnicos, la puesta en marcha, el cierre, lo que sale mal y el checklist). Faltan las fotos de terminaciones bien y mal hechas, y el contrato |
