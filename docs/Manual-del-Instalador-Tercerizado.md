@@ -1,6 +1,6 @@
 # Manual del Instalador Tercerizado
 
-**Voltia · Uruguay** · Versión 0.2 · del 19/10/26 · *borrador*
+**Voltia · Uruguay** · Versión 0.3 · del 19/10/26 · *borrador*
 
 > Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es el manual **de consulta de todos los instaladores tercerizados**, en cada obra: no hace falta leer ningún otro manual.
 
@@ -101,14 +101,6 @@ Voltia no le dice con qué herramientas trabajar: le exige lo que hace a la **se
 - Termocontraíble y pistola de calor.
 - Alargue y zapatilla, si tiene herramientas enchufables.
 - Botiquín.
-
-### La competencia y los clientes de Voltia
-
-- **No trabaja para la competencia:** ni para otra empresa de energía solar ni instalando paneles solares por su cuenta.
-- **Sí puede hacer otros trabajos** por su cuenta: instalaciones eléctricas, construcción, lo que sea.
-- **No les ofrece sus servicios directamente a los clientes de Voltia** (un mantenimiento, una ampliación): todo lo de un cliente de Voltia pasa por Voltia.
-
-> *Por armar:* el contrato entre Voltia y cada instalador tercerizado, con estas condiciones. Va como anexo.
 
 ## 3 · Cómo llega una obra
 
@@ -654,7 +646,6 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 13. **La obra se entrega llave en mano**: si falta algo de lo que se entrega, no está terminada, y las correcciones corren por cuenta del instalador.
 14. **El lugar queda mejor de como se encontró.**
 15. **Al cliente se le habla de horarios y accesos**; de fechas y de cómo sigue todo, le habla Experiencia Solar.
-16. **No se trabaja para la competencia ni se les ofrecen servicios directo a los clientes de Voltia.**
 
 ## Anexo · Glosario
 
@@ -697,5 +688,6 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
+| 0.3 | 19 de octubre de 2026 | Lo de no trabajar para la competencia y no ofrecerles servicios directo a los clientes de Voltia sale del manual: queda en el contrato. |
 | 0.2 | 19 de octubre de 2026 | El manual pasa a ser de consulta para todos los instaladores tercerizados, los nuevos y los que ya trabajan con Voltia, y no solo para el que empieza. |
 | 0.1 | 19 de octubre de 2026 | Primer borrador. El perfil, la capacitación, la primera obra, las herramientas exigidas y recomendadas, la competencia, cómo llega una obra, cómo se cobra y las correcciones a cargo del instalador. La guía de techos, los errores que ya pasaron, la seguridad con los casos reales (casco, escalera, cinco reglas de oro), lo que se entrega y cómo se evalúa, el video final y la limpieza del terreno. La parte de obra que comparte con la cuadrilla propia (el informe, los criterios técnicos, la puesta en marcha, el cierre, lo que sale mal y el checklist). Faltan las fotos de terminaciones bien y mal hechas, y el contrato |
