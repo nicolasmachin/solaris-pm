@@ -1,5 +1,15 @@
 # Novedades
 
+## v12.9
+
+### 19 de octubre de 2026
+
+#### Al entrar, el aviso dice qué está mal
+
+- Si alguien escribe un usuario o un email que no existe, el aviso se lo dice y le recuerda que va el email completo (por ejemplo nombre@voltia.com.uy) o su usuario.
+- Si el usuario existe pero la contraseña no es la correcta, el aviso dice eso. Si el usuario está dado de baja, también.
+- Cada intento de entrar queda registrado, con el usuario que se escribió y por qué falló, para poder ayudar a quien no puede entrar.
+
 ## v12.8
 
 ### 17 de octubre de 2026

@@ -20,6 +20,18 @@ Se entra con email y contraseña en la pantalla de login. La sesión dura siete
 días; vencida, la app pide entrar de nuevo. No hay "recordarme" ni renovación
 silenciosa: cuando el token expira, expira.
 
+Si el login falla, el aviso dice **qué** falló: usuario inexistente
+(`USUARIO_INEXISTENTE`), contraseña incorrecta (`CONTRASENA_INCORRECTA`) o usuario
+dado de baja (`USUARIO_DADO_DE_BAJA`). Fue un pedido de Dirección (19-oct-2026): se
+prioriza que la persona sepa qué corregir, **a sabiendas de que eso deja averiguar
+qué emails tienen usuario** (enumeración). No hay límite de intentos.
+
+**Cada intento queda en la tabla `login_attempts`** (`registrarIntento()` en
+`auth.routes.ts`): lo que se escribió como usuario, el usuario encontrado, si entró,
+el motivo de la falla, la IP real (de `x-forwarded-for`, porque detrás de Caddy
+`request.ip` es la del contenedor) y el navegador. **Nunca la contraseña.** Si el
+registro falla, el login sigue. No hay pantalla para verlo: se consulta por SQL.
+
 Los usuarios creados por un administrador (típicamente los clientes del portal)
 arrancan con una **contraseña temporal**. Mientras la marca `passwordTemporary`
 esté activa, la app fuerza el cambio de contraseña antes de dejar navegar a

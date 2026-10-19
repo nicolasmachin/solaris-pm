@@ -5622,3 +5622,25 @@ model WhatsAppEstado {
   @@index([waMessageId])
   @@map("whatsapp_estados")
 }
+
+/// Cada intento de entrar a Voltia PM (el login), bien o mal. Sirve para auditar
+/// por qué alguien no puede entrar: si escribió un usuario que no existe o si el
+/// usuario existe y le está errando a la contraseña. Nunca se guarda la contraseña.
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  /// Lo que la persona escribió como usuario o email, tal cual (recortado).
+  identifier String
+  /// El usuario que se encontró, si se encontró alguno.
+  userId     String?
+  success    Boolean
+  /// Motivo de la falla: USUARIO_INEXISTENTE, CONTRASENA_INCORRECTA o USUARIO_DADO_DE_BAJA.
+  reason     String?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([createdAt])
+  @@index([identifier])
+  @@index([userId])
+  @@map("login_attempts")
+}

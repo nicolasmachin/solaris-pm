@@ -23,6 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.9",
+  date: "19 de octubre de 2026",
+  sections: [
+    {
+      title: "Al entrar, el aviso dice qué está mal",
+      items: [
+        "Si el usuario no existe, el aviso lo dice y recuerda que va el email completo o el usuario; si el usuario existe y la contraseña no es, dice eso.",
+        "Cada intento de entrar queda registrado, para ayudar a quien no puede entrar.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_8: Release = {
   version: "12.8",
   date: "17 de octubre de 2026",
   sections: [
@@ -701,6 +715,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.8",
+    shortDate: "17 oct",
+    highlights: RELEASE_12_8.sections.map((sec) => sec.title),
+  },
   {
     version: "12.7",
     shortDate: "16 oct",

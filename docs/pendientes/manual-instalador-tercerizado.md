@@ -40,6 +40,148 @@ sugerir respuestas, y después se valida con el gerente de Operaciones.
 
 Anexos: las reglas en una página, glosario, contrato (pendiente), registro de cambios.
 
+## Respuestas de Nicolás
+
+**1. Cómo llega (18-oct).** Todos los de hoy son allegados; no hubo selección. Fernando ya
+instalaba paneles como tercerizado para otra empresa; Mario venía de un rubro afín de la
+construcción, se daba maña y aprendió rápido. Por eso no hizo falta formación exhaustiva ni
+este manual antes.
+
+**2. Primera obra (18-oct).** Primero trabaja en conjunto, por lo menos una obra, con otro
+instalador; después arranca solo con una obra sencilla. Mario fue a ver una obra que hacía
+Voltia y después hizo una solo; Voltia fue a hacer lo más crítico: la configuración de los
+equipos y alguna cosa tecnológica muy específica.
+
+**3. Exclusividad (18-oct, no estaba definido).** Para la competencia no. Sí puede trabajar
+por su cuenta en otras cosas: Fernando hace instalaciones eléctricas, Mario es constructor
+y hace todo tipo de trabajos.
+Acordado después: **competencia** = trabajar para otra empresa solar **o** instalar paneles
+por su cuenta. Además, **no puede ofrecerles servicios directo a los clientes de Voltia**
+(mantenimiento, ampliación). Las dos cosas van al contrato; que las mire el abogado junto
+con la cláusula de la seña.
+
+**2b. Cuándo va solo y la configuración (18-oct).** Voltia decide cuándo está listo para ir
+solo. La configuración de los equipos la hace Voltia hasta que define que el instalador ya
+puede hacerla solo (Mario ya la hace hace tiempo).
+
+**4. Qué tiene que saber hacer (18-oct, en curso).** Trabajar con herramientas eléctricas
+(taladro, amoladora); distinguir los tipos de tornillo (madera, punta mecha para metal); los
+tipos de mecha para taladro; los tipos de anclaje y de taco fischer según la estructura;
+cuáles metales se oxidan y cuáles no. Soldar: soldadura de punto y MIG, en hierro, acero y
+galvanizado. Entender el par galvánico (metales distintos en contacto que se oxidan).
+Trabajar en techos entendiendo el riesgo de filtración de cada tipo, y sobre todo
+**mantener la impermeabilización del techo del cliente: evitar filtraciones**.
+
+**Techos (salió dentro de la 4, sirve para 12 y 13):**
+- **Isopanel:** no se perfora.
+- **Hormigón:** se intenta no perforar; si se perfora, se sella muy bien con el anclaje químico.
+- **Chapa**, tres montajes comunes en Uruguay:
+  1. **Sobre tubular** (hierro o acero), fijada desde arriba con autoperforante punta mecha
+     con arandela de goma, que es lo que sella. Si se agrega un perfil entre la chapa y el
+     tornillo, la arandela queda arriba del perfil y **la unión perfil–chapa queda sin
+     sellar**: hay que sellarla siempre con otra goma, silicona o similar, sea cual sea el
+     material.
+  2. **Sobre cerchas**, con tornillos agarrados desde abajo: no se puede agregar un anclaje
+     desde arriba. Solo si el tornillo sobresale lo suficiente y está en buen estado, se
+     monta la estructura agregándole una tuerca por arriba.
+  3. **Autoportante**, apoyada: no hay anclajes en el techo de dónde sujetarse; es el caso
+     más complicado. *(Falta: cómo lo resuelve Voltia.)*
+
+**4, sigue (18-oct).** Albañilería: hacer los distintos tipos de hormigón para las
+fundaciones de las patas de los paneles montados en tierra; nivelar, con tendidos de piolas
+a nivel. **Lo que no sabe lo puede aprender**: no es requisito traerlo, pero sí tener
+facilidad para aprender. Eléctrico: conocimiento básico, **sin certificación ni curso
+exigido**. Sí tiene que saber **leer e interpretar los planos** que se le mandan.
+- **Montaje en tierra** se suma a la guía de techos (12-13).
+- Albañilería, se suma (18-oct): en algunos casos hay que **construir nichos de ladrillo o
+  bloque y revocarlos**.
+- **Se suma (propuesto por Claude, aceptado 18-oct):** armar conectores MC4 (pinza correcta,
+  sin mezclar marcas, verificar); la corriente continua (tensión con luz, arco, no se corta
+  bajo carga, polaridad); medir con multímetro y pinza (tensión de string, polaridad,
+  corriente); trabajar en altura (arnés, anclaje, escalera); cableado y canalización
+  (caños, cajas, prensaestopas, protección UV); armar un tablero básico (riel, borneras,
+  etiquetas); puesta a tierra (jabalina y medición); replanteo (medir, norte, inclinación);
+  manipular los paneles (no pisar, no apoyar sobre el vidrio, viento); manejo básico del
+  celular (Voltia PM y la aplicación del inversor); trabajar en la casa del cliente.
+  Nicolás corrige cuando vea el texto.
+
+**Capacitación (18-oct).** Tiene que estar siempre dispuesto a hacer los cursos y las
+certificaciones que Voltia le ofrezca; en general gratuitos. Puede haber evaluaciones, con
+un mínimo para seguir trabajando con Voltia. La capacitación de seguridad la da Voltia con
+su equipo prevencionista: los tercerizados se capacitan junto con la cuadrilla propia.
+(Redacción: «se capacita junto con la cuadrilla propia», nunca «es parte de la empresa»,
+para no sugerir relación laboral. Nicolás delega la redacción.)
+
+**5. Títulos (18-oct, cerrada).** No se exige ninguno. La capacitación de altura y seguridad
+la da Voltia.
+
+**6. Experiencia en solar (18-oct).** No se pide.
+
+**7. Qué aprende y cómo se evalúa (18-oct).** Lo que no trae lo aprende (separación trae /
+aprende la redacta Claude). Evalúa el equipo de la Gerencia de Operaciones. Si en una obra el
+estándar no es el esperado, se piden todas las correcciones hasta que lo sea. Es esperable
+que haya correcciones en las primeras obras, que el instalador las acepte para mejorar y que
+vayan tendiendo a cero. Si la expectativa se sigue sin cumplir, no se lo llama más ni se le
+dan más obras.
+
+**7b. Correcciones (18-oct).** Las paga el tercerizado, sin duda. Se entrega llave en mano,
+con la obra terminada y con los estándares de Voltia: si no tiene los estándares, para
+Voltia no está terminada.
+
+**8. Kit mínimo (18-oct, a validar con un operario).** Taladro, rotomartillo con percutor y
+amoladora (idealmente a batería; pueden ser enchufables). Soldadora. Pala y posera. Cajón
+de electricista básico: destornilladores y pinzas aisladas. Masa (martillo grande para la
+jabalina). Llaves Allen, francesas y cricket. Multímetro que mida continua hasta 1000 V,
+pinza amperimétrica, telurímetro. Pinza para armar los conectores MC4. Pinceta. Pelacables.
+Pinza para los terminales de punta de los cables (crimpadora de punteras). Mechas para
+metal del 6 al 14 y mechas para hormigón de las mismas medidas. Cinta pasacable. Pala y
+balde para el hormigón (mezcla con portland).
+Se suma lo propuesto por Claude (medir y replantear, eléctrico, mecánico, seguridad, celular)
+**excepto el detector de tensión sin contacto** (nunca se usó). Inclinómetro y brújula: el
+celular. Botiquín y extintor: sugeridos.
+
+**8 y 9. Exigido o recomendado (18-oct).** Voltia no le dice con qué hacer las cosas: si es
+seguro y entrega la obra con los estándares, la hace como quiera (cortar a sierra o a
+amoladora, pozos a pala o con excavadora). Se le sugiere con qué es más fácil. **Exigido:**
+lo de seguridad y lo que hace falta para medir bien, como el **telurímetro** (la forma
+correcta de medir la tierra) y el **multímetro**. Ejemplo: el taladro es exigido; que sea a
+batería es recomendado. El desglose lo propone Claude.
+
+**8 y 9, corrección de Nicolás (18-oct).** Pasan a exigido: masa para la jabalina,
+destornilladores y pinzas aisladas, soldadora, pistola de silicona, amoladora, pala y
+posera, llaves Allen, francesa y cricket, remachadora, cinta pasacable, mecha copa y
+**mecha cónica**, cinta métrica, nivel, cinta aisladora. Recomendado: amoladora a batería,
+pistola de calor, alargue y zapatilla (solo si tiene herramientas enchufables). Se saca
+«puede cortar a sierra».
+
+**10. Préstamos (18-oct).** Voltia le puede prestar herramientas particulares (el
+telurímetro, por ejemplo), sobre todo al empezar. Cuando entra en régimen, las tiene que
+tener él.
+
+**11. Vehículo (18-oct).** Sí, propio. No tiene que ser camión ni camioneta: alcanza un auto con
+portaequipaje (vaca) para la escalera y las herramientas. Los materiales los manda Voltia a
+la casa del cliente.
+
+**12. Tipos de techo (18-oct).** En general todos: chapa, isopanel, hormigón, tejas y en
+tierra. Nunca se instaló sobre **dolmenit** (amianto; techos viejos y no seguros), **paja
+(quincho)** ni **techo vivo**. Cada caso se estudia y, si se puede, se hace un proyecto de
+ingeniería: **no lo decide el instalador**. Le puede tocar cualquiera de los mencionados.
+
+**13. Fijación y sellado (18-oct).** Va en el proyecto de ingeniería. A grandes rasgos:
+- **Chapa:** tornillo autoperforante punta mecha, de aluminio anodizado, acero galvanizado o
+  acero inoxidable.
+- **Isopanel:** no se perfora; piezas tipo pinza que se aprietan en el engrafado (las uniones).
+- **Hormigón:** losas de contrapeso calculadas por Ingeniería, o estructura de acero
+  galvanizado anclada a los pretiles o a los laterales de la losa si sobresale. Si se
+  perfora la losa: **siempre con tope** para no pasarse. Lo que se rompa, se arregla.
+- **Tejas, dos formas:** la estructura se ancla por debajo de la teja y sale por el frente, o
+  se perfora la teja con una pieza con topes de goma (puede ser la de la guía brasileña).
+- **Chapa autoportante:** remaches que se abren en estrella del lado de abajo al cerrarse,
+  hechos para esto. No se usaron todavía; puede tocar.
+- Se acordó (18-oct): el **dolmenit** va en la guía igual: reconocerlo, no cortar, no perforar,
+  no pisar; si aparece, se para y se consulta. Losa con tope y «lo que se rompe se arregla»
+  van como puntos de «siempre».
+
 ## Preguntas abiertas
 
 **Cómo se empieza a trabajar con Voltia**
