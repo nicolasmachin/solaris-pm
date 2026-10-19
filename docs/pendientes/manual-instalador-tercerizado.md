@@ -182,6 +182,70 @@ ingeniería: **no lo decide el instalador**. Le puede tocar cualquiera de los me
   no pisar; si aparece, se para y se consulta. Losa con tope y «lo que se rompe se arregla»
   van como puntos de «siempre».
 
+**14. Errores que ya pasaron (19-oct).**
+- **Sin tuercas autofrenantes ni arandelas de presión (grower):** con el viento se aflojaron
+  los triángulos de aluminio y se cayeron paneles.
+- **Grampas interpanel mal apretadas:** con viento se cayeron paneles.
+- **Herramientas que se cayeron arriba de los paneles** y los rompieron.
+- **Paneles sueltos mientras se arma la estructura:** son una vela; con viento se levantan,
+  se caen sobre algo o del techo.
+- **Losa perforada para anclar más fácil:** filtración adentro de la casa; hubo que volver a
+  arreglarla con todo lo que implica.
+- **Obra tercerizada que quedó sucia:** restos de cable, cinta, caños, precintos tirados; la
+  tierra de los pozos de la fundación desparramada por el campo (desniveles para los
+  vehículos). Malestar del cliente; Nicolás terminó limpiando en la visita. **Regla: el lugar
+  queda en mejores condiciones de como se encontró.**
+- **Conexiones mal hechas** (por ejemplo los transformadores de corriente) que obligan a volver
+  a revisar: se ahorra tiempo y plata revisando todo en el lugar.
+- **Caminar sobre chapa trapezoidal:** se marca y hasta se parte en los bordes donde se dobla,
+  abriendo entradas de agua donde no se perforó; después hay que arreglar y sellar. Foto real
+  (obra de Yamandú Ramos, chapa marcada vista desde abajo):
+  `manual-instalador-tercerizado-chapa-pisada.png`.
+- **Casco, también abajo:** a uno que trabajaba en el techo se le escapó una pinza, resbaló
+  por la caída del techo y cayó al lado de quien configuraba el inversor en el suelo, sin
+  casco. Pudo ser fatal. El casco importa incluso más para el que está abajo.
+- **Hormigón y limpieza del terreno:** el camión deja arena y piedra; al usarlas quedan restos
+  tirados y el piso marcado. Al hacer el hormigón, que no se vuelque en el piso: se trabaja
+  sobre una chapa o algo que cubra. Al terminar, el terreno queda limpio.
+- **Lo eléctrico, siempre sin tensión**, y en la medida de lo posible con las **5 reglas de oro**.
+- **Escaleras atadas** en lo posible, para que no se muevan: ya se cayó alguien y se accidentó.
+
+**15. Obras que no se le dan a un tercerizado (19-oct).** Por ahora ninguna: se le puede dar
+cualquiera. Queda a criterio del gerente de Operaciones al asignar las obras (coincide con el
+manual de Operaciones: las grandes o complejas van, en general, a la cuadrilla propia).
+
+**16. Qué dice que una obra quedó bien hecha (19-oct).** La prolijidad, sobre todo:
+- Minimizar las conexiones de cables; tramos a medida y lo más directos posible; menos puntos
+  de falla.
+- Minimizar las canalizaciones y las curvas; que todo tenga sentido estético, dentro de lo posible.
+- En el montaje, dejar lugar para el mantenimiento (aunque venga en el diseño, el instalador
+  puede ajustarlo).
+- Que los cables se vean lo menos posible: por ejemplo, la tierra de los paneles va del lado de
+  abajo y no del de arriba.
+- Terminaciones prolijas.
+- Dejar el lugar mejor de como estaba: si algo estaba desordenado y se arregla fácil, o se puede
+  mejorar algo eléctrico, se hace.
+- Nicolás va a mandar fotos de terminaciones bien hechas y mal hechas para comparar.
+
+**14b. Marcado de apriete (19-oct).** No como regla: como sugerencia, bien explicada.
+
+**16b.** Nicolás manda las fotos de terminaciones bien y mal hechas cuando las tenga.
+
+**17. Qué hace que una obra no se acepte (19-oct).** Es subjetivo. Primero: que algo del
+entregable no haya quedado hecho, aunque se haya marcado como hecho. Hay cosas que se detectan
+después: el medidor mal conectado, el datalogger sin internet. Si algo impide dar la obra por
+terminada, el instalador vuelve (a su costo, ver 7b).
+Lista objetiva del entregable (propuesta de Claude, a validar): inversor generando y en línea
+(datalogger con internet); medidor bien conectado (valores lógicos en la aplicación); fotos,
+2 videos de ensayos y documentos UTE firmados en Voltia PM; terreno y techo limpios (en la foto
+de cierre); sobrantes retirados o coordinados. **Se suma (Nicolás, 19-oct): un video final
+mostrando toda la obra terminada.** Orden: paneles, estructura y fijaciones, recorrido de
+cables, inversor y tableros **cerrados** (abiertos se ven en las fotos), puesta a tierra,
+aplicación generando, terreno y techo limpios. Uno o dos minutos, sin cortes. Sugerencia: antes de irse, revisar la aplicación del
+inversor con el cliente.
+
+**Preguntas cerradas el 19-oct.** Falta: las fotos de bien y mal (16b) y redactar.
+
 ## Preguntas abiertas
 
 **Cómo se empieza a trabajar con Voltia**
