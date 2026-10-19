@@ -1773,7 +1773,7 @@ def panel_montaje():
     """El montaje: la zona segura del panel donde van las grampas (nunca en la
     punta) y el panel a 25° mirando al norte. La zona es un criterio de diseño
     de Ingeniería, no una medida fija: el dibujo no lleva cotas."""
-    W, H = 650, 250
+    W, H = 650, 290
     s = []
     px, py, pw, ph = 40, 20, 120, 210
     zona = 0.16
@@ -1795,18 +1795,23 @@ def panel_montaje():
     s.append(_txt(222, 92, "Nunca en la punta", 13.5, 700, ROJO))
     s.append(_txt(222, 109, "el vidrio se comba y se pierde la garantía", 12, 500, TEXTO))
     import math
-    ox, oy, L = 420, 220, 140
+    # Con el norte a la derecha, el panel que MIRA al norte tiene el borde bajo
+    # del lado norte y el alto del lado sur. El ángulo se marca en el borde
+    # bajo, y el texto va arriba, lejos del panel.
+    nx, oy, L = 560, 262, 140
     a = math.radians(25)
-    s.append(_txt(ox - 10, 150, "Inclinación 25°, mirando al", 13, 600, NEGRO))
-    s.append(_txt(ox - 10, 166, "norte, con los paneles en vertical", 13, 600, NEGRO))
-    s.append(f'<line x1="{ox - 20}" y1="{oy}" x2="{ox + L + 30}" y2="{oy}" stroke="{GRIS_CLARO}" stroke-width="1.5"/>')
-    s.append(f'<line x1="{ox}" y1="{oy}" x2="{ox + L * math.cos(a):.1f}" y2="{oy - L * math.sin(a):.1f}" '
+    sx, sy = nx - L * math.cos(a), oy - L * math.sin(a)
+    s.append(_txt(400, 152, "Inclinación 25°, mirando al", 13, 600, NEGRO))
+    s.append(_txt(400, 168, "norte, con los paneles en vertical", 13, 600, NEGRO))
+    s.append(f'<line x1="{sx - 30:.1f}" y1="{oy}" x2="{nx + 20}" y2="{oy}" stroke="{GRIS_CLARO}" stroke-width="1.5"/>')
+    s.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{nx}" y2="{oy}" '
              f'stroke="#1b2a5c" stroke-width="9" stroke-linecap="round"/>')
-    s.append(f'<path d="M{ox + 55} {oy} A55 55 0 0 0 {ox + 55 * math.cos(a):.1f} {oy - 55 * math.sin(a):.1f}" '
+    s.append(f'<path d="M{nx - 55} {oy} A55 55 0 0 1 {nx - 55 * math.cos(a):.1f} {oy - 55 * math.sin(a):.1f}" '
              f'fill="none" stroke="{OP}" stroke-width="2"/>')
-    s.append(_txt(ox + 62, oy - 8, "25°", 16, 700, OP))
-    s.append(_flecha(ox + L + 2, oy - 22, ox + L + 52, oy - 22, VERDE, 2.5))
-    s.append(_txt(ox + L + 27, oy - 32, "NORTE", 12, 700, VERDE, anchor="middle"))
+    s.append(_txt(nx - 100, oy - 8, "25°", 16, 700, OP, anchor="middle"))
+    s.append(_flecha(nx + 2, oy - 40, nx + 70, oy - 40, VERDE, 2.5))
+    s.append(_txt(nx + 36, oy - 50, "NORTE", 12, 700, VERDE, anchor="middle"))
+    s.append(_txt(sx - 4, sy - 12, "sur", 11.5, 600, TEXTO, anchor="middle"))
     return _svg(W, H, "El montaje: las grampas en la zona segura, nunca en la punta, y el panel a 25° mirando al norte", "".join(s))
 
 
