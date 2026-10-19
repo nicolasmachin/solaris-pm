@@ -86,7 +86,7 @@ Voltia no le dice con qué herramientas trabajar: le exige lo que hace a la **se
 | Para qué | Qué |
 |---|---|
 | La seguridad | Arnés de cuerpo completo, cabo de vida con amortiguador y punto de anclaje · Escalera en condiciones · Casco con barbijo, guantes, lentes y calzado de seguridad · Careta y guantes de soldar · Extintor cuando se suelda |
-| Medir | Multímetro que mida continua hasta 1000 V · Pinza amperimétrica · Telurímetro |
+| Medir | Multímetro que mida corriente continua hasta 1000 V · Pinza amperimétrica · Telurímetro |
 | Los conectores | Pinza para armar los MC4 y llave para desconectarlos · Crimpadora de punteras (los terminales de las puntas de los cables) · Pelacables |
 | Hacer la obra | Taladro, con mechas para metal y para hormigón del 6 al 14 · Rotomartillo con percutor · Amoladora · Soldadora · Masa (para la jabalina) · Destornilladores y pinzas aisladas · Llaves Allen, francesa y cricket · Remachadora · Mecha copa y mecha cónica · Cinta pasacable · Pistola de silicona · Cinta métrica y nivel · Cinta aisladora · Pala y posera |
 | Documentar | Celular con cámara y datos |
