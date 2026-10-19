@@ -121,3 +121,27 @@ cambia, se corrige el `.md` primero y después `contenido.py`.
 Dos diferencias a propósito con el `.md`: donde el `.md` dice *"En la app"*, el
 canvas dice *"En Voltia PM"*, y el capítulo 11 se llama *"Voltia PM, pantalla por
 pantalla"*. Es la regla de nombres de CLAUDE.md (nunca "la app" a secas).
+
+## Manual del Instalador Tercerizado (`MANUAL=tercerizado`)
+
+De `docs/Manual-del-Instalador-Tercerizado.md`. Tres partes con portadilla:
+**A** Voltia y la relación (caps. 0–4), **B** La obra, de punta a punta (5–10),
+**C** La evaluación y las herramientas (11–15); los casos del cap. 14 van en
+tarjetas. Canvas: **https://claude.ai/artifact/SvYyLuDvQZJZrGiiHBQtJv** (54 hojas,
+creado el 19-oct-2026).
+
+Se arma con las imágenes del canvas de **Operaciones** (las capturas son las
+mismas) y `assets-tercerizado.json` las pasa a las de su canvas:
+`MANUAL=tercerizado bash docs/manual-trabajo-pdf/armar.sh <carpeta>` para medir
+(con las direcciones de Operaciones, que `assets-locales.json` resuelve a
+archivos), y después la pasada final con
+`REMAP_ASSETS=docs/manual-trabajo-pdf/assets-tercerizado.json` y
+`--alturas <carpeta>/alturas.json`. Una imagen nueva de Operaciones que use este
+manual hay que copiarla a su canvas y sumarla a ese archivo.
+
+Las fotos que el .md pone por nombre de archivo (`![…](archivo.png)`) salen de
+`capturas-tercerizado.json` (nombre sin extensión → id, ya en el canvas
+nuevo). La de la chapa pisada es un recorte de las dos fotos de una captura de
+WhatsApp, sin los nombres ni los audios (`imagenes/tercerizado-chapa-pisada.jpg`).
+La portada es el techo rojo; la portadilla B, la estructura a suelo de
+Operaciones.

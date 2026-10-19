@@ -48,6 +48,10 @@ CONFIG = {
                "pie": "Manual de trabajo de Ventas · Voltia",
                "titulo": "Manual de trabajo de Ventas", "subtitulo": "Del lead a la venta y el onboarding",
                "corto": "Ventas", "canvas": "Manual de trabajo de Ventas"},
+    "tercerizado": {"fuente": "Manual-del-Instalador-Tercerizado.md",
+                    "pie": "Manual del Instalador Tercerizado · Voltia",
+                    "titulo": "Manual del Instalador Tercerizado", "subtitulo": "Cómo se trabaja con Voltia",
+                    "corto": "Instalador", "canvas": "Manual del Instalador Tercerizado"},
 }[MANUAL]
 FUENTE = os.path.join(AQUI, "..", CONFIG["fuente"])
 sys.path.insert(0, AQUI)
@@ -58,7 +62,10 @@ import imagenes as IMG  # noqa: E402
 # Cada canvas tiene su propio almacén de imágenes: un /_blob/ del PGT no se ve
 # en el de Operaciones. assets-operaciones.json dice qué id tiene cada foto y
 # cada logo en el canvas de Operaciones.
-if MANUAL == "operaciones":
+# El del instalador tercerizado sale de las mismas imágenes que el de
+# Operaciones (las capturas son las mismas): se arma con las direcciones de ese
+# canvas y REMAP_ASSETS las pasa a las del suyo.
+if MANUAL in ("operaciones", "tercerizado"):
     _MAPA_OPS = json.load(open(os.path.join(AQUI, "assets-operaciones.json")))
     for _k in dir(IMG):
         _v = getattr(IMG, _k)
@@ -71,6 +78,10 @@ if MANUAL == "ventas":
 if MANUAL == "operaciones":
     # Ya en la dirección del canvas de Operaciones (no pasa por assets-operaciones.json).
     IMG.PORTADA = "/_blob/871e3d109a7c1625835db5de3dfa7693"  # estructura a suelo, en obra
+if MANUAL == "tercerizado":
+    # Una foto distinta en la portada y en cada portadilla, para que no se vea
+    # igual que el de Operaciones.
+    IMG.PORTADA, IMG.PORTADILLA_PARTE2 = IMG.PORTADILLA_PARTE2, "/_blob/871e3d109a7c1625835db5de3dfa7693"
 import generar  # noqa: E402
 from generar import (  # noqa: E402
     AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, ROJO_BORDE, ROJO_FONDO, SANS, SERIF, TEXTO,
@@ -107,13 +118,26 @@ if MANUAL == "operaciones":
          IMG.PORTADILLA_PARTE1),
     ]
 
+if MANUAL == "tercerizado":
+    PARTES = [
+        ("A", "Voltia y la relación", [0, 1, 2, 3, 4],
+         "Quién es Voltia, cómo se empieza a trabajar con ella, cómo llega una obra y cómo se cobra.",
+         IMG.PORTADILLA_PARTE1),
+        ("B", "La obra, de punta a punta", [5, 6, 7, 8, 9, 10],
+         "El informe y los materiales, la seguridad, los techos, los criterios técnicos, la puesta en "
+         "marcha y el cierre de la obra.", IMG.PORTADILLA_PARTE3),
+        ("C", "La evaluación y las herramientas", [11, 12, 13, 14, 15],
+         "Cómo se evalúa el trabajo, lo que ya salió mal, Voltia PM, qué hacer cuando algo sale mal y "
+         "el checklist de obra.", IMG.PORTADILLA_PARTE2),
+    ]
+
 # Ventas no tiene partes: los capítulos van seguidos, sin portadillas, en el
 # orden del .md (incluida la sección sin número "Las reglas de Ventas").
 if MANUAL == "ventas":
     PARTES = []
 
 # Los capítulos de "Cuando algo sale mal", cuyos casos van en tarjetas.
-CAPITULOS_CASOS = {"operaciones": (8, 16, 20), "ventas": (6,)}.get(MANUAL, ())
+CAPITULOS_CASOS = {"operaciones": (8, 16, 20), "ventas": (6,), "tercerizado": (14,)}.get(MANUAL, ())
 
 # Lo que entra en una hoja: 1123 menos los márgenes (72 + 56) y el pie. Con
 # alturas medidas (medir-bloques.mjs) el colchón es chico; sin ellas se
@@ -171,6 +195,12 @@ def bloques_de(lineas):
             i += 1
         elif l.startswith("#### "):
             out.append(("h4", l[5:].strip()))
+            i += 1
+        elif re.match(r"^!\[[^\]]*\]\([\w-]+\.(?:png|jpe?g)\)\s*$", l):
+            # Una foto del .md por nombre de archivo (docs/<archivo>): se
+            # registra como captura con el nombre sin extensión.
+            m = re.match(r"^!\[([^\]]*)\]\(([\w-]+)\.(?:png|jpe?g)\)", l)
+            out.append(("captura", (m.group(2), m.group(1))))
             i += 1
         elif re.match(r"^!\[[^\]]*\]\(captura:[\w-]+\)\s*$", l):
             # Una captura de Voltia PM: ![epígrafe](captura:nombre), con el
@@ -2895,7 +2925,7 @@ VISUALES = {
 
 # Las capturas de Voltia PM de cada manual: nombre que usa el .md → id del asset.
 CAPTURAS = {}
-for _f in ("capturas-operaciones.json", "capturas-ventas.json"):
+for _f in ("capturas-operaciones.json", "capturas-ventas.json", "capturas-tercerizado.json"):
     if os.path.exists(os.path.join(AQUI, _f)):
         CAPTURAS.update(json.load(open(os.path.join(AQUI, _f))))
 
