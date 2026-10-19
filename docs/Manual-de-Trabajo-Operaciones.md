@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.3 · del 17/10/26
+**Voltia · Uruguay** · Versión 1.4 · del 19/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -208,11 +208,11 @@ En Voltia PM el monto está en la subetapa **Presupuesto al instalador terceriza
 
 > **La seguridad es innegociable, también con los tercerizados.**
 
-Si a un trabajador de un tercerizado le pasa algo en una obra de Voltia, Voltia también responde. Por eso, todos los meses, se le pide a cada tercerizado la documentación que demuestra que tiene a su gente en regla: el certificado del BPS al día, el recibo de los aportes, la póliza de accidentes de trabajo del BSE vigente para todos los que van a la obra, la planilla de trabajo y los recibos de sueldo. Si no la presenta, se le puede retener el pago.
+Si a un trabajador de un tercerizado le pasa algo en una obra de Voltia, Voltia también responde. Por eso a cada tercerizado se le exige **estar inscripto como empresa** (aunque sea unipersonal) **y tener la póliza de accidentes de trabajo del BSE** vigente para todos los que van a la obra, antes de su primera obra con contrato. La **factura** se le exige a los seis meses de firmar. Si le falta el seguro, se le puede retener el pago. La documentación de sueldos y aportes (BPS, recibos, planilla) no se le pide por ahora.
 
 > *En definición:* el plan de seguridad, que se está armando con un técnico prevencionista. Con ese plan se va a capacitar a la cuadrilla propia y a los tercerizados, y va a ser parte de lo que se le exige a cada tercerizado.
 
-> *Por armar:* el contrato entre Voltia y cada instalador tercerizado. Va como anexo de este manual.
+> *En borrador:* el contrato entre Voltia y cada instalador tercerizado (`Contrato-Instalador-Tercerizado-borrador.md`), a revisar con el abogado. El tercerizado tiene además su propio manual, el **Manual del Instalador Tercerizado**.
 
 ### El informe post-obra
 
@@ -1078,6 +1078,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.4 | 19 de octubre de 2026 | Al tercerizado se le exige estar inscripto como empresa y tener el seguro de accidentes del BSE desde su primera obra con contrato, y la factura a los seis meses; ya no se le pide todos los meses la documentación de sueldos y aportes. El contrato con el tercerizado pasa a estar en borrador, y el tercerizado tiene su propio manual. |
 | 1.3 | 17 de octubre de 2026 | El Carnaval y la Semana de Turismo no cuentan como días hábiles. |
 | 1.2 | 16 de octubre de 2026 | En Pagos a instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado. |
 | 1.1 | 14 de octubre de 2026 | La Validación de Operaciones recibe los datos de la obra ya definidos (paneles, inversor, red, techo y si van coplanares o inclinados), porque Ingeniería no puede cerrar la Pre-Ingeniería sin ellos. En la pantalla del proyecto, el bloque del sistema fotovoltaico los muestra arriba y dice si la pre-ingeniería y el unifilar coinciden. En la lista de proyectos, el techo y si es coplanar o inclinado aparecen debajo de los paneles. |

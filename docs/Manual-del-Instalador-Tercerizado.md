@@ -127,7 +127,7 @@ Voltia no le dice con qué herramientas trabajar: le exige lo que hace a la **se
 - **El instalador ve lo que cobró y lo que le falta cobrar en Voltia PM**, en **Mis cobros** (capítulo 13).
 - **Las correcciones corren por su cuenta.** Si hay que volver a la obra para corregir algo, el tiempo y el viaje son del instalador: el trabajo se paga **llave en mano**, terminado y con el estándar de Voltia.
 
-**La documentación de su gente, todos los meses.** Si a un trabajador del instalador le pasa algo en una obra de Voltia, Voltia también responde. Por eso, todos los meses, el instalador presenta la documentación que demuestra que tiene a su gente en regla: el certificado del BPS al día, el recibo de los aportes, la póliza de accidentes de trabajo del BSE vigente para todos los que van a la obra, la planilla de trabajo y los recibos de sueldo. **Si no la presenta, se le puede retener el pago.**
+**Empresa, seguro y factura.** Si a un trabajador del instalador le pasa algo en una obra de Voltia, Voltia también responde. Por eso, **antes de su primera obra con contrato**, el instalador está **inscripto como empresa** (aunque sea unipersonal) y tiene la **póliza de accidentes de trabajo del BSE** vigente para todos los que van a la obra. **Si le falta el seguro, se le puede retener el pago.** La **factura** se le exige a los seis meses de firmar el contrato.
 
 ## 5 · Antes de la obra: el informe y los materiales
 

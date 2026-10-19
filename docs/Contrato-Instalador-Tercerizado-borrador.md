@@ -1,6 +1,6 @@
 # Contrato de servicios de instalación — Voltia y el instalador
 
-**Borrador 0.2 · 19/10/26 · para revisar con el abogado antes de usarlo**
+**Borrador 0.3 · 19/10/26 · para revisar con el abogado antes de usarlo**
 
 > Este borrador junta en un contrato lo que ya decidió Voltia sobre los instaladores tercerizados (Manual del Instalador Tercerizado, Manual de Gerencia). Lo que está entre corchetes falta completarlo. Lo marcado **[A definir]** es una decisión que todavía no se tomó: va con una propuesta, para conversarla. No es asesoramiento legal: lo tiene que revisar el abogado de Voltia, que además mira la redacción para que la relación no se pueda confundir con una relación de empleo.
 
@@ -48,7 +48,7 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 
 4.4. Los materiales los provee Voltia. Lo que el Instalador compre por una urgencia de la obra se le reintegra solo si Voltia lo autorizó antes.
 
-4.5. Voltia puede **retener los pagos** mientras falte la documentación de la cláusula sexta. Si el Instalador no paga salarios o aportes de su personal, Voltia puede pagarlos directamente y descontarlos de lo que le deba (Ley 18.251).
+4.5. Voltia puede **retener los pagos** mientras el Instalador no tenga vigente el seguro de accidentes de la cláusula sexta o, terminado el período de adecuación, mientras no presente la factura.
 
 ## Quinta · Cómo se entrega la obra
 
@@ -76,13 +76,11 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 
 6.3. El Instalador y su personal **asisten a las capacitaciones de seguridad y técnicas que organiza Voltia**, en general sin costo. Voltia puede evaluarlas y exigir un resultado mínimo para seguir asignando obras.
 
-6.4. **Documentación.** Una vez terminado el período de adecuación de la cláusula undécima, **todos los meses**, el Instalador le entrega a Voltia: el certificado común del BPS vigente, la historia laboral y el recibo de aportes del mes, la constancia del BSE de la póliza de accidentes de trabajo vigente que cubra a todos los que van a la obra, la planilla de trabajo y los recibos de sueldo, y la lista de las personas que trabajan en cada obra, con su cédula.
+6.4. **Empresa y seguro de accidentes.** El Instalador está **inscripto como empresa** (puede ser una unipersonal o la forma más simple que corresponda) y tiene vigente la **póliza de accidentes de trabajo del BSE** que cubra a todos los que van a cada obra de Voltia. Le entrega a Voltia la constancia de inscripción y la de la póliza **antes de la primera obra después de firmar**, y cada renovación cuando la póliza vence.
 
-6.5. El Instalador **informa por escrito a cada trabajador** que va a una obra de Voltia para qué empresa presta el servicio (artículo 9 de la Ley 18.251).
+6.5. Ante un **accidente**, el Instalador atiende primero a la persona, avisa a Voltia en el momento y le entrega el mismo día un informe escrito, y copia de lo que presente a la Inspección General del Trabajo.
 
-6.6. Ante un **accidente**, el Instalador atiende primero a la persona, avisa a Voltia en el momento y le entrega el mismo día un informe escrito, y copia de lo que presente a la Inspección General del Trabajo.
-
-6.7. Voltia, o quien la represente, puede **detener una tarea** si ve un riesgo grave, sin costo para Voltia por el tiempo perdido.
+6.6. Voltia, o quien la represente, puede **detener una tarea** si ve un riesgo grave, sin costo para Voltia por el tiempo perdido.
 
 ## Séptima · Materiales, herramientas y Voltia PM
 
@@ -113,17 +111,15 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 10.3. Voltia lo puede terminar **de inmediato**, sin preaviso, si el Instalador:
 
 - a) incumple las normas de seguridad de forma grave o reiterada;
-- b) no entrega la documentación de la cláusula sexta;
+- b) no tiene vigente el seguro de accidentes de la cláusula sexta;
 - c) incumple la cláusula octava o la novena;
 - d) sigue sin cumplir el estándar de calidad después de que se le pidieron correcciones en varias obras.
 
 ## Undécima · Período de adecuación
 
-11.1. Las partes reconocen que hoy el Instalador no factura ni presenta la documentación de la cláusula sexta. Se acuerda un **período de adecuación de seis meses** desde la firma para que el Instalador se organice como empresa, empiece a facturar y presente la documentación del BPS y el BSE.
+11.1. Las partes reconocen que hoy el Instalador no factura. Se acuerda un **período de adecuación de seis meses** desde la firma para que empiece a **facturar**. Durante ese período, Voltia no retiene pagos por falta de factura.
 
-11.2. Durante ese período, Voltia no retiene pagos por la falta de factura o de documentación (4.5). Todo lo demás del contrato rige desde la firma.
-
-11.3. **[A definir:** la póliza de accidentes de trabajo del BSE, ¿se exige desde la firma o también entra en el período de adecuación?**]**
+11.2. La inscripción como empresa y el seguro de accidentes (6.4) **no entran en el período de adecuación**: se exigen antes de la primera obra después de firmar. Todo lo demás del contrato rige desde la firma.
 
 ## Duodécima · Comunicaciones, domicilios y jurisdicción
 
@@ -146,8 +142,7 @@ En prueba de conformidad, se firman dos ejemplares de igual tenor en el lugar y 
 
 ## Para conversar antes de llevarlo al abogado
 
-Resuelto el 19/10/26: sin seguro de responsabilidad civil; garantía de seis meses; sin plazo fijo para corregir (se ve en otra versión); clientes de Voltia, seis meses después del contrato y con autorización posible; competencia, solo durante el contrato; factura después del pago; período de adecuación de seis meses para la factura y la documentación.
+Resuelto el 19/10/26: sin seguro de responsabilidad civil; garantía de seis meses; sin plazo fijo para corregir; clientes de Voltia, seis meses después del contrato y con autorización posible; competencia, solo durante el contrato; factura después del pago, con seis meses de adecuación; firma el Ing. Nicolás Machín. **Lo único que se le exige al instalador es estar inscripto como empresa con el seguro de accidentes del BSE (desde la primera obra) y la factura (a los seis meses).** Se sacó la documentación mensual de sueldos y aportes (BPS, recibos, planilla) y el aviso escrito a cada trabajador.
 
-1. **La póliza del BSE** (11.3): ¿desde la firma o dentro del período de adecuación?
-3. **Si algo es demasiado duro** para los tercerizados de hoy.
-4. **Para el abogado:** que la redacción no sugiera una relación laboral encubierta, y cómo dejar documentado que Voltia pidió la documentación del BPS y el BSE, porque eso la deja como responsable **subsidiaria** y no **solidaria** frente a los trabajadores del Instalador. Y el riesgo de los seis meses de adecuación: mientras tanto, esa protección no existe.
+1. **Si algo es demasiado duro** para los tercerizados de hoy (Nicolás lo lee entero).
+2. **Para el abogado:** que la redacción no sugiera una relación laboral encubierta. Y el riesgo de no pedir la documentación de sueldos y aportes: por la Ley 18.251, si Voltia pide esa información responde solo en forma **subsidiaria** ante los trabajadores del Instalador; si no la pide, responde en forma **solidaria**. Se decidió no pedirla por ahora; el abogado dice si conviene volver a incluirla más adelante.

@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.21 — 17 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.22 — 19 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -158,19 +158,26 @@ Ingeniería, al de Ventas, al de Experiencia Solar y al de Finanzas.
 - **Lo que se compra fuera de la lista de materiales** sigue la regla de
   «Quién aprueba las compras».
 - **Voltia contrata a la empresa, no a su gente**, pero le exige el estándar de
-  calidad y el de seguridad, y todos los meses la documentación que demuestra que
-  tiene a su gente en regla.
+  calidad y el de seguridad. **Desde el 19-oct-2026** lo único que se le exige en
+  papeles es estar inscripto como empresa (aunque sea unipersonal) con la póliza
+  de accidentes de trabajo del BSE, antes de su primera obra con contrato, y la
+  factura a los seis meses de firmar. La documentación de sueldos y aportes (BPS,
+  recibos, planilla) se dejó de pedir: se va de a poco, para no frenar el trabajo
+  de hoy. El costo, que lo mire el abogado: sin pedir esa información, Voltia
+  responde en forma solidaria y no subsidiaria ante los trabajadores del
+  tercerizado (Ley 18.251).
 
 **Por qué.** La cuadrilla propia cobra sueldo haya obra o no: darle trabajo a un
 tercerizado mientras está parada es pagar dos veces. El presupuesto sin
 negociación cuida el margen que se fijó al vender. Y si a un trabajador de un
-tercerizado le pasa algo en una obra de Voltia, Voltia también responde: pedir
-la documentación todos los meses es lo que la protege.
+tercerizado le pasa algo en una obra de Voltia, Voltia también responde: el
+seguro de accidentes es lo mínimo que la protege.
 
 **Desde cuándo rige.** 10 de octubre de 2026.
 
-**En definición.** El estándar de calidad escrito, el plan de seguridad (con un
-técnico prevencionista) y el contrato con cada tercerizado.
+**En definición.** El plan de seguridad (con un técnico prevencionista). El
+estándar de calidad está en el Manual del Instalador Tercerizado (borrador) y el
+contrato, en borrador, a revisar con el abogado.
 
 **A qué manuales afecta.** Al de Operaciones y al de Finanzas.
 
@@ -675,6 +682,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.22 | 19 de octubre de 2026 | Con los tercerizados se va de a poco: lo único que se les exige en papeles es estar inscriptos como empresa con el seguro de accidentes del BSE, desde su primera obra con contrato, y la factura a los seis meses; se deja de pedir la documentación mensual de sueldos y aportes. El contrato con el tercerizado y su manual pasan a estar en borrador. |
 | 0.21 | 17 de octubre de 2026 | Se registra que con el cliente se habla por WhatsApp y que ningún paso del procedimiento exige una llamada; si se llama, se registra. Se registra que la bienvenida la manda Experiencia Solar, después de que el asesor presentó al referente. Se registra que la cadencia de contacto tiene un día de margen ("toca hoy") antes de contar como atraso. Se registra que Voltia no trabaja en Carnaval ni en Semana de Turismo, y que esos días no cuentan como hábiles. |
 | 0.20 | 16 de octubre de 2026 | Se registra que los reportes mensuales salen solos, sin revisión previa, apenas están listos. |
 | 0.19 | 16 de octubre de 2026 | Se registra que lo que comenta Gerencia aparece con el rótulo GERENCIA, y no con el del área de la pantalla donde se escribió. |
