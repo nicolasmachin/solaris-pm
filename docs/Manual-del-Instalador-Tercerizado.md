@@ -59,7 +59,7 @@
 
 - **Construcción y montaje:** los tipos de tornillo, mecha, anclaje y taco según la estructura; los metales que se oxidan y el **par galvánico** (dos metales distintos en contacto se oxidan entre sí); soldar hierro, acero y galvanizado (de punto y MIG); hacer hormigón para las fundaciones de los montajes en tierra, nivelar con piolas y, a veces, levantar un nicho de ladrillo o bloque y revocarlo.
 - **Techos:** cómo se trabaja en cada tipo sin generar filtraciones (capítulo 7) y cómo se camina sobre ellos.
-- **Lo solar:** armar los conectores de los paneles (MC4); la corriente continua, que no se corta bajo carga y hace arco; medir con el multímetro y la pinza (tensión de cada string, polaridad, corriente); la puesta a tierra y su medición; el replanteo (medir, orientar al norte, dar la inclinación); cómo se manipulan los paneles.
+- **Lo solar:** armar los conectores de los paneles (MC4); la corriente continua (CC o DC), que no se corta bajo carga y hace arco; medir con el multímetro y la pinza (tensión de cada string, polaridad, corriente); la puesta a tierra y su medición; el replanteo (medir, orientar al norte, dar la inclinación); cómo se manipulan los paneles.
 - **La parte eléctrica de la obra:** cableado y canalización prolijos, y armar un tablero básico.
 - **El trabajo en altura:** el arnés, el anclaje y la escalera.
 - **Lo digital:** cargar fotos, videos y documentos en Voltia PM y, cuando esté listo, configurar el inversor con su aplicación.
@@ -86,7 +86,7 @@ Voltia no le dice con qué herramientas trabajar: le exige lo que hace a la **se
 | Para qué | Qué |
 |---|---|
 | La seguridad | Arnés de cuerpo completo, cabo de vida con amortiguador y punto de anclaje · Escalera en condiciones · Casco con barbijo, guantes, lentes y calzado de seguridad · Careta y guantes de soldar · Extintor cuando se suelda |
-| Medir | Multímetro que mida corriente continua hasta 1000 V · Pinza amperimétrica · Telurímetro |
+| Medir | Multímetro que mida CC (corriente continua) hasta 1000 V · Pinza amperimétrica · Telurímetro |
 | Los conectores | Pinza para armar los MC4 y llave para desconectarlos · Crimpadora de punteras (los terminales de las puntas de los cables) · Pelacables |
 | Hacer la obra | Taladro, con mechas para metal y para hormigón del 6 al 14 · Rotomartillo con percutor · Amoladora · Soldadora · Masa (para la jabalina) · Destornilladores y pinzas aisladas · Llaves Allen, francesa y cricket · Remachadora · Mecha copa y mecha cónica · Cinta pasacable · Pistola de silicona · Cinta métrica y nivel · Cinta aisladora · Pala y posera |
 | Documentar | Celular con cámara y datos |
@@ -219,7 +219,7 @@ Mientras alguien trabaja en el techo, **nadie se queda trabajando justo debajo d
   3. **Medir** que no haya tensión, con el multímetro y en cada conductor. Todo tiene tensión hasta medir lo contrario.
   4. **Poner a tierra y en cortocircuito**, cuando se puede.
   5. **Delimitar y señalizar** la zona.
-- **Del lado de los paneles no se puede cortar la tensión.** Los paneles generan mientras les da la luz, aunque el inversor esté apagado. Del lado de continua, "sin tensión" quiere decir: con el seccionador de continua abierto y los conectores de los strings desconectados. **Nada se conecta ni se desconecta con corriente circulando**: la continua hace arco.
+- **Del lado de los paneles no se puede cortar la tensión.** Los paneles generan mientras les da la luz, aunque el inversor esté apagado. Del lado de CC (corriente continua), "sin tensión" quiere decir: con el seccionador de CC abierto y los conectores de los strings desconectados. **Nada se conecta ni se desconecta con corriente circulando**: la CC hace arco.
 - Herramientas aisladas e instrumentos con la categoría adecuada.
 
 ### Siempre
@@ -292,7 +292,7 @@ Son los criterios de Ingeniería que se aplican **en la obra**. Los que dicen **
 
 ### La parte eléctrica
 
-- **Siempre va un seccionador de continua accesible**, aunque el inversor ya traiga uno: es para poder cortar y medir con seguridad.
+- **Siempre va un seccionador de CC (corriente continua) accesible**, aunque el inversor ya traiga uno: es para poder cortar y medir con seguridad.
 - La conexión se hace **en bornera o barras, nunca en los bornes de las llaves**.
 - En monofásico: **fase en blanco, neutro en celeste**.
 - El **tablero de interconexión** va junto al medidor de UTE, accesible para UTE, con el interruptor general de la instalación etiquetado y precintable.
@@ -677,6 +677,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 | Experiencia Solar | El área que acompaña al cliente; es la que le habla de fechas y de cómo sigue todo |
 | Datalogger | El módulo que conecta el inversor a internet |
 | Smartmeter | El medidor que mide el consumo de la casa para que el inversor sepa cuánto inyectar |
+| CC o DC | Corriente continua: la que generan los paneles, del lado de los paneles hasta el inversor. No se corta bajo carga y hace arco |
 | String | Un grupo de paneles conectados en serie |
 | MC4 | El conector de los cables de los paneles |
 | Ensayo anti-isla | La prueba de que el inversor deja de inyectar ante un corte de la luz de UTE y vuelve a los 180 segundos |
