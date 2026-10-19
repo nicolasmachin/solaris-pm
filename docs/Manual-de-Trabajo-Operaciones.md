@@ -552,7 +552,7 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 
 **Los materiales, en las obras tercerizadas.** Logística manda el kit **directo a la casa del cliente**, no necesariamente el día que se trabaja, y el instalador tercerizado tiene que estar ahí para recibirlo. Logística coordina el envío con el instalador, y el instalador lo coordina con el cliente. Al recibirlo, lo revisa contra la lista; si falta algo, le avisa a Logística en el momento.
 
-**Lo que se lleva impreso:** los documentos de UTE para que firme el cliente, que se imprimen desde el proyecto en Voltia PM, en **Documentos UTE generados**.
+**Los documentos de UTE** para que firme el cliente **van impresos con los materiales de la obra**: en el camión con la cuadrilla propia y dentro del kit en las obras tercerizadas. En obra no se imprime nada: se hace firmar al cliente, se escanean y se suben.
 
 ## 12 · La seguridad
 
@@ -851,7 +851,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 - [ ] Vi el video de capacitación de la marca del inversor
 - [ ] Tengo la lista de materiales definitiva y el material preparado (en obra tercerizada: el kit llegó completo a la casa del cliente)
 - [ ] Cada uno tiene su equipo de seguridad en condiciones
-- [ ] Tengo los documentos de UTE impresos
+- [ ] Los documentos de UTE impresos vienen con los materiales
 
 ### Al cerrar cada día
 
@@ -1077,7 +1077,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
+| 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Los documentos de UTE van impresos con los materiales de la obra: en obra no se imprime nada. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 1.4 | 19 de octubre de 2026 | Al tercerizado se le exige estar inscripto como empresa y tener el seguro de accidentes del BSE desde su primera obra con contrato, y la factura a los seis meses; ya no se le pide todos los meses la documentación de sueldos y aportes. El contrato con el tercerizado pasa a estar en borrador, y el tercerizado tiene su propio manual. |
 | 1.3 | 17 de octubre de 2026 | El Carnaval y la Semana de Turismo no cuentan como días hábiles. |
 | 1.2 | 16 de octubre de 2026 | En Pagos a instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado. |

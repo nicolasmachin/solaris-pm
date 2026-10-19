@@ -1,6 +1,6 @@
 # Manual del Instalador Tercerizado
 
-**Voltia · Uruguay** · Versión 0.6 · del 19/10/26 · *borrador*
+**Voltia · Uruguay** · Versión 0.7 · del 19/10/26 · *borrador*
 
 > Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es el manual **de consulta de todos los instaladores tercerizados**, en cada obra: no hace falta leer ningún otro manual.
 
@@ -160,9 +160,9 @@ Antes de salir, el instalador estudia el proyecto (planos, unifilar, su propio i
 
 Logística manda el **kit de materiales directo a la casa del cliente**, no necesariamente el día que se trabaja, y **el instalador tiene que estar ahí para recibirlo**. Logística coordina el envío con el instalador, y el instalador lo coordina con el cliente.
 
-**Al recibirlo, lo revisa contra la lista.** Si falta algo o llegó algo distinto, le avisa a Logística en el momento, no el día de la obra.
+**Al recibirlo, lo revisa contra la lista**, incluidos los documentos de UTE impresos. Si falta algo o llegó algo distinto, le avisa a Logística en el momento, no el día de la obra.
 
-**Lo que se lleva impreso:** los documentos de UTE para que firme el cliente, que se imprimen desde el proyecto en Voltia PM, en **Documentos UTE generados**.
+**Los documentos de UTE vienen impresos dentro del kit**, con el resto de los materiales. El instalador no imprime nada: le hace firmar al cliente, los escanea y los sube (capítulo 10).
 
 **Si hay hormigón:** antes de que llegue el camión con la arena y la piedra, se acuerda con el cliente **dónde descarga**, en un lugar que después se pueda limpiar.
 
@@ -526,7 +526,7 @@ Son errores que ya pasaron en obras de Voltia. Están acá para que no se repita
 | Cargar su informe | La etapa **Validación de Operaciones** del proyecto (capítulo 5) |
 | Anotar lo del día de obra y lo que cambió | Los **Comentarios** del proyecto, desde la etapa Obra |
 | Subir las fotos y los videos | La sección de fotos de obra del proyecto |
-| Imprimir y subir los documentos de UTE | **Documentos UTE generados** y **Documentos UTE firmados** |
+| Subir los documentos de UTE firmados | **Documentos UTE firmados** |
 | Ver los videos de capacitación | **Capacitación**, en el menú de su cuenta |
 | Ver lo que cobró y lo que le falta cobrar | **Mis cobros**, en el menú de su cuenta |
 
@@ -601,10 +601,9 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 - [ ] Estudié el proyecto: planos, unifilar, mi informe y la lista de materiales
 - [ ] Planifiqué el trabajo: qué se hace, en qué orden y con qué herramientas
 - [ ] Vi el video de capacitación de la marca del inversor
-- [ ] El kit llegó completo a la casa del cliente: lo revisé contra la lista
+- [ ] El kit llegó completo a la casa del cliente, con los documentos de UTE impresos: lo revisé contra la lista
 - [ ] Cada uno tiene su equipo de seguridad en condiciones, el casco incluido
 - [ ] Somos por lo menos dos para trabajar en altura
-- [ ] Tengo los documentos de UTE impresos
 
 ### Al cerrar cada día
 
@@ -686,6 +685,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
+| 0.7 | 19 de octubre de 2026 | Los documentos de UTE vienen impresos dentro del kit, con los materiales: el instalador no los imprime, solo hace firmar al cliente, los escanea y los sube. |
 | 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. Entre las cosas que se cierran antes de irse, el video final va junto con las fotos. Se reescribe cómo termina la relación cuando el trabajo no llega al estándar. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 0.5 | 19 de octubre de 2026 | Se corrige el vocabulario de las fundaciones en tierra: se replantean y se nivelan, y entre las herramientas va el hilo de replanteo. |
 | 0.4 | 19 de octubre de 2026 | Se saca que el presupuesto de mano de obra «no se negocia»: queda que sale del costeo de la venta y que pagar más lo autoriza solo el CEO de Voltia. |
