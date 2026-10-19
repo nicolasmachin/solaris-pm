@@ -1,6 +1,6 @@
 # Contrato de servicios de instalación — Voltia y el instalador
 
-**Borrador 0.1 · 19/10/26 · para revisar con el abogado antes de usarlo**
+**Borrador 0.2 · 19/10/26 · para revisar con el abogado antes de usarlo**
 
 > Este borrador junta en un contrato lo que ya decidió Voltia sobre los instaladores tercerizados (Manual del Instalador Tercerizado, Manual de Gerencia). Lo que está entre corchetes falta completarlo. Lo marcado **[A definir]** es una decisión que todavía no se tomó: va con una propuesta, para conversarla. No es asesoramiento legal: lo tiene que revisar el abogado de Voltia, que además mira la redacción para que la relación no se pueda confundir con una relación de empleo.
 
@@ -42,7 +42,7 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 
 4.1. Por cada obra, Voltia paga el presupuesto aceptado: el **50 % al iniciar la obra** y el **50 % cuando la obra está terminada** en los términos de la cláusula quinta.
 
-4.2. Cada pago requiere la **factura** del Instalador [A definir: ¿factura electrónica emitida antes del pago o contra el pago?].
+4.2. El Instalador presenta la **factura** de cada pago después de recibirlo, o antes si le resulta más cómodo, con el período de adecuación de la cláusula undécima.
 
 4.3. El presupuesto incluye todo lo necesario para entregar la obra terminada: la mano de obra, las herramientas, el traslado y las correcciones. **No se pagan aparte las correcciones** ni las visitas para completar lo que faltó.
 
@@ -62,11 +62,11 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 
 5.2. La obra se hace con los **estándares de calidad del Manual del Instalador Tercerizado**, que forma parte de este contrato como Anexo I. Voltia puede actualizar el Manual; los cambios rigen para las obras que se acepten después de comunicados.
 
-5.3. Voltia evalúa cada obra. Si algo de lo entregado falta, está mal hecho o no cumple el estándar, el Instalador lo **corrige a su costo**, en el plazo razonable que acuerden [A definir: ¿un plazo fijo, por ejemplo 5 días hábiles?]. Hasta que lo corrija, la obra no se considera terminada.
+5.3. Voltia evalúa cada obra. Si algo de lo entregado falta, está mal hecho o no cumple el estándar, el Instalador lo **corrige a su costo**. Hasta que lo corrija, la obra no se considera terminada.
 
-5.4. **Daños.** Si al hacer la obra el Instalador o su personal dañan algo del cliente o de terceros (por ejemplo, una filtración por una perforación, una chapa rota, un panel), el Instalador lo repara o lo paga. [A definir: ¿se le exige un seguro de responsabilidad civil? Propuesta: sí, con un monto mínimo, a partir de cierta fecha.]
+5.4. **Daños.** Si al hacer la obra el Instalador o su personal dañan algo del cliente o de terceros (por ejemplo, una filtración por una perforación, una chapa rota, un panel), el Instalador lo repara o lo paga.
 
-5.5. **Garantía de la mano de obra.** [A definir: el plazo durante el cual el Instalador corrige sin costo los defectos de su trabajo que aparezcan después de la entrega, como un tornillo flojo o una filtración. Propuesta: 12 meses.]
+5.5. **Garantía de la mano de obra.** Durante **seis meses** desde la entrega, el Instalador corrige sin costo los defectos de su trabajo que aparezcan después, como un tornillo flojo o una filtración.
 
 ## Sexta · Seguridad y obligaciones con su personal
 
@@ -76,7 +76,7 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 
 6.3. El Instalador y su personal **asisten a las capacitaciones de seguridad y técnicas que organiza Voltia**, en general sin costo. Voltia puede evaluarlas y exigir un resultado mínimo para seguir asignando obras.
 
-6.4. **Documentación.** Antes de la primera obra y después **todos los meses**, el Instalador le entrega a Voltia: el certificado común del BPS vigente, la historia laboral y el recibo de aportes del mes, la constancia del BSE de la póliza de accidentes de trabajo vigente que cubra a todos los que van a la obra, la planilla de trabajo y los recibos de sueldo, y la lista de las personas que trabajan en cada obra, con su cédula.
+6.4. **Documentación.** Una vez terminado el período de adecuación de la cláusula undécima, **todos los meses**, el Instalador le entrega a Voltia: el certificado común del BPS vigente, la historia laboral y el recibo de aportes del mes, la constancia del BSE de la póliza de accidentes de trabajo vigente que cubra a todos los que van a la obra, la planilla de trabajo y los recibos de sueldo, y la lista de las personas que trabajan en cada obra, con su cédula.
 
 6.5. El Instalador **informa por escrito a cada trabajador** que va a una obra de Voltia para qué empresa presta el servicio (artículo 9 de la Ley 18.251).
 
@@ -96,9 +96,9 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 
 8.1. Mientras este contrato esté vigente, el Instalador **no presta servicios a otras empresas de energía solar** ni **instala sistemas de energía solar por su cuenta**. Puede hacer cualquier otro trabajo (instalaciones eléctricas, construcción u otros).
 
-8.2. El Instalador **no ofrece ni presta servicios directamente a los clientes de Voltia** (mantenimientos, ampliaciones, reparaciones u otros) mientras el contrato esté vigente [A definir: ¿y durante cuánto tiempo después de terminado? Propuesta: 12 meses]. Si un cliente de Voltia se lo pide, lo deriva a Voltia.
+8.2. El Instalador **no ofrece ni presta servicios directamente a los clientes de Voltia** (mantenimientos, ampliaciones, reparaciones u otros) mientras el contrato esté vigente y durante los **seis meses** siguientes a su terminación. Si un cliente de Voltia le pide un trabajo a él, el Instalador puede pedirle autorización a Voltia, que se la puede dar por escrito.
 
-8.3. [A definir: ¿la exclusividad frente a la competencia sigue después de terminado el contrato? Propuesta: no, solo la de los clientes de Voltia (8.2), para que la cláusula sea razonable y sostenible.]
+8.3. La exclusividad frente a la competencia (8.1) rige **solo mientras el contrato esté vigente**.
 
 ## Novena · Confidencialidad
 
@@ -117,11 +117,19 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 - c) incumple la cláusula octava o la novena;
 - d) sigue sin cumplir el estándar de calidad después de que se le pidieron correcciones en varias obras.
 
-## Undécima · Comunicaciones, domicilios y jurisdicción
+## Undécima · Período de adecuación
 
-11.1. Las partes fijan domicilio en los indicados al comienzo y aceptan como válidas las comunicaciones por correo electrónico a [mail de Voltia] y [mail del Instalador].
+11.1. Las partes reconocen que hoy el Instalador no factura ni presenta la documentación de la cláusula sexta. Se acuerda un **período de adecuación de seis meses** desde la firma para que el Instalador se organice como empresa, empiece a facturar y presente la documentación del BPS y el BSE.
 
-11.2. Para cualquier diferencia, las partes se someten a los tribunales de Montevideo.
+11.2. Durante ese período, Voltia no retiene pagos por la falta de factura o de documentación (4.5). Todo lo demás del contrato rige desde la firma.
+
+11.3. **[A definir:** la póliza de accidentes de trabajo del BSE, ¿se exige desde la firma o también entra en el período de adecuación?**]**
+
+## Duodécima · Comunicaciones, domicilios y jurisdicción
+
+12.1. Las partes fijan domicilio en los indicados al comienzo y aceptan como válidas las comunicaciones por correo electrónico a [mail de Voltia] y [mail del Instalador].
+
+12.2. Para cualquier diferencia, las partes se someten a los tribunales de Montevideo.
 
 En prueba de conformidad, se firman dos ejemplares de igual tenor en el lugar y la fecha indicados.
 
@@ -138,10 +146,9 @@ En prueba de conformidad, se firman dos ejemplares de igual tenor en el lugar y 
 
 ## Para conversar antes de llevarlo al abogado
 
-1. **Daños y seguro de responsabilidad civil** (5.4): ¿se le exige un seguro? ¿desde cuándo y por qué monto?
-2. **Garantía de la mano de obra** (5.5): ¿cuánto tiempo?
-3. **Plazo para corregir** (5.3).
-4. **Clientes de Voltia después del contrato** (8.2) y **competencia después del contrato** (8.3).
-5. **La factura** (4.2): ¿antes o contra el pago?
-6. **Los datos de Voltia**: razón social, RUT y quién firma.
-7. **Para el abogado:** que la redacción no sugiera una relación laboral encubierta (independencia, sin horario, herramientas propias), y cómo dejar documentado que Voltia pidió la documentación del BPS y el BSE, porque eso la deja como responsable **subsidiaria** y no **solidaria** frente a los trabajadores del Instalador.
+Resuelto el 19/10/26: sin seguro de responsabilidad civil; garantía de seis meses; sin plazo fijo para corregir (se ve en otra versión); clientes de Voltia, seis meses después del contrato y con autorización posible; competencia, solo durante el contrato; factura después del pago; período de adecuación de seis meses para la factura y la documentación.
+
+1. **La póliza del BSE** (11.3): ¿desde la firma o dentro del período de adecuación?
+2. **Los datos de Voltia**: razón social, RUT y quién firma.
+3. **Si algo es demasiado duro** para los tercerizados de hoy.
+4. **Para el abogado:** que la redacción no sugiera una relación laboral encubierta, y cómo dejar documentado que Voltia pidió la documentación del BPS y el BSE, porque eso la deja como responsable **subsidiaria** y no **solidaria** frente a los trabajadores del Instalador. Y el riesgo de los seis meses de adecuación: mientras tanto, esa protección no existe.
