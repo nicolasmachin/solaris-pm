@@ -1,6 +1,6 @@
 # Manual del Instalador Tercerizado
 
-**Voltia · Uruguay** · Versión 0.4 · del 19/10/26 · *borrador*
+**Voltia · Uruguay** · Versión 0.5 · del 19/10/26 · *borrador*
 
 > Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es el manual **de consulta de todos los instaladores tercerizados**, en cada obra: no hace falta leer ningún otro manual.
 
@@ -57,7 +57,7 @@
 
 **Lo que aprende trabajando con Voltia**, si no lo sabe:
 
-- **Construcción y montaje:** los tipos de tornillo, mecha, anclaje y taco según la estructura; los metales que se oxidan y el **par galvánico** (dos metales distintos en contacto se oxidan entre sí); soldar hierro, acero y galvanizado (de punto y MIG); hacer hormigón para las fundaciones de los montajes en tierra, nivelar con piolas y, a veces, levantar un nicho de ladrillo o bloque y revocarlo.
+- **Construcción y montaje:** los tipos de tornillo, mecha, anclaje y taco según la estructura; los metales que se oxidan y el **par galvánico** (dos metales distintos en contacto se oxidan entre sí); soldar hierro, acero y galvanizado (de punto y MIG); hacer hormigón para las fundaciones de los montajes en tierra, replantearlas y nivelarlas y, a veces, levantar un nicho de ladrillo o bloque y revocarlo.
 - **Techos:** cómo se trabaja en cada tipo sin generar filtraciones (capítulo 7) y cómo se camina sobre ellos.
 - **Lo solar:** armar los conectores de los paneles (MC4); la corriente continua (CC o DC), que no se corta bajo carga y hace arco; medir con el multímetro y la pinza (tensión de cada string, polaridad, corriente); la puesta a tierra y su medición; el replanteo (medir, orientar al norte, dar la inclinación); cómo se manipulan los paneles.
 - **La parte eléctrica de la obra:** cableado y canalización prolijos, y armar un tablero básico.
@@ -97,7 +97,7 @@ Voltia no le dice con qué herramientas trabajar: le exige lo que hace a la **se
 - Herramientas a batería: taladro, rotomartillo y amoladora.
 - Para los pozos de los montajes en tierra: posera, o mini excavadora o retro según la obra. Pala y balde para el hormigón.
 - Llaves combinadas o de tubo, pinceta, arco de sierra o caladora, pinza de corte.
-- Escuadra, tiza o marcador y piolas. El inclinómetro y la brújula, en el celular.
+- Escuadra, tiza o marcador e hilo de replanteo. El inclinómetro y la brújula, en el celular.
 - Termocontraíble y pistola de calor.
 - Alargue y zapatilla, si tiene herramientas enchufables.
 - Botiquín.
@@ -236,7 +236,7 @@ Mientras alguien trabaja en el techo, **nadie se queda trabajando justo debajo d
 | **Isopanel** | **No se perfora.** Se fija con piezas tipo pinza que se aprietan en el engrafado, en las uniones de las placas. Antes, se confirma que la placa está bien fijada a la estructura | Perforar la placa |
 | **Hormigón (losa)** | Con bloques de contrapeso calculados por Ingeniería, o con una estructura de acero galvanizado anclada a los pretiles o a los laterales de la losa. Antes, se confirma que el pretil es de hormigón armado sano | Perforar la losa si el proyecto no lo dice |
 | **Tejas** | Dos formas: la estructura se ancla por debajo de la teja y sale por el frente, o se perfora la teja y se fija con una pieza con topes de goma. Antes, se confirma que la madera está sana | Perforar con percutor; dejar una teja forzada o sin sellar |
-| **En tierra** | Fundaciones de hormigón para las patas de la estructura, niveladas con piolas | Dejar la tierra de los pozos o restos de hormigón en el terreno |
+| **En tierra** | Fundaciones de hormigón para las patas de la estructura, replanteadas y niveladas | Dejar la tierra de los pozos o restos de hormigón en el terreno |
 
 ### La chapa con un perfil en el medio
 
@@ -687,6 +687,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
+| 0.5 | 19 de octubre de 2026 | Se corrige el vocabulario de las fundaciones en tierra: se replantean y se nivelan, y entre las herramientas va el hilo de replanteo. |
 | 0.4 | 19 de octubre de 2026 | Se saca que el presupuesto de mano de obra «no se negocia»: queda que sale del costeo de la venta y que pagar más lo autoriza solo el CEO de Voltia. |
 | 0.3 | 19 de octubre de 2026 | Lo de no trabajar para la competencia y no ofrecerles servicios directo a los clientes de Voltia sale del manual: queda en el contrato. |
 | 0.2 | 19 de octubre de 2026 | El manual pasa a ser de consulta para todos los instaladores tercerizados, los nuevos y los que ya trabajan con Voltia, y no solo para el que empieza. |

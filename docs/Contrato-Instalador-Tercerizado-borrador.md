@@ -1,6 +1,6 @@
 # Contrato de servicios de instalación — Voltia y el instalador
 
-**Borrador 0.3 · 19/10/26 · para revisar con el abogado antes de usarlo**
+**Borrador 0.4 · 19/10/26 · para revisar con el abogado antes de usarlo**
 
 > Este borrador junta en un contrato lo que ya decidió Voltia sobre los instaladores tercerizados (Manual del Instalador Tercerizado, Manual de Gerencia). Lo que está entre corchetes falta completarlo. Lo marcado **[A definir]** es una decisión que todavía no se tomó: va con una propuesta, para conversarla. No es asesoramiento legal: lo tiene que revisar el abogado de Voltia, que además mira la redacción para que la relación no se pueda confundir con una relación de empleo.
 
@@ -32,7 +32,7 @@ acuerdan celebrar el presente contrato de servicios, que se regirá por las sigu
 
 3.1. Voltia le ofrece la obra al Instalador, por escrito (Voltia PM, correo o WhatsApp), con: el cliente y la dirección, la descripción del trabajo, la fecha propuesta y el **precio de la mano de obra** (en adelante, «el presupuesto de la obra»).
 
-3.2. El presupuesto de la obra lo fija Voltia y **no se negocia**: el Instalador lo **acepta o lo rechaza**. Cualquier excepción la autoriza solo la Dirección de Voltia, por escrito.
+3.2. El presupuesto de la obra lo fija Voltia y el Instalador lo **acepta o lo rechaza**. Pagar un monto mayor lo autoriza solo el CEO de Voltia, por escrito.
 
 3.3. Con la aceptación, la obra queda asignada al Instalador con la fecha confirmada. **La fecha confirmada se cumple.** Si algo puede impedirlo, el Instalador lo avisa a Voltia en cuanto lo sabe.
 
