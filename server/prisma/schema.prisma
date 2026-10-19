@@ -5633,7 +5633,11 @@ model LoginAttempt {
   /// El usuario que se encontró, si se encontró alguno.
   userId     String?
   success    Boolean
-  /// Motivo de la falla: USUARIO_INEXISTENTE, CONTRASENA_INCORRECTA o USUARIO_DADO_DE_BAJA.
+  /// Cómo intentó entrar: CONTRASENA, CODIGO_MAIL, o SESION (cuando una sesión abierta
+  /// se cae: vencida o inválida).
+  method     String   @default("CONTRASENA")
+  /// Motivo de la falla: USUARIO_INEXISTENTE, CONTRASENA_INCORRECTA, USUARIO_DADO_DE_BAJA,
+  /// USUARIO_SIN_EMAIL, CODIGO_INCORRECTO, CODIGO_VENCIDO, SESION_VENCIDA, SESION_INVALIDA.
   reason     String?
   ip         String?
   userAgent  String?
@@ -5643,4 +5647,20 @@ model LoginAttempt {
   @@index([identifier])
   @@index([userId])
   @@map("login_attempts")
+}
+
+/// Código de 6 números que se manda por mail para entrar sin contraseña. Se guarda
+/// el hash, nunca el código. Vence a los 10 minutos, sirve una vez y se anula a los
+/// 5 intentos fallidos.
+model LoginCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  expiresAt DateTime  @db.Timestamptz(6)
+  attempts  Int       @default(0)
+  usedAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@map("login_codes")
 }

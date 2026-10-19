@@ -64,7 +64,13 @@ async function buildServer() {
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     // Sin exponer estos headers, el `<video>` no puede leer la respuesta parcial
     // (206) que sirve los videos de ensayos y no arranca la reproducción.
-    exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
+    exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length", "X-Renewed-Token"],
+  });
+
+  // Sesión que se renueva con el uso: si `authenticate` generó un token nuevo,
+  // viaja en esta cabecera y el cliente reemplaza el que tenía.
+  app.addHook("onSend", async (request, reply) => {
+    if (request.renewedToken) reply.header("X-Renewed-Token", request.renewedToken);
   });
 
   await app.register(multipart, {

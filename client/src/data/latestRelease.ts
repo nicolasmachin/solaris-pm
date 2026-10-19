@@ -33,6 +33,23 @@ export const LATEST_RELEASE: Release = {
         "Cada intento de entrar queda registrado, para ayudar a quien no puede entrar.",
       ],
     },
+    {
+      title: "Entrar con un código por mail, sin contraseña",
+      items: [
+        "Nueva opción en la entrada: llega un código de 6 números al mail y se entra con él. Para el equipo y para los clientes del portal.",
+        "Vence a los 10 minutos, sirve una vez y no crea usuarios.",
+      ],
+    },
+    {
+      title: "La sesión ya no se cierra a la semana",
+      items: [
+        "Se renueva sola con el uso: pide entrar de nuevo solo si pasan 10 días sin abrir Voltia PM.",
+      ],
+    },
+    {
+      title: "Arreglos",
+      items: ["Al cambiar la contraseña, errar la actual ya no cierra la sesión."],
+    },
   ],
 };
 

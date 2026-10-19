@@ -1,9 +1,9 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, getMe } from "../api/auth.api";
+import { login, getMe, requestLoginCode, verifyLoginCode } from "../api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { Button } from "../components/ui/Button";
-import type { ApiError } from "../types/api.types";
+import type { ApiError, AuthResponse } from "../types/api.types";
 import axios from "axios";
 
 export function Login() {
@@ -14,6 +14,10 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  // "password": usuario y contraseña. "code": entrar con un código que llega al mail.
+  const [mode, setMode] = useState<"password" | "code">("password");
+  const [code, setCode] = useState("");
+  const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
 
   // Already authenticated → ruteo según rol
   useEffect(() => {
@@ -27,12 +31,47 @@ export function Login() {
     }
   }, [isAuthenticated, navigate]);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  function mostrarError(err: unknown) {
+    if (axios.isAxiosError(err) && err.response?.data) {
+      const apiErr = err.response.data as ApiError;
+      setError(apiErr.message ?? "Credenciales incorrectas");
+    } else {
+      setError("Error al conectar con el servidor");
+    }
+  }
+
+  async function pedirCodigo() {
     setError(null);
     setLoading(true);
     try {
-      const data = await login(email, password);
+      const r = await requestLoginCode(email);
+      setCodeSentTo(r.sentTo);
+      setCode("");
+    } catch (err) {
+      mostrarError(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function cambiarModo(nuevo: "password" | "code") {
+    setMode(nuevo);
+    setError(null);
+    setCodeSentTo(null);
+    setCode("");
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (mode === "code" && !codeSentTo) {
+      await pedirCodigo();
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const data: AuthResponse =
+        mode === "code" ? await verifyLoginCode(email, code) : await login(email, password);
       // Set token first so the next call includes Authorization header
       setAuth(data.token, data.user);
       const me = await getMe();
@@ -45,12 +84,7 @@ export function Login() {
         navigate("/dashboard", { replace: true });
       }
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data) {
-        const apiErr = err.response.data as ApiError;
-        setError(apiErr.message ?? "Credenciales incorrectas");
-      } else {
-        setError("Error al conectar con el servidor");
-      }
+      mostrarError(err);
     } finally {
       setLoading(false);
     }
@@ -112,6 +146,7 @@ export function Login() {
                 id="email"
                 type="text"
                 required
+                readOnly={mode === "code" && !!codeSentTo}
                 autoComplete="username"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -122,45 +157,72 @@ export function Login() {
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5"
-              >
-                Contraseña
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2.5 pr-10 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] transition-colors"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            {mode === "password" && (
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5"
                 >
-                  {showPassword ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3 py-2.5 pr-10 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+            {mode === "code" && codeSentTo && (
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-3">
+                  Te mandamos un código a <strong>{codeSentTo}</strong>. Vence en 10 minutos. Si no lo ves, revisá la carpeta de spam.
+                </p>
+                <label
+                  htmlFor="code"
+                  className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5"
+                >
+                  Código
+                </label>
+                <input
+                  id="code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  className="w-full px-3 py-2.5 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] transition-colors tracking-[0.4em] text-center"
+                  placeholder="000000"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="px-3 py-2.5 rounded-md bg-red-950 border border-red-800 text-red-300 text-sm">
@@ -174,9 +236,41 @@ export function Login() {
               className="w-full mt-2"
               size="md"
             >
-              Entrar
+              {mode === "code" && !codeSentTo ? "Mandarme el código" : "Entrar"}
             </Button>
           </form>
+
+          <div className="mt-4 text-center text-xs space-y-2">
+            {mode === "password" ? (
+              <button
+                type="button"
+                onClick={() => cambiarModo("code")}
+                className="text-[var(--color-accent)] hover:underline"
+              >
+                Entrar con un código por mail, sin contraseña
+              </button>
+            ) : (
+              <>
+                {codeSentTo && (
+                  <button
+                    type="button"
+                    onClick={() => void pedirCodigo()}
+                    disabled={loading}
+                    className="block w-full text-[var(--color-accent)] hover:underline"
+                  >
+                    Mandarme otro código
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => cambiarModo("password")}
+                  className="block w-full text-[var(--color-text-muted)] hover:underline"
+                >
+                  Volver a entrar con contraseña
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

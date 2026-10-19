@@ -7,6 +7,17 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return data;
 }
 
+// Entrar sin contraseña: se pide un código al mail y se entra con él.
+export async function requestLoginCode(email: string): Promise<{ sentTo: string; minutes: number }> {
+  const { data } = await apiClient.post<{ sentTo: string; minutes: number }>("/auth/login-code/request", { email });
+  return data;
+}
+
+export async function verifyLoginCode(email: string, code: string): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>("/auth/login-code/verify", { email, code });
+  return data;
+}
+
 export interface MeResponse {
   id: string;
   name: string;

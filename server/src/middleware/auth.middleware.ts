@@ -2,7 +2,17 @@ import jwt from "jsonwebtoken";
 
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
+import { registrarSesionCaida } from "../services/login-attempts.service.js";
 import { unauthorized } from "../utils/errors.js";
+
+/**
+ * La sesión se renueva sola mientras se usa: si el token tiene más de una hora,
+ * la respuesta trae uno nuevo en `X-Renewed-Token` y el cliente lo guarda. Así el
+ * vencimiento (`JWT_EXPIRES_IN`, 10 días) se cuenta desde la última vez que se usó
+ * Voltia PM y no desde que se entró: quien lo usa al menos una vez cada 10 días
+ * no vuelve a ver el login.
+ */
+const RENOVAR_DESPUES_DE_SEGUNDOS = 60 * 60;
 
 type JwtPayload = {
   sub: string;
@@ -16,6 +26,7 @@ type JwtPayload = {
    * filtrado por la URL de un `<video>` valdría como sesión completa.
    */
   typ?: string;
+  iat?: number;
 };
 
 export async function authenticate(request: import("fastify").FastifyRequest) {
@@ -29,8 +40,20 @@ export async function authenticate(request: import("fastify").FastifyRequest) {
 
   try {
     payload = jwt.verify(token, env.jwtSecret) as JwtPayload;
-  } catch {
-    throw unauthorized("Token inválido o expirado");
+  } catch (err) {
+    // Se anota por qué se cayó la sesión, para poder explicarle a quien lo saca.
+    const decodificado = jwt.decode(token) as JwtPayload | null;
+    const vencida = err instanceof jwt.TokenExpiredError;
+    await registrarSesionCaida(request, {
+      userId: decodificado?.sub ?? null,
+      identifier: decodificado?.email ?? decodificado?.sub ?? "(token ilegible)",
+      reason: vencida ? "SESION_VENCIDA" : "SESION_INVALIDA",
+    });
+    throw unauthorized(
+      vencida
+        ? "Tu sesión venció porque pasaron más de 10 días sin entrar. Volvé a entrar."
+        : "Token inválido o expirado",
+    );
   }
 
   if (payload.typ) {
@@ -58,6 +81,10 @@ export async function authenticate(request: import("fastify").FastifyRequest) {
     name: user.name,
     role: user.role.name,
   };
+
+  if (payload.iat && Date.now() / 1000 - payload.iat > RENOVAR_DESPUES_DE_SEGUNDOS) {
+    request.renewedToken = signToken(request.user);
+  }
 }
 
 export function signToken(user: { id: string; email: string | null; name: string; role: string }) {

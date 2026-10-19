@@ -16,9 +16,22 @@ Identificar al usuario en cada request. La app no tiene usuarios anónimos: todo
 
 ### Cómo se usa
 
-Se entra con email y contraseña en la pantalla de login. La sesión dura siete
-días; vencida, la app pide entrar de nuevo. No hay "recordarme" ni renovación
-silenciosa: cuando el token expira, expira.
+Se entra con usuario o email y contraseña, o **con un código por mail**: la
+persona escribe su usuario o mail, le llega un código de 6 números (desde la
+casilla de envío de la app) y entra con él. El código vence a los 10 minutos,
+sirve una vez, se anula a los 5 intentos fallidos y pedir uno nuevo anula los
+anteriores; como máximo 3 códigos cada 15 minutos por usuario. Se guarda solo el
+hash (`login_codes`). Un usuario sin mail (alias solo) no puede usar el código. En
+desarrollo, si el mail no sale, el código se escribe en el log del server.
+
+**La sesión se renueva sola con el uso.** El token dura `JWT_EXPIRES_IN` (10 días,
+también en el `.env` de prod). Cuando `authenticate()` recibe un token con más de
+una hora, genera uno nuevo y un hook `onSend` lo manda en `X-Renewed-Token`; el
+interceptor de axios lo guarda. Así el vencimiento cuenta desde el último uso:
+quien abre Voltia PM al menos una vez cada 10 días no vuelve a ver el login. Si
+un token falla (vencido o inválido), se anota en `login_attempts` con método
+`SESION` (una vez cada 10 minutos por usuario y motivo, porque una sesión caída
+dispara varias requests en paralelo).
 
 Si el login falla, el aviso dice **qué** falló: usuario inexistente
 (`USUARIO_INEXISTENTE`), contraseña incorrecta (`CONTRASENA_INCORRECTA`) o usuario
@@ -27,7 +40,7 @@ prioriza que la persona sepa qué corregir, **a sabiendas de que eso deja averig
 qué emails tienen usuario** (enumeración). No hay límite de intentos.
 
 **Cada intento queda en la tabla `login_attempts`** (`registrarIntento()` en
-`auth.routes.ts`): lo que se escribió como usuario, el usuario encontrado, si entró,
+`login-attempts.service.ts`), con el método (`CONTRASENA`, `CODIGO_MAIL` o `SESION`): lo que se escribió como usuario, el usuario encontrado, si entró,
 el motivo de la falla, la IP real (de `x-forwarded-for`, porque detrás de Caddy
 `request.ip` es la del contenedor) y el navegador. **Nunca la contraseña.** Si el
 registro falla, el login sigue. No hay pantalla para verlo: se consulta por SQL.
@@ -39,7 +52,7 @@ cualquier otra pantalla.
 
 ### Cómo funciona
 
-Todo el sistema son 76 líneas en `server/src/middleware/auth.middleware.ts`.
+El núcleo está en `server/src/middleware/auth.middleware.ts` (`authenticate()`, `signToken()`).
 
 **Emisión** — `signToken()`: un JWT firmado con `JWT_SECRET` (HS256) que lleva
 `{ sub: userId, email, name, role }`, donde `role` es el **nombre** del rol como
@@ -66,6 +79,8 @@ invalidar un token antes de que expire**.
 | Método y ruta | Qué hace | Guard |
 |---|---|---|
 | `POST /auth/login` | Devuelve `{ token, user }` | ninguno |
+| `POST /auth/login-code/request` | Manda el código al mail; devuelve el mail tapado | ninguno |
+| `POST /auth/login-code/verify` | Con el código correcto devuelve `{ token, user }` | ninguno |
 | `POST /auth/change-password` | Cambia la contraseña y baja `passwordTemporary` | `authenticate` |
 
 Se registran **sin el prefijo `/api`** (`server/src/routes/index.ts`). No hay

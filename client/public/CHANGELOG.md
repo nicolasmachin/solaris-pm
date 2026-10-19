@@ -10,6 +10,21 @@
 - Si el usuario existe pero la contraseña no es la correcta, el aviso dice eso. Si el usuario está dado de baja, también.
 - Cada intento de entrar queda registrado, con el usuario que se escribió y por qué falló, para poder ayudar a quien no puede entrar.
 
+#### Entrar con un código por mail, sin contraseña
+
+- En la pantalla de entrada hay una opción nueva: **Entrar con un código por mail**. Se escribe el usuario o el mail, llega un código de 6 números y se entra con él. Sirve para el equipo y para los clientes del portal.
+- El código vence a los 10 minutos, sirve una sola vez y se anula si se erra cinco veces. Si no llega, se puede pedir otro.
+- No crea usuarios: funciona solo con los que ya dio de alta el administrador, y solo si tienen el mail cargado.
+
+#### La sesión ya no se cierra a la semana
+
+- Antes, la sesión se cerraba a los 7 días de haber entrado, aunque se estuviera usando. Ahora **se renueva sola con el uso**: solo pide entrar de nuevo si pasan **10 días sin abrir Voltia PM**.
+- Cuando una sesión se cierra, queda anotado por qué, para poder explicarlo.
+
+#### Arreglos
+
+- Al cambiar la contraseña, errar la contraseña actual ya no cierra la sesión: avisa que no es la correcta y deja intentar de nuevo.
+
 ## v12.8
 
 ### 17 de octubre de 2026

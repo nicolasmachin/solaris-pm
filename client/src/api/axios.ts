@@ -1,6 +1,7 @@
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
+import { useAuthStore } from "../store/auth.store";
 import { getPortalPreviewProjectId } from "../store/portalPreview.store";
 
 // Permite que llamadas SECUNDARIAS (badges, contadores, polling de fondo) opten
@@ -41,6 +42,13 @@ apiClient.interceptors.request.use((config) => {
 // Handle 401 → clear token and redirect to /login
 apiClient.interceptors.response.use(
   (response) => {
+    // Sesión que se renueva con el uso: el backend manda un token nuevo y se
+    // reemplaza el guardado, así el vencimiento cuenta desde el último uso.
+    const renovado = response.headers?.["x-renewed-token"];
+    if (renovado && typeof renovado === "string" && localStorage.getItem("voltia-token")) {
+      localStorage.setItem("voltia-token", renovado);
+      useAuthStore.setState({ token: renovado });
+    }
     // G.2: si el backend recalculó deadlines (X-Deadline-Recalc header), avisar al usuario.
     const recalcHeader = response.headers?.["x-deadline-recalc"];
     if (recalcHeader && typeof recalcHeader === "string") {

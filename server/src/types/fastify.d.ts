@@ -17,6 +17,8 @@ declare module "fastify" {
      * todas las consultas del portal funcionen sin cambios) y esto guarda quién
      * está mirando en realidad, para auditar y para bloquear escrituras.
      */
+    /** Token nuevo para renovar la sesión; un hook lo manda en `X-Renewed-Token`. */
+    renewedToken?: string;
     portalPreview?: {
       projectId: string;
       internoId: string;

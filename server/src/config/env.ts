@@ -8,7 +8,7 @@ export const env = {
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: process.env.DATABASE_URL ?? "",
   jwtSecret: process.env.JWT_SECRET ?? "dev-secret",
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "10d",
   storagePath: process.env.STORAGE_PATH ?? "./storage",
   maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB ?? 20),
   // Límite propio para los videos de ensayos. Se aplica SOLO en la ruta de

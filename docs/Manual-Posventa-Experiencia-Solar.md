@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.28 · del 17/10/26
+**Voltia · Uruguay** · Versión 1.29 · del 19/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -370,6 +370,14 @@ cédula si está cargada, y si no, arma un usuario con su nombre (por ejemplo
 `maria.fernandez`). La pantalla muestra cuál quedó, para dictárselo. Lo que sí
 cambia: **sin mail no puede recuperar la contraseña solo** — si se la olvida, hay
 que resetearla con el botón de reenviar acceso.
+
+**Si el cliente se olvida la contraseña y tiene mail, no hace falta resetearla.**
+En la pantalla de entrada del portal puede tocar **Entrar con un código por
+mail, sin contraseña**: escribe su mail, le llega un código de 6 números y entra
+con eso. El código vence a los 10 minutos y sirve una sola vez. Si escribe mal el
+usuario, la pantalla le avisa que ese usuario no existe; si erra la contraseña, le
+avisa eso. Y la sesión ya no se cierra a la semana: dura mientras lo use, y solo
+le pide entrar de nuevo si pasan 10 días sin abrirlo.
 
 **Qué gana el cliente con el portal:** ve el avance de su trámite, la
 documentación, sus reportes de generación cuando arranquen, y **puede abrirnos un
@@ -1954,6 +1962,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.29 | 19 de octubre de 2026 | El cliente que se olvida la contraseña puede entrar al portal con un código que le llega al mail, sin resetearla. La pantalla de entrada avisa si el usuario no existe o si la contraseña no es la correcta. La sesión dura mientras se use: pide entrar de nuevo solo después de 10 días sin abrir el portal. |
 | 1.28 | 17 de octubre de 2026 | La conversación de expectativa inicial se hace por WhatsApp, no por teléfono: ningún paso del recorrido exige una llamada. Si el cliente prefiere hablar, se habla y se registra. La bienvenida la manda Experiencia Solar, después de que el asesor le presentó al referente como última tarea del onboarding de venta; antes la mandaba el vendedor. Todos los pasos tienen plazo. Mandar un mensaje modelo da el paso por hecho, y el acceso al portal, el contrato firmado y el alta en reportes se dan por hechos solos. Botón Abrir en WhatsApp. Un día de margen en la cadencia ("toca hoy") y la sección Para contactar hoy en el correo de la mañana. Los reclamos del portal avisan en el momento. Los feriados no laborables, el Carnaval y la Semana de Turismo no cuentan como días hábiles. |
 | 1.27 | 16 de octubre de 2026 | Los reportes mensuales salen solos, todos los días a las 10, sin revisión previa; el botón Enviar pendientes queda para lo que no puede esperar. |
 | 1.26 | 16 de octubre de 2026 | En el historial de la ficha, lo que comenta o registra Gerencia (comentarios y contactos con el cliente) aparece con el rótulo GERENCIA y no con el del área de la pantalla donde se escribió. |
