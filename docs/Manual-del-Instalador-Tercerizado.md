@@ -409,8 +409,8 @@ Al cerrar cada día de obra, el instalador deja en los **Comentarios** del proye
 Además de instalar, hay cuatro cosas que tienen que quedar hechas y **cargadas en Voltia PM ese mismo día**. Si falta una, la obra no está cerrada.
 
 1. **La configuración:** datalogger conectado y planta creada en la aplicación del inversor, arranque y reconexión en 180 segundos y smartmeter conectado y midiendo (capítulo 9).
-2. **Las fotos:** todas las **fotos de la lista** (capítulo 13, *Las fotos de obra*). Voltia PM no controla que estén todas: lo controla el instalador.
-3. **Los dos videos:** el del ensayo de encendido y el del ensayo anti-isla (capítulo 9).
+2. **Las fotos y el video final:** todas las **fotos de la lista** (capítulo 13, *Las fotos de obra*) y el **video final**, el que recorre toda la obra terminada para mostrar cómo quedó (más abajo, *El video final*). Voltia PM no controla que estén todas: lo controla el instalador.
+3. **Los videos de los dos ensayos:** el del ensayo de encendido y el del ensayo anti-isla (capítulo 9).
 4. **Los documentos de UTE firmados**: el cliente firma **todos** ese mismo día; se escanean todas las hojas en **un solo PDF** y se suben en el proyecto, en **Documentos UTE firmados** → **Subir**.
 
 Y además: **el recorrido con el cliente**, explicándole la instalación, y **el lugar limpio**, sin caños, perfiles ni recortes en la casa del cliente.
@@ -686,7 +686,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
-| 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
+| 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. Entre las cosas que se cierran antes de irse, el video final va junto con las fotos. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 0.5 | 19 de octubre de 2026 | Se corrige el vocabulario de las fundaciones en tierra: se replantean y se nivelan, y entre las herramientas va el hilo de replanteo. |
 | 0.4 | 19 de octubre de 2026 | Se saca que el presupuesto de mano de obra «no se negocia»: queda que sale del costeo de la venta y que pagar más lo autoriza solo el CEO de Voltia. |
 | 0.3 | 19 de octubre de 2026 | Lo de no trabajar para la competencia y no ofrecerles servicios directo a los clientes de Voltia sale del manual: queda en el contrato. |
