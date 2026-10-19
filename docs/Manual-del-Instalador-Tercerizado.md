@@ -493,7 +493,7 @@ Hay cosas que se detectan después (el medidor mal conectado, el datalogger sin 
 - **Evalúa el equipo de la Gerencia de Operaciones**, con el control de obra: revisa lo que el instalador dejó cargado (sobre todo el video final y las fotos) y, cuando hace falta, va a la obra.
 - Si el estándar no es el esperado, **se piden todas las correcciones hasta que lo sea**, y corren por cuenta del instalador.
 - **Es esperable que en las primeras obras se pidan correcciones**, que el instalador las acepte para mejorar y que **vayan tendiendo a cero**. Cada corrección queda anotada en el proyecto.
-- **Si la expectativa se sigue sin cumplir, no se lo llama más ni se le dan más obras.**
+- **Si con el tiempo el trabajo no llega al estándar de Voltia, Voltia deja de ofrecerle obras.**
 
 ## 12 · Lo que ya salió mal (y cómo se evita)
 
@@ -686,7 +686,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
-| 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. Entre las cosas que se cierran antes de irse, el video final va junto con las fotos. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
+| 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. Entre las cosas que se cierran antes de irse, el video final va junto con las fotos. Se reescribe cómo termina la relación cuando el trabajo no llega al estándar. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 0.5 | 19 de octubre de 2026 | Se corrige el vocabulario de las fundaciones en tierra: se replantean y se nivelan, y entre las herramientas va el hilo de replanteo. |
 | 0.4 | 19 de octubre de 2026 | Se saca que el presupuesto de mano de obra «no se negocia»: queda que sale del costeo de la venta y que pagar más lo autoriza solo el CEO de Voltia. |
 | 0.3 | 19 de octubre de 2026 | Lo de no trabajar para la competencia y no ofrecerles servicios directo a los clientes de Voltia sale del manual: queda en el contrato. |
