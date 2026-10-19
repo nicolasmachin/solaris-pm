@@ -282,3 +282,15 @@ inversor con el cliente.
 
 Ya decidido y a tener en cuenta: la cuadrilla es de dos personas como mínimo (nadie trabaja
 solo en altura) y hace falta con qué medir la tierra (menos de 10 Ω) y filmar los dos ensayos.
+
+## Revisión (desde el 19-oct)
+
+- Borrador 0.1 del manual: `docs/Manual-del-Instalador-Tercerizado.md` (fuente de verdad).
+- Borrador 0.1 del contrato: `docs/Contrato-Instalador-Tercerizado-borrador.md`.
+- Para leer en el celular: Claude Doc https://claude.ai/code/artifact/f8659a8c-1956-4562-8228-a323274ee4d1
+  (pestaña Contrato y pestaña Manual). En el doc, la puesta en marcha y «Cuando algo sale mal»
+  están resumidas y no van el glosario ni el registro. Las correcciones que haga Nicolás ahí se
+  pasan al `.md`.
+- Permisos (19-oct, prod): se le sacó al rol INSTALADOR_TERCERIZADO todo ONBOARDING. Sigue viendo
+  el contrato firmado del cliente por OPERACIONES:VIEW (bloque Contrato firmado).
+- Después de validar: pasar techos, errores y estándares al manual de Operaciones (Parte B).
