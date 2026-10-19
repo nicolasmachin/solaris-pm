@@ -1,16 +1,16 @@
 # Manual del Instalador Tercerizado
 
-**Voltia · Uruguay** · Versión 0.1 · del 19/10/26 · *borrador*
+**Voltia · Uruguay** · Versión 0.2 · del 19/10/26 · *borrador*
 
-> Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es todo lo que necesita: no tiene que leer ningún otro manual.
+> Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es el manual **de consulta de todos los instaladores tercerizados**, en cada obra: no hace falta leer ningún otro manual.
 
 ## 0 · Qué es este manual
 
-**Qué es.** El manual de trabajo de quien instala para Voltia sin ser parte de su cuadrilla propia: el **instalador tercerizado**. Está escrito para alguien que **entra hoy** y no conoce a Voltia: no se da nada por sabido.
+**Qué es.** El manual de trabajo de quien instala para Voltia sin ser parte de su cuadrilla propia: el **instalador tercerizado**. Es el manual **de consulta de todos los instaladores tercerizados**, los que recién empiezan y los que trabajan con Voltia hace años: cuando hay una duda sobre cómo se hace algo, la respuesta está acá. Está escrito para que lo entienda cualquiera, aunque no conozca a Voltia: no se da nada por sabido.
 
 **Qué no es.** No es un curso de electricidad ni de construcción: explica **cómo se trabaja en Voltia** y qué estándar se espera. Lo que hace falta aprender, Voltia lo enseña con sus capacitaciones (capítulo 2).
 
-**Quién lo lee.** El instalador tercerizado, que lo lee entero antes de su primera obra, y el gerente de Operaciones de Voltia, que es quien trabaja con él. Una buena parte (la seguridad, los criterios técnicos, la puesta en marcha y el cierre) es la misma que sigue la cuadrilla propia de Voltia: está repetida acá a propósito.
+**Quién lo lee.** Todos los instaladores tercerizados que trabajan con Voltia, que lo consultan siempre, no solo al empezar, y el gerente de Operaciones de Voltia, que es quien trabaja con ellos. Una buena parte (la seguridad, los criterios técnicos, la puesta en marcha y el cierre) es la misma que sigue la cuadrilla propia de Voltia: está repetida acá a propósito.
 
 **Cómo está armado.** Primero, quién es Voltia y cómo es la relación (capítulos 1 a 4). Después, la obra de punta a punta (capítulos 5 a 10). Al final, cómo se evalúa el trabajo, los errores que ya pasaron, Voltia PM, qué hacer cuando algo sale mal y el checklist. Cierra con las reglas en una página, un glosario y el registro de cambios.
 
@@ -696,4 +696,5 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
+| 0.2 | 19 de octubre de 2026 | El manual pasa a ser de consulta para todos los instaladores tercerizados, los nuevos y los que ya trabajan con Voltia, y no solo para el que empieza. |
 | 0.1 | 19 de octubre de 2026 | Primer borrador. El perfil, la capacitación, la primera obra, las herramientas exigidas y recomendadas, la competencia, cómo llega una obra, cómo se cobra y las correcciones a cargo del instalador. La guía de techos, los errores que ya pasaron, la seguridad con los casos reales (casco, escalera, cinco reglas de oro), lo que se entrega y cómo se evalúa, el video final y la limpieza del terreno. La parte de obra que comparte con la cuadrilla propia (el informe, los criterios técnicos, la puesta en marcha, el cierre, lo que sale mal y el checklist). Faltan las fotos de terminaciones bien y mal hechas, y el contrato |
