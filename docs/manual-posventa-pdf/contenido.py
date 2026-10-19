@@ -510,8 +510,8 @@ def construir():
              ["Finanzas", "Los cobros que entran y las facturas que se emiten",
               "Finanzas — <strong>aparecen solos</strong>"]],
             anchos=[150, None, 190], margen=22)
-        + aviso("<strong>Si registrar cuesta, no se registra.</strong> Un comentario de dos líneas desde el "
-                "celular en la obra vale infinitamente más que un informe prolijo que nadie escribe.",
+        + aviso("<strong>Todo se registra, aunque sean dos líneas.</strong> Un comentario de dos líneas desde el "
+                "celular en la obra vale infinitamente más que un informe prolijo que nunca se llega a escribir.",
                 "ojo", margen=22)
         + subtitulo("Lo que aparece solo, sin que nadie lo escriba", margen=18, tamano=19)
         + numerados([

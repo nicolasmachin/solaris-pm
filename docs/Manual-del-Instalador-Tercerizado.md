@@ -388,7 +388,7 @@ Si el cliente le pregunta algo que no es de obra, **no lo manda a otro lado**: l
 
 **Se anota desde el celular, en la etapa Obra del proyecto, en diez segundos.** No hace falta entrar a ningún otro módulo: aparece solo en el historial del cliente.
 
-> Si registrar cuesta, no se registra. Dos líneas valen más que un informe prolijo que nadie escribe.
+> **Todo se registra, aunque sean dos líneas.** Dos líneas anotadas en el momento valen más que un informe prolijo que nunca se llega a escribir.
 
 ### Al cerrar cada día
 
@@ -686,7 +686,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
-| 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. |
+| 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 0.5 | 19 de octubre de 2026 | Se corrige el vocabulario de las fundaciones en tierra: se replantean y se nivelan, y entre las herramientas va el hilo de replanteo. |
 | 0.4 | 19 de octubre de 2026 | Se saca que el presupuesto de mano de obra «no se negocia»: queda que sale del costeo de la venta y que pagar más lo autoriza solo el CEO de Voltia. |
 | 0.3 | 19 de octubre de 2026 | Lo de no trabajar para la competencia y no ofrecerles servicios directo a los clientes de Voltia sale del manual: queda en el contrato. |
