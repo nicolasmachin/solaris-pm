@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.4 · del 19/10/26
+**Voltia · Uruguay** · Versión 1.5 · del 19/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -672,7 +672,6 @@ Son los criterios de Ingeniería que se aplican **en la obra**. Los que dicen **
 ### La parte eléctrica
 
 - **Siempre va un seccionador de continua accesible**, aunque el inversor ya traiga uno: es para poder cortar y medir con seguridad.
-- La conexión se hace **en bornera o barras, nunca en los bornes de las llaves**.
 - En monofásico: **fase en blanco, neutro en celeste**.
 - El **tablero de interconexión** va junto al medidor de UTE, accesible para UTE, con el interruptor general de la instalación etiquetado y precintable.
 
@@ -1078,6 +1077,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. |
 | 1.4 | 19 de octubre de 2026 | Al tercerizado se le exige estar inscripto como empresa y tener el seguro de accidentes del BSE desde su primera obra con contrato, y la factura a los seis meses; ya no se le pide todos los meses la documentación de sueldos y aportes. El contrato con el tercerizado pasa a estar en borrador, y el tercerizado tiene su propio manual. |
 | 1.3 | 17 de octubre de 2026 | El Carnaval y la Semana de Turismo no cuentan como días hábiles. |
 | 1.2 | 16 de octubre de 2026 | En Pagos a instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado. |

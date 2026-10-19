@@ -1,6 +1,6 @@
 # Manual del Instalador Tercerizado
 
-**Voltia · Uruguay** · Versión 0.5 · del 19/10/26 · *borrador*
+**Voltia · Uruguay** · Versión 0.6 · del 19/10/26 · *borrador*
 
 > Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es el manual **de consulta de todos los instaladores tercerizados**, en cada obra: no hace falta leer ningún otro manual.
 
@@ -285,7 +285,6 @@ Son los criterios de Ingeniería que se aplican **en la obra**. Los que dicen **
 ### La parte eléctrica
 
 - **Siempre va un seccionador de CC (corriente continua) accesible**, aunque el inversor ya traiga uno: es para poder cortar y medir con seguridad.
-- La conexión se hace **en bornera o barras, nunca en los bornes de las llaves**.
 - En monofásico: **fase en blanco, neutro en celeste**.
 - El **tablero de interconexión** va junto al medidor de UTE, accesible para UTE, con el interruptor general de la instalación etiquetado y precintable.
 
@@ -687,6 +686,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
+| 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. |
 | 0.5 | 19 de octubre de 2026 | Se corrige el vocabulario de las fundaciones en tierra: se replantean y se nivelan, y entre las herramientas va el hilo de replanteo. |
 | 0.4 | 19 de octubre de 2026 | Se saca que el presupuesto de mano de obra «no se negocia»: queda que sale del costeo de la venta y que pagar más lo autoriza solo el CEO de Voltia. |
 | 0.3 | 19 de octubre de 2026 | Lo de no trabajar para la competencia y no ofrecerles servicios directo a los clientes de Voltia sale del manual: queda en el contrato. |
