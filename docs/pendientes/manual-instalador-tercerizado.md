@@ -294,3 +294,4 @@ solo en altura) y hace falta con qué medir la tierra (menos de 10 Ω) y filmar 
 - Permisos (19-oct, prod): se le sacó al rol INSTALADOR_TERCERIZADO todo ONBOARDING. Sigue viendo
   el contrato firmado del cliente por OPERACIONES:VIEW (bloque Contrato firmado).
 - Después de validar: pasar techos, errores y estándares al manual de Operaciones (Parte B).
+- 19-oct: Nicolás decidió que el instalador SÍ siga viendo el contrato firmado del cliente.

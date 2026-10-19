@@ -8,7 +8,7 @@
 
 En Montevideo, el [día] de [mes] de [año], entre:
 
-**POR UNA PARTE:** [razón social de Voltia], RUT [número], con domicilio en [dirección], representada por [nombre], en su calidad de [cargo] (en adelante, **«Voltia»**);
+**POR UNA PARTE:** **VOLTIA SAS**, RUT 221075240012, con domicilio en Rondeau 2110, Montevideo, representada por el Ing. Nicolás Machín, en su calidad de CEO y representante legal (en adelante, **«Voltia»**);
 
 **Y POR OTRA PARTE:** [nombre o razón social del instalador], RUT [número], con domicilio en [dirección], representada por [nombre], cédula de identidad [número] (en adelante, **«el Instalador»**);
 
@@ -136,7 +136,7 @@ En prueba de conformidad, se firman dos ejemplares de igual tenor en el lugar y 
 | Por Voltia | Por el Instalador |
 |---|---|
 | Firma: | Firma: |
-| Aclaración: | Aclaración: |
+| Ing. Nicolás Machín, CEO y representante legal | Aclaración: |
 
 ---
 
@@ -149,6 +149,5 @@ En prueba de conformidad, se firman dos ejemplares de igual tenor en el lugar y 
 Resuelto el 19/10/26: sin seguro de responsabilidad civil; garantía de seis meses; sin plazo fijo para corregir (se ve en otra versión); clientes de Voltia, seis meses después del contrato y con autorización posible; competencia, solo durante el contrato; factura después del pago; período de adecuación de seis meses para la factura y la documentación.
 
 1. **La póliza del BSE** (11.3): ¿desde la firma o dentro del período de adecuación?
-2. **Los datos de Voltia**: razón social, RUT y quién firma.
 3. **Si algo es demasiado duro** para los tercerizados de hoy.
 4. **Para el abogado:** que la redacción no sugiera una relación laboral encubierta, y cómo dejar documentado que Voltia pidió la documentación del BPS y el BSE, porque eso la deja como responsable **subsidiaria** y no **solidaria** frente a los trabajadores del Instalador. Y el riesgo de los seis meses de adecuación: mientras tanto, esa protección no existe.
