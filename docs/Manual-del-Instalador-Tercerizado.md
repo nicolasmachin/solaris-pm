@@ -162,7 +162,7 @@ Logística manda el **kit de materiales directo a la casa del cliente**, no nece
 
 **Al recibirlo, lo revisa contra la lista**, incluidos los documentos de UTE impresos. Si falta algo o llegó algo distinto, le avisa a Logística en el momento, no el día de la obra.
 
-**Los documentos de UTE vienen impresos dentro del kit**, con el resto de los materiales. El instalador no imprime nada: le hace firmar al cliente, los escanea y los sube (capítulo 10).
+**Los documentos de UTE vienen impresos dentro del kit**, con el resto de los materiales: los imprime Logística. El instalador no imprime nada: le hace firmar al cliente, los escanea y los sube (capítulo 10).
 
 **Si hay hormigón:** antes de que llegue el camión con la arena y la piedra, se acuerda con el cliente **dónde descarga**, en un lugar que después se pueda limpiar.
 

@@ -552,7 +552,7 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 
 **Los materiales, en las obras tercerizadas.** Logística manda el kit **directo a la casa del cliente**, no necesariamente el día que se trabaja, y el instalador tercerizado tiene que estar ahí para recibirlo. Logística coordina el envío con el instalador, y el instalador lo coordina con el cliente. Al recibirlo, lo revisa contra la lista; si falta algo, le avisa a Logística en el momento.
 
-**Los documentos de UTE** para que firme el cliente **van impresos con los materiales de la obra**: en el camión con la cuadrilla propia y dentro del kit en las obras tercerizadas. En obra no se imprime nada: se hace firmar al cliente, se escanean y se suben.
+**Los documentos de UTE** para que firme el cliente **van impresos con los materiales de la obra** (los imprime Logística): en el camión con la cuadrilla propia y dentro del kit en las obras tercerizadas. En obra no se imprime nada: se hace firmar al cliente, se escanean y se suben.
 
 ## 12 · La seguridad
 
@@ -878,7 +878,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 
 **Para quién es.** Para quien hace las compras y la entrega de materiales.
 
-**Qué hace.** Mantiene el stock del local de los materiales que se usan siempre y compra lo que falta para cada obra. Sigue los pedidos, los recibe en el local y les da ingreso al stock. Si la obra la hace un instalador tercerizado, arma el kit de materiales, coordina el flete y lo manda.
+**Qué hace.** Mantiene el stock del local de los materiales que se usan siempre y compra lo que falta para cada obra. Sigue los pedidos, los recibe en el local y les da ingreso al stock. Si la obra la hace un instalador tercerizado, arma el kit de materiales, coordina el flete y lo manda. Y **imprime los documentos de UTE** que firma el cliente el día de la obra, para que vayan con los materiales.
 
 **Dónde empieza su trabajo.** Cuando Ingeniería Final cierra la **lista de materiales definitiva**, que ya pasó por la revisión del capataz. Es su único punto de partida.
 
@@ -903,6 +903,8 @@ La excepción es lo urgente que frena una obra en el día: un material que falta
 - **Lo que está en la lista de materiales de Ingeniería** lo compra directamente el encargado de compras, sin pedir aprobación.
 - **Lo que no está en la lista** (gastos puntuales que aparecen): cada gasto de **hasta USD 200** lo aprueba el gerente de Operaciones, en cualquier obra y sin tope total: pueden ser varios. **Con rendición de cuentas:** cada uno queda cargado en Finanzas, asignado a la obra y con su motivo, y el gerente da cuenta de ellos en la reunión de coordinación con el CEO.
 - **Por encima de eso**, lo aprueba Finanzas o el CEO.
+
+**Los documentos de UTE van con los materiales.** Logística los imprime desde el proyecto en Voltia PM, en **Documentos UTE generados** (si todavía no están, **Generar ahora**), y los pone con el material de la obra: en el local, con la cuadrilla propia, o dentro del kit, en las obras tercerizadas.
 
 **Con la cuadrilla propia no hay entrega:** Logística deja todo el material en el local para el día de preparación, el capataz lo prepara y el día de la obra sale con la cuadrilla, en el camión.
 
@@ -1077,7 +1079,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Los documentos de UTE van impresos con los materiales de la obra: en obra no se imprime nada. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
+| 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Los documentos de UTE los imprime Logística y van con los materiales de la obra: en obra no se imprime nada. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 1.4 | 19 de octubre de 2026 | Al tercerizado se le exige estar inscripto como empresa y tener el seguro de accidentes del BSE desde su primera obra con contrato, y la factura a los seis meses; ya no se le pide todos los meses la documentación de sueldos y aportes. El contrato con el tercerizado pasa a estar en borrador, y el tercerizado tiene su propio manual. |
 | 1.3 | 17 de octubre de 2026 | El Carnaval y la Semana de Turismo no cuentan como días hábiles. |
 | 1.2 | 16 de octubre de 2026 | En Pagos a instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado. |
