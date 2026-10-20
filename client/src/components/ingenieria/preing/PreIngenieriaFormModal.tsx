@@ -15,6 +15,8 @@ import {
 import {
   createPreIngenieriaVersion,
   extractMinutaFields,
+  listMinutasDelProyecto,
+  retryMinutaExtraction,
   getPreIngenieriaVersion,
   uploadPreIngenieriaFoto,
   type ExtractedMinutaFields,
@@ -239,6 +241,7 @@ export function PreIngenieriaFormModal({
       toast.success(
         `Minuta procesada · ${filledCount} campos sugeridos. Revisalos antes de guardar.`,
       );
+      qc.invalidateQueries({ queryKey: ["preing-minutas", projectId] });
     },
     onError: (err) => {
       const msg = getApiErr(err) ?? "No se pudo procesar la minuta";
@@ -246,6 +249,40 @@ export function PreIngenieriaFormModal({
       setMinutaFilename(null);
     },
   });
+
+  // Las minutas que ya están en el proyecto (la del asesor y el resumen del
+  // bot vienen del lead): se usan sin volver a subirlas.
+  const minutasQ = useQuery({
+    queryKey: ["preing-minutas", projectId],
+    queryFn: () => listMinutasDelProyecto(projectId),
+  });
+
+  const usarMinutaMut = useMutation({
+    mutationFn: (fileId: string) => retryMinutaExtraction(projectId, fileId),
+    onSuccess: (res) => {
+      applyExtractedFields(res.extractedFields, res.metadata.modelUsed, res.minutaFileId);
+      setMinutaModel(res.metadata.modelUsed);
+      const filledCount = countFilledExtracted(res.extractedFields);
+      toast.success(
+        `Minuta procesada · ${filledCount} campos sugeridos. Revisalos antes de guardar.`,
+      );
+    },
+    onError: (err) => {
+      toast.error(getApiErr(err) ?? "No se pudo procesar la minuta");
+      setMinutaFilename(null);
+    },
+  });
+
+  function usarMinuta(id: string, filename: string) {
+    if (aiFields.size > 0) {
+      const ok = window.confirm(
+        "Esto va a sobreescribir los campos sugeridos por IA actuales. ¿Continuar?",
+      );
+      if (!ok) return;
+    }
+    setMinutaFilename(filename);
+    usarMinutaMut.mutate(id);
+  }
 
   function handleMinutaFile(file: File | null) {
     if (!file) return;
@@ -401,7 +438,7 @@ export function PreIngenieriaFormModal({
               if (minutaInputRef.current) minutaInputRef.current.value = "";
             }}
           />
-          {extractMut.isPending ? (
+          {extractMut.isPending || usarMinutaMut.isPending ? (
             <div className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 p-3 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
               <Loader2 className="w-4 h-4 animate-spin shrink-0" />
               <div>
@@ -441,9 +478,31 @@ export function PreIngenieriaFormModal({
                     ¿Tenés la minuta del relevamiento?
                   </p>
                   <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                    Subila en PDF y la IA pre-rellena los campos del formulario. Vos revisás y
-                    editás antes de generar.
+                    {(minutasQ.data?.length ?? 0) > 0
+                      ? "Usá una de las que ya están en el proyecto o subí otra en PDF: la IA pre-rellena los campos del formulario. Vos revisás y editás antes de generar."
+                      : "Subila en PDF y la IA pre-rellena los campos del formulario. Vos revisás y editás antes de generar."}
                   </p>
+                  {(minutasQ.data?.length ?? 0) > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {minutasQ.data!.map((m) => (
+                        <li key={m.id} className="flex items-center gap-2 text-[11px]">
+                          <span className="min-w-0 flex-1 truncate text-[var(--color-text-secondary)]">
+                            {m.filename}
+                            <span className="text-[var(--color-text-muted)]">
+                              {" "}· subida el {new Date(m.createdAt).toLocaleDateString("es-UY")}
+                            </span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => usarMinuta(m.id, m.filename)}
+                            className="shrink-0 rounded border border-[var(--color-accent)]/40 px-2 py-0.5 text-[10px] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10"
+                          >
+                            Usar esta
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
                 <button
                   type="button"

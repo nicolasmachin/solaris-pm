@@ -1,5 +1,35 @@
 # Novedades
 
+## v12.9
+
+### 19 de octubre de 2026
+
+#### Al entrar, el aviso dice qué está mal
+
+- Si alguien escribe un usuario o un email que no existe, el aviso se lo dice y le recuerda que va el email completo (por ejemplo nombre@voltia.com.uy) o su usuario.
+- Si el usuario existe pero la contraseña no es la correcta, el aviso dice eso. Si el usuario está dado de baja, también.
+- Cada intento de entrar queda registrado, con el usuario que se escribió y por qué falló, para poder ayudar a quien no puede entrar.
+
+#### Entrar con un código por mail, sin contraseña
+
+- En la pantalla de entrada hay una opción nueva: **Entrar con un código por mail**. Se escribe el usuario o el mail, llega un código de 6 números y se entra con él. Sirve para el equipo y para los clientes del portal.
+- El código vence a los 10 minutos, sirve una sola vez y se anula si se erra cinco veces. Si no llega, se puede pedir otro.
+- No crea usuarios: funciona solo con los que ya dio de alta el administrador, y solo si tienen el mail cargado.
+
+#### La sesión ya no se cierra a la semana
+
+- Antes, la sesión se cerraba a los 7 días de haber entrado, aunque se estuviera usando. Ahora **se renueva sola con el uso**: solo pide entrar de nuevo si pasan **10 días sin abrir Voltia PM**.
+- Cuando una sesión se cierra, queda anotado por qué, para poder explicarlo.
+
+#### Pre-ingeniería: la minuta, sin copias repetidas
+
+- Al completar la pre-ingeniería desde la minuta, se ofrecen **las minutas que ya están en el proyecto** (la que subió el asesor y el resumen de la visita, que vienen del lead) con el botón **Usar esta**: no hace falta volver a subirla.
+- Si igual se sube un PDF que el proyecto ya tiene, se usa ese y **no se guarda otra copia**.
+
+#### Arreglos
+
+- Al cambiar la contraseña, errar la contraseña actual ya no cierra la sesión: avisa que no es la correcta y deja intentar de nuevo.
+
 ## v12.8
 
 ### 17 de octubre de 2026

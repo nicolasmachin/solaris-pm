@@ -21,6 +21,11 @@
 - Antes, la sesión se cerraba a los 7 días de haber entrado, aunque se estuviera usando. Ahora **se renueva sola con el uso**: solo pide entrar de nuevo si pasan **10 días sin abrir Voltia PM**.
 - Cuando una sesión se cierra, queda anotado por qué, para poder explicarlo.
 
+#### Pre-ingeniería: la minuta, sin copias repetidas
+
+- Al completar la pre-ingeniería desde la minuta, se ofrecen **las minutas que ya están en el proyecto** (la que subió el asesor y el resumen de la visita, que vienen del lead) con el botón **Usar esta**: no hace falta volver a subirla.
+- Si igual se sube un PDF que el proyecto ya tiene, se usa ese y **no se guarda otra copia**.
+
 #### Arreglos
 
 - Al cambiar la contraseña, errar la contraseña actual ya no cierra la sesión: avisa que no es la correcta y deja intentar de nuevo.

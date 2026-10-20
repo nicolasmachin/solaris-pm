@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.13 · del 14/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.14 · del 19/10/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -360,6 +360,8 @@ Con lo que el vendedor dejó cargado en el proyecto: el resumen de la visita, la
 minuta, las fotos y los videos. **Si falta algo, se lo pide al asesor comercial
 de ese proyecto** — está indicado en el proyecto.
 
+**La minuta no se vuelve a subir.** Al completar el formulario de pre-ingeniería, Voltia PM muestra las minutas que ya están en el proyecto (la que subió el asesor y el resumen de la visita, que vienen del lead) con el botón **Usar esta**, y la IA completa los campos con esa. Si se sube igual un PDF que el proyecto ya tiene, no se guarda otra copia.
+
 ### Cuándo entra Operaciones
 
 **Todavía no.** Cuando arranca la pre-ingeniería, Operaciones no sabe nada de
@@ -437,6 +439,7 @@ borrar; lo de otras áreas, no.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.14 | 19 de octubre de 2026 | Al completar la pre-ingeniería se usa la minuta que ya está en el proyecto, con el botón Usar esta: no se vuelve a subir. |
 | 0.13 | 14 de octubre de 2026 | Nuevo lineamiento: la Pre-Ingeniería no se cierra sin el formulario de pre-ingeniería completo (paneles, inversor con su potencia, red, techo y coplanar o inclinado), sin el unifilar de cada suministro y con los dos diciendo lo mismo. En la pre-ingeniería se agregan la opción Suelo en el techo y la pregunta coplanar o inclinado. Se agrega, entre las herramientas, el resumen de la obra arriba del espacio de Ingeniería. |
 | 0.12 | 12 de octubre de 2026 | Se agrega el informe post-obra: al terminar cada obra el gerente de Operaciones evalúa también a Ingeniería, y su responsable firma su parte. En el espacio de Ingeniería se agrega el bloque Comentarios y archivos, para comentar y adjuntar sin ir a la pantalla del proyecto. |
 | 0.11 | 11 de octubre de 2026 | Nuevo lineamiento: si no se dice otra cosa, los paneles se diseñan a 25 grados mirando al norte; lo acordado en la visita de venta (por ejemplo, coplanar con un 10 % más de paneles) manda. |

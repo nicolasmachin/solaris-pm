@@ -39,6 +39,53 @@ function ensureUser(request: import("fastify").FastifyRequest) {
   return request.user;
 }
 
+/**
+ * Las minutas del proyecto: las que se subieron en Pre-ingeniería y las que
+ * vinieron del lead (la minuta del asesor y el "Resumen de Visita" del bot), que
+ * se copian al proyecto al ganar la venta con otro tipo. Se reconocen por el
+ * nombre. Un mismo PDF repetido (mismo nombre y tamaño) sale una sola vez.
+ */
+async function minutasDelProyecto(projectId: string) {
+  const filas = await prisma.fileAttachment.findMany({
+    where: {
+      projectId,
+      deletedAt: null,
+      mimeType: "application/pdf",
+      OR: [
+        { tipo: FileAttachmentTipo.MINUTA_RELEVAMIENTO },
+        { filename: { contains: "minuta", mode: "insensitive" } },
+        { filename: { contains: "resumen de visita", mode: "insensitive" } },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, filename: true, sizeBytes: true, createdAt: true, url: true, tipo: true },
+  });
+  const vistos = new Set<string>();
+  return filas.filter((f) => {
+    const clave = `${f.filename}|${f.sizeBytes}`;
+    if (vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
+}
+
+/**
+ * Un PDF del proyecto con exactamente el mismo contenido que `buffer`, si ya
+ * existe. Se compara primero el tamaño (barato) y después los bytes.
+ */
+async function pdfIgualEnProyecto(projectId: string, buffer: Buffer, excluirId?: string) {
+  const candidatos = await prisma.fileAttachment.findMany({
+    where: { projectId, deletedAt: null, mimeType: "application/pdf", sizeBytes: buffer.length, ...(excluirId ? { id: { not: excluirId } } : {}) },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, url: true, filename: true },
+  });
+  for (const c of candidatos) {
+    const otro = await readStoredFileBuffer(getStoredFilePath(c.url)).catch(() => null);
+    if (otro && otro.equals(buffer)) return c;
+  }
+  return null;
+}
+
 async function readStoredFileBuffer(absolutePath: string): Promise<Buffer> {
   return fsPromises.readFile(absolutePath);
 }
@@ -239,22 +286,29 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
 
       // 1) Persistir el PDF como FileAttachment ANTES de extraer (así si la
       //    extracción falla, el archivo queda y se puede reintentar).
+      //    Si el proyecto ya tiene ese mismo PDF (la minuta que vino del lead,
+      //    o una subida anterior), se usa ese y no se guarda otra copia: pasaba
+      //    en 17 proyectos al 19-oct-2026, con hasta tres copias de la misma minuta.
       const stored = await saveUploadedFile(part, projectId);
-      const attachment = await prisma.fileAttachment.create({
-        data: {
-          projectId,
-          filename: stored.filename,
-          storedFilename: stored.storedFilename,
-          mimeType: stored.mimeType,
-          sizeBytes: stored.sizeBytes,
-          url: stored.url,
-          tipo: FileAttachmentTipo.MINUTA_RELEVAMIENTO,
-          uploadedById: user.id,
-        },
-      });
-
-      // 2) Leer el archivo del disco como buffer y extraer.
       const fileBuffer = await readStoredFileBuffer(stored.absolutePath);
+      const igual = await pdfIgualEnProyecto(projectId, fileBuffer);
+      if (igual) await deleteStoredFile(stored.url);
+      const attachment = igual
+        ? { id: igual.id }
+        : await prisma.fileAttachment.create({
+            data: {
+              projectId,
+              filename: stored.filename,
+              storedFilename: stored.storedFilename,
+              mimeType: stored.mimeType,
+              sizeBytes: stored.sizeBytes,
+              url: stored.url,
+              tipo: FileAttachmentTipo.MINUTA_RELEVAMIENTO,
+              uploadedById: user.id,
+            },
+          });
+
+      // 2) Extraer del buffer ya leído.
 
       try {
         const result = await extractFromMinuta(fileBuffer);
@@ -306,6 +360,25 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
     },
   );
 
+  // ─── Minutas que ya están en el proyecto ─────────────────────────────────
+  // Para elegir una en vez de volver a subirla.
+  app.get(
+    "/projects/:projectId/preingenieria/minutas",
+    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    async (request) => {
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const minutas = await minutasDelProyecto(params.projectId);
+      return {
+        minutas: minutas.map((m) => ({
+          id: m.id,
+          filename: m.filename,
+          sizeBytes: m.sizeBytes,
+          createdAt: serializeDate(m.createdAt),
+        })),
+      };
+    },
+  );
+
   // ─── Reintentar extracción de minuta ya subida ───────────────────────────
   // Útil si la primera llamada falló por timeout/rate limit.
   app.post(
@@ -320,15 +393,10 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
         throw badRequest("MINUTA_EXTRACTION_DISABLED", "Extracción IA deshabilitada");
       }
 
-      const att = await prisma.fileAttachment.findFirst({
-        where: {
-          id: body.minutaFileId,
-          projectId: params.projectId,
-          tipo: FileAttachmentTipo.MINUTA_RELEVAMIENTO,
-          deletedAt: null,
-        },
-        select: { id: true, url: true, sizeBytes: true },
-      });
+      // Sirve también para usar una minuta que ya está en el proyecto (la que
+      // vino del lead), sin volver a subirla: cualquiera de minutasDelProyecto().
+      const disponibles = await minutasDelProyecto(params.projectId);
+      const att = disponibles.find((m) => m.id === body.minutaFileId);
       if (!att) throw notFound("MINUTA_NOT_FOUND", "Minuta no encontrada");
 
       const absolutePath = getStoredFilePath(att.url);
@@ -341,7 +409,7 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
         projectId: params.projectId,
         userId: user.id,
         action: AuditAction.file_uploaded,
-        description: `Reintentó extracción IA de minuta (${result.metadata.modelUsed})`,
+        description: `Extrajo campos con IA de la minuta del proyecto (${result.metadata.modelUsed})`,
         metadata: {
           kind: "minuta_extraction_retry",
           modelUsed: result.metadata.modelUsed,

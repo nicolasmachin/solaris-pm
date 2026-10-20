@@ -945,3 +945,42 @@ automáticos, IA y generar, `DELETE` para borrar versiones. El panel oculta
   futuro del schema), la lista lo muestra sin balance y su PDF devuelve 400:
   al cambiar `datosSchema` hay que mantenerlo compatible con lo guardado.
 
+---
+
+# Pre-ingeniería: completar desde la minuta
+
+> Sección parcial: cubre solo de dónde sale la minuta y cómo se evita duplicarla
+> (19-oct-2026). La extracción con IA en sí (`minutaExtraction/`) y el PDF de la
+> pre-ingeniería todavía no están documentados.
+
+## Cómo funciona
+
+- `GET /projects/:projectId/preingenieria/minutas` (`INGENIERIA:VIEW`) lista las
+  minutas del proyecto con `minutasDelProyecto()` (`preingenieria.routes.ts`):
+  los PDF con `tipo = MINUTA_RELEVAMIENTO` **y** los que se reconocen por el
+  nombre ("minuta", "resumen de visita"), que son los que vienen del lead al
+  ganar la venta (`copyLeadAttachmentsToProject`) sin tipo. Repetidos (mismo
+  nombre y tamaño) salen una vez.
+- **Usar esta** en `PreIngenieriaFormModal.tsx` llama a
+  `POST …/extract-from-minuta/retry` con el id: extrae sin subir nada. Esa ruta
+  ahora acepta cualquier minuta de `minutasDelProyecto()`, no solo las de tipo
+  `MINUTA_RELEVAMIENTO`.
+- **Subir minuta PDF** (`POST …/extract-from-minuta`) guarda el archivo y, con
+  `pdfIgualEnProyecto()`, busca un PDF del proyecto con el mismo tamaño y los
+  mismos bytes: si existe, borra el archivo recién guardado y usa ese.
+
+## Casos borde
+
+- **Por qué había copias.** Hasta el 19-oct-2026 cada uso de "completar desde
+  la minuta" guardaba el PDF otra vez: en 17 proyectos de producción había 20
+  copias de más, casi todas la minuta que vino del lead más una o dos subidas en
+  Pre-ingeniería (caso Gonzalo Suárez, PRY-2026-118: tres copias de la misma).
+  `scripts/limpiar-minutas-repetidas.ts` las marca como borradas
+  (`deletedAt`, sin tocar el archivo físico) y deja la que usó alguna versión de
+  la pre-ingeniería o, si ninguna, la más vieja.
+- **Las fechas de los archivos no son la de la visita**: son la de la subida. Lo
+  que viene del lead se copia al proyecto con la fecha de la conversión.
+- **Minuta vieja y resumen del bot a la vez**: pasa en los proyectos cuya visita
+  es anterior al bot de minutas (8-ago-2026). Son el mismo relevamiento en dos
+  formatos; no se deduplican porque son archivos distintos.
+

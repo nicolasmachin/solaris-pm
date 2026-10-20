@@ -47,6 +47,13 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Pre-ingeniería: la minuta, sin copias repetidas",
+      items: [
+        "Al completar la pre-ingeniería desde la minuta, se ofrecen las que ya están en el proyecto con el botón Usar esta: no hace falta volver a subirla.",
+        "Si igual se sube un PDF que el proyecto ya tiene, se usa ese y no se guarda otra copia.",
+      ],
+    },
+    {
       title: "Arreglos",
       items: ["Al cambiar la contraseña, errar la actual ya no cierra la sesión."],
     },

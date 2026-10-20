@@ -217,6 +217,21 @@ export async function extractMinutaFields(
   return data;
 }
 
+export interface MinutaDelProyecto {
+  id: string;
+  filename: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+/** Las minutas que ya están en el proyecto (incluidas las que vinieron del lead). */
+export async function listMinutasDelProyecto(projectId: string): Promise<MinutaDelProyecto[]> {
+  const { data } = await apiClient.get<{ minutas: MinutaDelProyecto[] }>(
+    `/api/projects/${projectId}/preingenieria/minutas`,
+  );
+  return data.minutas;
+}
+
 export async function retryMinutaExtraction(
   projectId: string,
   minutaFileId: string,
