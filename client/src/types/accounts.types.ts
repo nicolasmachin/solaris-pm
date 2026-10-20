@@ -18,6 +18,9 @@ export interface Account {
   fechaSaldoInicial: string | null;
   notas: string | null;
   activa: boolean;
+  /** Número en el home banking; lo usa el lector del banco para identificar la cuenta. */
+  numeroCuentaBanco: string | null;
+  bancoLeidoEn: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

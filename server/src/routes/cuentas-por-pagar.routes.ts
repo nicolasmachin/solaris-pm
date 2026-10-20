@@ -338,6 +338,37 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     };
   });
 
+  // Elegir el proveedor de una factura de la bandeja lo asigna a TODAS las de
+  // ese RUT que no tenían proveedor, y le guarda el RUT al proveedor (si no lo
+  // tenía) para que las que lleguen después entren ya asignadas. Por RUT y no por
+  // razón social: es lo que identifica al emisor sin ambigüedad.
+  app.post("/finance/facturas-recibidas/asignar-proveedor", editar, async (request) => {
+    const user = ensureUser(request);
+    const body = z.object({
+      rutEmisor: z.string().min(1),
+      supplierId: z.string().min(1),
+    }).strict().parse(request.body);
+    const rut = normalizarRut(body.rutEmisor);
+    if (!rut) throw badRequest("RUT_INVALIDO", "RUT inválido");
+
+    const { s, asignadas } = await prisma.$transaction(async (tx) => {
+      const s = await resolverProveedor(rut, body.supplierId, tx);
+      const asignadas = await tx.facturaRecibida.updateMany({
+        where: { rutEmisor: rut, supplierId: null },
+        data: { supplierId: s.id },
+      });
+      return { s, asignadas };
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.supplier,
+      entityId: s.id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Asignó el RUT ${rut} al proveedor ${s.nombre} y ${asignadas.count} factura(s) recibida(s)`,
+    });
+    return { supplierId: s.id, nombre: s.nombre, facturasAsignadas: asignadas.count };
+  });
+
   // Da de alta como proveedor a un emisor que solo existía en las facturas
   // recibidas, y le asigna las que estaban esperando en la bandeja.
   app.post("/finance/facturas-recibidas/crear-proveedor", editar, async (request) => {

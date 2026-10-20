@@ -23,6 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.0",
+  date: "20 de octubre de 2026",
+  sections: [
+    {
+      title: "Facturas de proveedores: el proveedor se elige una sola vez",
+      items: [
+        "En la bandeja de facturas recibidas, al elegir de qué proveedor es una factura, se asigna a todas las que tienen el mismo RUT.",
+        "El proveedor queda con ese RUT guardado, así las facturas que lleguen después entran ya con su proveedor.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_12_9: Release = {
   version: "12.9",
   date: "19 de octubre de 2026",
   sections: [
@@ -739,6 +753,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "12.9",
+    shortDate: "19 oct",
+    highlights: RELEASE_12_9.sections.map((sec) => sec.title),
+  },
   {
     version: "12.8",
     shortDate: "17 oct",

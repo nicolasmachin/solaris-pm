@@ -1,5 +1,14 @@
 # Novedades
 
+## v13.0
+
+### 20 de octubre de 2026
+
+#### Facturas de proveedores: el proveedor se elige una sola vez
+
+- En la bandeja de facturas recibidas, al elegir de qué proveedor es una factura, se asigna a todas las que tienen el mismo RUT.
+- El proveedor queda con ese RUT guardado, así las facturas que lleguen después entran ya con su proveedor.
+
 ## v12.9
 
 ### 19 de octubre de 2026

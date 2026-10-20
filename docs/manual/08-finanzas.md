@@ -386,6 +386,13 @@ se traen solas de la facturación electrónica (Biller) y se revisan en una band
   registro de todas las facturas, con filtros.
 - Plazo y límite: en el formulario de proveedor (`FinanceSuppliers.tsx` →
   `SupplierForm`).
+- **«¿De qué proveedor es?»** en una fila de la bandeja llama a
+  `POST /finance/facturas-recibidas/asignar-proveedor` (`FINANZAS:EDIT`) con el
+  RUT de la fila: `resolverProveedor()` le guarda el RUT al proveedor si no tenía
+  (o rechaza con `RUT_NO_COINCIDE` si tiene otro) y se asigna a **todas** las
+  facturas de ese RUT sin proveedor. Por RUT y no por razón social. Audita como
+  `supplier`. Las que lleguen después se asignan solas en la sincronización
+  (`proveedorPorRut`).
 
 ### Cómo funciona
 

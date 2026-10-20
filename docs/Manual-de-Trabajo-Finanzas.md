@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.15 · del 16/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.16 · del 20/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -547,7 +547,11 @@ cada una, la persona de Finanzas elige:
   está en Voltia PM. Propone el nombre registrado en DGI.
 
 El proveedor se reconoce **por el RUT**, nunca por el nombre. Por eso conviene
-que cada proveedor tenga su RUT cargado.
+que cada proveedor tenga su RUT cargado. Cuando una factura llega de un RUT que
+ningún proveedor tiene, se elige de qué proveedor es en **«¿De qué proveedor
+es?»**: queda asignado a **todas** las facturas de la bandeja con ese RUT, y el
+proveedor se queda con el RUT, así las siguientes llegan ya asignadas. Si el
+proveedor elegido tiene otro RUT, Voltia PM no deja asignarlo.
 
 **Las facturas llegan por tres caminos** y terminan en la misma bandeja: lo que
 DGI tiene registrado, lo que llegó por mail a la casilla publicada en DGI (los
@@ -1152,6 +1156,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.16 | 20 de octubre de 2026 | En la bandeja de facturas recibidas, elegir el proveedor de una factura lo asigna a todas las del mismo RUT. |
 | 0.15 | 16 de octubre de 2026 | Una venta cotizada sin comisión del vendedor no deja un pago pendiente de comisión. |
 | 0.14 | 16 de octubre de 2026 | En el resumen de WhatsApp al instalador, los últimos trabajos saldados son los que se terminaron de pagar más recientemente, con la fecha de ese pago. |
 | 0.13 | 16 de octubre de 2026 | En Instaladores solo se ven las obras agendadas en el calendario con un equipo tercerizado; las demás no cuentan como deuda. |

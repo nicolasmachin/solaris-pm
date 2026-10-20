@@ -145,6 +145,12 @@ export const crearProveedorDesdeRut = (rut: string, nombre?: string) =>
     '/api/finance/facturas-recibidas/crear-proveedor', { rut, ...(nombre ? { nombre } : {}) },
   ).then((r) => r.data);
 
+/** Asigna el proveedor a todas las facturas de la bandeja con ese RUT (y le guarda el RUT). */
+export const asignarProveedorPorRut = (rutEmisor: string, supplierId: string) =>
+  apiClient.post<{ supplierId: string; nombre: string; facturasAsignadas: number }>(
+    '/api/finance/facturas-recibidas/asignar-proveedor', { rutEmisor, supplierId },
+  ).then((r) => r.data);
+
 // ─── Conciliación con el estado de cuenta del proveedor ────────────────────
 
 export interface LineaEstado {

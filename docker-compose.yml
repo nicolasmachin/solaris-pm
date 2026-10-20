@@ -83,6 +83,9 @@ services:
       # ID de la sucursal de Voltia en Biller (Ajustes → Sucursales). Sin esto no
       # se emiten facturas a clientes; la bandeja de recibidos no lo necesita.
       BILLER_SUCURSAL: ${BILLER_SUCURSAL:-}
+      # Lector del banco (robot de eBROU): token con el que manda los movimientos.
+      # Sin token, la entrada /api/banco/lectura no existe.
+      BANCO_LECTOR_TOKEN: ${BANCO_LECTOR_TOKEN:-}
     ports:
       - "4000:4000"
     volumes:

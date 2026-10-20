@@ -11257,6 +11257,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       saldoInicial: z.coerce.number().default(0),
       fechaSaldoInicial: fechaSaldoInicialSchema,
       notas: z.string().optional(),
+      // Número en el home banking (ej. "110875272-00001"): lo usa el lector del banco.
+      numeroCuentaBanco: z.string().trim().max(40).nullable().optional(),
     }).strict();
 
     const accountPatchSchema = z.object({
@@ -11267,12 +11269,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       fechaSaldoInicial: fechaSaldoInicialSchema,
       notas: z.string().nullable().optional(),
       activa: z.boolean().optional(),
+      // Número en el home banking (ej. "110875272-00001"): lo usa el lector del banco.
+      numeroCuentaBanco: z.string().trim().max(40).nullable().optional(),
     }).strict();
 
     function serializeAccount(a: {
       id: string; nombre: string; tipo: AccountType; moneda: Moneda;
       saldoInicial: import("@prisma/client/runtime/library").Decimal;
       fechaSaldoInicial: Date | null; notas: string | null; activa: boolean;
+      numeroCuentaBanco: string | null; bancoLeidoEn: Date | null;
       createdAt: Date; updatedAt: Date; deletedAt: Date | null;
       _count?: { movements: number; payments: number };
     }) {
@@ -11285,6 +11290,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fechaSaldoInicial: a.fechaSaldoInicial ? serializeDateOnly(a.fechaSaldoInicial) : null,
         notas: a.notas,
         activa: a.activa,
+        numeroCuentaBanco: a.numeroCuentaBanco,
+        bancoLeidoEn: a.bancoLeidoEn ? serializeDate(a.bancoLeidoEn) : null,
         createdAt: serializeDate(a.createdAt),
         updatedAt: serializeDate(a.updatedAt),
         deletedAt: a.deletedAt ? serializeDate(a.deletedAt) : null,
@@ -13218,6 +13225,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           saldoInicial: new Prisma.Decimal(body.saldoInicial),
           fechaSaldoInicial: body.fechaSaldoInicial ? parseDateOnly(body.fechaSaldoInicial) : null,
           notas: body.notas,
+          numeroCuentaBanco: body.numeroCuentaBanco || null,
         },
       });
       await createAuditEntry({
@@ -13247,6 +13255,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
       if (body.notas !== undefined) data.notas = body.notas;
       if (body.activa != null) data.activa = body.activa;
+      if (body.numeroCuentaBanco !== undefined) data.numeroCuentaBanco = body.numeroCuentaBanco || null;
 
       const updated = await prisma.account.update({ where: { id }, data });
       await createAuditEntry({

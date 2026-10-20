@@ -24,6 +24,7 @@ export const createAccount = (body: {
   saldoInicial?: number;
   fechaSaldoInicial?: string | null;
   notas?: string;
+  numeroCuentaBanco?: string | null;
 }) => apiClient.post<Account>('/api/accounts', body).then(r => r.data);
 
 export const patchAccount = (id: string, body: Partial<{
@@ -34,6 +35,7 @@ export const patchAccount = (id: string, body: Partial<{
   fechaSaldoInicial: string | null;
   notas: string | null;
   activa: boolean;
+  numeroCuentaBanco: string | null;
 }>) => apiClient.patch<Account>(`/api/accounts/${id}`, body).then(r => r.data);
 
 export const deleteAccount = (id: string) =>

@@ -30,6 +30,7 @@ function AccountForm({ initial, accountId, onSuccess, onCancel }: {
     saldoInicial: initial?.saldoInicial?.toString() ?? '0',
     fechaSaldoInicial: initial?.fechaSaldoInicial ?? '',
     notas: initial?.notas ?? '',
+    numeroCuentaBanco: initial?.numeroCuentaBanco ?? '',
     activa: initial?.activa ?? true,
   });
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,7 @@ function AccountForm({ initial, accountId, onSuccess, onCancel }: {
           saldoInicial: saldo,
           fechaSaldoInicial: form.fechaSaldoInicial || null,
           notas: form.notas || null,
+          numeroCuentaBanco: form.numeroCuentaBanco.trim() || null,
           activa: form.activa,
         });
         toast.success('Cuenta actualizada');
@@ -62,6 +64,7 @@ function AccountForm({ initial, accountId, onSuccess, onCancel }: {
           saldoInicial: saldo,
           ...(form.fechaSaldoInicial ? { fechaSaldoInicial: form.fechaSaldoInicial } : {}),
           ...(form.notas ? { notas: form.notas } : {}),
+          ...(form.numeroCuentaBanco.trim() ? { numeroCuentaBanco: form.numeroCuentaBanco.trim() } : {}),
         });
         toast.success('Cuenta creada');
       }
@@ -113,6 +116,15 @@ function AccountForm({ initial, accountId, onSuccess, onCancel }: {
           </p>
         </div>
       </div>
+      {form.tipo === 'BANCO' && (
+        <div>
+          <label className={lbl}>Número de cuenta en el banco</label>
+          <input className={inp} placeholder="Ej. 110875272-00001" value={form.numeroCuentaBanco} onChange={e => setF('numeroCuentaBanco', e.target.value)} />
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+            Tal como aparece en el home banking. Con este número, la lectura diaria del banco sabe a qué cuenta van los movimientos y los compara en Movimientos.
+          </p>
+        </div>
+      )}
       <div><label className={lbl}>Notas</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
       {accountId && (
         <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">

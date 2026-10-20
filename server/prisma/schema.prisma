@@ -153,6 +153,7 @@ enum AuditEntityType {
   cabinet_design
   factura_recibida
   conciliacion_proveedor
+  bank_movement
   cfe_emitido
 }
 
@@ -556,6 +557,7 @@ model User {
   financeMovementsApproved       FinanceMovement[]              @relation("FinanceMovAprobadoPor")
   financeApprovalHistory         FinanceApprovalHistory[]
   paymentsCreated                Payment[]                      @relation("PaymentCreatedBy")
+  bankMovementsIgnorados         BankMovement[]                 @relation("BankMovementIgnoradoPor")
   installationSchedulesConfirmed InstallationSchedule[]         @relation("InstallationConfirmedBy")
   reconciliationsCreated         AccountReconciliation[]        @relation("ReconciliationCreatedBy")
   aiQueries                      AIQuery[]
@@ -623,11 +625,11 @@ model User {
   deletedAt                      DateTime?                      @db.Timestamptz(6)
   createdAt                      DateTime                       @default(now()) @db.Timestamptz(6)
   updatedAt                      DateTime                       @updatedAt @db.Timestamptz(6)
+  whatsappMensajesEnviados       WhatsAppMensaje[]              @relation("WhatsAppMensajeEnviadoPor")
 
   @@index([deletedAt])
   @@index([tenantId])
   @@map("users")
-  whatsappMensajesEnviados WhatsAppMensaje[] @relation("WhatsAppMensajeEnviadoPor")
 }
 
 model Project {
@@ -2795,10 +2797,18 @@ model Account {
   fechaSaldoInicial DateTime?   @db.Date
   notas             String?
   activa            Boolean     @default(true)
+  // Número de la cuenta en el banco tal como lo muestra el home banking (ej.
+  // "110875272-00001" en eBROU). Es la llave con la que el lector del banco
+  // dice de qué cuenta son los movimientos que manda.
+  numeroCuentaBanco String?     @unique
+  // Última lectura del lector del banco: cuándo y qué saldo vio.
+  bancoLeidoEn      DateTime?
+  bancoSaldo        Decimal?    @db.Decimal(14, 2)
 
   movements       FinanceMovement[]
   payments        Payment[]
   reconciliations AccountReconciliation[]
+  bankMovements   BankMovement[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -2807,6 +2817,39 @@ model Account {
   @@index([activa])
   @@index([tipo])
   @@map("accounts")
+}
+
+// Movimiento tal como lo leyó el lector del banco (robot que entra a eBROU todos
+// los días). No es un movimiento de Voltia PM: se compara contra los
+// FinanceMovement y Payment de la misma cuenta, y los que no tienen pareja se
+// muestran en Movimientos como "Falta cargar". La pareja se calcula cada vez
+// (bank-reconciliation.service.ts), no se guarda: así un movimiento cargado,
+// editado o borrado después se refleja solo. Lo único que se guarda es el
+// "No va" (ignoradoAt) de lo que no se carga a propósito.
+model BankMovement {
+  id          String         @id @default(cuid())
+  accountId   String
+  account     Account        @relation(fields: [accountId], references: [id])
+  fecha       DateTime       @db.Date
+  descripcion String
+  documento   String?
+  dependencia String?
+  tipo        TipoMovimiento
+  monto       Decimal        @db.Decimal(14, 2)
+  // Llave de deduplicación: cuenta + fecha + descripción + documento + monto +
+  // ordinal entre iguales del mismo día (dos comisiones idénticas son dos
+  // movimientos). El robot relee varios días por vez y esto evita repetirlos.
+  claveUnica  String         @unique
+
+  ignoradoAt     DateTime?
+  ignoradoMotivo String?
+  ignoradoPorId  String?
+  ignoradoPor    User?     @relation("BankMovementIgnoradoPor", fields: [ignoradoPorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([accountId, fecha])
+  @@map("bank_movements")
 }
 
 // G.10 — Conciliación bancaria. Punto verificado en el tiempo donde el usuario
@@ -5571,9 +5614,9 @@ model ConciliacionProveedor {
 
 /// Un mensaje de WhatsApp, entrante o saliente. Idempotente por el id de Meta.
 model WhatsAppMensaje {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   /// Id del mensaje en WhatsApp ("wamid…"). Único: Meta reintenta los webhooks.
-  waMessageId   String   @unique
+  waMessageId   String    @unique
   /// "ENTRANTE" (lo mandó el cliente) | "SALIENTE" (lo mandamos nosotros).
   direccion     String
   /// Teléfono del otro lado, en formato internacional sin "+" (598…).

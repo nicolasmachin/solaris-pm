@@ -8,7 +8,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { getSuppliers } from '../api/finance.api';
 import {
   confirmarFacturaRecibida, crearProveedorDesdeRut, descartarFacturaRecibida, getCuentasPorPagar, getFacturasRecibidas,
-  reabrirFacturaRecibida, sincronizarFacturasRecibidas, vincularFacturaRecibida,
+  reabrirFacturaRecibida, sincronizarFacturasRecibidas, vincularFacturaRecibida, asignarProveedorPorRut,
   type EstadoFacturaRecibida, type FacturaRecibida, type ProveedorAPagar, type TotalesTramo,
 } from '../api/cuentasPorPagar.api';
 import { usePermission } from '../hooks/usePermission';
@@ -174,7 +174,6 @@ function FilaRecibida({ f, canEdit, proveedores }: {
   proveedores: Array<{ id: string; nombre: string }>;
 }) {
   const qc = useQueryClient();
-  const [supplierId, setSupplierId] = useState('');
   const invalidar = () => {
     qc.invalidateQueries({ queryKey: ['facturas-recibidas'] });
     qc.invalidateQueries({ queryKey: ['cuentas-por-pagar'] });
@@ -183,7 +182,7 @@ function FilaRecibida({ f, canEdit, proveedores }: {
     qc.invalidateQueries({ queryKey: ['finance-pending'] });
   };
   const confirmar = useMutation({
-    mutationFn: () => confirmarFacturaRecibida(f.id, f.supplier ? {} : { supplierId }),
+    mutationFn: () => confirmarFacturaRecibida(f.id, {}),
     onSuccess: () => { toast.success('Factura cargada como deuda'); invalidar(); },
     onError: (e) => toast.error(apiErr(e) ?? 'No se pudo confirmar'),
   });
@@ -202,6 +201,17 @@ function FilaRecibida({ f, canEdit, proveedores }: {
     onSuccess: () => { toast.success('Volvió a la bandeja'); invalidar(); },
     onError: (e) => toast.error(apiErr(e) ?? 'No se pudo'),
   });
+  // Elegir el proveedor lo asigna a todas las facturas de la bandeja con ese RUT.
+  const asignar = useMutation({
+    mutationFn: (supplierId: string) => asignarProveedorPorRut(f.rutEmisor, supplierId),
+    onSuccess: (r) => {
+      toast.success(r.facturasAsignadas > 1
+        ? `${r.nombre}: asignado a las ${r.facturasAsignadas} facturas del RUT ${f.rutEmisor}`
+        : `${r.nombre} asignado`);
+      invalidar();
+    },
+    onError: (e) => toast.error(apiErr(e) ?? 'No se pudo asignar el proveedor'),
+  });
   const alta = useMutation({
     mutationFn: (nombre?: string) => crearProveedorDesdeRut(f.rutEmisor, nombre),
     onSuccess: (r) => { toast.success(`${r.nombre} dado de alta`); invalidar(); },
@@ -211,7 +221,7 @@ function FilaRecibida({ f, canEdit, proveedores }: {
     const nombre = window.prompt(`Nombre del proveedor con RUT ${f.rutEmisor}:`, f.razonSocialEmisor ?? '');
     if (nombre !== null) alta.mutate(nombre.trim() || undefined);
   }
-  const ocupado = alta.isPending || confirmar.isPending || vincular.isPending || descartar.isPending || reabrir.isPending;
+  const ocupado = asignar.isPending || alta.isPending || confirmar.isPending || vincular.isPending || descartar.isPending || reabrir.isPending;
 
   function pedirMotivo() {
     const motivo = window.prompt(
@@ -262,15 +272,16 @@ function FilaRecibida({ f, canEdit, proveedores }: {
               </button>
             ))}
             <div className="flex flex-wrap gap-1.5">
-              {!f.esNotaCredito && !f.supplier && (
+              {!f.supplier && (
                 <select className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs"
-                  value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                  value="" disabled={ocupado} onChange={(e) => { if (e.target.value) asignar.mutate(e.target.value); }}
+                  title="Se asigna a todas las facturas de este RUT">
                   <option value="">¿De qué proveedor es?</option>
                   {proveedores.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                 </select>
               )}
               {!f.esNotaCredito && (
-                <button className={btnAccent} disabled={ocupado || (!f.supplier && !supplierId)} onClick={() => confirmar.mutate()}>
+                <button className={btnAccent} disabled={ocupado || !f.supplier} onClick={() => confirmar.mutate()}>
                   Cargar como deuda
                 </button>
               )}
