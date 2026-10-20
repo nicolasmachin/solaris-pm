@@ -18,6 +18,7 @@ import type { FinanceListItem, FinanceMovement } from "../types/finance.types";
 import { ResponsiveTable, type Column } from "../components/ui/ResponsiveTable";
 import { Sheet } from "../components/ui/Sheet";
 import { ProjectPicker } from "../components/finance/ProjectPicker";
+import { FaltaCargarBanco } from "../components/finance/FaltaCargarBanco";
 import { getAccounts } from "../api/accounts.api";
 import { getProjects } from "../api/projects.api";
 import { listPendingFixedCosts, type FixedCostPendingDto } from "../api/fixedCosts.api";
@@ -76,6 +77,10 @@ type NewMovementPrefill = {
   descripcion?: string;
   monto?: string;
   moneda?: Moneda;
+  // Desde el cuadro "Falta cargar" del banco.
+  tipo?: TipoMovimiento;
+  accountId?: string;
+  fecha?: string;
 };
 
 function readPrefill(params: URLSearchParams): NewMovementPrefill | null {
@@ -398,6 +403,13 @@ export function FinanceMovementsTab() {
           </button>
         </div>
       </div>
+
+      <FaltaCargarBanco
+        onCargar={(p) => {
+          setPrefill(p);
+          setShowForm(true);
+        }}
+      />
 
       {!isLoading && allItems.length > 0 && (
         <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
@@ -862,13 +874,13 @@ function NewMovementModal({
   // un gasto es "Salida proyecto" (la categoría más habitual).
   const initialCategoria: CategoriaPrincipal = prefill?.fixedCostId ? "FIJO" : "PROYECTO_SALIDA";
 
-  const [tipo, setTipo] = useState<TipoMovimiento>("GASTO");
+  const [tipo, setTipo] = useState<TipoMovimiento>(prefill?.tipo ?? "GASTO");
   const [categoria, setCategoria] = useState<CategoriaPrincipal>(initialCategoria);
   const [descripcion, setDescripcion] = useState(prefill?.descripcion ?? "");
   const [monto, setMonto] = useState(prefill?.monto ?? "");
   const [moneda, setMoneda] = useState<Moneda>(prefill?.moneda ?? "USD");
-  const [accountId, setAccountId] = useState<string>("");
-  const [fecha, setFecha] = useState<string>(todayLocalISO());
+  const [accountId, setAccountId] = useState<string>(prefill?.accountId ?? "");
+  const [fecha, setFecha] = useState<string>(prefill?.fecha ?? todayLocalISO());
   const [supplierId, setSupplierId] = useState<string>("");
   const [projectId, setProjectId] = useState<string>("");
   const [fixedCostId, setFixedCostId] = useState<string>(prefill?.fixedCostId ?? "");
@@ -956,6 +968,7 @@ function NewMovementModal({
       qc.invalidateQueries({ queryKey: ["accounts-summary"] });
       qc.invalidateQueries({ queryKey: ["finance-dashboard"] });
       qc.invalidateQueries({ queryKey: ["fixed-costs-pending"] });
+      qc.invalidateQueries({ queryKey: ["banco-pendientes"] });
       onClose();
     },
     onError: (err: unknown) => {
