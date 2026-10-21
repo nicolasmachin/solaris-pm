@@ -4,6 +4,12 @@ import { prisma } from "../../lib/prisma.js";
 import { sendEmail } from "../email.service.js";
 import { emailDailyDigest, type DigestGroup } from "../email.templates.js";
 import { contratosPendientesPorAsesor } from "./contratos-pendientes.service.js";
+import { paraHacerHoy, type ItemHoy } from "../finance/para-hacer-hoy.service.js";
+
+// "Para hacer hoy" de Finanzas en el resumen: quien trabaja en Finanzas recibe lo
+// vencido y lo de hoy; Gerencia de Finanzas y Administración, solo lo vencido.
+const ROLES_FINANZAS_COMPLETO = ["FINANZAS"];
+const ROLES_FINANZAS_VENCIDO = ["GERENTE_FINANZAS", "ADMIN"];
 import { getDigestSendHour, getEnabledByRole } from "./digest-config.service.js";
 import { enviarDigestExperiencia } from "./experiencia-digest.service.js";
 
@@ -54,8 +60,18 @@ export async function enviarDigestDiario(
   });
 
   const contratosPorAsesor = await contratosPendientesPorAsesor(now);
+  const finanzasHoy: ItemHoy[] = await paraHacerHoy().catch((e) => {
+    console.error("[daily-digest] para hacer hoy de Finanzas:", (e as Error).message);
+    return [];
+  });
+  const usuariosFinanzas = finanzasHoy.length
+    ? await prisma.user.findMany({
+        where: { deletedAt: null, email: { not: null }, role: { name: { in: [...ROLES_FINANZAS_COMPLETO, ...ROLES_FINANZAS_VENCIDO] } } },
+        select: { id: true },
+      })
+    : [];
 
-  if (notifs.length === 0 && contratosPorAsesor.size === 0) return { users: 0, emails: 0, notifs: 0 };
+  if (notifs.length === 0 && contratosPorAsesor.size === 0 && usuariosFinanzas.length === 0) return { users: 0, emails: 0, notifs: 0 };
 
   // Agrupar por usuario.
   const byUser = new Map<string, typeof notifs>();
@@ -69,7 +85,7 @@ export async function enviarDigestDiario(
   // Traer usuarios internos con email (excluye CLIENT) + su rol.
   const users = await prisma.user.findMany({
     where: {
-      id: { in: [...new Set([...byUser.keys(), ...contratosPorAsesor.keys()])] },
+      id: { in: [...new Set([...byUser.keys(), ...contratosPorAsesor.keys(), ...usuariosFinanzas.map((u) => u.id)])] },
       deletedAt: null,
       email: { not: null },
       role: { name: { not: "CLIENT" } },
@@ -86,7 +102,13 @@ export async function enviarDigestDiario(
     // Opt-in: solo los tipos habilitados para el rol de este usuario.
     const items = (byUser.get(user.id) ?? []).filter((n) => enabled.has(n.type));
     const contratosPendientes = contratosPorAsesor.get(user.id) ?? [];
-    if (items.length === 0 && contratosPendientes.length === 0) continue;
+    const rol = user.role?.name ?? "";
+    const finanzas = ROLES_FINANZAS_COMPLETO.includes(rol)
+      ? finanzasHoy.filter((f) => f.gravedad !== "AVISO")
+      : ROLES_FINANZAS_VENCIDO.includes(rol)
+        ? finanzasHoy.filter((f) => f.gravedad === "VENCIDO")
+        : [];
+    if (items.length === 0 && contratosPendientes.length === 0 && finanzas.length === 0) continue;
     usersWithDigest++;
 
     // Agrupar por proyecto dentro del usuario.
@@ -113,6 +135,7 @@ export async function enviarDigestDiario(
       groups,
       totalCount: items.length,
       contratosPendientes,
+      finanzasHoy: finanzas,
     });
     if (!user.email) continue; // sin mail no hay a dónde mandarlo
     const ok = await sendEmail({ to: user.email, ...template, type: "internal" });

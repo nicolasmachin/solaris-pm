@@ -62,9 +62,37 @@ Pendientes.
 
 ### Cómo se usa
 
-`FinanceInicioTab.tsx` apila tres bloques: `PosicionFinanciera`,
-`PorConciliar` y `FinancePendientesTab` (la pantalla de pendientes de antes,
-montada adentro).
+`FinanceInicioTab.tsx` apila cuatro bloques: `ParaHacerHoy`,
+`PosicionFinanciera`, `PorConciliar` y `FinancePendientesTab` (la pantalla de
+pendientes de antes, montada adentro).
+
+**Para hacer hoy** (`components/finance/ParaHacerHoy.tsx`,
+`services/finance/para-hacer-hoy.service.ts` → `paraHacerHoy()`,
+`GET /finance/para-hacer-hoy`, FINANZAS:VIEW): una lista con todo lo pendiente
+de todas las pantallas del módulo, cada renglón con la cantidad y el enlace a
+donde se resuelve. Se calcula al pedirla: lo resuelto desaparece solo, no se
+tilda nada. Gravedad: **VENCIDO** (facturas por revisar con más de una semana,
+deuda vencida con proveedores, costos fijos vencidos sin pagar, cobros vencidos
+sin cobrar, CFE emitidos rechazados o dudosos de los últimos 30 días, el mes
+anterior sin cerrar desde el día 10), **HOY** (facturas por revisar, deuda que
+vence en 7 días, lo del banco sin cargar, lo cargado que el banco no muestra,
+posibles duplicados, gastos de tarjeta sin titular o sin decidir, obras que
+llevan factura con cobros y sin facturar) y **AVISO** (facturas que entraron
+solas en los últimos 7 días, proveedores pasados del límite, pagos a
+instaladores y comisiones pendientes, proveedores de cuenta corriente sin
+conciliar hace más de 30 días, cuentas que el lector del banco no leyó en 30
+horas, adelantos por descontar). Lo vencido va primero.
+
+- **Número en el menú:** `Topbar.tsx` → `FinanzasNavLink` pide
+  `GET /finance/para-hacer-hoy/total` (cuenta vencidos + hoy, no los avisos);
+  rojo si hay algo vencido. Se refresca cada 5 minutos.
+- **Mail diario:** `digest/daily-digest.job.ts` suma la sección "Finanzas: para
+  hacer hoy" (`emailDailyDigest` → `finanzasHoy`). Rol FINANZAS: vencido + hoy;
+  GERENTE_FINANZAS y ADMIN: solo lo vencido. Sale aunque no haya otras
+  novedades. Los roles están fijos en el job (`ROLES_FINANZAS_COMPLETO`,
+  `ROLES_FINANZAS_VENCIDO`), no en la matriz del resumen.
+- **Limitación:** "entraron solas esta semana" no se puede marcar como
+  revisadas: el aviso dura 7 días desde que entraron.
 
 **Por conciliar** (`components/finance/PorConciliar.tsx`) muestra, en orden:
 

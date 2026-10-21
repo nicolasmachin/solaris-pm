@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.17 · del 21/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.18 · del 21/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -121,9 +121,12 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
 
 ### 3.1 · Lo que se hace todos los días
 
-1. **Mirar el Inicio de Finanzas** (5.1): la posición, lo que está **por
-   conciliar** y los **pendientes** (lo que vence hoy o ya venció, de un lado y
-   del otro).
+1. **Mirar "Para hacer hoy"**, arriba del Inicio de Finanzas (5.1): una sola
+   lista con todo lo pendiente de todas las pantallas, primero lo vencido. Cada
+   renglón lleva a donde se resuelve, y cuando se resuelve desaparece solo. La
+   misma lista llega cada mañana por mail a quien trabaja en Finanzas, y el
+   número rojo junto a "Finanzas" en el menú dice cuántas cosas hay para hoy.
+   Después, la posición, lo que está **por conciliar** y los **pendientes**.
 2. **Revisar las facturas de proveedores por revisar** (Finanzas → Facturas).
    Voltia PM trae las facturas solas cada media hora. Las de los proveedores de
    **cuenta corriente** pasan solas a la deuda y se revisan una vez por semana
@@ -469,9 +472,19 @@ Casi todo lo de Finanzas (cobros, facturas de proveedores, comisiones, pagos a
 instaladores, costos fijos, gastos de tarjeta) termina siendo un movimiento, por
 eso lo que se cambia en una pantalla se ve en las otras.
 
-### 5.1 · Inicio: posición, por conciliar y pendientes
+### 5.1 · Inicio: para hacer hoy, posición, por conciliar y pendientes
 
-Es la primera pantalla de Finanzas y tiene tres partes, de arriba abajo.
+Es la primera pantalla de Finanzas y tiene cuatro partes, de arriba abajo.
+
+**Para hacer hoy.** La lista de todo lo que falta en Finanzas, junta: facturas
+de proveedores por revisar, deudas que vencen o ya vencieron, lo del banco sin
+cargar, cobros atrasados, obras que cobraron y no se facturaron, gastos de
+tarjeta sin decidir, costos fijos sin pagar, el cierre del mes anterior, y más.
+Cada renglón dice cuántos hay y lleva a la pantalla donde se resuelve. Lo
+vencido va primero, en rojo; lo de hoy, en amarillo; y lo que es para mirar
+cuando se pueda, en celeste. No se tilda nada: cuando se resuelve, desaparece.
+Cada mañana le llega por mail a quien trabaja en Finanzas (lo vencido y lo de
+hoy); a Gerencia le llega solo lo vencido.
 
 **La posición.** Todo en dólares: la **caja** (lo que hay en las cuentas), **lo
 que nos deben** —separado en vencido, próximos 7 días, de 8 a 30 días, más de
@@ -1590,6 +1603,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.18 | 21 de octubre de 2026 | Se agrega «Para hacer hoy»: la lista con todo lo pendiente de Finanzas arriba del Inicio, el mail de cada mañana y el número junto a Finanzas en el menú. |
 | 0.17 | 21 de octubre de 2026 | Se reordenan las herramientas según el menú nuevo de Finanzas: Inicio, Ventas, Compras, Bancos e Informes. Nuevas pantallas: Inicio (posición, lo que falta conciliar y pendientes), Banco, Tarjetas y Cierre. Cuentas por pagar pasa a estar arriba de Proveedores, y la bandeja de facturas recibidas, arriba de Facturas. Las facturas de proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana; las facturas llegan cada media hora. Las notas de crédito de proveedores se descuentan de la deuda desde la misma lista. Una factura se carga por un solo formulario y a un proveedor se le paga solo con «Registrar pago». Nuevos ajustes de deuda (no son plata) y «Arrancar cuenta» con el estado de cuenta: borrón y cuenta nueva con cada proveedor. Lo personal (cuenta del socio y adelantos a descontar del sueldo) no es gasto de Voltia. Conciliar una cuenta con diferencia pide el motivo. Nuevo cierre de mes, con su lista de control y el archivo para la contadora, y la rendición de tarjetas en el procedimiento mensual. Las transferencias entre cuentas y los ajustes dejan de contar en el estado de resultados. Aviso «hay cobro sin factura» en Facturación. Nuevos casos en «Cuando algo sale mal» y palabras nuevas en el glosario. |
 | 0.16 | 20 de octubre de 2026 | En la bandeja de facturas recibidas, elegir el proveedor de una factura lo asigna a todas las del mismo RUT. |
 | 0.15 | 16 de octubre de 2026 | Una venta cotizada sin comisión del vendedor no deja un pago pendiente de comisión. |

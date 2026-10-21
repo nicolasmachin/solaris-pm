@@ -8,6 +8,36 @@ import { usePermission } from "../../hooks/usePermission";
 import { useMaterialCatalogPermissions } from "../../hooks/useMaterialCatalogPermissions";
 import { useTravelViewer } from "../../hooks/useTravelViewer";
 import { useInformesPendientesCount } from "../../hooks/useInformes";
+import { useQuery } from "@tanstack/react-query";
+import { getTotalParaHacerHoy } from "../../api/bancoConciliacion.api";
+
+// Finanzas con el número de cosas para hacer hoy (vencidas y de hoy; los avisos
+// no cuentan). Rojo si hay algo vencido.
+function FinanzasNavLink({ navLinkClass }: { navLinkClass: (p: { isActive: boolean }) => string }) {
+  const puedeVer = usePermission("FINANZAS", "VIEW");
+  const { data } = useQuery({
+    queryKey: ["para-hacer-hoy-total"],
+    queryFn: getTotalParaHacerHoy,
+    enabled: puedeVer,
+    retry: false,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+  const count = data?.total ?? 0;
+  return (
+    <NavLink to="/finanzas" className={({ isActive }) => `relative ${navLinkClass({ isActive })}`}>
+      Finanzas
+      {count > 0 && (
+        <span
+          title={data?.vencidos ? `${data.vencidos} vencido(s)` : "Para hacer hoy"}
+          className={`absolute -right-3 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${data?.vencidos ? "bg-red-500 text-white" : "bg-[var(--color-accent)] text-black"}`}
+        >
+          {count > 9 ? "9+" : count}
+        </span>
+      )}
+    </NavLink>
+  );
+}
 
 function InformesNavLink({
   navLinkClass,
@@ -182,9 +212,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
             </NavLink>
           </CanAccess>
           <CanAccess module="FINANZAS" action="VIEW">
-            <NavLink to="/finanzas" className={navLinkClass}>
-              Finanzas
-            </NavLink>
+            <FinanzasNavLink navLinkClass={navLinkClass} />
           </CanAccess>
           <CanAccess module="STOCK" action="VIEW">
             <NavLink to="/stock" className={navLinkClass}>

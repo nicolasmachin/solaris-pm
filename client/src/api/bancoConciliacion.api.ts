@@ -83,3 +83,16 @@ export interface PorConciliar {
 
 export const getPorConciliar = () =>
   apiClient.get<PorConciliar>('/api/finance/por-conciliar').then(r => r.data);
+
+// ─── "Para hacer hoy" (Inicio de Finanzas y número del menú) ────────────────
+
+export interface ItemHoy {
+  clave: string; grupo: string; texto: string; cantidad: number; link: string;
+  gravedad: 'VENCIDO' | 'HOY' | 'AVISO';
+}
+
+export const getParaHacerHoy = () =>
+  apiClient.get<{ items: ItemHoy[] }>('/api/finance/para-hacer-hoy').then(r => r.data.items);
+
+export const getTotalParaHacerHoy = () =>
+  apiClient.get<{ total: number; vencidos: number }>('/api/finance/para-hacer-hoy/total').then(r => r.data);

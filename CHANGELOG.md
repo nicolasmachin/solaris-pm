@@ -10,6 +10,12 @@
 - **Inicio** junta lo que hay, lo que nos deben y lo que debemos, lo que falta conciliar y los pendientes de pagar y cobrar.
 - **Proveedores** muestra arriba lo que se le debe a cada uno, por vencimiento. **Facturas** muestra arriba las que llegaron y hay que revisar.
 
+#### Para hacer hoy: nada de Finanzas queda olvidado
+
+- Arriba del Inicio de Finanzas, una sola lista con todo lo pendiente de todas las pantallas: facturas por revisar, deudas que vencen, lo del banco sin cargar, cobros atrasados, obras cobradas sin facturar, tarjetas, cierre del mes y más. Cada cosa lleva a donde se resuelve y desaparece sola cuando se resuelve.
+- La misma lista llega cada mañana por mail a quien trabaja en Finanzas. A Gerencia le llega solo lo vencido.
+- Junto a **Finanzas** en el menú aparece cuántas cosas hay para hoy, en rojo si hay algo vencido.
+
 #### Por conciliar: que las facturas, los movimientos y el banco se encuentren
 
 - En el Inicio, una sola lista con todo lo que falta: lo que el banco muestra y no está cargado, **lo cargado en Voltia PM que el banco no muestra**, las facturas por revisar y los **posibles gastos cargados dos veces**.

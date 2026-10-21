@@ -18,6 +18,7 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { desvincularBanco, pendientesPorCuenta, registrarLectura, registroBanco, vincularBanco } from "../services/finance/bank-reconciliation.service.js";
 import { porConciliar } from "../services/finance/por-conciliar.service.js";
+import { paraHacerHoy, totalParaHacerHoy } from "../services/finance/para-hacer-hoy.service.js";
 import { toDateOnlyString, todayUtc } from "../utils/dates.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 
@@ -72,6 +73,10 @@ export async function registerConciliacionBancoRoutes(app: FastifyInstance) {
 
   // Lista única "Por conciliar" del Inicio de Finanzas.
   app.get("/finance/por-conciliar", ver, async () => porConciliar());
+
+  // "Para hacer hoy" de Finanzas (Inicio) y su total (número del menú).
+  app.get("/finance/para-hacer-hoy", ver, async () => ({ items: await paraHacerHoy() }));
+  app.get("/finance/para-hacer-hoy/total", ver, async () => totalParaHacerHoy());
 
   // Registro de todo lo leído del banco, con su estado y la pareja en Voltia PM.
   // Por defecto, el mes en curso.

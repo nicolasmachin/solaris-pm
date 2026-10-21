@@ -71,8 +71,24 @@ export function emailDailyDigest(params: {
    * no aparece.
    */
   contratosPendientes?: DigestContratoPendiente[];
+  /** "Para hacer hoy" de Finanzas (solo a quien trabaja en Finanzas o, lo vencido, a Gerencia). */
+  finanzasHoy?: Array<{ texto: string; cantidad: number; link: string; gravedad: "VENCIDO" | "HOY" | "AVISO" }>;
 }) {
   const contratos = params.contratosPendientes ?? [];
+  const finanzas = params.finanzasHoy ?? [];
+  const finanzasHtml =
+    finanzas.length === 0
+      ? ""
+      : `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#12151c;">Finanzas: para hacer hoy</div>` +
+        `<ul style="margin:0;padding-left:18px;">` +
+        finanzas
+          .map(
+            (f) =>
+              `<li style="margin:0 0 6px;">${f.gravedad === "VENCIDO" ? `<span style="color:#c0392b;font-weight:700;">Vencido · </span>` : ""}` +
+              `<a href="${BASE_URL}${f.link}" style="color:#12151c;"><strong>${f.cantidad}</strong> ${escapeHtml(f.texto)}</a></li>`,
+          )
+          .join("") +
+        `</ul>`;
   const groupsHtml = params.groups
     .map((g) => {
       const header = g.projectName
@@ -113,6 +129,7 @@ export function emailDailyDigest(params: {
 
   const contentHtml =
     intro +
+    finanzasHtml +
     contratosHtml +
     groupsHtml +
     `<p style="margin:18px 0 0;color:#8a9099;font-size:12px;">Ves este resumen una vez al día. Cada novedad ya está también en la campana de Voltia PM apenas ocurre.</p>`;
@@ -123,7 +140,14 @@ export function emailDailyDigest(params: {
   if (contratos.length > 0) {
     partes.push(`${contratos.length} contrato${contratos.length === 1 ? "" : "s"} sin firmar`);
   }
+  if (finanzas.length > 0) {
+    const venc = finanzas.filter((f) => f.gravedad === "VENCIDO").length;
+    partes.push(venc ? `Finanzas: ${venc} vencido${venc === 1 ? "" : "s"}` : `Finanzas: ${finanzas.length} para hoy`);
+  }
   const resumen = partes.join(" · ");
+  const textoFinanzas = finanzas.length
+    ? `\nFinanzas, para hacer hoy:\n` + finanzas.map((f) => `- ${f.gravedad === "VENCIDO" ? "VENCIDO: " : ""}${f.cantidad} ${f.texto}: ${BASE_URL}${f.link}`).join("\n")
+    : "";
   const textoContratos = contratos.length
     ? `\nContratos pendientes de firma:\n` +
       contratos.map((c) => `- ${c.cliente} (contrato enviado ${diasTxt(c.dias)}): ${projectLink(c.projectId)}`).join("\n")
@@ -137,7 +161,7 @@ export function emailDailyDigest(params: {
       contentHtml,
       cta: { label: "Abrir Voltia PM", url: BASE_URL },
     }),
-    text: `Resumen del día: ${resumen}. Entrá a ${BASE_URL} para el detalle.${textoContratos}`,
+    text: `Resumen del día: ${resumen}. Entrá a ${BASE_URL} para el detalle.${textoFinanzas}${textoContratos}`,
   };
 }
 
