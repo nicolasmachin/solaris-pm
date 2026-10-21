@@ -9,6 +9,8 @@ import {
   type ConciliacionDetalle, type ItemVoltia, type LineaEstado,
 } from '../../api/cuentasPorPagar.api';
 import { usePermission } from '../../hooks/usePermission';
+import { ArrancarCuentaModal } from './ArrancarCuentaModal';
+import { AjusteProveedorModal } from './AjusteProveedorModal';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -47,8 +49,10 @@ function Bloque({ titulo, ayuda, tono, children, vacio }: { titulo: string; ayud
   );
 }
 
-function Detalle({ c, canEdit }: { c: ConciliacionDetalle; canEdit: boolean }) {
+function Detalle({ c, canEdit, supplierName }: { c: ConciliacionDetalle; canEdit: boolean; supplierName: string }) {
   const qc = useQueryClient();
+  const [arrancar, setArrancar] = useState(false);
+  const [ajustar, setAjustar] = useState(false);
   const recomparar = useMutation({
     mutationFn: () => recompararConciliacion(c.id),
     onSuccess: (d) => {
@@ -94,7 +98,30 @@ function Detalle({ c, canEdit }: { c: ConciliacionDetalle; canEdit: boolean }) {
             <RefreshCw className={klass('w-3.5 h-3.5', recomparar.isPending && 'animate-spin')} /> Volver a comparar
           </button>
         )}
+        {canEdit && c.saldoProveedor != null && !cuadra && (
+          <button className={btn} onClick={() => setArrancar(true)}
+            title="Dejar la deuda igual a este estado de cuenta: cerrar lo que ya no va y cargar el saldo anterior">
+            Arrancar la cuenta con este estado de cuenta
+          </button>
+        )}
+        {canEdit && c.diferenciaSaldo != null && c.diferenciaSaldo < -0.005 && (
+          <button className={btn} onClick={() => setAjustar(true)}
+            title="Bajar la deuda en Voltia PM por la diferencia que no tiene explicación">
+            Ajustar diferencia
+          </button>
+        )}
       </div>
+      {arrancar && (
+        <ArrancarCuentaModal supplierId={c.supplierId} supplierName={supplierName} defaultMoneda={m}
+          defaultSaldo={c.saldoProveedor ?? undefined} defaultFecha={c.fechaCorte ?? undefined}
+          onClose={() => { setArrancar(false); recomparar.mutate(); }} />
+      )}
+      {ajustar && c.diferenciaSaldo != null && (
+        <AjusteProveedorModal supplierId={c.supplierId} supplierName={supplierName} defaultMoneda={m}
+          defaultMonto={Math.abs(c.diferenciaSaldo)}
+          defaultMotivo={`Diferencia con el estado de cuenta al ${fmtDate(c.fechaCorte)}`}
+          onClose={() => { setAjustar(false); recomparar.mutate(); }} />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Bloque titulo={`Falta cargar en Voltia PM (${r.soloProveedor.length})`} tono="text-red-400"
@@ -132,7 +159,7 @@ function Detalle({ c, canEdit }: { c: ConciliacionDetalle; canEdit: boolean }) {
   );
 }
 
-export function ConciliacionProveedor({ supplierId }: { supplierId: string }) {
+export function ConciliacionProveedor({ supplierId, supplierName = 'el proveedor' }: { supplierId: string; supplierName?: string }) {
   const qc = useQueryClient();
   const canEdit = usePermission('FINANZAS', 'EDIT');
   const input = useRef<HTMLInputElement>(null);
@@ -213,7 +240,7 @@ export function ConciliacionProveedor({ supplierId }: { supplierId: string }) {
               ))}
             </select>
           )}
-          {cargandoDetalle || !detalle ? <Spinner /> : <Detalle c={detalle} canEdit={canEdit} />}
+          {cargandoDetalle || !detalle ? <Spinner /> : <Detalle c={detalle} canEdit={canEdit} supplierName={supplierName} />}
         </>
       )}
     </div>

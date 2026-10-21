@@ -90,6 +90,8 @@ TABLE payments (
   monto numeric, moneda "Moneda", metodo "MetodoPago",
   referencia text, "accountId" text FK, "deletedAt" timestamp
 );
+-- metodo = 'AJUSTE' NO es plata: corrige deuda con el proveedor. Excluirlo siempre
+-- de saldos de cuentas, gastos, costos y resultados (WHERE metodo <> 'AJUSTE').
 TABLE payment_applications (
   id text PK, "paymentId" text FK, "movementId" text FK,
   "montoAplicado" numeric

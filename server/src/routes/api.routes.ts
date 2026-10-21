@@ -12888,7 +12888,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       // Payments del mes (siempre cuentan como costo directo / PAGO_PROVEEDOR).
       const payments = await prisma.payment.findMany({
-        where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
+        // Los ajustes (MetodoPago.AJUSTE) no son plata: no son costo.
+        where: { deletedAt: null, metodo: { not: MetodoPago.AJUSTE }, fecha: { gte: fechaInicio, lt: fechaFin } },
         include: {
           supplier: { select: { id: true, nombre: true } },
           account: { select: { id: true, nombre: true } },
@@ -13056,7 +13057,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           },
         }),
         prisma.payment.findMany({
-          where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
+          where: { deletedAt: null, metodo: { not: MetodoPago.AJUSTE }, fecha: { gte: fechaInicio, lt: fechaFin } },
         }),
       ]);
 
@@ -13673,7 +13674,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
           },
         }),
         prisma.payment.findMany({
-          where: { deletedAt: null, supplierId: { in: supplierIds } },
+          // Un ajuste nunca es saldo a favor: se aplica entero al crearse.
+          where: { deletedAt: null, metodo: { not: MetodoPago.AJUSTE }, supplierId: { in: supplierIds } },
           include: { applications: { select: { montoAplicado: true } } },
         }),
       ]);
@@ -15597,6 +15599,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // Para Payments construimos un where equivalente.
       const paymentWhere: Prisma.PaymentWhereInput = {
         deletedAt: null,
+        // Movimientos es plata que entra y sale: un ajuste no lo es.
+        metodo: { not: MetodoPago.AJUSTE },
         ...(query.supplierId ? { supplierId: query.supplierId } : {}),
         ...(query.accountId ? { accountId: query.accountId } : {}),
       };
@@ -17565,7 +17569,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // Permitimos negativos (notas de crédito); el handler valida que sea != 0.
       monto: z.coerce.number(),
       moneda: z.nativeEnum(Moneda).default(Moneda.USD),
-      metodo: z.nativeEnum(MetodoPago).default(MetodoPago.TRANSFERENCIA),
+      // AJUSTE no es un pago: tiene su propia ruta (/finance/suppliers/:id/ajustes).
+      metodo: z.nativeEnum(MetodoPago).refine((m) => m !== MetodoPago.AJUSTE, "Un ajuste se hace desde la ficha del proveedor").default(MetodoPago.TRANSFERENCIA),
       referencia: z.string().optional(),
       notas: z.string().optional(),
       // Si true (default), el pago se aplica automáticamente FIFO a las facturas
@@ -17577,7 +17582,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       monto: z.coerce.number().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
-      metodo: z.nativeEnum(MetodoPago).optional(),
+      metodo: z.nativeEnum(MetodoPago).refine((m) => m !== MetodoPago.AJUSTE, "Un ajuste se hace desde la ficha del proveedor").optional(),
       accountId: z.string().min(1).optional(),
       referencia: z.string().nullable().optional(),
       notas: z.string().nullable().optional(),
@@ -17660,10 +17665,244 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { ...serializePayment(payment!, balance ?? undefined), aplicacion };
     });
 
+    // ─── Ajustes de deuda con un proveedor ─────────────────────────────────
+    // Un ajuste es un Payment con metodo AJUSTE y sin cuenta: baja lo que se le
+    // debe a un proveedor sin ser plata (no mueve caja, flujo, resultados ni la
+    // conciliación del banco). Sirve para cerrar deudas viejas al ordenar la
+    // cuenta ("Arrancar cuenta") y para la diferencia que no se explica al
+    // conciliar con su estado de cuenta. Se aplica siempre entero: nunca queda
+    // saldo a favor. No se edita: se borra y se hace de nuevo.
+
+    async function rechazarSiAjuste(paymentId: string) {
+      const p = await prisma.payment.findUnique({ where: { id: paymentId }, select: { metodo: true } });
+      if (p?.metodo === MetodoPago.AJUSTE) {
+        throw badRequest("AJUSTE_NO_EDITABLE", "Un ajuste no se edita: borralo y hacelo de nuevo.");
+      }
+    }
+
+    const ESTADOS_DEUDA_ABIERTA = [
+      FinanceMovementStatus.COMPROMETIDO,
+      FinanceMovementStatus.A_PAGAR,
+      FinanceMovementStatus.PARCIALMENTE_PAGADO,
+    ];
+
+    /** Deudas abiertas de un proveedor en una moneda, con lo que queda por pagar de cada una. */
+    async function deudasAbiertasProveedor(db: Prisma.TransactionClient | typeof prisma, supplierId: string, moneda: Moneda) {
+      const rows = await db.financeMovement.findMany({
+        where: {
+          supplierId, moneda, deletedAt: null,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          status: { in: ESTADOS_DEUDA_ABIERTA },
+        },
+        include: {
+          paymentApplications: { include: { payment: { select: { deletedAt: true } } } },
+          facturaRecibida: { select: { id: true } },
+        },
+        orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
+      });
+      return rows
+        .map((m) => {
+          const saldo = Math.round((Number(m.monto) - sumApplications(m.paymentApplications.filter((a) => !a.payment.deletedAt))) * 100) / 100;
+          return {
+            id: m.id,
+            fecha: serializeDateOnly(m.fecha),
+            vencimiento: m.dueDate ? serializeDateOnly(m.dueDate) : null,
+            descripcion: m.descripcion,
+            invoiceNumber: m.invoiceNumber,
+            monto: Number(m.monto),
+            saldo,
+            deFacturaRecibida: m.facturaRecibida != null,
+          };
+        })
+        .filter((d) => d.saldo > 0.005);
+    }
+
+    /** Crea un ajuste aplicado a deudas puntuales, dentro de una transacción. */
+    async function crearAjusteEnTx(
+      tx: Prisma.TransactionClient,
+      input: { supplierId: string; moneda: Moneda; fecha: Date; motivo: string; userId: string; aplicaciones: Array<{ movementId: string; monto: number }> },
+    ) {
+      const total = Math.round(input.aplicaciones.reduce((a, x) => a + x.monto, 0) * 100) / 100;
+      if (total <= 0) throw badRequest("AJUSTE_VACIO", "El ajuste no tiene monto.");
+      const abiertas = new Map((await deudasAbiertasProveedor(tx, input.supplierId, input.moneda)).map((d) => [d.id, d]));
+      for (const a of input.aplicaciones) {
+        const d = abiertas.get(a.movementId);
+        if (!d) throw badRequest("DEUDA_NO_ABIERTA", "Una de las deudas ya no está abierta.");
+        if (a.monto > d.saldo + 0.005) throw badRequest("AJUSTE_SUPERA", `El ajuste supera lo que queda de "${d.descripcion}" (${d.saldo.toFixed(2)}).`);
+      }
+      const p = await tx.payment.create({
+        data: {
+          supplierId: input.supplierId,
+          accountId: null,
+          fecha: input.fecha,
+          monto: new Prisma.Decimal(total),
+          moneda: input.moneda,
+          metodo: MetodoPago.AJUSTE,
+          referencia: `Ajuste: ${input.motivo}`.slice(0, 190),
+          notas: input.motivo,
+          createdById: input.userId,
+        },
+      });
+      for (const a of input.aplicaciones) {
+        await tx.paymentApplication.create({
+          data: { paymentId: p.id, movementId: a.movementId, montoAplicado: new Prisma.Decimal(Math.round(a.monto * 100) / 100) },
+        });
+        await recalcMovementStatus(tx, a.movementId);
+      }
+      return { id: p.id, total };
+    }
+
+    /** Reparte un monto FIFO sobre las deudas abiertas (para bajar una diferencia). */
+    function repartirFifo(deudas: Array<{ id: string; saldo: number }>, monto: number) {
+      const out: Array<{ movementId: string; monto: number }> = [];
+      let resto = Math.round(monto * 100) / 100;
+      for (const d of deudas) {
+        if (resto <= 0.005) break;
+        const m = Math.min(d.saldo, resto);
+        out.push({ movementId: d.id, monto: Math.round(m * 100) / 100 });
+        resto = Math.round((resto - m) * 100) / 100;
+      }
+      if (resto > 0.005) throw badRequest("AJUSTE_SUPERA_DEUDA", "El ajuste es mayor que todo lo que se le debe al proveedor en esa moneda.");
+      return out;
+    }
+
+    app.get("/finance/suppliers/:id/deudas-abiertas", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { moneda } = z.object({ moneda: z.nativeEnum(Moneda) }).parse(request.query);
+      const deudas = await deudasAbiertasProveedor(prisma, id, moneda);
+      return { deudas, total: Math.round(deudas.reduce((a, d) => a + d.saldo, 0) * 100) / 100 };
+    });
+
+    // Ajuste suelto: "Ajustar diferencia" al conciliar, o cerrar una deuda puntual.
+    app.post("/finance/suppliers/:id/ajustes", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        moneda: z.nativeEnum(Moneda),
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        motivo: z.string().trim().min(5).max(300),
+        // Si vienen, a esas deudas; si no, `monto` repartido de la más vieja a la más nueva.
+        aplicaciones: z.array(z.object({ movementId: z.string(), monto: z.coerce.number().positive() })).optional(),
+        monto: z.coerce.number().positive().optional(),
+      }).strict().parse(request.body);
+      const supplier = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
+      if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+      if (!body.aplicaciones?.length && !body.monto) throw badRequest("AJUSTE_VACIO", "Indicá el monto o a qué deudas va el ajuste.");
+
+      const r = await prisma.$transaction(async (tx) => {
+        const aplicaciones = body.aplicaciones?.length
+          ? body.aplicaciones
+          : repartirFifo(await deudasAbiertasProveedor(tx, id, body.moneda), body.monto!);
+        return crearAjusteEnTx(tx, {
+          supplierId: id, moneda: body.moneda, motivo: body.motivo, userId: user.id,
+          fecha: body.fecha ? parseDateOnly(body.fecha) : todayUtc(), aplicaciones,
+        });
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.payment,
+        entityId: r.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Ajustó la deuda con ${supplier.nombre} en ${r.total.toFixed(2)} ${body.moneda} (no es plata): ${body.motivo}`,
+      });
+      void checkInvariantOrWarn("ajuste proveedor", { paymentId: r.id });
+      return r;
+    });
+
+    // "Arrancar cuenta": deja la deuda con el proveedor igual a la de su estado de
+    // cuenta. Cierra con un ajuste las deudas que ya no van, y carga como "Saldo
+    // anterior" lo que el proveedor dice que se le debe y Voltia PM no tiene (o
+    // baja con otro ajuste lo que sobra). Los movimientos de caja no se tocan.
+    app.post("/finance/suppliers/:id/arrancar-cuenta", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        moneda: z.nativeEnum(Moneda),
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        // Lo que dice el estado de cuenta del proveedor a esa fecha.
+        saldoEstadoCuenta: z.coerce.number(),
+        // Deudas abiertas que NO siguen vigentes (ya pagas, mal cargadas, de antes).
+        cerrar: z.array(z.string()).default([]),
+        nota: z.string().trim().max(300).optional(),
+      }).strict().parse(request.body);
+      const supplier = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
+      if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+      const fecha = parseDateOnly(body.fecha);
+      const fechaTxt = `${body.fecha.slice(8, 10)}/${body.fecha.slice(5, 7)}/${body.fecha.slice(0, 4)}`;
+
+      const r = await prisma.$transaction(async (tx) => {
+        const abiertas = await deudasAbiertasProveedor(tx, id, body.moneda);
+        const cerrar = abiertas.filter((d) => body.cerrar.includes(d.id));
+        if (cerrar.length !== body.cerrar.length) throw badRequest("DEUDA_NO_ABIERTA", "Una de las deudas a cerrar ya no está abierta.");
+        let ajusteCierre: { id: string; total: number } | null = null;
+        if (cerrar.length) {
+          ajusteCierre = await crearAjusteEnTx(tx, {
+            supplierId: id, moneda: body.moneda, fecha, userId: user.id,
+            motivo: `Cerrada al arrancar la cuenta el ${fechaTxt}${body.nota ? ` (${body.nota})` : ""}`,
+            aplicaciones: cerrar.map((d) => ({ movementId: d.id, monto: d.saldo })),
+          });
+        }
+        const vigentes = abiertas.filter((d) => !body.cerrar.includes(d.id));
+        const deudaVigente = Math.round(vigentes.reduce((a, d) => a + d.saldo, 0) * 100) / 100;
+        const diferencia = Math.round((body.saldoEstadoCuenta - deudaVigente) * 100) / 100;
+
+        let saldoAnteriorId: string | null = null;
+        let ajusteDiferencia: { id: string; total: number } | null = null;
+        if (diferencia > 0.005) {
+          // Va antes de la deuda vigente más vieja, para que los pagos lo cancelen primero.
+          const masVieja = vigentes[0]?.fecha ? parseDateOnly(vigentes[0].fecha) : fecha;
+          const f = new Date(Math.min(masVieja.getTime() - 86_400_000, fecha.getTime()));
+          const m = await tx.financeMovement.create({
+            data: {
+              tipoMovimiento: TipoMovimiento.GASTO,
+              categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR,
+              status: FinanceMovementStatus.A_PAGAR,
+              sourceType: MovementSourceType.MANUAL,
+              estadoAprobacion: EstadoAprobacion.REGISTRADO,
+              supplierId: id,
+              descripcion: `Saldo anterior según estado de cuenta al ${fechaTxt}`,
+              monto: new Prisma.Decimal(diferencia),
+              moneda: body.moneda,
+              fecha: f,
+              dueDate: f,
+              mes: f.getUTCMonth() + 1,
+              anio: f.getUTCFullYear(),
+              pagado: false,
+              impactaFlujo: true,
+              creadoPorId: user.id,
+            },
+          });
+          saldoAnteriorId = m.id;
+        } else if (diferencia < -0.005) {
+          ajusteDiferencia = await crearAjusteEnTx(tx, {
+            supplierId: id, moneda: body.moneda, fecha, userId: user.id,
+            motivo: `Diferencia con el estado de cuenta al ${fechaTxt}${body.nota ? ` (${body.nota})` : ""}`,
+            aplicaciones: repartirFifo(vigentes, -diferencia),
+          });
+        }
+        await tx.supplier.update({ where: { id }, data: { cuentaDesde: fecha } });
+        return { ajusteCierre, saldoAnteriorId, ajusteDiferencia, deudaVigente, diferencia };
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.supplier,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Arrancó la cuenta con ${supplier.nombre} al ${fechaTxt} en ${body.moneda}: saldo del estado de cuenta ${body.saldoEstadoCuenta.toFixed(2)}`
+          + (r.ajusteCierre ? `, cerró ${body.cerrar.length} deuda(s) por ${r.ajusteCierre.total.toFixed(2)} con un ajuste` : "")
+          + (r.saldoAnteriorId ? `, cargó saldo anterior ${r.diferencia.toFixed(2)}` : "")
+          + (r.ajusteDiferencia ? `, bajó ${(-r.diferencia).toFixed(2)} con un ajuste` : ""),
+      });
+      void checkInvariantOrWarn("arrancar cuenta proveedor", { supplierId: id });
+      return r;
+    });
+
     app.patch("/finance/payments/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
       const user = ensureUser(request);
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const body = paymentPatchSchema.parse(request.body);
+      await rechazarSiAjuste(id);
       const existing = await prisma.payment.findFirst({
         where: { id, deletedAt: null },
         include: { applications: { select: { montoAplicado: true } } },
@@ -17767,6 +18006,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           monto: z.coerce.number().positive(),
         })).min(1),
       }).strict().parse(request.body);
+      await rechazarSiAjuste(id);
 
       const payment = await prisma.payment.findFirst({
         where: { id, deletedAt: null },
@@ -17867,6 +18107,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
       const { id, applicationId } = z.object({ id: z.string(), applicationId: z.string() }).parse(request.params);
       const body = z.object({ monto: z.coerce.number().positive() }).strict().parse(request.body);
+      await rechazarSiAjuste(id);
 
       const app = await prisma.paymentApplication.findFirst({
         where: { id: applicationId, paymentId: id },
@@ -17934,6 +18175,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     app.delete("/finance/payments/:id/applications/:applicationId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
       const user = ensureUser(request);
       const { id, applicationId } = z.object({ id: z.string(), applicationId: z.string() }).parse(request.params);
+      await rechazarSiAjuste(id);
       const app = await prisma.paymentApplication.findFirst({
         where: { id: applicationId, paymentId: id },
         include: { payment: { select: { id: true, deletedAt: true, moneda: true } } },
@@ -17984,7 +18226,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
 
       const payments = await prisma.payment.findMany({
-        where: { supplierId, moneda: query.moneda, deletedAt: null },
+        where: { supplierId, moneda: query.moneda, deletedAt: null, metodo: { not: MetodoPago.AJUSTE } },
         include: {
           applications: {
             include: { movement: { select: { deletedAt: true } } },
@@ -18055,7 +18297,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
         // Buscar Payments del proveedor con saldo a favor, FIFO.
         const payments = await tx.payment.findMany({
-          where: { supplierId: movement.supplierId, moneda: movement.moneda, deletedAt: null },
+          where: { supplierId: movement.supplierId, moneda: movement.moneda, deletedAt: null, metodo: { not: MetodoPago.AJUSTE } },
           include: {
             applications: { include: { movement: { select: { deletedAt: true } } } },
           },
@@ -20146,7 +20388,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const debtSupplierIds = [...invoicesBySupplier.keys()];
     const debtPayments = debtSupplierIds.length
       ? await prisma.payment.findMany({
-          where: { deletedAt: null, supplierId: { in: debtSupplierIds } },
+          where: { deletedAt: null, metodo: { not: MetodoPago.AJUSTE }, supplierId: { in: debtSupplierIds } },
           select: {
             supplierId: true,
             monto: true,
@@ -20248,6 +20490,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const pastPayments = await prisma.payment.findMany({
       where: {
         deletedAt: null,
+        metodo: { not: MetodoPago.AJUSTE },
         fecha: { gte: fromPast, lte: now },
       },
       select: { fecha: true, monto: true, moneda: true, supplier: { select: { nombre: true } } },

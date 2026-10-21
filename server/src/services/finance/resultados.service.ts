@@ -22,6 +22,7 @@
 import {
   CategoriaPrincipal,
   FinanceMovementStatus,
+  MetodoPago,
   Moneda,
   TipoMovimiento,
 } from "@prisma/client";
@@ -97,7 +98,8 @@ export async function calcularEstadoResultados(fechaInicio: Date, fechaFin: Date
   // Pagos reales del período (criterio caja): cada Payment cuenta como salida a
   // proveedor en el mes de su fecha, por su monto completo.
   const payments = await prisma.payment.findMany({
-    where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
+    // Los ajustes (MetodoPago.AJUSTE) no son plata: no son costo.
+    where: { deletedAt: null, metodo: { not: MetodoPago.AJUSTE }, fecha: { gte: fechaInicio, lt: fechaFin } },
     include: { supplier: { select: { nombre: true } } },
     orderBy: { fecha: "asc" },
   });

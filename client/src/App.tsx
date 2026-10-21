@@ -44,7 +44,6 @@ const CalculatorMemoryPage = lazy(() =>
 );
 const Notifications = lazy(() => import("./pages/Notifications").then((module) => ({ default: module.Notifications })));
 const NotFound = lazy(() => import("./pages/NotFound").then((module) => ({ default: module.NotFound })));
-const Finance = lazy(() => import("./pages/Finance").then((module) => ({ default: module.Finance })));
 const FinanceLayout = lazy(() => import("./pages/FinanceLayout").then((module) => ({ default: module.FinanceLayout })));
 const FinancePlaceholder = lazy(() =>
   import("./pages/FinanceLayout").then((module) => ({ default: module.FinancePlaceholder })),
@@ -61,21 +60,16 @@ const FinanceCashflowTab = lazy(() =>
 const FinanceResultsTab = lazy(() =>
   import("./pages/FinanceResultsTab").then((module) => ({ default: module.FinanceResultsTab })),
 );
-const FinanceMovements = lazy(() => import("./pages/FinanceMovements").then((module) => ({ default: module.FinanceMovements })));
 const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((module) => ({ default: module.FinanceSuppliers })));
 const FinanceFacturasProveedoresTab = lazy(() => import("./pages/FinanceFacturasProveedoresTab").then((module) => ({ default: module.FinanceFacturasProveedoresTab })));
 const FinanceHistorialTab = lazy(() => import("./pages/FinanceHistorialTab").then((module) => ({ default: module.FinanceHistorialTab })));
 const FinanceCostosFijosTab = lazy(() => import("./pages/AdminCostosFijos").then((module) => ({ default: module.TabCostosFijos })));
 const FinanceCuentasPorPagarTab = lazy(() => import("./pages/FinanceCuentasPorPagarTab").then((module) => ({ default: module.FinanceCuentasPorPagarTab })));
-const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
-const FinanceAPagar = lazy(() => import("./pages/FinanceAPagar").then((module) => ({ default: module.FinanceAPagar })));
-const FinancePayments = lazy(() => import("./pages/FinancePayments").then((module) => ({ default: module.FinancePayments })));
 const FinanceSupplierDetail = lazy(() => import("./pages/FinanceSupplierDetail").then((module) => ({ default: module.FinanceSupplierDetail })));
 const FinanceCuentas = lazy(() => import("./pages/FinanceCuentas").then((module) => ({ default: module.FinanceCuentas })));
 const FinanceCobros = lazy(() => import("./pages/FinanceCobros").then((module) => ({ default: module.FinanceCobros })));
 const FinanceFacturacionTab = lazy(() => import("./pages/FinanceFacturacionTab").then((module) => ({ default: module.FinanceFacturacionTab })));
 const FinanceCobroDetail = lazy(() => import("./pages/FinanceCobroDetail").then((module) => ({ default: module.FinanceCobroDetail })));
-const FinanceIncomeStatement = lazy(() => import("./pages/FinanceIncomeStatement").then((module) => ({ default: module.FinanceIncomeStatement })));
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 const InformesPage = lazy(() => import("./pages/InformesPage"));
 const ConsultaUte = lazy(() => import("./pages/ConsultaUte"));
@@ -424,46 +418,6 @@ export function App() {
 
         {/* Rutas detalle / legacy mantenidas fuera del layout de pestañas. */}
         <Route
-          path="/finanzas-legacy"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <Finance />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/movimientos-legacy"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinanceMovements />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/a-pagar"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinanceAPagar />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/pagos"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinancePayments />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/proveedores-legacy"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinanceSuppliers />
-            </PermissionRoute>
-          }
-        />
-        <Route
           path="/finanzas/proveedores/:id"
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
@@ -476,22 +430,6 @@ export function App() {
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <FinanceCobroDetail />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/resultado"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinanceIncomeStatement />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/reportes"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinanceReports />
             </PermissionRoute>
           }
         />

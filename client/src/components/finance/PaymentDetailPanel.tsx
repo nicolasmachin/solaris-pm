@@ -28,6 +28,7 @@ const METODO_LABEL: Record<MetodoPago, string> = {
   TARJETA_CREDITO: 'Tarjeta crédito',
   CRYPTO: 'Crypto',
   OTRO: 'Otro',
+  AJUSTE: 'Ajuste (no es plata)',
 };
 
 export function PaymentDetailPanel({ paymentId, onClose }: { paymentId: string; onClose: () => void }) {

@@ -10,6 +10,7 @@ import {
   getSuppliers, createSupplier, patchSupplier,
 } from '../api/finance.api';
 import { NewSupplierInvoiceModal } from '../components/finance/NewSupplierInvoiceModal';
+import { CargarFacturaRecibidaModal } from '../components/finance/CargarFacturaRecibidaModal';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Supplier } from '../types/finance.types';
 
@@ -161,6 +162,7 @@ export function FinanceSuppliers() {
   const navigate = useNavigate();
   const [newModal, setNewModal] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
+  const [sinComprobante, setSinComprobante] = useState(false);
   const [activoFilter, setActivoFilter] = useState<ActivoFilter>('true');
   const [search, setSearch] = useState('');
 
@@ -303,9 +305,15 @@ export function FinanceSuppliers() {
         </Sheet>
       )}
 
-      {showNewInvoice && (
+      {showNewInvoice && !sinComprobante && (
+        <CargarFacturaRecibidaModal
+          onClose={() => { setShowNewInvoice(false); qc.invalidateQueries({ queryKey: ['suppliers'] }); }}
+          onSinComprobante={() => setSinComprobante(true)}
+        />
+      )}
+      {showNewInvoice && sinComprobante && (
         <NewSupplierInvoiceModal
-          onClose={() => setShowNewInvoice(false)}
+          onClose={() => { setShowNewInvoice(false); setSinComprobante(false); }}
           onCreated={() => qc.invalidateQueries({ queryKey: ['suppliers'] })}
         />
       )}

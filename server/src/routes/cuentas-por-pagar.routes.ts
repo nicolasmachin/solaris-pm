@@ -37,6 +37,13 @@ import {
 } from "../services/biller/recibidos.service.js";
 import { calcularVencimiento, getCuentasPorPagar } from "../services/finance/cuentas-por-pagar.service.js";
 import {
+  cargarPendiente,
+  confirmarFactura,
+  tomarPendiente,
+  etiquetaCfe,
+  resolverProveedor,
+} from "../services/finance/facturas-recibidas.service.js";
+import {
   compararConVoltia,
   EstadoDeCuentaSchema,
   extraerEstadoDeCuenta,
@@ -55,8 +62,6 @@ function ensureUser(request: FastifyRequest) {
 const ver = { preHandler: [authenticate, authorize(Module.FINANZAS, Action.VIEW)] };
 const editar = { preHandler: [authenticate, authorize(Module.FINANZAS, Action.EDIT)] };
 
-const etiquetaCfe = (tipo: number, serie: string, numero: number) =>
-  `${TIPO_CFE_LABEL[tipo] ?? `CFE ${tipo}`} ${serie}-${numero}`;
 
 export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
   app.get("/finance/cuentas-por-pagar", ver, async () => getCuentasPorPagar());
@@ -464,92 +469,6 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     return r;
   });
 
-  async function cargarPendiente(id: string) {
-    const f = await prisma.facturaRecibida.findUnique({ where: { id } });
-    if (!f) throw notFound("FACTURA_RECIBIDA_NOT_FOUND", "Factura recibida no encontrada");
-    if (f.estado !== EstadoFacturaRecibida.PENDIENTE) {
-      throw badRequest("FACTURA_RECIBIDA_RESUELTA", "Esta factura ya fue confirmada o descartada.");
-    }
-    return f;
-  }
-
-  /**
-   * El proveedor de la factura. Si se elige uno sin RUT, se le guarda el del
-   * comprobante (así la próxima factura se reconoce sola). Si tiene otro RUT,
-   * no es ese proveedor.
-   */
-  async function resolverProveedor(rutEmisor: string, supplierId: string, tx: Prisma.TransactionClient) {
-    const s = await tx.supplier.findFirst({ where: { id: supplierId, deletedAt: null } });
-    if (!s) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
-    const rut = normalizarRut(s.rut);
-    if (rut && rut !== rutEmisor) {
-      throw badRequest("RUT_NO_COINCIDE", `${s.nombre} tiene el RUT ${s.rut}, y la factura es del RUT ${rutEmisor}.`);
-    }
-    if (!rut) await tx.supplier.update({ where: { id: s.id }, data: { rut: rutEmisor } });
-    return s;
-  }
-
-  type DatosConfirmar = { supplierId?: string; descripcion?: string; projectId?: string | null; fechaVencimiento?: string };
-
-  /** Crea la deuda (FinanceMovement A_PAGAR) de una factura recibida pendiente. */
-  async function confirmarFactura(f: Awaited<ReturnType<typeof cargarPendiente>>, body: DatosConfirmar, userId: string): Promise<string> {
-    if (esNotaCredito(f.tipoCfe)) {
-      throw badRequest(
-        "NOTA_CREDITO_A_MANO",
-        "Las notas de crédito todavía se registran a mano. Descartala indicando cómo se registró.",
-      );
-    }
-    const supplierId = body.supplierId ?? f.supplierId;
-    if (!supplierId) throw badRequest("SUPPLIER_REQUIRED", "Elegí a qué proveedor corresponde la factura.");
-
-    const movement = await prisma.$transaction(async (tx) => {
-      const s = await resolverProveedor(f.rutEmisor, supplierId, tx);
-      // Vence según el plazo negociado con el proveedor, salvo que se indique otra fecha.
-      const venc = body.fechaVencimiento
-        ? parseDateOnly(body.fechaVencimiento)
-        : calcularVencimiento(f.fechaEmision, s.plazoCreditoDias);
-      const m = await tx.financeMovement.create({
-        data: {
-          tipoMovimiento: TipoMovimiento.GASTO,
-          categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR,
-          status: FinanceMovementStatus.A_PAGAR,
-          sourceType: MovementSourceType.MANUAL,
-          estadoAprobacion: EstadoAprobacion.REGISTRADO,
-          supplierId: s.id,
-          projectId: body.projectId ?? null,
-          descripcion: body.descripcion ?? etiquetaCfe(f.tipoCfe, f.serie, f.numero),
-          monto: f.total,
-          moneda: f.moneda,
-          fecha: f.fechaEmision,
-          dueDate: venc,
-          invoiceNumber: `${f.serie}-${f.numero}`,
-          mes: venc.getUTCMonth() + 1,
-          anio: venc.getUTCFullYear(),
-          pagado: false,
-          impactaFlujo: true,
-          creadoPorId: userId,
-        },
-      });
-      await tx.facturaRecibida.update({
-        where: { id: f.id },
-        data: {
-          estado: EstadoFacturaRecibida.CONFIRMADA, supplierId: s.id, movementId: m.id,
-          resueltaPorId: userId, resueltaAt: new Date(),
-        },
-      });
-      return { ...m, supplierNombre: s.nombre };
-    });
-
-    await createAuditEntry({
-      entityType: AuditEntityType.factura_recibida,
-      entityId: f.id,
-      userId: userId,
-      action: AuditAction.created,
-      description: `Confirmó la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)} de ${movement.supplierNombre} por ${Number(f.total)} ${f.moneda}`,
-    });
-    return movement.id;
-  }
-
   app.post("/finance/facturas-recibidas/:id/confirmar", editar, async (request) => {
     const user = ensureUser(request);
     const { id } = z.object({ id: z.string() }).parse(request.params);
@@ -670,6 +589,7 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
 
     const f = await cargarPendiente(id);
     await prisma.$transaction(async (tx) => {
+      await tomarPendiente(tx, f.id);
       const m = await tx.financeMovement.findFirst({
         where: { id: movementId, deletedAt: null },
         include: { facturaRecibida: { select: { id: true } } },
@@ -706,10 +626,11 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const { motivo } = z.object({ motivo: z.string().trim().min(3) }).strict().parse(request.body);
     const f = await cargarPendiente(id);
-    await prisma.facturaRecibida.update({
-      where: { id: f.id },
+    const r = await prisma.facturaRecibida.updateMany({
+      where: { id: f.id, estado: EstadoFacturaRecibida.PENDIENTE },
       data: { estado: EstadoFacturaRecibida.DESCARTADA, motivoDescarte: motivo, resueltaPorId: user.id, resueltaAt: new Date() },
     });
+    if (r.count === 0) throw badRequest("FACTURA_RECIBIDA_RESUELTA", "Esta factura ya fue confirmada o descartada.");
     await createAuditEntry({
       entityType: AuditEntityType.factura_recibida,
       entityId: f.id,

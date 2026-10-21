@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { ArrowRightLeft, Pencil, Plus, Search, Trash2, X } from "lucide-react";
@@ -15,6 +15,7 @@ import {
   patchMovement,
 } from "../api/finance.api";
 import type { FinanceListItem, FinanceMovement } from "../types/finance.types";
+import { getDeudasAbiertas } from "../api/payments.api";
 import { ResponsiveTable, type Column } from "../components/ui/ResponsiveTable";
 import { Sheet } from "../components/ui/Sheet";
 import { ProjectPicker } from "../components/finance/ProjectPicker";
@@ -988,7 +989,15 @@ function NewMovementModal({
     createMut.mutate(undefined, { onSettled: () => setSaving(false) });
   }
 
-  const categoriasDisponibles = CATEGORIAS_POR_TIPO[tipo];
+  // Un solo camino para pagarle a un proveedor: "Registrar pago" en su ficha
+  // (se descuenta de sus facturas). Acá, un gasto con proveedor es una compra de
+  // contado; por eso "Pago proveedor" no se ofrece al crear.
+  const categoriasDisponibles = CATEGORIAS_POR_TIPO[tipo].filter((c) => c !== "PAGO_PROVEEDOR");
+  const { data: deudaProveedor } = useQuery({
+    queryKey: ["deudas-abiertas", supplierId, moneda],
+    queryFn: () => getDeudasAbiertas(supplierId, moneda),
+    enabled: tipo === "GASTO" && !!supplierId,
+  });
 
   return (
     <Sheet
@@ -1157,6 +1166,13 @@ function NewMovementModal({
                   </option>
                 ))}
               </select>
+              {deudaProveedor && deudaProveedor.total > 0.005 && (
+                <p className="mt-1 text-[11px] text-amber-300">
+                  Se le deben {fmtCurrency(deudaProveedor.total, moneda)} a este proveedor. Si esto es un pago de esa
+                  deuda, cargalo con <Link to={`/finanzas/proveedores/${supplierId}`} className="underline">Registrar pago</Link> en
+                  su ficha: así se descuenta de sus facturas y no queda la deuda abierta.
+                </p>
+              )}
             </Field>
           )}
 

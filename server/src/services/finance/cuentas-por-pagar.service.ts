@@ -7,7 +7,7 @@
 // (pagos sin imputar) se muestra aparte y se resta para el neto, igual que en la
 // ficha: no se reparte entre facturas.
 
-import { FinanceMovementStatus, Moneda, TipoMovimiento } from "@prisma/client";
+import { FinanceMovementStatus, MetodoPago, Moneda, TipoMovimiento } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { addDays, diffInDays, toDateOnlyString, todayUtc } from "../../utils/dates.js";
@@ -76,7 +76,8 @@ export async function getCuentasPorPagar(hoy: Date = todayUtc()) {
       },
     }),
     prisma.payment.findMany({
-      where: { deletedAt: null },
+      // Un ajuste nunca es saldo a favor: se aplica entero al crearse.
+      where: { deletedAt: null, metodo: { not: MetodoPago.AJUSTE } },
       select: {
         supplierId: true, monto: true, moneda: true,
         applications: { select: { montoAplicado: true } },

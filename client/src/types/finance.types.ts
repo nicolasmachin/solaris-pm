@@ -8,7 +8,7 @@ export type CategoriaPrincipal =
   | 'PROYECTO_ENTRADA' | 'COBRO_CLIENTE'
   | 'PROYECTO_SALIDA' | 'COMPRA_STOCK' | 'CONSUMO_STOCK' | 'PAGO_PROVEEDOR'
   | 'FIJO' | 'VARIABLE' | 'TRANSFERENCIA' | 'SEGURO_GRANIZO' | 'OTRO';
-export type MetodoPago = 'TRANSFERENCIA' | 'EFECTIVO' | 'CHEQUE' | 'TARJETA_DEBITO' | 'TARJETA_CREDITO' | 'CRYPTO' | 'OTRO';
+export type MetodoPago = 'TRANSFERENCIA' | 'EFECTIVO' | 'CHEQUE' | 'TARJETA_DEBITO' | 'TARJETA_CREDITO' | 'CRYPTO' | 'OTRO' | 'AJUSTE';
 export type EstadoAprobacion =
   | 'BORRADOR' | 'REGISTRADO' | 'PENDIENTE_APROBACION'
   | 'APROBADO' | 'RECHAZADO' | 'ANULADO';
@@ -81,6 +81,7 @@ export const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
   TARJETA_CREDITO: 'Tarjeta crédito',
   CRYPTO: 'Crypto',
   OTRO: 'Otro',
+  AJUSTE: 'Ajuste (no es plata)',
 };
 
 export const CATEGORIAS_INGRESO: CategoriaPrincipal[] = ['PROYECTO_ENTRADA', 'COBRO_CLIENTE'];

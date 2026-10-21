@@ -68,3 +68,43 @@ export const getSupplierAccountSummary = (supplierId: string, params?: {
   fechaHasta?: string;
   soloPendientes?: 'true' | 'false';
 }) => apiClient.get<AccountSummary>(`/api/finance/suppliers/${supplierId}/account-summary`, { params }).then(r => r.data);
+
+// ─── Ajustes de deuda con un proveedor (no son plata) ──────────────────────
+
+export interface DeudaAbierta {
+  id: string;
+  fecha: string | null;
+  vencimiento: string | null;
+  descripcion: string;
+  invoiceNumber: string | null;
+  monto: number;
+  saldo: number;
+  deFacturaRecibida: boolean;
+}
+
+export const getDeudasAbiertas = (supplierId: string, moneda: Moneda) =>
+  apiClient
+    .get<{ deudas: DeudaAbierta[]; total: number }>(`/api/finance/suppliers/${supplierId}/deudas-abiertas`, { params: { moneda } })
+    .then(r => r.data);
+
+export const crearAjusteProveedor = (supplierId: string, body: {
+  moneda: Moneda;
+  motivo: string;
+  fecha?: string;
+  monto?: number;
+  aplicaciones?: { movementId: string; monto: number }[];
+}) => apiClient.post<{ id: string; total: number }>(`/api/finance/suppliers/${supplierId}/ajustes`, body).then(r => r.data);
+
+export const arrancarCuentaProveedor = (supplierId: string, body: {
+  moneda: Moneda;
+  fecha: string;
+  saldoEstadoCuenta: number;
+  cerrar: string[];
+  nota?: string;
+}) => apiClient.post<{
+  ajusteCierre: { id: string; total: number } | null;
+  saldoAnteriorId: string | null;
+  ajusteDiferencia: { id: string; total: number } | null;
+  deudaVigente: number;
+  diferencia: number;
+}>(`/api/finance/suppliers/${supplierId}/arrancar-cuenta`, body).then(r => r.data);

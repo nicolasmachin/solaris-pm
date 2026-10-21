@@ -24,10 +24,16 @@ const TIPOS = [
  * Biller (DGI y mail): a mano. Entra a la misma bandeja y con los mismos
  * controles, así que no se duplica aunque después llegue también por Biller.
  */
-export function CargarFacturaRecibidaModal({ onClose }: { onClose: () => void }) {
+export function CargarFacturaRecibidaModal({ onClose, defaultSupplierId, onSinComprobante }: {
+  onClose: () => void;
+  /** Proveedor ya elegido (desde su ficha). */
+  defaultSupplierId?: string;
+  /** Si viene, se ofrece cargar una deuda sin factura electrónica (formulario simple). */
+  onSinComprobante?: () => void;
+}) {
   const qc = useQueryClient();
   const [f, setF] = useState({
-    supplierId: '', rut: '', razon: '',
+    supplierId: defaultSupplierId ?? '', rut: '', razon: '',
     tipoCfe: 111, serie: '', numero: '',
     fechaEmision: todayLocalISO(), fechaVencimiento: '',
     moneda: 'USD' as 'USD' | 'UYU', total: '', iva: '',
@@ -106,6 +112,11 @@ export function CargarFacturaRecibidaModal({ onClose }: { onClose: () => void })
           Para las facturas que llegan por fuera de la facturación electrónica, o mientras no esté activa. Si esa
           factura ya está en Voltia PM (por Biller o cargada antes), no se vuelve a cargar.
         </p>
+        {onSinComprobante && (
+          <button type="button" onClick={onSinComprobante} className="text-[11px] text-[var(--color-accent)] hover:underline">
+            ¿Sin factura electrónica (por ejemplo, un proveedor del exterior)? Cargar la deuda sin comprobante
+          </button>
+        )}
         <div>
           <label className={lbl}>Proveedor *</label>
           <select className={inp} value={f.supplierId} onChange={(e) => set('supplierId', e.target.value)}>

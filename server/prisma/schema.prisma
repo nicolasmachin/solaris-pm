@@ -348,6 +348,10 @@ enum MetodoPago {
   TARJETA_CREDITO
   CRYPTO
   OTRO
+  // No es plata: corrige lo que se le debe a un proveedor (cerrar una deuda
+  // vieja, una diferencia con su estado de cuenta). Sin cuenta: no mueve caja,
+  // flujo, resultados ni la conciliación con el banco. Motivo en `notas`.
+  AJUSTE
 }
 
 enum TipoMovimiento {
@@ -1929,6 +1933,9 @@ model Supplier {
   // Tope de deuda que el proveedor nos acepta. null = sin límite.
   limiteCredito       Decimal?  @db.Decimal(14, 2)
   limiteCreditoMoneda Moneda    @default(USD)
+  // Desde cuándo la cuenta con el proveedor está ordenada ("Arrancar cuenta"):
+  // lo anterior se cerró con un ajuste o quedó en el saldo anterior. Informativo.
+  cuentaDesde         DateTime? @db.Date
   activo              Boolean   @default(true)
   notas               String?
   deletedAt           DateTime?
@@ -5492,6 +5499,9 @@ model FacturaRecibida {
   pdfUrl            String?
   pdfOrigen         String?
   estado            EstadoFacturaRecibida @default(PENDIENTE)
+  // Pasó sola a deuda (proveedor de cuenta corriente, factura a crédito, sin
+  // gasto igual cargado). Se muestra marcada para la revisión semanal.
+  cargadaSola       Boolean               @default(false)
   motivoDescarte    String?
   supplierId        String?
   supplier          Supplier?             @relation(fields: [supplierId], references: [id])

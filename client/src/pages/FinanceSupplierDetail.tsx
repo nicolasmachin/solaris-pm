@@ -17,6 +17,9 @@ import {
 import type { FinanceMovementStatus } from '../types/finance.types';
 import { todayLocalISO } from '../utils/date';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
+import { ArrancarCuentaModal } from '../components/finance/ArrancarCuentaModal';
+import { CargarFacturaRecibidaModal } from '../components/finance/CargarFacturaRecibidaModal';
+import { AjusteProveedorModal } from '../components/finance/AjusteProveedorModal';
 import { PaymentDetailPanel } from '../components/finance/PaymentDetailPanel';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
 import { NewSupplierInvoiceModal, type EditableInvoice } from '../components/finance/NewSupplierInvoiceModal';
@@ -41,6 +44,11 @@ export function FinanceSupplierDetail() {
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [editInvoice, setEditInvoice] = useState<EditableInvoice | null>(null);
   const [createdPaymentId, setCreatedPaymentId] = useState<string | null>(null);
+  const [arrancarOpen, setArrancarOpen] = useState(false);
+  const [ajusteOpen, setAjusteOpen] = useState(false);
+  // Un solo formulario de factura: el de la bandeja (controla duplicados, guarda
+  // el PDF). El formulario simple queda para deudas sin factura electrónica.
+  const [facturaCfeOpen, setFacturaCfeOpen] = useState(false);
   const canEditFinance = usePermission('FINANZAS', 'EDIT');
   const canDeleteFinance = usePermission('FINANZAS', 'DELETE');
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
@@ -130,7 +138,7 @@ export function FinanceSupplierDetail() {
               <Pencil className="w-3.5 h-3.5" /> Editar
             </button>
             <button
-              onClick={() => setNewInvoiceOpen(true)}
+              onClick={() => setFacturaCfeOpen(true)}
               className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
             >
               <FileText className="w-3.5 h-3.5" /> Cargar factura
@@ -141,6 +149,24 @@ export function FinanceSupplierDetail() {
             >
               <Plus className="w-3.5 h-3.5" /> Registrar pago
             </button>
+            {canEditFinance && (
+              <>
+                <button
+                  onClick={() => setArrancarOpen(true)}
+                  title="Dejar la deuda igual a la del estado de cuenta del proveedor"
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+                >
+                  Arrancar cuenta
+                </button>
+                <button
+                  onClick={() => setAjusteOpen(true)}
+                  title="Bajar la deuda sin que sea plata (diferencia sin explicar)"
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+                >
+                  Ajustar
+                </button>
+              </>
+            )}
             <Link
               to="/finanzas/movimientos?new=1"
               className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
@@ -199,7 +225,7 @@ export function FinanceSupplierDetail() {
           </div>
 
           {/* Tab content */}
-          {tab === 'conciliacion' && <ConciliacionProveedor supplierId={supplier.id} />}
+          {tab === 'conciliacion' && <ConciliacionProveedor supplierId={supplier.id} supplierName={supplier.nombre} />}
           {tab === 'facturas' && (
             <FacturasTab
               facturas={facturasFiltered}
@@ -294,6 +320,20 @@ export function FinanceSupplierDetail() {
             setCreatedPaymentId(paymentId);
           }}
         />
+      )}
+
+      {facturaCfeOpen && (
+        <CargarFacturaRecibidaModal
+          defaultSupplierId={supplier.id}
+          onClose={() => { setFacturaCfeOpen(false); qc.invalidateQueries({ queryKey: ['account-summary', id] }); }}
+          onSinComprobante={() => { setFacturaCfeOpen(false); setNewInvoiceOpen(true); }}
+        />
+      )}
+      {arrancarOpen && (
+        <ArrancarCuentaModal supplierId={supplier.id} supplierName={supplier.nombre} onClose={() => setArrancarOpen(false)} />
+      )}
+      {ajusteOpen && (
+        <AjusteProveedorModal supplierId={supplier.id} supplierName={supplier.nombre} onClose={() => setAjusteOpen(false)} />
       )}
 
       {createdPaymentId && (
