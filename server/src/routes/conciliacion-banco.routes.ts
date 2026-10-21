@@ -16,7 +16,8 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
-import { pendientesPorCuenta, registrarLectura } from "../services/finance/bank-reconciliation.service.js";
+import { pendientesPorCuenta, registrarLectura, registroBanco } from "../services/finance/bank-reconciliation.service.js";
+import { toDateOnlyString, todayUtc } from "../utils/dates.js";
 import { notFound, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
@@ -68,6 +69,20 @@ export async function registerConciliacionBancoRoutes(app: FastifyInstance) {
 
   app.get("/finance/banco/pendientes", ver, async () => ({ cuentas: await pendientesPorCuenta() }));
 
+  // Registro de todo lo leído del banco, con su estado y la pareja en Voltia PM.
+  // Por defecto, el mes en curso.
+  app.get("/finance/banco/movimientos", ver, async (request) => {
+    const hoy = toDateOnlyString(todayUtc())!;
+    const q = z
+      .object({
+        accountId: z.string().optional(),
+        desde: fechaSchema.default(`${hoy.slice(0, 8)}01`),
+        hasta: fechaSchema.default(hoy),
+      })
+      .parse(request.query);
+    return { movimientos: await registroBanco(q) };
+  });
+
   app.post("/finance/banco/movimientos/:id/no-va", editar, async (request) => {
     const user = ensureUser(request);
     const { id } = z.object({ id: z.string() }).parse(request.params);
@@ -86,6 +101,27 @@ export async function registerConciliacionBancoRoutes(app: FastifyInstance) {
       fieldChanged: "ignoradoAt",
       newValue: motivo,
       description: `Marcó "No va" el movimiento del banco ${mov.descripcion} (${mov.account.nombre}): ${motivo}`,
+    });
+    return { ok: true };
+  });
+
+  app.post("/finance/banco/movimientos/:id/deshacer-no-va", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const mov = await prisma.bankMovement.findUnique({ where: { id }, include: { account: { select: { nombre: true } } } });
+    if (!mov) throw notFound("BANK_MOVEMENT_NOT_FOUND", "Movimiento del banco no encontrado");
+    await prisma.bankMovement.update({
+      where: { id },
+      data: { ignoradoAt: null, ignoradoMotivo: null, ignoradoPorId: null },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.bank_movement,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      fieldChanged: "ignoradoAt",
+      oldValue: mov.ignoradoMotivo,
+      description: `Volvió a comparar el movimiento del banco ${mov.descripcion} (${mov.account.nombre})`,
     });
     return { ok: true };
   });

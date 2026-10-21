@@ -104,7 +104,10 @@ export async function registrarLectura(cuentas: LecturaCuenta[], leidoEn: Date):
 
 // ─── Comparación ────────────────────────────────────────────────────────────
 
-type Lado = { id: string; fecha: Date; tipo: TipoMovimiento; monto: number };
+type Lado = { id: string; fecha: Date; tipo: TipoMovimiento; monto: number; descripcion: string };
+
+/** Lo que coincide del lado de Voltia PM: un movimiento (m-…) o un pago a proveedor (p-…). */
+export type ParejaPm = { id: string; tipo: "MOVIMIENTO" | "PAGO"; fecha: string; descripcion: string; monto: number };
 
 export type PendienteBanco = {
   id: string;
@@ -127,30 +130,91 @@ export type CuentaConciliada = {
   pendientes: PendienteBanco[];
 };
 
-/** Parejas una a una entre banco y Voltia PM; devuelve los ids del banco que quedaron sin pareja. */
-function sinPareja(banco: Lado[], pm: Lado[], margen: number): Set<string> {
-  const candidatos: Array<{ b: string; p: string; dif: number; dias: number }> = [];
+/** Parejas una a una entre banco y Voltia PM: id del banco → lado de Voltia PM. */
+function emparejar(banco: Lado[], pm: Lado[], margen: number): Map<string, Lado> {
+  const candidatos: Array<{ b: string; p: Lado; dif: number; dias: number }> = [];
   for (const b of banco) {
     for (const p of pm) {
       if (p.tipo !== b.tipo) continue;
       const dif = Math.abs(p.monto - b.monto);
       const dias = Math.abs(diffInDays(b.fecha, p.fecha));
-      if (dif <= margen + 0.001 && dias <= DIAS_TOLERANCIA) candidatos.push({ b: b.id, p: p.id, dif, dias });
+      if (dif <= margen + 0.001 && dias <= DIAS_TOLERANCIA) candidatos.push({ b: b.id, p, dif, dias });
     }
   }
   candidatos.sort((x, y) => x.dif - y.dif || x.dias - y.dias);
-  const usadosB = new Set<string>();
+  const parejas = new Map<string, Lado>();
   const usadosP = new Set<string>();
   for (const c of candidatos) {
-    if (usadosB.has(c.b) || usadosP.has(c.p)) continue;
-    usadosB.add(c.b);
-    usadosP.add(c.p);
+    if (parejas.has(c.b) || usadosP.has(c.p.id)) continue;
+    parejas.set(c.b, c.p);
+    usadosP.add(c.p.id);
   }
-  return new Set(banco.filter((b) => !usadosB.has(b.id)).map((b) => b.id));
+  return parejas;
+}
+
+type AccountConBanco = { id: string; moneda: Moneda };
+
+/**
+ * Compara los movimientos del banco de una cuenta (desde CONCILIAR_DESDE, sin
+ * los "No va") contra Voltia PM. Del lado de Voltia PM va lo mismo que mueve el
+ * saldo de la cuenta (computeAccountBalance): ingresos cobrados, gastos pagados
+ * sin Payment (los que tienen Payment se cuentan por el Payment) y los Payments.
+ */
+async function conciliarCuenta(a: AccountConBanco) {
+  const desde = parseDateOnly(CONCILIAR_DESDE);
+  const bankRows = await prisma.bankMovement.findMany({
+    where: { accountId: a.id, fecha: { gte: desde }, ignoradoAt: null },
+    orderBy: { fecha: "desc" },
+  });
+  const pmDesde = addDays(desde, -DIAS_TOLERANCIA);
+  const [movs, pagos] = await Promise.all([
+    prisma.financeMovement.findMany({
+      where: {
+        accountId: a.id,
+        deletedAt: null,
+        fecha: { gte: pmDesde },
+        OR: [
+          { tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
+          {
+            tipoMovimiento: TipoMovimiento.GASTO,
+            pagado: true,
+            paymentApplications: { none: { payment: { deletedAt: null } } },
+          },
+        ],
+      },
+      select: { id: true, fecha: true, tipoMovimiento: true, monto: true, descripcion: true },
+    }),
+    prisma.payment.findMany({
+      where: { accountId: a.id, deletedAt: null, fecha: { gte: pmDesde } },
+      select: { id: true, fecha: true, monto: true, referencia: true, supplier: { select: { nombre: true } } },
+    }),
+  ]);
+  const pm: Lado[] = [
+    ...movs.map((m) => ({ id: `m-${m.id}`, fecha: m.fecha, tipo: m.tipoMovimiento, monto: Number(m.monto), descripcion: m.descripcion })),
+    // Un Payment con monto negativo es una devolución del proveedor: entra plata.
+    ...pagos.map((p) => ({
+      id: `p-${p.id}`,
+      fecha: p.fecha,
+      tipo: Number(p.monto) < 0 ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
+      monto: Math.abs(Number(p.monto)),
+      descripcion: `Pago a ${p.supplier.nombre}${p.referencia ? ` (${p.referencia})` : ""}`,
+    })),
+  ];
+  const banco: Lado[] = bankRows.map((r) => ({ id: r.id, fecha: r.fecha, tipo: r.tipo, monto: Number(r.monto), descripcion: r.descripcion }));
+  return { bankRows, parejas: emparejar(banco, pm, MARGEN[a.moneda]) };
+}
+
+function aParejaPm(l: Lado): ParejaPm {
+  return {
+    id: l.id.slice(2),
+    tipo: l.id.startsWith("p-") ? "PAGO" : "MOVIMIENTO",
+    fecha: toDateOnlyString(l.fecha)!,
+    descripcion: l.descripcion,
+    monto: l.monto,
+  };
 }
 
 export async function pendientesPorCuenta(): Promise<CuentaConciliada[]> {
-  const desde = parseDateOnly(CONCILIAR_DESDE);
   const accounts = await prisma.account.findMany({
     where: { deletedAt: null, numeroCuentaBanco: { not: null } },
     orderBy: { nombre: "asc" },
@@ -158,49 +222,7 @@ export async function pendientesPorCuenta(): Promise<CuentaConciliada[]> {
 
   const out: CuentaConciliada[] = [];
   for (const a of accounts) {
-    const bankRows = await prisma.bankMovement.findMany({
-      where: { accountId: a.id, fecha: { gte: desde }, ignoradoAt: null },
-      orderBy: { fecha: "desc" },
-    });
-    // Del lado de Voltia PM, lo mismo que mueve el saldo de la cuenta
-    // (computeAccountBalance): ingresos cobrados, gastos pagados sin Payment
-    // (los que tienen Payment se cuentan por el Payment) y los Payments.
-    const pmDesde = addDays(desde, -DIAS_TOLERANCIA);
-    const [movs, pagos] = await Promise.all([
-      prisma.financeMovement.findMany({
-        where: {
-          accountId: a.id,
-          deletedAt: null,
-          fecha: { gte: pmDesde },
-          OR: [
-            { tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
-            {
-              tipoMovimiento: TipoMovimiento.GASTO,
-              pagado: true,
-              paymentApplications: { none: { payment: { deletedAt: null } } },
-            },
-          ],
-        },
-        select: { id: true, fecha: true, tipoMovimiento: true, monto: true },
-      }),
-      prisma.payment.findMany({
-        where: { accountId: a.id, deletedAt: null, fecha: { gte: pmDesde } },
-        select: { id: true, fecha: true, monto: true },
-      }),
-    ]);
-    const pm: Lado[] = [
-      ...movs.map((m) => ({ id: `m-${m.id}`, fecha: m.fecha, tipo: m.tipoMovimiento, monto: Number(m.monto) })),
-      // Un Payment con monto negativo es una devolución del proveedor: entra plata.
-      ...pagos.map((p) => ({
-        id: `p-${p.id}`,
-        fecha: p.fecha,
-        tipo: Number(p.monto) < 0 ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
-        monto: Math.abs(Number(p.monto)),
-      })),
-    ];
-    const banco: Lado[] = bankRows.map((r) => ({ id: r.id, fecha: r.fecha, tipo: r.tipo, monto: Number(r.monto) }));
-    const faltan = sinPareja(banco, pm, MARGEN[a.moneda]);
-
+    const { bankRows, parejas } = await conciliarCuenta(a);
     out.push({
       accountId: a.id,
       nombre: a.nombre,
@@ -209,9 +231,9 @@ export async function pendientesPorCuenta(): Promise<CuentaConciliada[]> {
       bancoLeidoEn: a.bancoLeidoEn?.toISOString() ?? null,
       bancoSaldo: a.bancoSaldo != null ? Number(a.bancoSaldo) : null,
       margen: MARGEN[a.moneda],
-      conciliados: bankRows.length - faltan.size,
+      conciliados: parejas.size,
       pendientes: bankRows
-        .filter((r) => faltan.has(r.id))
+        .filter((r) => !parejas.has(r.id))
         .map((r) => ({
           id: r.id,
           fecha: toDateOnlyString(r.fecha)!,
@@ -223,4 +245,64 @@ export async function pendientesPorCuenta(): Promise<CuentaConciliada[]> {
     });
   }
   return out;
+}
+
+// ─── Registro: todos los movimientos leídos del banco ───────────────────────
+
+export type EstadoBanco = "COINCIDE" | "FALTA_CARGAR" | "NO_VA" | "NO_SE_COMPARA";
+
+export type MovimientoBancoRegistro = PendienteBanco & {
+  accountId: string;
+  cuenta: string;
+  moneda: Moneda;
+  dependencia: string | null;
+  estado: EstadoBanco;
+  pareja: ParejaPm | null;
+  noVaMotivo: string | null;
+  noVaPor: string | null;
+};
+
+export async function registroBanco(filtro: { accountId?: string; desde: string; hasta: string }): Promise<MovimientoBancoRegistro[]> {
+  const accounts = await prisma.account.findMany({
+    where: { deletedAt: null, numeroCuentaBanco: { not: null }, ...(filtro.accountId ? { id: filtro.accountId } : {}) },
+  });
+  const desde = parseDateOnly(filtro.desde);
+  const hasta = parseDateOnly(filtro.hasta);
+  const conciliarDesde = parseDateOnly(CONCILIAR_DESDE);
+
+  const out: MovimientoBancoRegistro[] = [];
+  for (const a of accounts) {
+    const [{ parejas }, rows] = await Promise.all([
+      conciliarCuenta(a),
+      prisma.bankMovement.findMany({
+        where: { accountId: a.id, fecha: { gte: desde, lte: hasta } },
+        include: { ignoradoPor: { select: { name: true } } },
+      }),
+    ]);
+    for (const r of rows) {
+      const pareja = parejas.get(r.id);
+      const estado: EstadoBanco = r.ignoradoAt
+        ? "NO_VA"
+        : r.fecha < conciliarDesde
+          ? "NO_SE_COMPARA"
+          : pareja ? "COINCIDE" : "FALTA_CARGAR";
+      out.push({
+        id: r.id,
+        accountId: a.id,
+        cuenta: a.nombre,
+        moneda: a.moneda,
+        fecha: toDateOnlyString(r.fecha)!,
+        descripcion: r.descripcion,
+        documento: r.documento,
+        dependencia: r.dependencia,
+        tipo: r.tipo,
+        monto: Number(r.monto),
+        estado,
+        pareja: pareja ? aParejaPm(pareja) : null,
+        noVaMotivo: r.ignoradoMotivo,
+        noVaPor: r.ignoradoPor?.name ?? null,
+      });
+    }
+  }
+  return out.sort((x, y) => y.fecha.localeCompare(x.fecha) || x.cuenta.localeCompare(y.cuenta));
 }
