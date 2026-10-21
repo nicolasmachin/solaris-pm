@@ -17,6 +17,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { desvincularBanco, pendientesPorCuenta, registrarLectura, registroBanco, vincularBanco } from "../services/finance/bank-reconciliation.service.js";
+import { porConciliar } from "../services/finance/por-conciliar.service.js";
 import { toDateOnlyString, todayUtc } from "../utils/dates.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 
@@ -68,6 +69,9 @@ export async function registerConciliacionBancoRoutes(app: FastifyInstance) {
   });
 
   app.get("/finance/banco/pendientes", ver, async () => ({ cuentas: await pendientesPorCuenta() }));
+
+  // Lista única "Por conciliar" del Inicio de Finanzas.
+  app.get("/finance/por-conciliar", ver, async () => porConciliar());
 
   // Registro de todo lo leído del banco, con su estado y la pareja en Voltia PM.
   // Por defecto, el mes en curso.

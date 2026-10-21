@@ -176,6 +176,7 @@ function FilaRecibida({ f, canEdit, proveedores }: {
   const qc = useQueryClient();
   const invalidar = () => {
     qc.invalidateQueries({ queryKey: ['facturas-recibidas'] });
+    qc.invalidateQueries({ queryKey: ['por-conciliar'] });
     qc.invalidateQueries({ queryKey: ['cuentas-por-pagar'] });
     qc.invalidateQueries({ queryKey: ['suppliers'] });
     qc.invalidateQueries({ queryKey: ['finance-cashflow'] });
@@ -183,7 +184,7 @@ function FilaRecibida({ f, canEdit, proveedores }: {
   };
   const confirmar = useMutation({
     mutationFn: () => confirmarFacturaRecibida(f.id, {}),
-    onSuccess: () => { toast.success('Factura cargada como deuda'); invalidar(); },
+    onSuccess: () => { toast.success(f.esNotaCredito ? 'Nota de crédito descontada de la deuda' : 'Factura cargada como deuda'); invalidar(); },
     onError: (e) => toast.error(apiErr(e) ?? 'No se pudo confirmar'),
   });
   const vincular = useMutation({
@@ -280,11 +281,10 @@ function FilaRecibida({ f, canEdit, proveedores }: {
                   {proveedores.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                 </select>
               )}
-              {!f.esNotaCredito && (
-                <button className={btnAccent} disabled={ocupado || !f.supplier} onClick={() => confirmar.mutate()}>
-                  Cargar como deuda
-                </button>
-              )}
+              <button className={btnAccent} disabled={ocupado || !f.supplier} onClick={() => confirmar.mutate()}
+                title={f.esNotaCredito ? 'Baja lo que se le debe al proveedor (de la deuda más vieja a la más nueva), sin mover plata' : undefined}>
+                {f.esNotaCredito ? 'Descontar de la deuda' : 'Cargar como deuda'}
+              </button>
               {!f.supplier && (
                 <button className={btn} disabled={ocupado} onClick={darDeAlta} title="Crea el proveedor con este RUT">
                   Dar de alta proveedor
@@ -295,7 +295,9 @@ function FilaRecibida({ f, canEdit, proveedores }: {
               </button>
             </div>
             {f.esNotaCredito && (
-              <span className="text-[11px] text-[var(--color-text-muted)]">Las notas de crédito todavía se registran a mano.</span>
+              <span className="text-[11px] text-[var(--color-text-muted)]">
+                Si ya se descontó a mano, usá «Marcar registrada» y anotá cómo.
+              </span>
             )}
           </div>
         )}
@@ -342,7 +344,7 @@ function BandejaRecibidas() {
           <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-sm"
             value={estado} onChange={(e) => setEstado(e.target.value as EstadoFacturaRecibida | 'todas')}>
             <option value="PENDIENTE">Por revisar</option>
-            <option value="CONFIRMADA">Cargadas</option>
+            <option value="CONFIRMADA">Deuda (cargadas)</option>
             <option value="DESCARTADA">Descartadas</option>
             <option value="todas">Todas</option>
           </select>

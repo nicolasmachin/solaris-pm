@@ -46,6 +46,7 @@ export function FaltaCargarBanco({ onCargar }: { onCargar: (p: CargarDesdeBanco)
       toast.success('Marcado como "No va"');
       setNoVa(null);
       qc.invalidateQueries({ queryKey: ['banco-pendientes'] });
+      qc.invalidateQueries({ queryKey: ['por-conciliar'] });
     },
     onError: (err) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

@@ -26,6 +26,7 @@ import { parseDateOnly } from "../../utils/dates.js";
 import { createAuditEntry } from "../audit.service.js";
 import { esNotaCredito, normalizarRut, TIPO_CFE_LABEL } from "../biller/recibidos.service.js";
 import { calcularVencimiento } from "./cuentas-por-pagar.service.js";
+import { crearAjusteEnTx, deudasAbiertasProveedor, repartirFifo } from "./deuda-proveedor.service.js";
 
 export const etiquetaCfe = (tipo: number, serie: string, numero: number) =>
   `${TIPO_CFE_LABEL[tipo] ?? `CFE ${tipo}`} ${serie}-${numero}`;
@@ -80,14 +81,9 @@ export async function confirmarFactura(
   userId: string,
   opciones: { automatica?: boolean } = {},
 ): Promise<string> {
-  if (esNotaCredito(f.tipoCfe)) {
-    throw badRequest(
-      "NOTA_CREDITO_A_MANO",
-      "Las notas de crédito todavía se registran a mano. Descartala indicando cómo se registró.",
-    );
-  }
   const supplierId = body.supplierId ?? f.supplierId;
   if (!supplierId) throw badRequest("SUPPLIER_REQUIRED", "Elegí a qué proveedor corresponde la factura.");
+  if (esNotaCredito(f.tipoCfe)) return confirmarNotaCredito(f, supplierId, userId);
 
   const movement = await prisma.$transaction(async (tx) => {
     await tomarPendiente(tx, f.id);
@@ -111,6 +107,9 @@ export async function confirmarFactura(
         fecha: f.fechaEmision,
         dueDate: venc,
         invoiceNumber: `${f.serie}-${f.numero}`,
+        // Desglose para el crédito fiscal y el libro de compras.
+        montoNeto: f.totalNeto,
+        montoIva: f.totalIva,
         mes: venc.getUTCMonth() + 1,
         anio: venc.getUTCFullYear(),
         pagado: false,
@@ -139,4 +138,44 @@ export async function confirmarFactura(
       : `Confirmó la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)} de ${movement.supplierNombre} por ${Number(f.total)} ${f.moneda}`,
   });
   return movement.id;
+}
+
+/**
+ * Nota de crédito de un proveedor: baja lo que se le debe sin mover plata, así
+ * que se registra como un ajuste (pago sin cuenta) repartido de la deuda más
+ * vieja a la más nueva, en la moneda de la nota. Devuelve el id del ajuste.
+ */
+async function confirmarNotaCredito(f: FacturaPendiente, supplierId: string, userId: string): Promise<string> {
+  const etiqueta = etiquetaCfe(f.tipoCfe, f.serie, f.numero);
+  const r = await prisma.$transaction(async (tx) => {
+    await tomarPendiente(tx, f.id);
+    const s = await resolverProveedor(f.rutEmisor, supplierId, tx);
+    const deudas = await deudasAbiertasProveedor(tx, s.id, f.moneda);
+    const total = Number(f.total);
+    const abierto = deudas.reduce((a, d) => a + d.saldo, 0);
+    if (total > abierto + 0.005) {
+      throw badRequest(
+        "NC_SUPERA_DEUDA",
+        `La nota de crédito (${total.toFixed(2)} ${f.moneda}) es mayor que lo que se le debe a ${s.nombre} (${abierto.toFixed(2)}). Cargá primero la factura que descuenta, o descartala indicando cómo se registró.`,
+      );
+    }
+    const ajuste = await crearAjusteEnTx(tx, {
+      supplierId: s.id, moneda: f.moneda, fecha: f.fechaEmision, userId,
+      motivo: `Nota de crédito ${f.serie}-${f.numero} del proveedor`,
+      aplicaciones: repartirFifo(deudas, total),
+    });
+    await tx.facturaRecibida.update({
+      where: { id: f.id },
+      data: { supplierId: s.id, ajusteId: ajuste.id, resueltaPorId: userId, resueltaAt: new Date() },
+    });
+    return { ajuste, supplierNombre: s.nombre };
+  });
+  await createAuditEntry({
+    entityType: AuditEntityType.factura_recibida,
+    entityId: f.id,
+    userId,
+    action: AuditAction.created,
+    description: `Descontó la ${etiqueta} de ${r.supplierNombre} por ${Number(f.total)} ${f.moneda} de lo que se le debe (ajuste, no es plata)`,
+  });
+  return r.ajuste.id;
 }

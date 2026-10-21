@@ -71,7 +71,8 @@ export function CargarFacturaRecibidaModal({ onClose, defaultSupplierId, onSinCo
       return r;
     },
     onSuccess: (r) => {
-      if (r.movementId) toast.success('Factura cargada como deuda');
+      if (r.aviso) toast(`Quedó en la bandeja: ${r.aviso}`, { icon: '⚠️', duration: 8000 });
+      else if (r.movementId) toast.success(esNc ? 'Nota de crédito descontada de la deuda' : 'Factura cargada como deuda');
       else if (r.candidatas.length > 0) toast('Quedó en la bandeja: parece que ya estaba cargada a mano. Vinculala ahí.', { icon: '⚠️', duration: 6000 });
       else if (r.sinProveedor) toast('Quedó en la bandeja: el RUT no es de ningún proveedor. Dalo de alta ahí.', { icon: 'ℹ️', duration: 6000 });
       else toast.success('Factura cargada en la bandeja');

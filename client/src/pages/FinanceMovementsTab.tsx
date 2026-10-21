@@ -969,6 +969,7 @@ function NewMovementModal({
       qc.invalidateQueries({ queryKey: ["finance-dashboard"] });
       qc.invalidateQueries({ queryKey: ["fixed-costs-pending"] });
       qc.invalidateQueries({ queryKey: ["banco-pendientes"] });
+      qc.invalidateQueries({ queryKey: ["por-conciliar"] });
       onClose();
     },
     onError: (err: unknown) => {

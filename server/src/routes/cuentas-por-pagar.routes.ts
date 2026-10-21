@@ -545,6 +545,7 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
         moneda: body.moneda,
         total: new Prisma.Decimal(body.total),
         totalIva: body.totalIva != null ? new Prisma.Decimal(body.totalIva) : null,
+        totalNeto: body.totalIva != null ? new Prisma.Decimal(Math.round((body.total - body.totalIva) * 100) / 100) : null,
         enManual: true,
         cargadaPorId: user.id,
         supplierId: proveedorId,
@@ -567,19 +568,29 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
         where: { deletedAt: null, supplierId: proveedorId, moneda: body.moneda, tipoMovimiento: TipoMovimiento.GASTO, facturaRecibida: null },
         select: { id: true, descripcion: true, invoiceNumber: true, monto: true },
       });
-      candidatas = movs
+      candidatas = esNotaCredito(body.tipoCfe) ? [] : movs
         .filter((m) => (m.invoiceNumber ?? "").replace(/\D/g, "").endsWith(String(body.numero)) || Math.abs(Number(m.monto) - body.total) <= 0.01)
         .map((m) => ({ id: m.id, descripcion: m.descripcion, monto: Number(m.monto) }));
     }
 
     let movementId: string | null = null;
-    if (body.cargarComoDeuda && proveedorId && candidatas.length === 0 && !esNotaCredito(body.tipoCfe)) {
-      movementId = await confirmarFactura(await cargarPendiente(f.id), {
-        supplierId: proveedorId, projectId: body.projectId, descripcion: body.descripcion, fechaVencimiento: body.fechaVencimiento,
-      }, user.id);
+    // Una nota de crédito no busca candidatas: se descuenta de la deuda con un ajuste.
+    const esNc = esNotaCredito(body.tipoCfe);
+    let aviso: string | null = null;
+    if (body.cargarComoDeuda && proveedorId && (esNc || candidatas.length === 0)) {
+      try {
+        movementId = await confirmarFactura(await cargarPendiente(f.id), {
+          supplierId: proveedorId, projectId: body.projectId, descripcion: body.descripcion, fechaVencimiento: body.fechaVencimiento,
+        }, user.id);
+      } catch (e) {
+        // La factura ya quedó guardada: si no se puede pasar a deuda (por ejemplo,
+        // una nota de crédito mayor que la deuda), queda por revisar con el aviso.
+        if (!(e instanceof AppError)) throw e;
+        aviso = e.message;
+      }
     }
     reply.code(201);
-    return { facturaId: f.id, movementId, candidatas, sinProveedor: !proveedorId };
+    return { facturaId: f.id, movementId, candidatas, sinProveedor: !proveedorId, aviso };
   });
 
   app.post("/finance/facturas-recibidas/:id/vincular", editar, async (request) => {

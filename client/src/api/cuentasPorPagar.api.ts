@@ -252,6 +252,6 @@ export interface CargaManualBody {
 }
 
 export const cargarFacturaRecibida = (body: CargaManualBody) =>
-  apiClient.post<{ facturaId: string; movementId: string | null; candidatas: Array<{ id: string; descripcion: string; monto: number }>; sinProveedor: boolean }>(
+  apiClient.post<{ facturaId: string; movementId: string | null; candidatas: Array<{ id: string; descripcion: string; monto: number }>; sinProveedor: boolean; aviso: string | null }>(
     '/api/finance/facturas-recibidas', body,
   ).then((r) => r.data);

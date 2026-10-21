@@ -67,3 +67,19 @@ export const vincularBanco = (id: string, destino: { movementId?: string; paymen
 
 export const desvincularBanco = (id: string) =>
   apiClient.post<{ ok: true }>(`/api/finance/banco/movimientos/${id}/desvincular`).then(r => r.data);
+
+// ─── "Por conciliar" (Inicio de Finanzas) ──────────────────────────────────
+
+export interface PorConciliar {
+  banco: Array<{ accountId: string; nombre: string; moneda: Moneda; faltaCargar: number; bancoLeidoEn: string | null }>;
+  sinBanco: Array<ParejaPm & { accountId: string; cuenta: string; moneda: Moneda; sentido: TipoMovimiento }>;
+  facturas: { total: number; sinProveedor: number; atrasadas: number };
+  duplicados: Array<{
+    proveedor: string; moneda: Moneda; monto: number;
+    a: { id: string; fecha: string | null; descripcion: string; invoiceNumber: string | null };
+    b: { id: string; fecha: string | null; descripcion: string; invoiceNumber: string | null };
+  }>;
+}
+
+export const getPorConciliar = () =>
+  apiClient.get<PorConciliar>('/api/finance/por-conciliar').then(r => r.data);

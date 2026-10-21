@@ -1993,6 +1993,10 @@ model FinanceMovement {
   monto                   Decimal                  @db.Decimal(14, 2)
   moneda                  Moneda                   @default(USD)
   ivaTasa                 Float?                   @default(22.0)
+  // Desglose de una factura de compra (crédito fiscal, libro de compras). Viene
+  // de la factura electrónica al confirmarla; null = sin desglose (cargado a mano).
+  montoNeto               Decimal?                 @db.Decimal(14, 2)
+  montoIva                Decimal?                 @db.Decimal(14, 2)
   tipoCambio              Decimal?                 @db.Decimal(10, 4)
   pagado                  Boolean                  @default(false)
   cobrado                 Boolean                  @default(false)
@@ -5515,6 +5519,8 @@ model FacturaRecibida {
   // Pasó sola a deuda (proveedor de cuenta corriente, factura a crédito, sin
   // gasto igual cargado). Se muestra marcada para la revisión semanal.
   cargadaSola       Boolean               @default(false)
+  // Nota de crédito confirmada: el ajuste (pago sin plata) que bajó la deuda.
+  ajusteId          String?               @unique
   motivoDescarte    String?
   supplierId        String?
   supplier          Supplier?             @relation(fields: [supplierId], references: [id])

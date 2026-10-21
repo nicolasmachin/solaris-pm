@@ -230,7 +230,13 @@ async function conciliarCuenta(a: AccountConBanco) {
     .filter((r) => !fijas.has(r.id))
     .map((r) => ({ id: r.id, fecha: r.fecha, tipo: r.tipo, monto: Number(r.monto), descripcion: r.descripcion }));
   const propuestas = emparejar(banco, pm.filter((l) => !usadosFijos.has(l.id)), MARGEN[a.moneda]);
-  return { bankRows, parejas: new Map([...fijas, ...propuestas]), confirmadas: new Set(fijas.keys()) };
+  const parejas = new Map([...fijas, ...propuestas]);
+  const usadosPm = new Set([...parejas.values()].map((l) => l.id));
+  // La otra punta: lo pagado/cobrado en Voltia PM desde que se compara y que no
+  // aparece en el banco (se deja un margen de días: el banco acredita después).
+  const limite = addDays(new Date(), -DIAS_TOLERANCIA);
+  const sinBanco = pm.filter((l) => !usadosPm.has(l.id) && l.fecha >= desde && l.fecha <= limite);
+  return { bankRows, parejas, confirmadas: new Set(fijas.keys()), sinBanco };
 }
 
 function aParejaPm(l: Lado): ParejaPm {
@@ -383,4 +389,17 @@ export async function desvincularBanco(bankId: string) {
     where: { id: bankId },
     data: { movementId: null, paymentId: null, vinculadoAt: null, vinculadoPorId: null },
   });
+}
+
+/** Lo cargado en Voltia PM (pagado o cobrado desde una cuenta del banco) que no aparece en el banco. */
+export async function sinBancoPorCuenta() {
+  const accounts = await prisma.account.findMany({ where: { deletedAt: null, numeroCuentaBanco: { not: null } } });
+  const out: Array<ParejaPm & { accountId: string; cuenta: string; moneda: Moneda; sentido: TipoMovimiento }> = [];
+  for (const a of accounts) {
+    // Sin ninguna lectura del banco no hay contra qué comparar.
+    if (!a.bancoLeidoEn) continue;
+    const { sinBanco } = await conciliarCuenta(a);
+    for (const l of sinBanco) out.push({ ...aParejaPm(l), accountId: a.id, cuenta: a.nombre, moneda: a.moneda, sentido: l.tipo });
+  }
+  return out.sort((x, y) => y.fecha.localeCompare(x.fecha));
 }

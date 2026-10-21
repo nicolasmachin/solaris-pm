@@ -54,6 +54,7 @@ export function FinanceBancoTab() {
   const invalidar = () => {
     qc.invalidateQueries({ queryKey: ['banco-registro'] });
     qc.invalidateQueries({ queryKey: ['banco-pendientes'] });
+    qc.invalidateQueries({ queryKey: ['por-conciliar'] });
   };
   const accion = useMutation({
     mutationFn: async (a: { tipo: 'confirmar' | 'soltar' | 'noVa' | 'deshacer'; m: MovimientoBancoRegistro; motivo?: string }) => {

@@ -226,6 +226,12 @@ import { esUsernameValido, normalizarUsername } from "../utils/username.js";
 import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
 import { getGastoIA } from "../services/ai/usage-report.service.js";
 import { estadoEmision, serializarCfe } from "../services/biller/cfe-emitidos.service.js";
+import {
+  crearAjusteEnTx,
+  deudasAbiertasProveedor,
+  recalcMovementStatus,
+  repartirFifo,
+} from "../services/finance/deuda-proveedor.service.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -17286,71 +17292,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return apps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
     }
 
-    /** Recalcula el status de un movement según sus applications activas y lo
-     *  actualiza en DB. Retorna el balance final. Devuelve null si el movement
-     *  no debería evaluarse (ej. INGRESO/AJUSTE). */
-    async function recalcMovementStatus(
-      tx: Prisma.TransactionClient,
-      movementId: string,
-    ): Promise<{ saldo: number; pagado: number; status: FinanceMovementStatus } | null> {
-      const m = await tx.financeMovement.findFirst({
-        where: { id: movementId, deletedAt: null },
-        include: { paymentApplications: { include: { payment: { select: { deletedAt: true } } } } },
-      });
-      if (!m) return null;
-      if (m.tipoMovimiento !== TipoMovimiento.GASTO) return null;
-      const monto = Number(m.monto);
-      const activeApps = m.paymentApplications.filter((a) => !a.payment.deletedAt);
-      const pagado = sumApplications(activeApps);
-      const saldo = Math.round((monto - pagado) * 100) / 100;
-
-      // Reglas de transición automática:
-      // - saldo === 0 → PAGADO
-      // - 0 < pagado < monto → PARCIALMENTE_PAGADO
-      // - pagado === 0 → mantener el status existente (A_PAGAR / COMPROMETIDO / etc.)
-      let nextStatus = m.status;
-      const data: Prisma.FinanceMovementUpdateInput = {};
-
-      if (Math.abs(saldo) < 0.005) {
-        // Pagado por completo
-        nextStatus = FinanceMovementStatus.PAGADO;
-        if (m.status !== FinanceMovementStatus.PAGADO) {
-          // Tomar fecha del último Payment que aplica
-          const ultimaApp = activeApps.length > 0
-            ? await tx.paymentApplication.findFirst({
-                where: { movementId, payment: { deletedAt: null } },
-                orderBy: { payment: { fecha: "desc" } },
-                include: { payment: true },
-              })
-            : null;
-          if (ultimaApp) {
-            const fechaPago = ultimaApp.payment.fecha;
-            data.fecha = fechaPago;
-            data.mes = fechaPago.getUTCMonth() + 1;
-            data.anio = fechaPago.getUTCFullYear();
-          }
-          data.pagado = true;
-        }
-      } else if (pagado > 0 && saldo > 0) {
-        nextStatus = FinanceMovementStatus.PARCIALMENTE_PAGADO;
-      } else if (pagado === 0) {
-        // Sin pagos activos: si estaba PAGADO o PARCIALMENTE_PAGADO por aplicaciones,
-        // volver al estado A_PAGAR (si tiene dueDate) o COMPROMETIDO.
-        if (m.status === FinanceMovementStatus.PAGADO || m.status === FinanceMovementStatus.PARCIALMENTE_PAGADO) {
-          nextStatus = m.dueDate ? FinanceMovementStatus.A_PAGAR : FinanceMovementStatus.COMPROMETIDO;
-          data.pagado = false;
-        }
-      }
-
-      if (nextStatus !== m.status) {
-        data.status = nextStatus;
-      }
-      if (Object.keys(data).length > 0) {
-        await tx.financeMovement.update({ where: { id: movementId }, data });
-      }
-      return { saldo, pagado, status: nextStatus };
-    }
-
     /** Devuelve el balance de un payment: monto, montoAplicado, saldoSinAplicar. */
     async function getPaymentBalance(paymentId: string) {
       const apps = await prisma.paymentApplication.findMany({ where: { paymentId } });
@@ -17682,92 +17623,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (p?.metodo === MetodoPago.AJUSTE) {
         throw badRequest("AJUSTE_NO_EDITABLE", "Un ajuste no se edita: borralo y hacelo de nuevo.");
       }
-    }
-
-    const ESTADOS_DEUDA_ABIERTA = [
-      FinanceMovementStatus.COMPROMETIDO,
-      FinanceMovementStatus.A_PAGAR,
-      FinanceMovementStatus.PARCIALMENTE_PAGADO,
-    ];
-
-    /** Deudas abiertas de un proveedor en una moneda, con lo que queda por pagar de cada una. */
-    async function deudasAbiertasProveedor(db: Prisma.TransactionClient | typeof prisma, supplierId: string, moneda: Moneda) {
-      const rows = await db.financeMovement.findMany({
-        where: {
-          supplierId, moneda, deletedAt: null,
-          tipoMovimiento: TipoMovimiento.GASTO,
-          status: { in: ESTADOS_DEUDA_ABIERTA },
-        },
-        include: {
-          paymentApplications: { include: { payment: { select: { deletedAt: true } } } },
-          facturaRecibida: { select: { id: true } },
-        },
-        orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
-      });
-      return rows
-        .map((m) => {
-          const saldo = Math.round((Number(m.monto) - sumApplications(m.paymentApplications.filter((a) => !a.payment.deletedAt))) * 100) / 100;
-          return {
-            id: m.id,
-            fecha: serializeDateOnly(m.fecha),
-            vencimiento: m.dueDate ? serializeDateOnly(m.dueDate) : null,
-            descripcion: m.descripcion,
-            invoiceNumber: m.invoiceNumber,
-            monto: Number(m.monto),
-            saldo,
-            deFacturaRecibida: m.facturaRecibida != null,
-          };
-        })
-        .filter((d) => d.saldo > 0.005);
-    }
-
-    /** Crea un ajuste aplicado a deudas puntuales, dentro de una transacción. */
-    async function crearAjusteEnTx(
-      tx: Prisma.TransactionClient,
-      input: { supplierId: string; moneda: Moneda; fecha: Date; motivo: string; userId: string; aplicaciones: Array<{ movementId: string; monto: number }> },
-    ) {
-      const total = Math.round(input.aplicaciones.reduce((a, x) => a + x.monto, 0) * 100) / 100;
-      if (total <= 0) throw badRequest("AJUSTE_VACIO", "El ajuste no tiene monto.");
-      const abiertas = new Map((await deudasAbiertasProveedor(tx, input.supplierId, input.moneda)).map((d) => [d.id, d]));
-      for (const a of input.aplicaciones) {
-        const d = abiertas.get(a.movementId);
-        if (!d) throw badRequest("DEUDA_NO_ABIERTA", "Una de las deudas ya no está abierta.");
-        if (a.monto > d.saldo + 0.005) throw badRequest("AJUSTE_SUPERA", `El ajuste supera lo que queda de "${d.descripcion}" (${d.saldo.toFixed(2)}).`);
-      }
-      const p = await tx.payment.create({
-        data: {
-          supplierId: input.supplierId,
-          accountId: null,
-          fecha: input.fecha,
-          monto: new Prisma.Decimal(total),
-          moneda: input.moneda,
-          metodo: MetodoPago.AJUSTE,
-          referencia: `Ajuste: ${input.motivo}`.slice(0, 190),
-          notas: input.motivo,
-          createdById: input.userId,
-        },
-      });
-      for (const a of input.aplicaciones) {
-        await tx.paymentApplication.create({
-          data: { paymentId: p.id, movementId: a.movementId, montoAplicado: new Prisma.Decimal(Math.round(a.monto * 100) / 100) },
-        });
-        await recalcMovementStatus(tx, a.movementId);
-      }
-      return { id: p.id, total };
-    }
-
-    /** Reparte un monto FIFO sobre las deudas abiertas (para bajar una diferencia). */
-    function repartirFifo(deudas: Array<{ id: string; saldo: number }>, monto: number) {
-      const out: Array<{ movementId: string; monto: number }> = [];
-      let resto = Math.round(monto * 100) / 100;
-      for (const d of deudas) {
-        if (resto <= 0.005) break;
-        const m = Math.min(d.saldo, resto);
-        out.push({ movementId: d.id, monto: Math.round(m * 100) / 100 });
-        resto = Math.round((resto - m) * 100) / 100;
-      }
-      if (resto > 0.005) throw badRequest("AJUSTE_SUPERA_DEUDA", "El ajuste es mayor que todo lo que se le debe al proveedor en esa moneda.");
-      return out;
     }
 
     app.get("/finance/suppliers/:id/deudas-abiertas", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
