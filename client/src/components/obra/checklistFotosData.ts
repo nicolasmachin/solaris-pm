@@ -8,7 +8,9 @@
  *
  * **Los dos tienen que actualizarse juntos.** Si cambia el checklist, hay que
  * reemplazar el PDF y editar este archivo; si no, la app muestra una cosa y el
- * papel que firma el responsable dice otra.
+ * papel que firma el responsable dice otra. Hay además una copia de los títulos
+ * en el conector MCP (`server/src/routes/mcp/tools/obra.ts` → `CHECKLIST_FOTOS`),
+ * que también se actualiza.
  *
  * En el detalle, `**texto**` marca lo que en el PDF va resaltado — el dato que
  * hace que la foto sirva o no sirva.

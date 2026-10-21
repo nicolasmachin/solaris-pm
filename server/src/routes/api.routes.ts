@@ -202,6 +202,14 @@ import {
   calculateSubstageDeadline,
 } from "../services/deadline.service.js";
 import { markSubstageActivity } from "../services/substage-activity.service.js";
+import {
+  actualizarSubetapa,
+  assertOnboardingDefinido,
+  assertPreIngenieriaDefinida,
+  assertUserActiveOrThrow,
+  isInstallationWorkSubstage,
+  resolverSubetapaCierraPreIngenieria,
+} from "../services/substage-update.service.js";
 import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-notifications.service.js";
 import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
@@ -853,57 +861,6 @@ async function findCommentOrThrow(commentId: string) {
   return comment;
 }
 
-/**
- * Regla dura de Finanzas: el Onboarding no cierra sin saber cómo y cuándo paga el
- * cliente. Devuelve 409 DEFINICIONES_PENDIENTES con la lista de lo que falta, y la
- * pantalla abre el modal para completarlo y reintenta.
- */
-async function assertOnboardingDefinido(projectId: string) {
-  const faltantes = await definicionesPendientesOnboarding(projectId);
-  if (faltantes.length > 0) {
-    throw new AppError(409, "DEFINICIONES_PENDIENTES", faltantes.map((f) => f.mensaje).join(" "), { projectId, faltantes });
-  }
-}
-
-/**
- * Regla dura de Operaciones: la Pre-Ingeniería no cierra sin paneles, inversor,
- * fase y montaje cargados en Datos técnicos y coincidiendo con la pre-ingeniería.
- * Mismo 409 DEFINICIONES_PENDIENTES que el Onboarding: la pantalla lo muestra y
- * manda a la ficha a completarlo.
- */
-const SUBETAPA_DOCUMENTO_PREINGENIERIA = "Documento pre-ingeniería";
-
-async function assertPreIngenieriaDefinida(projectId: string) {
-  const { faltantes } = await getDatosTecnicosObra(projectId);
-  if (faltantes.length > 0) {
-    throw new AppError(409, "DEFINICIONES_PENDIENTES", faltantes.map((f) => f.mensaje).join(" "), {
-      projectId,
-      etapa: "PRE_INGENIERIA",
-      faltantes,
-    });
-  }
-}
-
-/**
- * ¿Resolver esta subetapa cierra la Pre-Ingeniería? Sí si es de esa etapa y es
- * el documento de pre-ingeniería (de donde salen los datos) o la última que
- * quedaba: la etapa se completa sola cuando se resuelven todas.
- */
-async function resolverSubetapaCierraPreIngenieria(substage: { id: string; stageId: string; name: string }) {
-  const stage = await prisma.stage.findUnique({
-    where: { id: substage.stageId },
-    select: {
-      name: true,
-      substages: { where: { deletedAt: null, isActive: true }, select: { id: true, status: true } },
-    },
-  });
-  if (stage?.name !== StageType.PRE_INGENIERIA) return false;
-  if (substage.name === SUBETAPA_DOCUMENTO_PREINGENIERIA) return true;
-  return stage.substages.every(
-    (s) => s.id === substage.id || s.status === SubstageStatus.COMPLETED || s.status === SubstageStatus.NO_APLICA,
-  );
-}
-
 async function getPendingBlockers(stageId: string, modalidadPago?: ModalidadPago | null) {
   return prisma.checklistItem.findMany({
     where: {
@@ -1076,26 +1033,6 @@ const stageFieldLabels: Record<string, string> = {
   actualDurationDays: "duración real",
   delayDays: "desvío",
   progressPercent: "avance",
-};
-
-const substageFieldLabels: Record<string, string> = {
-  name: "nombre de la subetapa",
-  sopCode: "código SOP",
-  responsableRol: "rol responsable",
-  status: "estado de la subetapa",
-  progressPercent: "avance de la subetapa",
-  responsible: "responsable",
-  userId: "usuario asignado",
-  dueDate: "vencimiento",
-  plannedStartDate: "inicio planificado",
-  plannedEndDate: "fin planificado",
-  actualStartDate: "inicio real",
-  actualEndDate: "fin real",
-  actualDurationDays: "duración real",
-  delayDays: "desvío",
-  notes: "notas",
-  order: "orden",
-  isActive: "visibilidad",
 };
 
 const checklistFieldLabels: Record<string, string> = {
@@ -3018,24 +2955,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeSubstage(substage);
   });
 
-  // Mantiene dueDate y deadline sincronizados (dueDate es espejo de deadline).
-  // Si el body trae `deadline`, manda deadline; si trae `dueDate`, lo replica a
-  // deadline; si trae ambos, prioriza deadline. En edición manual marca
-  // deadlineManuallySet=true para que el recálculo respete el override.
-  function syncDeadlineDueDate(patch: { deadline?: Date | null; dueDate?: Date | null }): {
-    deadline?: Date | null;
-    dueDate?: Date | null;
-    deadlineManuallySet?: boolean;
-  } {
-    if (patch.deadline !== undefined) {
-      return { deadline: patch.deadline, dueDate: patch.deadline, deadlineManuallySet: true };
-    }
-    if (patch.dueDate !== undefined) {
-      return { deadline: patch.dueDate, dueDate: patch.dueDate, deadlineManuallySet: true };
-    }
-    return {};
-  }
-
   app.patch("/projects/:projectId/stages/:stageId/substages/:substageId", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z
@@ -3044,144 +2963,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = substagePatchSchema.parse(request.body);
     const substage = await findSubstageOrThrow(params.projectId, params.stageId, params.substageId);
 
-    // Bloqueo: las subetapas system de HABILITACION_UTE (las 11 generadas
-    // desde UteProcess) no permiten cambios de nombre, status, sopCode,
-    // responsable* ni fechas planned/actual desde este endpoint. Sí permiten
-    // userId, dueDate y notes.
-    if (isUteManagedSubstage(substage)) {
-      const blocked: Array<keyof typeof body> = [
-        "name",
-        "sopCode",
-        "responsableRol",
-        "responsible",
-        "plannedStartDate",
-        "plannedEndDate",
-        "status",
-      ];
-      for (const k of blocked) {
-        if (body[k] !== undefined) {
-          throw badRequest(
-            "UTE_SUBSTAGE_LOCKED",
-            "Esta subetapa se sincroniza automáticamente desde el módulo Trámites UTE. Sólo podés editar responsable, deadline y notas.",
-          );
-        }
-      }
-    }
-
-    const updateData: Record<string, unknown> = {};
-
     if (body.status === SubstageStatus.COMPLETED) {
       await authorizeByStageContext(Action.COMPLETE)(request);
     }
 
-    if (
-      (body.status === SubstageStatus.COMPLETED || body.status === SubstageStatus.NO_APLICA) &&
-      body.status !== substage.status &&
-      substage.name === SUBETAPA_MODALIDAD_PAGO
-    ) {
-      await assertOnboardingDefinido(params.projectId);
-    }
-    if (
-      (body.status === SubstageStatus.COMPLETED || body.status === SubstageStatus.NO_APLICA) &&
-      body.status !== substage.status &&
-      (await resolverSubetapaCierraPreIngenieria(substage))
-    ) {
-      await assertPreIngenieriaDefinida(params.projectId);
-    }
-
-    // Regla 2: no permitir iniciar/completar subetapa de ejecución si OPERACIONES no está activa
-    if (
-      body.status &&
-      (body.status === SubstageStatus.IN_PROGRESS || body.status === SubstageStatus.COMPLETED) &&
-      body.status !== substage.status
-    ) {
-      const stage = await prisma.stage.findUnique({
-        where: { id: params.stageId },
-        select: { name: true, status: true },
-      });
-      if (stage && isInstallationWorkSubstage(substage.name, stage) && stage.status !== StageStatus.IN_PROGRESS) {
-        throw badRequest(
-          "OPERATIONS_NOT_ACTIVE",
-          "No podés iniciar la instalación si la etapa Operaciones no está en curso. Primero activá la etapa Operaciones.",
-        );
-      }
-    }
-
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.sopCode !== undefined) updateData.sopCode = body.sopCode;
-    if (body.responsableRol !== undefined) updateData.responsableRol = body.responsableRol;
-    if (body.responsible !== undefined) updateData.responsible = body.responsible;
-    if (body.userId !== undefined) {
-      if (body.userId !== null) {
-        await assertUserActiveOrThrow(body.userId, "userId");
-      }
-      updateData.userId = body.userId;
-    }
-    if (body.dueDate !== undefined) {
-      // Editar dueDate sincroniza deadline (espejo) y marca override manual.
-      const parsedDue = body.dueDate ? parseDateOnly(body.dueDate) : null;
-      Object.assign(updateData, syncDeadlineDueDate({ dueDate: parsedDue }));
-    }
-    if (body.plannedStartDate !== undefined) updateData.plannedStartDate = body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null;
-    if (body.plannedEndDate !== undefined) updateData.plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
-    if (body.notes !== undefined) updateData.notes = body.notes;
-
-    // G.3: cualquier cambio en una subetapa cuenta como "actividad"
-    await markSubstageActivity(substage.id);
-
-    if (body.status && body.status !== substage.status) {
-      updateData.status = body.status;
-      if (body.status === SubstageStatus.IN_PROGRESS) {
-        updateData.actualStartDate = substage.actualStartDate ?? todayUtc();
-      }
-      if (body.status === SubstageStatus.COMPLETED) {
-        const actualEndDate = todayUtc();
-        const actualStartDate = substage.actualStartDate ?? actualEndDate;
-        const actualDurationDays = Math.max(0, diffInDays(actualStartDate, actualEndDate));
-        const plannedDurationDays =
-          substage.plannedStartDate && substage.plannedEndDate
-            ? Math.max(0, diffInDays(substage.plannedStartDate, substage.plannedEndDate))
-            : 0;
-
-        updateData.actualEndDate = actualEndDate;
-        updateData.actualStartDate = actualStartDate;
-        updateData.actualDurationDays = actualDurationDays;
-        updateData.delayDays = actualDurationDays - plannedDurationDays;
-        updateData.progressPercent = 100;
-      }
-      // G.3: si se reabre una subetapa completada → limpiar actualEndDate y duración
-      if (substage.status === SubstageStatus.COMPLETED && body.status !== SubstageStatus.COMPLETED) {
-        updateData.actualEndDate = null;
-        updateData.actualDurationDays = null;
-        updateData.delayDays = null;
-      }
-    }
-
-    const updatedSubstage = await prisma.substage.update({
-      where: { id: substage.id },
-      data: updateData,
-    });
-
-    // G.3: si recién se completó esta subetapa, notificar al responsable de la
-    // siguiente. Best-effort, no bloquea la respuesta si falla.
-    if (body.status === SubstageStatus.COMPLETED && substage.status !== SubstageStatus.COMPLETED) {
-      void notifyNextSubstageOwner(substage.id);
-    }
-
-    const syncedSubstage = await syncSubstageProgress(substage.id);
-    let syncedStage = await syncStageProgress(params.stageId, { actorUserId: user.id });
-    await calculateProjectProgress(params.projectId);
-
-    await createAuditEntriesForChanges({
-      entityType: AuditEntityType.substage,
-      entityId: substage.id,
+    // Reglas, escritura, recálculo de avance (que puede cerrar la etapa y
+    // disparar el traspaso) y auditoría: services/substage-update.service.ts,
+    // el mismo camino que usa el conector MCP.
+    const { updatedSubstage, syncedSubstage, syncedStage } = await actualizarSubetapa({
       projectId: params.projectId,
+      stageId: params.stageId,
+      substage,
+      body,
       userId: user.id,
-      oldData: substage,
-      newData: { ...substage, ...updateData },
-      labels: substageFieldLabels,
-      formatter: ({ label, oldValue, newValue }) =>
-        `Actualizó ${label} de subetapa '${substage.name}' de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
     });
 
     return {
@@ -5793,26 +5587,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return z.array(userActiveSchema).parse(flattened);
   });
 
-  // Helper: valida que un userId corresponda a un usuario existente y activo.
-  // Devuelve los campos mínimos útiles del usuario validado. Usado al asignar
-  // responsables a Stage/Substage/Task y al consultar /my-tasks?userId=...
-  async function assertUserActiveOrThrow(userId: string, fieldName = "userId") {
-    const user = await prisma.user.findFirst({
-      where: { id: userId, deletedAt: null },
-      select: {
-        id: true,
-        name: true,
-        role: { select: { name: true } },
-      },
-    });
-    if (!user) {
-      throw badRequest(
-        "INVALID_USER_ID",
-        `El ${fieldName} indicado no corresponde a un usuario activo`,
-      );
-    }
-    return { id: user.id, name: user.name, role: user.role.name };
-  }
 
   app.get("/users/me", async (request) => {
     const user = ensureUser(request);
@@ -9561,17 +9335,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   function formatDateEs(date: Date): string {
     return `${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}/${date.getUTCFullYear()}`;
-  }
-
-  // Regla 2: identifica si una subetapa es de ejecución de obra
-  // (la spec pide OPERACIONES_OBRA_PROPIA/TERCERIZADA pero esos enums no existen;
-  // las subetapas se identifican por nombre "Ejecución de Obra" bajo stage OPERACIONES)
-  function isInstallationWorkSubstage(
-    substageName: string,
-    stage: { name: StageType },
-  ): boolean {
-    if (stage.name !== StageType.OPERACIONES && stage.name !== StageType.EJECUCION_OBRA) return false;
-    return substageName.toLowerCase().includes("ejecución de obra");
   }
 
   function serializeSegment(seg: {

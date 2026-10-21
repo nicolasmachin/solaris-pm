@@ -17,6 +17,7 @@ import { registerFinanzasTools } from "./tools/finanzas.js";
 import { registerMetricasTools } from "./tools/metricas.js";
 import { registerMiDiaTools } from "./tools/mi-dia.js";
 import { registerMinutaTools } from "./tools/minuta.js";
+import { registerObraTools } from "./tools/obra.js";
 import { registerOperacionesTools } from "./tools/operaciones.js";
 import { registerPendientesTools } from "./tools/pendientes.js";
 import { registerPlantasTools } from "./tools/plantas.js";
@@ -71,6 +72,7 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerProyectosTools(server, user);
   registerDocumentosTools(server, user);
   registerOperacionesTools(server, user);
+  registerObraTools(server, user);
   registerExperienciaSolarTools(server, user);
   registerPlantasTools(server, user);
   registerFinanzasTools(server, user);

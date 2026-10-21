@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.6 · del 21/10/26
+**Voltia · Uruguay** · Versión 1.7 · del 21/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -450,6 +450,19 @@ Es una pantalla aparte, **Pagos a instaladores**: por obra, el instalador, la fe
 Quién cobra por cada equipo tercerizado se elige una sola vez, en **Admin → Equipos**.
 
 ![Los pagos a instaladores: por obra, cuánto se pagó, el saldo y el estado.](captura:ops-pagos-instalador)
+
+### El chat de Claude
+
+Además de las pantallas, el gerente de Operaciones puede consultar la obra desde **el chat de Claude conectado a Voltia PM** (el asistente de inteligencia artificial que se usa en la computadora o el celular, con la conexión a Voltia PM activada). Se le pregunta en palabras comunes y Claude lee los datos de Voltia PM. Cada uno ve lo mismo que vería en la pantalla con sus permisos: si algo no se muestra, Claude dice que falta el permiso.
+
+- **El calendario de obras:** *"¿qué tienen las cuadrillas las próximas tres semanas?"*. Por cada equipo, propio o tercerizado, las obras con el cliente, el lugar y los días, si la fecha está **confirmada** o es **tentativa**, los mantenimientos y visitas agendados, y **los días hábiles libres** de cada equipo. Al final, las obras vendidas que todavía no tienen fecha.
+- **Los entregables de una obra:** *"¿está completa la obra de tal cliente?"*. Dice arriba si está completa o qué falta: las fotos contra el checklist de 23, el video del ensayo de encendido, el del ensayo anti-isla, el video del recorrido final (que se sube como tipo **Otro**), los documentos de UTE firmados y las subetapas de Ejecución de Obra que siguen abiertas. Voltia PM **cuenta** las fotos pero no sabe cuál es cuál, y no guarda el número de precinto ni el valor de la puesta a tierra: Claude lo aclara, y si alguien los anotó en un comentario, los cita.
+- **Los tickets y los mantenimientos:** los tickets de soporte abiertos, con cuántos días llevan y a quién están asignados, y los mantenimientos por aniversario de los próximos dos meses, marcando los que **todavía no se agendaron**.
+- **El informe del capataz:** el informe completo de la visita técnica, las notas y lo que se dijo en los audios, y cómo está la subetapa del informe.
+- **Los datos técnicos de la obra:** paneles, inversor, red, techo y si los paneles van coplanares o inclinados, cada suministro con su cuenta de UTE y, para quien puede verlo en la pantalla, el presupuesto de mano de obra del instalador tercerizado.
+- **Cambiar el estado de una subetapa:** *"marcá Retiro de sobrantes de tal obra como completado"*. Claude primero muestra qué va a cambiar y qué dispara (por ejemplo, que es la última subetapa de la etapa y que al cerrarla se avisa al área siguiente), y **solo lo hace cuando se le confirma**. Sigue las mismas reglas que la pantalla. Se le puede agregar una nota, que queda como comentario en la subetapa. Los ítems del checklist no se tildan desde el chat.
+
+Lo que se cambia desde el chat queda registrado a nombre de quien lo pidió, igual que si lo hubiera hecho en la pantalla.
 
 ## 8 · Cuando algo sale mal
 
@@ -1091,6 +1104,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.7 | 21 de octubre de 2026 | Se agrega «El chat de Claude» en las herramientas: el calendario de obras con los días libres de cada cuadrilla, los entregables de una obra y qué falta, los tickets y los mantenimientos que vienen, el informe del capataz, los datos técnicos de la obra, y cómo cambiar el estado de una subetapa desde el chat, que solo se hace cuando se confirma. |
 | 1.6 | 21 de octubre de 2026 | Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM antes de ir a una visita de soporte: generación día por día comparada con las demás plantas, hora por hora y el inversor y el medidor en el momento. Lo imposible (exportar más de lo que se genera, exportar de noche) delata un medidor mal conectado, y el monitoreo diario también lo avisa. |
 | 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Los documentos de UTE los imprime Logística y van con los materiales de la obra: en obra no se imprime nada. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 1.4 | 19 de octubre de 2026 | Al tercerizado se le exige estar inscripto como empresa y tener el seguro de accidentes del BSE desde su primera obra con contrato, y la factura a los seis meses; ya no se le pide todos los meses la documentación de sueldos y aportes. El contrato con el tercerizado pasa a estar en borrador, y el tercerizado tiene su propio manual. |

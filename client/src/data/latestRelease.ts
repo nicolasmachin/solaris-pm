@@ -66,6 +66,15 @@ export const LATEST_RELEASE: Release = {
         "El proveedor queda con ese RUT guardado, así las facturas que lleguen después entran ya con su proveedor.",
       ],
     },
+    {
+      title: "Operaciones desde el chat de Claude",
+      items: [
+        "Calendario de obras por cuadrilla, con fechas confirmadas o tentativas y los días libres de cada equipo.",
+        "Entregables de una obra: fotos, videos de ensayo, documentos de UTE firmados y qué falta.",
+        "Tickets abiertos, mantenimientos que vienen, informe del capataz y datos técnicos de la obra.",
+        "Cambiar el estado de una subetapa: muestra qué cambia y lo hace solo cuando se confirma.",
+      ],
+    },
   ],
 };
 

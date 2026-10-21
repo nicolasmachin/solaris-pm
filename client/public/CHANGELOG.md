@@ -53,6 +53,14 @@
 #### Monitoreo: medidor midiendo al revés
 - El monitoreo diario avisa cuando una planta **exporta más de lo que genera** dos de los últimos tres días: el medidor quedó al revés o mal conectado. Antes se veía como una planta sana y los reportes al cliente salían mal.
 
+#### Operaciones desde el chat de Claude
+- **Calendario de obras**: se le pide al chat qué tiene cada cuadrilla en las próximas semanas (propias y tercerizadas), con cada obra, si la fecha está confirmada o es tentativa, los mantenimientos y visitas agendados, **los días libres de cada equipo** y las obras vendidas que siguen sin fecha.
+- **Entregables de una obra**: el chat dice si la obra está completa o qué falta: fotos contra el checklist de 23, videos de ensayo de encendido y anti-isla, video del recorrido final, documentos de UTE firmados y las subetapas de Ejecución de Obra sin cerrar. Avisa lo que Voltia PM no registra (qué foto puntual falta, el número de precinto, el valor de puesta a tierra).
+- **Tickets y mantenimientos**: los tickets abiertos con su antigüedad y a quién están asignados, y los mantenimientos por aniversario que vienen, marcando los que todavía no se agendaron.
+- **Informe del capataz**: el informe completo de la visita técnica, las notas y los audios transcriptos, y cómo está la subetapa del informe.
+- **Datos técnicos de la obra**: paneles, inversor, red, techo y montaje, los suministros y, para quien puede verlo, el presupuesto al instalador tercerizado.
+- **Cambiar el estado de una subetapa** desde el chat (pendiente, en progreso, bloqueado, completado, no aplica), con una nota opcional. Primero muestra qué va a cambiar y qué dispara (por ejemplo, si cierra la etapa y avisa al área siguiente), y solo lo hace cuando se le confirma. Sigue las mismas reglas que la pantalla.
+
 #### Arreglos
 
 - Las transferencias entre cuentas propias ya no suman como ingreso y como gasto en el estado de resultados. El resultado del mes no cambia, pero los totales de ingresos y egresos quedan bien.

@@ -121,13 +121,14 @@ Desde el 9-oct-2026 la regla es una sola, `checklist-evidencias.ts` →
 | `FINANCIACION_BANCARIA` | una `ProformaVersion` publicada (no exige el crédito aprobado) | `PROFORMA` |
 | `OTRO` | `modalidadPagoNota` no vacía | `NOTA_MODALIDAD` |
 
-`assertOnboardingDefinido()` (en `api.routes.ts`) la convierte en un **409
+`assertOnboardingDefinido()` (en `substage-update.service.ts`) la convierte en un **409
 `DEFINICIONES_PENDIENTES`** con `projectId` y `faltantes` en el cuerpo (el
 manejador de errores aplana `details`). Se llama en los cuatro caminos que
 pueden cerrar el Onboarding:
 
 - `PATCH /projects/:p/stages/:s/substages/:id` con `COMPLETED` **o `NO_APLICA`**
-  sobre la subetapa "Modalidad de pago definida";
+  sobre la subetapa "Modalidad de pago definida" (y la herramienta
+  `marcar_subetapa` del conector, que pasa por el mismo `actualizarSubetapa()`);
 - `PATCH /substages/:id/complete` (reemplaza al viejo `MODALIDAD_PAGO_REQUERIDA`);
 - `PATCH .../complete-all` si entre las subetapas abiertas está la de modalidad;
 - `PATCH /projects/:p/stages/:s` con `COMPLETED` si la etapa es `ONBOARDING`.
@@ -226,12 +227,13 @@ que nadie que entre a Documentos UTE perdió la edición.
 El resumen (`DatosTecnicosResumen`) muestra solo los cuatro datos grandes y, si
 hay `faltantes`, el aviso con cada diferencia: no lista lo que dice cada fuente.
 
-`assertPreIngenieriaDefinida()` (en `api.routes.ts`) devuelve el mismo **409
+`assertPreIngenieriaDefinida()` (en `substage-update.service.ts`) devuelve el mismo **409
 `DEFINICIONES_PENDIENTES`** que el Onboarding, con `etapa: "PRE_INGENIERIA"`.
 Se llama en:
 
 - `PATCH /projects/:p/stages/:s` con `COMPLETED` si la etapa es `PRE_INGENIERIA`;
-- `PATCH /projects/:p/stages/:s/substages/:id` (`COMPLETED` o `NO_APLICA`) y
+- `PATCH /projects/:p/stages/:s/substages/:id` (`COMPLETED` o `NO_APLICA`; también
+  `marcar_subetapa` del conector, por `actualizarSubetapa()`) y
   `PATCH /substages/:id/complete`, cuando `resolverSubetapaCierraPreIngenieria()`
   dice que sí: la subetapa es "Documento pre-ingeniería" **o** es la última
   abierta de la etapa (la etapa se completa sola en `syncStageProgress` cuando se

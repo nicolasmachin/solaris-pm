@@ -112,7 +112,7 @@ corta la conexión a nadie.
 
 ## Herramientas
 
-Cuarenta y tres. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
+Cincuenta y tres. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
 auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 
 ### Diagnóstico
@@ -281,7 +281,7 @@ Es la única herramienta que responde sin que haya que nombrar un cliente. Con
 | `tramite_ute` | `TRAMITES_UTE:VIEW` | Los once hitos con fecha y el reparto entre días nuestros y días esperando a UTE. |
 | `obra_y_materiales` | `OPERACIONES:VIEW` | Materiales con su estado de compra, fotos y videos. |
 | `documentos_proyecto` | `OPERACIONES:VIEW` | Los adjuntos de la obra con su **id** y, si son pocos, el enlace de descarga. Se filtra por nombre con `busqueda`; las fotos de obra quedan afuera salvo `incluir_fotos`. Para leerlos, `leer_documentos`. |
-| `historial_proyecto` | `OPERACIONES:VIEW` | El timeline unificado: etapas, comentarios, interacciones, traspasos, tickets y encuestas. |
+| `historial_proyecto` | `OPERACIONES:VIEW` | El timeline unificado: etapas, comentarios, interacciones, traspasos, tickets y encuestas. Los comentarios salen **enteros** (`getClienteTimeline()` no los recorta; verificado el 21/10/2026): lo que limita es la cantidad de eventos, 20 por defecto y hasta 50 con `limite`. |
 | `pendientes_proyecto` | `OPERACIONES:VIEW` | Los pendientes de la obra **de todo el equipo**, no solo los propios. |
 | `comentar_proyecto` | `OPERACIONES:COMMENT` | Deja un comentario en el historial de la obra. |
 
@@ -290,9 +290,9 @@ Se leen los modelos con los mismos servicios que usa la aplicación
 `getClienteTimeline`) y no las rutas HTTP: dos de ellas piden `OPERACIONES:EDIT`
 para leer, y una consulta no debería exigir permiso de escritura.
 
-**El pipeline no se toca desde el chat.** No hay herramienta para completar
-subetapas ni checklists: eso dispara traspasos y avisos a otras áreas, y merece
-la pantalla.
+**El pipeline se toca desde el chat solo con `marcar_subetapa`** (ver "Obra
+para Operaciones"), que cambia el estado de una subetapa por el mismo camino que
+la pantalla y exige confirmar. Los checklists no se tildan desde el chat.
 
 ### Experiencia Solar
 
@@ -440,6 +440,90 @@ que dé lo mismo que el listado.
 tienen casi todos los roles internos, incluidos asesores comerciales,
 Experiencia Solar y los instaladores tercerizados (consultado el 19/9/2026).
 
+### Obra para Operaciones
+
+Lo que el gerente de Operaciones necesita para planificar y controlar una obra
+sin abrir la pantalla. Herramientas en `tools/obra.ts`; la lógica pura
+(huecos del calendario, búsqueda de subetapa por nombre) en `tools/obra.logic.ts`,
+con tests (`npm run test:mcp-obra`). **No hay nada de stock ni de compras de
+materiales**: lo excluyó el dueño a propósito.
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `calendario_obras` | `OPERACIONES:VIEW` | El calendario por equipo entre `desde` y `hasta` (por defecto hoy en Uruguay y 20 días más; máximo tres meses), filtrable por `equipo`. Cada obra con cliente, código, ubicación, kWp, sus tramos (`InstallationSegment`) y si está **CONFIRMADA** (`confirmedAt`), **TENTATIVA** o **TERMINADA** (`actualWorkEnd`); los demás eventos de la agenda (`listAgendaEventos()`: mantenimientos, soportes, visitas, otros); los **huecos libres** de cada equipo en días hábiles; y las vendidas sin fecha (`obrasSinFechaInstalacion()`, las 10 más viejas). |
+| `entregables_obra` | `OPERACIONES:VIEW` | El control de entregables de una obra, con un resumen arriba (completo o qué falta): fotos de obra contra el checklist de 23, videos de ensayo de encendido y anti-isla y video de recorrido final, documentos de UTE firmados por suministro, menciones a precinto y puesta a tierra, y las subetapas de Ejecución de Obra con lo que falta tildar. |
+| `tickets_y_mantenimientos` | cada parte con su permiso: tickets `TICKETS:VIEW`; aniversarios `EXPERIENCIA_CLIENTES:VIEW`; mantenimientos agendados `OPERACIONES:VIEW` (alcanza con uno) | Tickets abiertos (no resueltos ni cerrados) del más viejo al más nuevo, con estado, prioridad, antigüedad en días corridos, área derivada, asignado, quién lo abrió, último comentario y si tiene un soporte agendado. Mantenimientos por aniversario de los próximos `dias` (60 por defecto) con si ya están agendados, y los mantenimientos del calendario. Filtro `project_id`. |
+| `informe_capataz` | `OPERACIONES:VIEW` | Las visitas técnicas de la obra (`TechnicalVisit`) con el **informe vivo completo** (las 7 secciones del `VisitReport` de versión más alta, con los títulos del PDF), las notas y transcripciones de audio enteras, cuántas fotos, audios y videos, y las subetapas "Informe del capataz" (Validación de Operaciones) y "Revisar informe del capataz" (Ingeniería Final) con su checklist. |
+| `datos_tecnicos_obra` | `OPERACIONES:VIEW`; el presupuesto de mano de obra, además, la regla de la pantalla | Lo mismo que `GET /projects/:id/datos-tecnicos` (`getDatosTecnicosObra()`: pre-ingeniería, unifilar, sistema, propuesta y lo que no coincide), los suministros (`listSuministros()`: cuenta UTE, dirección, titular propio, inversor y paneles) y el **presupuesto al instalador tercerizado** (`presupuestoManoDeObra()`) con el estado de su subetapa. |
+| `marcar_subetapa` | `EDIT` del módulo de la etapa (`STAGE_TYPE_TO_MODULE`: Operaciones para Validación, Compras y Ejecución de Obra); para `COMPLETADO`, además `COMPLETE` | Cambia el estado de una subetapa (`PENDIENTE`, `EN_PROGRESO`, `BLOQUEADO`, `COMPLETADO`, `NO_APLICA`) con una `nota` opcional. Sin `confirmar: true` **no escribe**: muestra el cambio y sus consecuencias. |
+
+**`calendario_obras`: los huecos.** Se cuentan lunes a viernes sin feriados
+(`esFeriado()` de `business-days.ts`, el mismo calendario de los plazos). Un día
+con cualquier tramo de obra o evento de agenda del equipo cuenta como ocupado
+entero, aunque sea medio día. El fin de semana no corta un hueco: libre de
+viernes a lunes es un solo hueco de dos días hábiles. Las obras de un equipo
+borrado salen como "(ex equipo)" y sin huecos; los eventos sin equipo, aparte.
+La consulta es la misma del calendario (`GET /calendar`: tramos que tocan el
+rango, schedule sin borrar).
+
+**`entregables_obra`: lo que la aplicación no sabe.**
+
+- **Qué foto falta.** Las fotos de obra (`toolSource: "obra-fotos"`) no se
+  etiquetan con su ítem del checklist: se puede contar, no saber cuál falta. La
+  herramienta da la cantidad, la compara contra 23 y lista los 23 ítems. El
+  checklist está **copiado** en `tools/obra.ts` → `CHECKLIST_FOTOS` desde
+  `client/src/components/obra/checklistFotosData.ts`: si cambia uno, hay que
+  cambiar el otro (y el PDF).
+- **Número de precinto y valor de puesta a tierra.** No hay campos: van en el
+  papel firmado y en las fotos 11, 12 y 23. Se buscan menciones ("precinto",
+  "tierra", "telur", "ohm", "Ω") en comentarios del proyecto y notas de
+  checklist, y se citan si aparecen.
+- **El video de recorrido final** no tiene tipo propio: se sube como `OTRO`, y
+  cualquier video `OTRO` listo cuenta como tal. Un video cuenta solo si terminó
+  de procesarse (`READY`).
+- La etapa que mira es `EJECUCION_OBRA`, o `OPERACIONES` en las obras con el
+  pipeline viejo.
+
+**`tickets_y_mantenimientos`: de dónde sale cada parte.** Los tickets, de la
+misma consulta que `GET /tickets` (estado distinto de `RESUELTO` y `CERRADO`).
+Los aniversarios, de `listClientesForExport()` con el mismo cálculo de la
+columna "Próximo mantenimiento" del listado de Experiencia Solar
+(`proximoMantenimiento()`, ancla = inicio de post-habilitación o habilitación de
+UTE); los mantenimientos **no se agendan solos**, por eso se cruza cada
+aniversario con los eventos `MANTENIMIENTO` del calendario y se marca "SIN
+agendar". Una parte sin permiso no falla la llamada: se omite con una línea que
+dice qué permiso falta.
+
+**`datos_tecnicos_obra`: el presupuesto de mano de obra** sigue la regla de
+`GET /projects/:id/mano-de-obra` (`installer-payment.routes.ts`): hace falta
+`PAGOS_INSTALADOR:VIEW` **y** además ver los pagos de todos (`FINANZAS:VIEW` o
+`PAGOS_INSTALADOR:EDIT`) o ser el instalador de ese pago. Si no, se omite con
+una línea. En la base de desarrollo, al 21/10/2026, `GERENTE_OPERACIONES` tiene
+`PAGOS_INSTALADOR:EDIT` pero no `VIEW`, así que no lo ve (igual que en la
+pantalla); en producción no se verificó.
+
+**`marcar_subetapa`: el mismo camino que la pantalla.** La lógica del `PATCH
+/projects/:p/stages/:s/substages/:id` se sacó de la ruta a
+`services/substage-update.service.ts` → `actualizarSubetapa()`, y la usan las
+dos. Eso garantiza las mismas reglas (`validarCambioSubetapa()`: subetapas de
+UTE bloqueadas, Onboarding con modalidad de pago definida, Pre-Ingeniería con
+datos técnicos, obra con Operaciones en curso), la misma auditoría (campo por
+campo, con `metadata: { source: "mcp", tool: "marcar_subetapa" }`), el aviso al
+responsable de la subetapa siguiente y el recálculo que completa la etapa y
+dispara el traspaso (`syncStageProgress` con el usuario como actor). La vista
+previa ya corre las reglas: si el cambio no se puede, lo dice antes de pedir
+confirmación. Avisa además si es la última subetapa abierta de la etapa (la
+cierra y dispara el traspaso) o si reabrir vuelve la etapa atrás.
+
+- La subetapa se busca por id, por nombre exacto sin tildes ni mayúsculas, o
+  por parte del nombre; si coincide con varias, lista las candidatas con su id
+  y no adivina.
+- **El checklist no se exige**, igual que en la pantalla: el `PATCH` de estado
+  no mira los ítems obligatorios (lo hace `PATCH /substages/:id/complete`, que
+  la pantalla no usa). La vista previa los lista como advertencia.
+- La `nota` no pisa las notas de la subetapa: queda como **comentario** en esa
+  subetapa (con `stageId` y `substageId`), con su auditoría `comment_added`.
+
 ### Leer documentos
 
 | Herramienta | Permiso | Qué hace |
@@ -493,6 +577,9 @@ el servidor. Tampoco lee Word ni abre los ZIP de documentación de UTE.
   literal `true`: sin él la llamada ni siquiera llega al servidor. La
   descripción dice que solo se pasa después de que la persona haya visto los
   números y los haya aprobado.
+- **`marcar_subetapa` no escribe sin `confirmar: true`.** Sin él devuelve la
+  vista previa; la descripción le pide al modelo que confirme solo después de
+  que la persona vio el resumen y dijo que sí. No tilda checklists.
 - **Ninguna manda correos** a clientes.
 
 ### La propuesta exige más que el formulario
