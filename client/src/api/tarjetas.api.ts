@@ -10,7 +10,7 @@ export interface Tarjeta { id: string; nombre: string; moneda: Moneda; activa: b
 export interface ResumenTarjeta {
   tarjeta: { id: string; nombre: string; moneda: Moneda };
   saldo: number;
-  totales: { voltia: number; socio: number; adelantos: number; sinTitular: number; pagos: number };
+  totales: { voltia: number; socio: number; adelantos: number; sinTitular: number; sinDecidir: number; pagos: number };
   gastos: Array<{
     id: string; fecha: string; descripcion: string; monto: number; moneda: Moneda; proveedor: string | null;
     categoria: CategoriaPrincipal; clasificacion: ClasificacionGasto;

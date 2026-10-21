@@ -127,8 +127,8 @@ export async function registerTarjetasRoutes(app: FastifyInstance) {
     const clasif = (m: (typeof gastos)[number]) =>
       m.categoriaPrincipal === CategoriaPrincipal.CUENTA_SOCIO ? "SOCIO"
         : m.categoriaPrincipal === CategoriaPrincipal.ADELANTO_PERSONAL ? "ADELANTO"
-          : m.tarjetaTitular?.regla === ReglaTarjeta.MIXTA && !m.tarjetaTitularId ? "SIN_DECIDIR"
-            : !m.tarjetaTitularId ? "SIN_TITULAR" : "VOLTIA";
+          : !m.tarjetaTitularId ? "SIN_TITULAR"
+            : m.tarjetaTitular?.regla === ReglaTarjeta.MIXTA && !m.tarjetaDecididoAt ? "SIN_DECIDIR" : "VOLTIA";
     const suma = (xs: typeof gastos) => r2(xs.reduce((acc, m) => acc + Number(m.monto), 0));
     return {
       tarjeta: { id: a.id, nombre: a.nombre, moneda: a.moneda },
@@ -138,6 +138,7 @@ export async function registerTarjetasRoutes(app: FastifyInstance) {
         socio: suma(gastos.filter((m) => clasif(m) === "SOCIO")),
         adelantos: suma(gastos.filter((m) => clasif(m) === "ADELANTO")),
         sinTitular: suma(gastos.filter((m) => clasif(m) === "SIN_TITULAR")),
+        sinDecidir: suma(gastos.filter((m) => clasif(m) === "SIN_DECIDIR")),
         pagos: suma(pagos),
       },
       gastos: gastos.map((m) => ({
@@ -183,7 +184,11 @@ export async function registerTarjetasRoutes(app: FastifyInstance) {
       throw badRequest("AUTORIZACION_REQUERIDA", "Es una tarjeta de la empresa: anotá quién autorizó el gasto personal");
     }
 
-    const data: Record<string, unknown> = { tarjetaTitularId: titular?.id ?? null };
+    // Decidido: si se eligió explícitamente, o si la regla del titular decide sola.
+    const data: Record<string, unknown> = {
+      tarjetaTitularId: titular?.id ?? null,
+      tarjetaDecididoAt: clasificacion ? new Date() : null,
+    };
     if (clasificacion === "PERSONAL") {
       data.categoriaPrincipal = titular!.personalComo;
       if (body.autorizadoPor) data.personalAutorizadoPor = body.autorizadoPor;

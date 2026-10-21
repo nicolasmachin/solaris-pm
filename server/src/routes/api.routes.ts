@@ -19,6 +19,7 @@ import {
   DeadlineRuleTipo,
   EstadoAprobacion,
   EstadoCfeEmitido,
+  EstadoFacturaRecibida,
   EstadoComprobante,
   ExpenseSourceType,
   FileAttachmentTipo,
@@ -11902,6 +11903,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         by: ["projectId"],
         where: {
           deletedAt: null, tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true, moneda: Moneda.USD,
+          // Solo cobros de la obra (no devoluciones del socio, transferencias, plan granizo).
+          categoriaPrincipal: { in: [CategoriaPrincipal.PROYECTO_ENTRADA, CategoriaPrincipal.COBRO_CLIENTE] },
           projectId: { in: projects.map((p) => p.id) },
         },
         _sum: { monto: true },
@@ -17877,6 +17880,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         await tx.paymentApplication.deleteMany({ where: { paymentId: id } });
         // Soft-delete del payment
         await tx.payment.update({ where: { id }, data: { deletedAt: new Date() } });
+        // Si era el ajuste de una nota de crédito recibida, la nota vuelve a la
+        // bandeja para descontarla de nuevo.
+        if (existing.metodo === MetodoPago.AJUSTE) {
+          await tx.facturaRecibida.updateMany({
+            where: { ajusteId: id },
+            data: { estado: EstadoFacturaRecibida.PENDIENTE, ajusteId: null, resueltaPorId: null, resueltaAt: null },
+          });
+        }
         // Recalcular status de cada movement afectado
         for (const movId of movementIds) {
           await recalcMovementStatus(tx, movId);
@@ -19561,6 +19572,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           descripcion: z.string().max(200).optional(),
         })
         .parse(request.body);
+      await assertFechaAbierta(parseDateOnly(body.fecha));
 
       if (body.fromAccountId === body.toAccountId) {
         throw badRequest("SAME_ACCOUNT", "La cuenta origen y destino deben ser distintas");

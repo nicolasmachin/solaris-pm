@@ -2019,6 +2019,9 @@ model FinanceMovement {
   descontadoPorId         String?
   // Gasto personal en una tarjeta de la empresa: quién lo autorizó.
   personalAutorizadoPor   String?
+  // Gasto de una tarjeta mixta: cuándo se decidió si es de Voltia o personal
+  // (null = por decidir). En las otras reglas se decide solo al elegir quién.
+  tarjetaDecididoAt       DateTime?
   montoNeto               Decimal?                 @db.Decimal(14, 2)
   montoIva                Decimal?                 @db.Decimal(14, 2)
   tipoCambio              Decimal?                 @db.Decimal(10, 4)

@@ -16,6 +16,9 @@ const ENTIDADES: Array<{ valor: string; label: string }> = [
   { valor: 'installer_payment', label: 'Pagos a instaladores' },
   { valor: 'factura_recibida', label: 'Facturas recibidas' },
   { valor: 'conciliacion_proveedor', label: 'Conciliaciones' },
+  { valor: 'bank_movement', label: 'Banco' },
+  { valor: 'cierre_mes', label: 'Cierres de mes' },
+  { valor: 'cfe_emitido', label: 'Facturas emitidas' },
 ];
 const LABEL_ENTIDAD = Object.fromEntries(ENTIDADES.map((e) => [e.valor, e.label]));
 

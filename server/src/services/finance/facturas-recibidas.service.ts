@@ -224,7 +224,7 @@ export async function cargarSolasCuentaCorriente(): Promise<{ cargadas: number; 
         deletedAt: null, supplierId: f.supplierId!, moneda: f.moneda, tipoMovimiento: TipoMovimiento.GASTO,
         facturaRecibida: null,
         OR: [
-          { invoiceNumber: { contains: String(f.numero) } },
+          { invoiceNumber: { endsWith: String(f.numero) } },
           { monto: f.total, fecha: { gte: desde, lte: hasta } },
         ],
       },

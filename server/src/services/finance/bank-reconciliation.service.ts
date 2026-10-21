@@ -13,8 +13,10 @@
 // Cada movimiento se usa una sola vez; ante varias parejas posibles gana la
 // más parecida (monto y después fecha).
 //
-// La pareja no se guarda: se recalcula en cada consulta, así lo que se carga,
-// edita o borra después se refleja solo. Solo se guarda el "No va".
+// La pareja propuesta no se guarda: se recalcula en cada consulta, así lo que se
+// carga, edita o borra después se refleja solo. Se guarda lo que decide una
+// persona: el "No va" y la pareja confirmada (BankMovement.movementId/paymentId),
+// que queda fija y el emparejador no la mueve.
 
 import { createHash } from "node:crypto";
 

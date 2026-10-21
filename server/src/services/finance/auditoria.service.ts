@@ -114,4 +114,7 @@ export const ENTIDADES_FINANZAS: AuditEntityType[] = [
   AuditEntityType.installer_payment,
   AuditEntityType.factura_recibida,
   AuditEntityType.conciliacion_proveedor,
+  AuditEntityType.bank_movement,
+  AuditEntityType.cierre_mes,
+  AuditEntityType.cfe_emitido,
 ];

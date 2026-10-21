@@ -124,6 +124,14 @@ export function FinanceTarjetasTab() {
             </div>
           )}
 
+          {resumen && (resumen.totales.sinTitular > 0 || resumen.totales.sinDecidir > 0) && (
+            <p className="text-[12px] text-amber-300">
+              Falta decidir: {resumen.totales.sinTitular > 0 && `${fmtCurrency(resumen.totales.sinTitular, resumen.tarjeta.moneda)} sin saber quién lo hizo`}
+              {resumen.totales.sinTitular > 0 && resumen.totales.sinDecidir > 0 && ' · '}
+              {resumen.totales.sinDecidir > 0 && `${fmtCurrency(resumen.totales.sinDecidir, resumen.tarjeta.moneda)} de una tarjeta mixta sin marcar si es de Voltia o personal`}.
+            </p>
+          )}
+
           {resumen && (
             <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] overflow-x-auto">
               {resumen.gastos.length === 0 ? (
@@ -164,7 +172,7 @@ export function FinanceTarjetasTab() {
                           {canEdit && (
                             <td className="px-3 py-2">
                               <div className="flex justify-end gap-1">
-                                {g.titular && !personal && (
+                                {g.titular && (!personal || g.clasificacion === 'SIN_DECIDIR') && (
                                   <button className={btn} disabled={clasificar.isPending} onClick={() => {
                                     let autorizadoPor: string | undefined;
                                     if (tit?.regla === 'VOLTIA') {
@@ -175,7 +183,7 @@ export function FinanceTarjetasTab() {
                                     clasificar.mutate({ id: g.id, body: { clasificacion: 'PERSONAL', ...(autorizadoPor ? { autorizadoPor } : {}) } });
                                   }}>Es personal</button>
                                 )}
-                                {g.titular && personal && (
+                                {g.titular && (personal || g.clasificacion === 'SIN_DECIDIR') && (
                                   <button className={btn} disabled={clasificar.isPending}
                                     onClick={() => clasificar.mutate({ id: g.id, body: { clasificacion: 'VOLTIA' } })}>Es de Voltia</button>
                                 )}

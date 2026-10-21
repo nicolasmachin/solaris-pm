@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.16 · del 20/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.17 · del 21/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -22,9 +22,10 @@
 |---|---|---|
 | **Finanzas** | Todo | — |
 | **Gerencia** | 1, 2, 4, 6 | Todo |
-| **Experiencia Solar** | 2, 4 (cobros), 5.9 (Cobros que gestiona Experiencia Solar), 5.17 (Plan granizo) | 5.7 |
-| **Ventas (asesores comerciales)** | 2, 4 («Ningún proyecto avanza sin saber cómo y cuándo paga el cliente»), 5.10 (Comisiones) | 5.7 |
-| **Operaciones y Logística** | 2, 4 («Las aprobaciones de gastos no frenan una obra»), 5.11 (Pagos a instaladores) | 5.3 a 5.5 |
+| **Experiencia Solar** | 2, 4 (cobros), 5.3 (Cobros que gestiona Experiencia Solar), 5.19 (Plan granizo) | 5.2 |
+| **Ventas (asesores comerciales)** | 2, 4 («Ningún proyecto avanza sin saber cómo y cuándo paga el cliente»), 5.17 (Comisiones) | 5.2 |
+| **Operaciones y Logística** | 2, 4 («Las aprobaciones de gastos no frenan una obra»), 5.7 (Pagos a instaladores) | 5.5 y 5.6 |
+| **Quien usa una tarjeta de Voltia** | 4 («Lo personal no es gasto de Voltia»), 5.10 (Tarjetas) | — |
 
 ## Qué es y qué no es este documento
 
@@ -38,8 +39,8 @@ las otras áreas: de ellas trae solo lo que Finanzas necesita saber, repetido a
 propósito para que nadie tenga que salir a buscarlo en otro manual.
 
 Las palabras propias de Voltia (Voltia PM, UTE, etapa, onboarding, CFE, plan de
-pagos…) se explican la primera vez que aparecen y están todas en el
-**Glosario**, al final.
+pagos, ajuste, cierre de mes…) se explican la primera vez que aparecen y están
+todas en el **Glosario**, al final.
 
 ---
 
@@ -54,32 +55,37 @@ resultados**).
 Para que esos números sirvan, tienen que salir de **documentos reales**: una
 deuda con un proveedor existe cuando llega su factura; lo que debe un cliente
 sale del **plan de pagos** que se acordó con él. Lo proyectado "a ojo" no se
-carga como deuda.
+carga como deuda. Y lo que dice Voltia PM tiene que **coincidir con el banco**:
+cada movimiento del banco tiene su movimiento cargado, y al revés.
 
 Además, Finanzas es quien **paga**: a los proveedores, a los instaladores
-tercerizados y las comisiones de los asesores; y quien **emite las facturas** a
-los clientes que las llevan.
+tercerizados y las comisiones de los asesores; quien **emite las facturas** a
+los clientes que las llevan; y quien **cierra cada mes** y le entrega a la
+contadora lo que necesita.
 
 ## 2 · Qué hace y dónde termina su trabajo
 
 **Qué hace.** Cobra a los clientes según el plan de pagos que dejó armado Ventas,
-paga a los proveedores, a los instaladores y las comisiones, emite las facturas
-y lleva los resultados de la empresa.
+paga a los proveedores, a los instaladores y las comisiones, emite las facturas,
+concilia lo cargado con el banco y lleva los resultados de la empresa.
 
 **Dónde termina su trabajo.** Con un proyecto, cuando está **cobrado entero y
 sus gastos, pagados**. Con la empresa en general, no termina: los costos fijos,
-las cuentas y los resultados se llevan todos los meses.
+las cuentas, las tarjetas y los resultados se llevan todos los meses, y cada mes
+termina con su **cierre**.
 
 ### Qué recibe de cada área
 
 | De | Qué recibe | Dónde lo ve en Voltia PM |
 |---|---|---|
 | **Ventas** (el asesor comercial) | Cada proyecto vendido llega con su **modalidad de pago** y lo que esa modalidad pide: el plan de pagos, la proforma para el banco o la explicación escrita de lo acordado. También indica si el proyecto **lleva factura** | Finanzas → Cobros; Finanzas → Facturación |
-| **Ventas** (al ganar la venta) | La **comisión del asesor**, que se registra sola con el precio de la última propuesta publicada | Comisiones; Finanzas → Pendientes |
+| **Ventas** (al ganar la venta) | La **comisión del asesor**, que se registra sola con el precio de la última propuesta publicada | Comisiones; Finanzas → Inicio (Pendientes) |
 | **Operaciones** (al agendar la obra con un equipo tercerizado) | El **pago de la mano de obra** al instalador, a nombre de quien cobra por ese equipo | Finanzas → Instaladores |
-| **Logística** | Las **compras fuera de la lista de materiales** de más de USD 200 por gasto (hasta ese monto las aprueba el gerente de Operaciones, con rendición de cuentas) | Las aprueba Finanzas o Gerencia. Lo de la lista lo compra directo el encargado de compras. Todo gasto queda **auditable**: ver 5.19 |
-| **Proveedores** (por la facturación electrónica) | Las **facturas** que le emiten a Voltia | Finanzas → Cuentas por pagar → Facturas recibidas |
+| **Logística** | Las **compras fuera de la lista de materiales** de más de USD 200 por gasto (hasta ese monto las aprueba el gerente de Operaciones, con rendición de cuentas) | Las aprueba Finanzas o Gerencia. Lo de la lista lo compra directo el encargado de compras. Todo gasto queda **auditable**: ver 5.16 |
+| **Proveedores** (por la facturación electrónica) | Las **facturas** que le emiten a Voltia | Finanzas → Facturas |
+| **Proveedores** (una vez por mes) | El **estado de cuenta**, que Finanzas le pide | Se sube en la ficha del proveedor (Finanzas → Proveedores) |
 | **Experiencia Solar** | Los cobros que registra o marca pagados en su propia pestaña, y las anualidades del **Plan de Protección contra Granizo** | Finanzas → Cobros y Movimientos (es la misma información) |
+| **Quien usa una tarjeta de Voltia** | Qué gasto hizo, si fue de Voltia o personal y, si es personal con una tarjeta de la empresa, quién lo autorizó | Finanzas → Tarjetas |
 
 ### Qué entrega
 
@@ -90,7 +96,8 @@ las cuentas y los resultados se llevan todos los meses.
 | **Experiencia Solar** | Los cobros al día: lo que Finanzas registra se ve al instante en la pestaña Cobros de Experiencia Solar y en el historial del cliente |
 | **Asesores** | Las comisiones pagadas: al marcarlas pagadas en Finanzas, el asesor las ve como «Pagada» |
 | **Instaladores tercerizados** | Los pagos registrados, que el instalador ve en **Mis cobros** |
-| **Gerencia** | El flujo de fondos, el estado de resultados y los números de Finanzas del reporte semanal |
+| **La contadora** (área de Administración) | Cada mes cerrado, el **archivo para la contadora**: compras con neto e IVA, ventas, ajustes y movimientos del mes. Y lo que hay para descontar de los sueldos y el saldo de la cuenta del socio |
+| **Gerencia** | El flujo de fondos, el estado de resultados, el cierre de cada mes y los números de Finanzas del reporte semanal |
 
 ### A quién le pregunta qué
 
@@ -100,6 +107,7 @@ las cuentas y los resultados se llevan todos los meses.
 | Si el banco ya aprobó el crédito de un cliente | Al **asesor comercial**: él sigue el trámite con el banco |
 | Qué equipo hizo una obra o cuándo se hizo | Al **gerente de Operaciones** |
 | Qué compró Logística y para qué obra | A **Logística** |
+| Si un gasto de tarjeta fue de Voltia o personal | A **quien usa la tarjeta**; si es personal con una tarjeta de la empresa, también a quien lo autorizó |
 | Cómo se registra algo ante DGI o en la contabilidad formal | Al **contador** |
 | Algo del cliente que no es de plata | A **Experiencia Solar** |
 
@@ -113,11 +121,16 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
 
 ### 3.1 · Lo que se hace todos los días
 
-1. **Revisar la bandeja de facturas recibidas** (Finanzas → Cuentas por pagar →
-   Facturas recibidas). Voltia PM trae las facturas solas cada hora, de lunes a
-   sábado; ninguna suma a la deuda hasta que Finanzas la revisa. Plazo para
-   revisarlas: *pendiente de definir*.
-2. **Aprobar las compras que le tocan.** Lo que está en la lista de materiales
+1. **Mirar el Inicio de Finanzas** (5.1): la posición, lo que está **por
+   conciliar** y los **pendientes** (lo que vence hoy o ya venció, de un lado y
+   del otro).
+2. **Revisar las facturas de proveedores por revisar** (Finanzas → Facturas).
+   Voltia PM trae las facturas solas cada media hora. Las de los proveedores de
+   **cuenta corriente** pasan solas a la deuda y se revisan una vez por semana
+   (3.2); las demás no suman a la deuda hasta que Finanzas las revisa. Plazo
+   para revisarlas: *pendiente de definir*; Voltia PM marca las que tienen más
+   de una semana.
+3. **Aprobar las compras que le tocan.** Lo que está en la lista de materiales
    de Ingeniería lo compra directo el encargado de compras. Lo que no está en
    la lista lo aprueba el gerente de Operaciones hasta USD 200 por gasto, en
    cualquier obra y sin tope total, con rendición de cuentas: cada gasto queda
@@ -126,42 +139,62 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
    hábiles para comprar y recibir el material de una obra con fecha confirmada,
    y cada día que demora una aprobación es un día menos. Cada gasto queda
    registrado con quién lo cargó, cuándo y cada cambio que se le hizo (ver
-   5.19, Historial).
-3. **Registrar lo que entró y lo que salió**: cada cobro que entra se marca
+   5.16, Historial).
+4. **Registrar lo que entró y lo que salió**: cada cobro que entra se marca
    pagado con **la fecha real** del pago; cada pago a un proveedor, a un
-   instalador o de una comisión se registra cuando sale la plata.
-4. **Mirar Pendientes**: lo que vence hoy o ya venció, de un lado y del otro.
+   instalador o de una comisión se registra cuando sale la plata. Lo que el
+   banco muestra y no está cargado se carga desde **Por conciliar** o desde
+   **Banco** (5.9).
 
 ### 3.2 · Lo que se hace cada semana
 
+- **Revisar las facturas que entraron solas** (las de proveedores de cuenta
+  corriente, marcadas «entró sola» en Finanzas → Facturas): que sean de Voltia,
+  que el monto y la obra estén bien. Una vez por semana.
+- **Revisar los posibles gastos cargados dos veces** que muestra Por conciliar.
 - **Revisar Cobros**: qué cuotas vencieron sin cobrar. Si una cuota está
   vencida, se le pregunta al asesor qué pasó antes de reclamarle al cliente.
   **El reclamo al cliente lo hace Experiencia Solar**, que es quien habla con
   él. Está decidido que pase al **área de Administración** (la contadora)
   cuando esa área se haga cargo de Finanzas en Voltia PM; ese día se corrige
   este manual.
-- **Revisar Cuentas por pagar**: lo vencido y lo que vence en los próximos 7
-  días, para programar los pagos.
+- **Revisar lo que se le debe a cada proveedor por vencimiento** (arriba de
+  Finanzas → Proveedores): lo vencido y lo que vence en los próximos 7 días,
+  para programar los pagos.
 - **Revisar el Flujo de fondos**: si la plata alcanza para lo que vence.
 - **El reporte semanal** llega por correo los lunes a primera hora, con la
   cantidad de gastos registrados en la semana, entre otros indicadores (ver
-  5.18). Que el número sea real depende de que los gastos se carguen en la
+  5.20). Que el número sea real depende de que los gastos se carguen en la
   semana en que ocurren.
 
 ### 3.3 · Lo que se hace cada mes
 
-- **Pagar las comisiones** del mes: cada comisión vence el **día 1 del mes
-  siguiente** a la venta.
-- **Revisar los costos fijos** del mes y marcarlos pagados.
-- **Conciliar las cuentas bancarias** con el saldo real del banco, **una vez
-  por mes** (ver 5.13).
-- **Cerrar el estado de resultados** del mes.
-- **Controlar la facturación al cliente**: que no queden facturas pendientes de
-  emitir de proyectos que ya cobraron. Plazo para emitir: *pendiente de
-  definir*.
-- **Comparar con el estado de cuenta de cada proveedor**: se sube el estado de
-  cuenta que manda el proveedor en su ficha y Voltia PM lo compara con lo
-  cargado (ver 5.4, «Conciliación con el estado de cuenta»). **Una vez por mes, a mano**: Finanzas le pide el estado de cuenta a cada proveedor con el que tiene cuenta a crédito, lo sube y revisa las diferencias. Voltia PM no lo pide ni lo sube solo: la comparación la hace al subirlo.
+En los primeros días del mes se deja en orden el mes que terminó y se lo
+**cierra**. El orden es este:
+
+1. **Pagar las comisiones** del mes: cada comisión vence el **día 1 del mes
+   siguiente** a la venta.
+2. **Revisar los costos fijos** del mes y marcarlos pagados.
+3. **Rendir las tarjetas** (5.10): cada gasto del mes con quién lo hizo y si es
+   de Voltia o personal; el pago a la tarjeta cargado como transferencia desde
+   el banco, y el saldo que cierra en cero después del pago.
+4. **Revisar lo personal**: lo que hay para **descontar del sueldo** a los
+   empleados (lo marca descontado el encargado de Finanzas, la contadora, que es
+   quien liquida los sueldos) y el saldo de la **cuenta del socio**.
+5. **Conciliar las cuentas bancarias** con el saldo real del banco (5.12). Si no
+   coincide, se escribe el motivo.
+6. **Comparar con el estado de cuenta de cada proveedor**: Finanzas le pide el
+   estado de cuenta a cada proveedor con el que tiene cuenta a crédito, lo sube
+   en su ficha y Voltia PM lo compara con lo cargado (5.6, «Conciliación con el
+   estado de cuenta»). **Es a mano**: Voltia PM no lo pide ni lo sube solo. La
+   primera vez con cada proveedor, o cuando lo viejo no tiene arreglo, se
+   **arranca la cuenta** con ese estado de cuenta (5.6).
+7. **Controlar la facturación al cliente**: que no queden facturas pendientes de
+   emitir de proyectos que ya cobraron, ni obras con el aviso «hay cobro sin
+   factura». Plazo para emitir: *pendiente de definir*.
+8. **Cerrar el mes** (5.15): se revisa la **lista de control**, se baja el
+   **archivo para la contadora** y se cierra. Desde ese momento nada con fecha
+   de ese mes se carga, se edita ni se borra.
 
 ### 3.4 · El recorrido de la plata de un proyecto
 
@@ -176,13 +209,14 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
    de la obra**. **Sin el 50 % pago no se da fecha de obra.** Con financiación
    bancaria, la condición es el crédito aprobado. La gestión con el banco la sigue
    el asesor hasta que termina.
-4. **Logística compra**; Finanzas aprueba lo que pasa los topes y, cuando llegan, revisa
-   las facturas de los proveedores en la bandeja.
+4. **Logística compra**; Finanzas aprueba lo que pasa los topes. Las facturas de
+   los proveedores llegan solas: las de cuenta corriente entran a la deuda y las
+   demás las revisa Finanzas.
 5. **Operaciones agenda la obra.** Si es con un equipo tercerizado, aparece solo
    el pago de la mano de obra al instalador.
 6. **Obra terminada**: se cobra el **30 %**.
 7. **UTE habilita** la instalación: se cobra el **20 %**.
-8. Si el proyecto **lleva factura**, Finanzas la emite desde Voltia PM (ver 5.12).
+8. Si el proyecto **lleva factura**, Finanzas la emite desde Voltia PM (ver 5.4).
 9. El trabajo de Finanzas con el proyecto termina cuando está **cobrado entero y
    sus gastos pagados**.
 
@@ -228,17 +262,98 @@ Si el vencimiento que trae la factura no coincide con el plazo acordado, **manda
 el plazo acordado**, y Voltia PM avisa de la diferencia para hablarlo con el
 proveedor.
 
-### Ninguna factura entra a la deuda sin que alguien la mire
+### Las facturas de proveedores se revisan; las de cuenta corriente, una vez por semana
 
 Las facturas que los proveedores le emiten a Voltia llegan solas desde la
-facturación electrónica (ver el capítulo 5), pero **quedan en una bandeja hasta
-que alguien de Finanzas las revisa**. Ahí se decide si es deuda nueva, si ya se
-había cargado a mano (y se vinculan, para no contarla dos veces) o si se descarta
-—por ejemplo, porque no es de Voltia—, escribiendo siempre el motivo.
+facturación electrónica (ver 5.5). Qué pasa con cada una depende del proveedor:
 
-Las **notas de crédito** (cuando el proveedor descuenta algo de lo facturado)
-llegan a la bandeja, pero por ahora se registran a mano y después se marcan como
-registradas.
+- **Proveedor de cuenta corriente** (se le compra a crédito y se le paga contra
+  su estado de cuenta; se marca en su ficha): sus facturas **entran solas a la
+  deuda**, marcadas «entró sola», y Finanzas las revisa **una vez por semana**.
+  No entran solas, y quedan por revisar, las notas de crédito, las facturas en
+  cero y las que se parecen a un gasto ya cargado a mano (mismo número, o mismo
+  monto con menos de una semana de diferencia), para no contar dos veces lo
+  mismo.
+- **Los demás proveedores**: la factura **queda por revisar hasta que alguien de
+  Finanzas la mira**. Ahí se decide si es deuda nueva, si ya se había cargado a
+  mano (y se vinculan, para no contarla dos veces) o si se descarta —por
+  ejemplo, porque no es de Voltia—, escribiendo siempre el motivo.
+
+El porqué: a los proveedores de cuenta corriente se les compra todas las
+semanas y su estado de cuenta se controla cada mes; revisar factura por factura
+antes de que sume a la deuda solo atrasaba la deuda real. Con los demás, una
+factura que no se esperaba es más probable que sea un error.
+
+Las **notas de crédito** que manda un proveedor (cuando descuenta algo de lo
+facturado) se descuentan de la deuda desde la misma lista, con **«Descontar de
+la deuda»** (ver 5.5).
+
+### Una factura se carga por un solo lugar; a un proveedor se le paga por un solo camino
+
+- **Una factura de proveedor se carga siempre con el mismo formulario**, el de
+  las facturas recibidas, entre por donde entre («Cargar factura a mano» en
+  Facturas, «Cargar factura» en la ficha del proveedor o «Nueva factura a pagar»
+  en Proveedores). Ese formulario controla que la misma factura no se cargue dos
+  veces. Solo lo que no tiene factura electrónica (un proveedor del exterior,
+  una deuda sin comprobante) se carga sin comprobante, desde un enlace del mismo
+  formulario.
+- **A un proveedor se le paga siempre con «Registrar pago» en su ficha.** Así el
+  pago se descuenta de sus facturas y la deuda no queda abierta.
+- **El gasto con un proveedor** («Nuevo movimiento» eligiendo el proveedor) es
+  **solo para compras de contado**, que no dejan deuda. Si el proveedor elegido
+  tiene deuda abierta, Voltia PM avisa y manda a «Registrar pago».
+
+El porqué: con dos caminos para lo mismo, una factura termina cargada dos veces
+o un pago queda suelto sin descontar la deuda, y el saldo del proveedor deja de
+coincidir con su estado de cuenta.
+
+### Borrón y cuenta nueva con cada proveedor
+
+Lo que se le debe a un proveedor **arranca de cero el día que se concilia con su
+estado de cuenta**: Voltia PM queda debiendo exactamente lo que el proveedor dice
+en ese estado de cuenta (ver «Arrancar cuenta», 5.6).
+
+- **Los movimientos de caja no se tocan**: los pagos y gastos ya cargados quedan
+  como están, porque esa plata salió de verdad.
+- **Lo viejo que ya no corresponde se cierra con un ajuste**, siempre con su
+  motivo. Un **ajuste** baja lo que se le debe a un proveedor **sin ser plata**:
+  no sale de ninguna cuenta, no es gasto ni ingreso y no aparece en el estado de
+  resultados.
+- **Las deudas viejas de la empresa unipersonal** con Tiempo al Tiempo se
+  registran como compra de la SAS. Lo decidió Gerencia sabiendo que el contador
+  marcó un riesgo fiscal, que queda para revisar con la contadora.
+
+El porqué: lo viejo tenía facturas sin cargar, pagos sin aplicar y deudas
+cargadas dos veces; arreglarlo renglón por renglón no termina nunca. Lo que
+importa es que desde hoy lo que dice Voltia PM coincida con lo que dice el
+proveedor.
+
+### Lo personal no es gasto de Voltia
+
+Cuando Voltia paga algo que no es de la empresa, no se carga como gasto:
+
+- **Un gasto personal del socio** pagado con plata de Voltia (con una tarjeta o
+  de una cuenta) va a la **cuenta del socio**: queda como algo que el socio le
+  debe a Voltia. **No se carga como sueldo**: así lo recomendó el contador. La
+  contadora la cancela con sueldo formal, con utilidades o con la devolución de
+  la plata.
+- **Un gasto personal de un empleado** con una tarjeta de la empresa, si fue
+  **autorizado**, queda como **adelanto a descontar** del sueldo, con el nombre
+  de quien lo autorizó. Lo marca descontado el encargado de Finanzas (la
+  contadora), que es quien liquida los sueldos.
+
+Ni la cuenta del socio ni los adelantos entran al estado de resultados.
+
+### Un mes cerrado no se toca
+
+Cuando un mes se cierra (5.15), **nada con fecha de ese mes se carga, se edita
+ni se borra**, y sus números quedan fijos: lo que se le mandó a la contadora es
+lo que hay. Si hace falta corregir algo, se **reabre** el mes, escribiendo el
+motivo, que queda registrado con quién lo reabrió y cuándo. Reabrir un mes
+reabre también los meses cerrados posteriores.
+
+Cierran y reabren el **dueño** y **Finanzas**. Con algo sin resolver en la lista
+de control se puede cerrar igual, pero escribiendo por qué.
 
 ### Ningún proyecto avanza sin saber cómo y cuándo paga el cliente
 
@@ -275,6 +390,11 @@ Cuenta **solo lo que efectivamente entró y salió** en el período: lo pagado. 
 previsto, lo que está a pagar y lo que se le debe a un instalador todavía no
 pagado **no aparece**. Por eso un mes «bueno» en resultados puede tener deudas
 grandes por vencer: para eso está el flujo de fondos.
+
+Tampoco cuenta lo que no es ni ganancia ni gasto de la empresa: los **ajustes**
+de deuda con proveedores (no son plata), las **transferencias entre cuentas
+propias** (la plata solo cambia de cuenta) y lo **personal** (cuenta del socio y
+adelantos a descontar).
 
 ### La plata del Plan de Protección contra Granizo no es ganancia
 
@@ -326,87 +446,64 @@ empresa o de otra persona. Por eso se pregunta en cada factura.
 
 ## 5 · Las herramientas y cómo se usan
 
-Todo se hace en **Voltia PM**, menú **Finanzas**. Arriba hay una fila de
-pestañas: **Movimientos**, **Pendientes**, **Proveedores**, **Cuentas por
-pagar**, **Facturas de proveedores**, **Cobros**, **Instaladores**,
-**Facturación**, **Flujo de fondos**, **Estado de resultados** y **Cuentas**.
-Las **Comisiones** tienen su propia sección en el menú.
+Todo se hace en **Voltia PM**, menú **Finanzas**. Arriba hay una sola fila de
+pestañas, agrupadas como en los programas de contabilidad. Cada grupo lleva su
+nombre en letra chica antes de sus pestañas:
+
+| Grupo | Pestañas | Para qué |
+|---|---|---|
+| — | **Inicio** | Lo urgente: cómo se está (posición), lo que falta conciliar y lo que hay que pagar y cobrar |
+| **Ventas** | **Cobros**, **Facturación** | Lo que entra: los cobros a los clientes y las facturas que se les emiten |
+| **Compras** | **Facturas**, **Proveedores**, **Instaladores**, **Costos fijos** | Lo que sale: las facturas de los proveedores, lo que se les debe y se les paga, los instaladores tercerizados y los gastos de todos los meses |
+| **Bancos** | **Banco**, **Tarjetas**, **Movimientos**, **Cuentas** | Dónde está la plata: lo que dice el banco, las tarjetas de crédito, cada entrada y salida, y las cuentas |
+| **Informes** | **Flujo**, **Resultados**, **Cierre**, **Historial** | Qué dice todo junto: el flujo de fondos, el estado de resultados, el cierre de cada mes y el registro de todo lo que se hizo |
+
+Al entrar a Finanzas se abre el **Inicio**. Las **Comisiones** tienen su propia
+sección en el menú general de Voltia PM, fuera de Finanzas (5.17).
 
 En el celular, las listas de Finanzas se ven como tarjetas y las ventanas se
 abren como un panel desde abajo; en la computadora se ven como tablas.
 
-### 5.1 · Movimientos
+Un **movimiento** es cada entrada o salida de plata registrada en Voltia PM.
+Casi todo lo de Finanzas (cobros, facturas de proveedores, comisiones, pagos a
+instaladores, costos fijos, gastos de tarjeta) termina siendo un movimiento, por
+eso lo que se cambia en una pantalla se ve en las otras.
 
-Un **movimiento** es cada entrada o salida de plata. Todo lo demás de Finanzas
-(cobros, facturas de proveedores, comisiones, pagos a instaladores, costos
-fijos) termina siendo un movimiento, por eso lo que se cambia en una pantalla se
-ve en las otras.
+### 5.1 · Inicio: posición, por conciliar y pendientes
 
-**La pestaña Movimientos muestra solo lo que ya pasó**: la plata que ya entró o
-ya salió, más los pagos a proveedores. Lo que todavía se espera (cobros
-previstos, facturas a pagar, comisiones sin pagar) no está acá: está en
-**Pendientes** (5.3). Arriba se ven el **saldo actual en pesos** y el **saldo
-actual en dólares**.
+Es la primera pantalla de Finanzas y tiene tres partes, de arriba abajo.
 
-**«Nuevo movimiento»** carga algo que ya ocurrió: al guardarlo queda como
-pagado. El formulario no tiene campo de estado. Pide:
+**La posición.** Todo en dólares: la **caja** (lo que hay en las cuentas), **lo
+que nos deben** —separado en vencido, próximos 7 días, de 8 a 30 días, más de
+30 días y **sin fecha** (lo que una obra todavía debe sin tener una cuota
+prevista)—, **lo que debemos** —proveedores, otros compromisos, comisiones e
+instaladores, también por vencimiento— y el **neto**, con caja y sin caja. A
+diferencia del flujo de fondos, la posición **sí** cuenta las comisiones y lo que
+se le debe a los instaladores.
 
-- **Tipo**: **Ingreso** o **Gasto**.
-- **Categoría**. Para un ingreso: **Entrada proyecto**, **Cobro cliente** u
-  **Otro**. Para un gasto: **Salida proyecto**, **Costo fijo**, **Costo
-  variable**, **Compra stock**, **Consumo stock**, **Pago proveedor** u
-  **Otro**. Al cargar un gasto viene por defecto **«Salida proyecto»**, la más
-  habitual. Si se elige **Costo fijo**, aparece la lista de costos fijos del mes
-  para elegir a cuál corresponde (ver 5.2).
-- **Descripción**, **monto** y **moneda** (dólares por defecto, o pesos).
-- **Cuenta (opcional)**: si se elige una, la moneda pasa a ser la de la cuenta.
-- **Fecha**.
-- **Proveedor (opcional)**, solo en los gastos, y **Proyecto (opcional)**.
+**Por conciliar.** Todo lo que falta que se encuentre, en una sola lista. Si no
+hay nada, dice «Todo conciliado».
 
-**«Transferencia»** pasa plata de una cuenta a otra de la misma moneda: queda
-una salida en la cuenta de origen y una entrada en la de destino.
+1. **Falta cargar** (por cuenta): movimientos que el banco muestra y no están
+   cargados en Voltia PM. Cada uno tiene **«Cargar»**, que abre «Nuevo
+   movimiento» ya completado con la cuenta, la fecha, la descripción y el monto
+   del banco, y **«No va»**, para lo que no se carga (por ejemplo, una
+   transferencia entre cuentas propias que ya está cargada), que pide escribir
+   el motivo.
+2. **Cargado en Voltia PM que el banco no muestra**: lo que figura pagado o
+   cobrado desde una cuenta del banco hace más de 3 días y no tiene un
+   movimiento del banco que coincida. Puede tener mal la cuenta, la fecha o el
+   monto, o estar cargado dos veces.
+3. **Facturas de proveedores por revisar**: cuántas hay, cuántas son de un RUT
+   que no es de ningún proveedor y cuántas tienen más de una semana. Lleva a
+   Facturas.
+4. **Posibles gastos cargados dos veces**: dos gastos del mismo proveedor, en la
+   misma moneda y por el mismo monto, con menos de una semana de diferencia
+   (salvo que los dos tengan números de factura distintos). Suele ser una compra
+   cargada a mano que además llegó por su factura.
 
-**Cómo se ve.** La pestaña arranca mostrando **todo el año en curso**; con
-**«Año en curso» / «Por mes»** se cambia a un solo mes, y se puede elegir el
-año. Se filtra por tipo (**Todos los tipos**, **Ingresos**, **Gastos**) y hay un
-buscador por descripción, proveedor, cliente, cuenta o monto. Arriba de la lista
-dice cuántos movimientos hay.
-
-Los **pagos a proveedores** aparecen en la lista, pero no se editan desde acá:
-se editan desde la ficha del proveedor (5.4).
-
-**Cómo se borra.** Con la papelera de la fila, o al abrir un movimiento para
-editarlo, abajo, con **«Eliminar movimiento»**. Las dos piden confirmación. Un
-movimiento atado a una comisión **no se puede borrar** desde Finanzas: se
-gestiona desde Comisiones.
-
-### 5.2 · Costos fijos
-
-Los **costos fijos** son los gastos que se repiten (alquiler, contador,
-servicios). Se configuran una vez en **Finanzas → Costos fijos**, con
-**«Agregar costo fijo»**: nombre, descripción
-(opcional), **periodicidad** —**mensual**, **bimensual** (en los meses pares o
-en los impares) o **anual** (en un mes elegido)—, el **día del mes de pago** y un
-**monto de referencia** con su moneda. Los carga Finanzas (y también un administrador).
-
-**No generan movimientos solos.** Cada costo fijo figura en **Pendientes**
-desde que empieza el mes que le toca, y el **Flujo de fondos** los proyecta
-para los próximos 3 meses. Sale de Pendientes cuando:
-
-- se registra el pago: **«Marcar pagado»** en Pendientes abre el formulario de
-  **Nuevo movimiento** ya completado con la categoría **Costo fijo** y ese
-  costo elegido; se pone el **monto real** y se guarda. Ese monto pasa a ser el
-  que Voltia PM sugiere la próxima vez;
-- o se usa **«Saltear este mes»**, cuando ese mes no corresponde. Afecta solo
-  ese mes: el costo fijo sigue activo para los siguientes.
-
-Un costo fijo no se puede reagendar desde Pendientes: su fecha es la del día del
-mes configurado, y se cambia desde Finanzas → Costos fijos.
-
-### 5.3 · Pendientes
-
-Es la lista de **todo lo que está por entrar o por salir**. Cada renglón lleva
-una marca que dice qué es:
+**Pendientes.** Es la lista de **todo lo que está por entrar o por salir**.
+Cada renglón lleva una marca que dice qué es:
 
 - **Costo fijo**: los costos fijos del mes que todavía no se pagaron.
 - **Factura proveedor**: las facturas a pagar a proveedores.
@@ -415,12 +512,14 @@ una marca que dice qué es:
   ocurra: las cuotas del plan de pagos de los clientes, las comisiones de los
   asesores, las anualidades del plan granizo y los que se agendan a mano.
 
+Lo que se puede hacer:
+
 - **Filtros**: por tipo (**Costos fijos**, **Deuda proveedores**, **Otros
   compromisos**, **Pendientes manuales**), por proyecto y por proveedor.
 - **«Marcar pagado»**: en un pendiente manual pide la **fecha** real (no puede
   ser futura) y la **cuenta** donde entró o de donde salió la plata, que es
   obligatoria. En una factura de proveedor lleva a la ficha del proveedor, donde
-  se registra el pago. En un costo fijo, ver 5.2.
+  se registra el pago. En un costo fijo, ver 5.8.
 - **Cambiar una fecha**: tocando la fecha de un pendiente se abre un calendario
   para reagendarlo (por ejemplo, una cuota que el cliente pidió mover). Los
   costos fijos no se reagendan así.
@@ -437,158 +536,7 @@ una marca que dice qué es:
 Ya no aparecen los «Materiales proyectados»: ver el lineamiento «Lo que se le
 debe a un proveedor entra con su factura, no antes».
 
-### 5.4 · Proveedores, facturas a pagar y pagos
-
-**El listado de proveedores** (Finanzas → Proveedores) muestra cada proveedor
-con su saldo. Desde ahí se da de alta uno nuevo y se carga una factura con
-**«+ Nueva factura a pagar»**.
-
-**Plazo y límite de un proveedor.** Se cargan al crear o editar el proveedor:
-**Plazo (días)**, **Límite de crédito** (vacío si no tiene) y la moneda del
-límite. Conviene que cada proveedor tenga su **RUT** cargado: la facturación
-electrónica lo reconoce por el RUT, nunca por el nombre.
-
-**La ficha de un proveedor** (tocando uno en el listado) muestra arriba el
-**total adeudado**, el **saldo a favor** y el **saldo neto**, y tiene cuatro
-pestañas: **Facturas**, **Pagos**, **Estado de cuenta** (todos los movimientos
-con el saldo que va quedando; no se puede exportar) y **Conciliación** (ver más
-abajo). Los botones principales son **«Cargar factura»** y **«Registrar
-pago»**; también están **«Editar»** (los datos del proveedor) y **«Nuevo
-gasto»**.
-
-**Cargar una factura a mano.** Se piden el proveedor, la descripción, el número
-de factura (opcional), el monto, la moneda, la fecha de emisión, la fecha de
-vencimiento y el proyecto (opcional). Si no se pone vencimiento, **vence sola**
-a los días de plazo del proveedor. Lo normal hoy es que la factura llegue sola
-por la bandeja de facturas recibidas (5.6); a mano se carga lo que no llega así.
-Cada factura se puede **editar** o **eliminar** desde la ficha.
-
-**El monto de una factura se carga siempre con IVA incluido**: es el total
-que figura en la factura y el que se le paga al proveedor. El desglose del IVA
-no se carga por ahora.
-
-**Registrar un pago.** Se piden la fecha, el monto y la moneda, la **cuenta de
-donde sale la plata** (obligatoria, y de la misma moneda que el pago), el
-método (transferencia, efectivo, cheque, tarjeta…), una referencia y notas.
-Viene marcada la casilla **«Aplicar automáticamente a las facturas más
-viejas»**: así el pago **se descuenta solo de las facturas que se le deben, de
-la más vieja a la más nueva**, sin elegir factura por factura. Solo se descuenta
-de facturas en la misma moneda del pago. Cuando una factura queda pagada entera,
-toma como fecha de pago la del último pago que la saldó. Un pago con **monto
-negativo** equivale a una nota de crédito o una devolución del proveedor.
-
-**Saldo a favor.** Si el pago es más de lo que se debe, el sobrante queda **a
-favor del proveedor**. **No se aplica solo** a las facturas que lleguen
-después: la factura nueva queda a pagar, y el saldo a favor se descuenta a mano.
-Para eso, en la pestaña **Pagos** se toca el pago que tiene saldo (lleva la
-marca «Saldo: …») y se usa **«Aplicar a más facturas»**. Lo que sí hace Voltia PM
-es mostrar el **saldo neto** del proveedor y proyectar su deuda en el flujo de
-fondos ya descontado el saldo a favor. También queda saldo a favor si se
-**elimina** una factura que ya tenía pagos: esos pagos no se pierden, quedan a
-favor para reaplicar (Voltia PM avisa cuántos se liberaron).
-
-**Pagar una factura puntual.** Al registrar el pago se destilda **«Aplicar
-automáticamente a las facturas más viejas»**: al guardar se abre **«Aplicar pago
-a facturas»**, donde se elige a qué facturas y cuánto a cada una. Desde el
-detalle de un pago (tocándolo en la pestaña Pagos) también se puede quitar una
-aplicación, **«Aplicar a más facturas»** y **«Anular»** el pago.
-
-**Conciliación con el estado de cuenta.** El saldo de la ficha es lo que Voltia
-le debe al proveedor, ya descontado el saldo a favor. Para compararlo con el
-estado de cuenta que manda el proveedor está la pestaña **Conciliación** de la
-ficha:
-
-1. Se sube el estado de cuenta con **«Subir estado de cuenta»**: sirve en
-   **PDF, Excel o una foto**. Solo si el documento no lo dice claro, se indica
-   la moneda y la fecha del corte («Al día»).
-2. La inteligencia artificial de Voltia PM lo lee y lo pasa a renglones
-   (facturas, notas de crédito y pagos). Tarda unos segundos.
-3. Voltia PM compara esos renglones con lo cargado para ese proveedor y muestra
-   el **saldo según el proveedor**, el **saldo según Voltia PM** y la
-   **diferencia** (si es positiva, el proveedor dice que se le debe más de lo
-   que figura en Voltia PM; si no hay diferencia, dice «Cuadra»).
-4. Abajo, en cuatro listas: lo que **coincide**; los **montos distintos** (el
-   mismo comprobante, con distinto importe de cada lado); lo que **falta cargar
-   en Voltia PM** (está en el estado de cuenta y no en Voltia PM: se revisa la
-   bandeja de facturas recibidas o se carga); y lo que **el proveedor no tiene**
-   (está en Voltia PM y no en su estado de cuenta: puede ser un pago que el
-   proveedor no imputó o algo cargado de más).
-5. Después de corregir lo que faltaba, **«Volver a comparar»** repite la
-   comparación con lo cargado hoy, **sin volver a leer el archivo**.
-
-Cada conciliación queda guardada en la ficha, con el archivo original para
-volver a verlo.
-
-### 5.5 · Cuentas por pagar
-
-Se entra desde **Finanzas → Cuentas por pagar**. Arriba están los totales: cuánto
-se debe en total, cuánto está **vencido**, cuánto **vence en los próximos 7 días**
-y cuánto **entre 8 y 30 días**. Abajo, una fila por proveedor con lo mismo, el
-saldo a favor (pagos hechos que todavía no se aplicaron a ninguna factura) y cuánto
-del límite de crédito está usado. Tocando un proveedor se ven sus facturas, cada
-una con su vencimiento y cuántos días le faltan.
-
-### 5.6 · La bandeja de facturas recibidas
-
-En la misma pantalla, más abajo, está **Facturas recibidas**: las que trajo la
-facturación electrónica y nadie revisó todavía. Voltia PM consulta cada hora, de
-lunes a sábado; el botón **Buscar facturas nuevas** consulta en el momento. Trae
-**todas las facturas que DGI tiene registradas a nombre de Voltia** —así no se
-pierde ninguna aunque el mail no haya llegado— y las que llegaron por mail. Por
-cada una, la persona de Finanzas elige:
-
-- **Cargar como deuda**: pasa a ser una factura a pagar del proveedor, con el
-  vencimiento según su plazo.
-- **Ya cargada: …**: aparece cuando ya había una factura cargada a mano del mismo
-  proveedor con el mismo número o el mismo monto. Se vinculan y no se duplica la
-  deuda.
-- **Descartar**: pide escribir el motivo.
-- **Dar de alta proveedor**: cuando la factura es de una empresa que todavía no
-  está en Voltia PM. Propone el nombre registrado en DGI.
-
-El proveedor se reconoce **por el RUT**, nunca por el nombre. Por eso conviene
-que cada proveedor tenga su RUT cargado. Cuando una factura llega de un RUT que
-ningún proveedor tiene, se elige de qué proveedor es en **«¿De qué proveedor
-es?»**: queda asignado a **todas** las facturas de la bandeja con ese RUT, y el
-proveedor se queda con el RUT, así las siguientes llegan ya asignadas. Si el
-proveedor elegido tiene otro RUT, Voltia PM no deja asignarlo.
-
-**Las facturas llegan por tres caminos** y terminan en la misma bandeja: lo que
-DGI tiene registrado, lo que llegó por mail a la casilla publicada en DGI (los
-dos los trae la facturación electrónica) y **la carga a mano**. Con el botón
-**Cargar a mano** se completa proveedor (o su RUT, si todavía no está dado de
-alta), tipo de comprobante, serie, número, fecha, moneda, **total con IVA
-incluido** y, si se quiere, el IVA, el vencimiento, la obra y el PDF. La casilla
-**Cargarla como deuda ahora** la confirma en el mismo paso.
-
-**Una factura nunca se carga dos veces.** Cada comprobante se identifica por el
-RUT de quien lo emite, el tipo, la serie y el número:
-
-- Si ya está en Voltia PM, por cualquiera de los tres caminos, Voltia PM no la
-  carga y avisa por dónde llegó y en qué estado está.
-- Si se carga a mano y después la trae la facturación electrónica, se reconoce
-  como la misma.
-- Si ya había una deuda de ese proveedor cargada con **Cargar factura** (en su
-  ficha) que parece la misma —mismo número o mismo monto—, no se crea otra: queda
-  en la bandeja para vincularla.
-
-**El PDF.** Cada factura tiene **Ver PDF**. Si llegó por mail, Voltia PM se lo
-pide a la facturación electrónica y lo guarda. Si llegó solo por DGI, que no
-guarda el PDF, o si no se consiguió, aparece **Subir PDF** para cargar el que
-mandó el proveedor.
-
-### 5.7 · Facturas de proveedores
-
-Se entra desde **Finanzas → Facturas de proveedores**. Es el registro de **todas**
-las facturas de proveedores, para buscar cualquiera: las que llegaron por la
-facturación electrónica —en cualquier estado, también las descartadas y las de
-empresas sin dar de alta— y las que se cargaron a mano. Se filtra por proveedor
-(o por **Sin proveedor en el sistema**), por fechas, por origen y con un buscador.
-Cada factura muestra neto, IVA, total, vencimiento, por dónde llegó (DGI, mail
-o a mano), en qué está —por revisar, a pagar, pagada o descartada— y su PDF. El
-botón **Cargar factura a mano** es el mismo de la bandeja.
-
-### 5.8 · Cobros a clientes y plan de pagos
+### 5.2 · Cobros a clientes y plan de pagos
 
 **La lista.** Se entra desde **Finanzas → Cobros**. Muestra **todos** los
 proyectos vendidos, estén en obra o ya habilitados, porque que la obra esté
@@ -670,14 +618,14 @@ la lista suma todo lo cobrado, pasando los pesos a dólares; el plan cuenta solo
 los cobros en dólares de entrada de proyecto. Por eso a veces no coinciden
 exacto.
 
-### 5.9 · Cobros que gestiona Experiencia Solar
+### 5.3 · Cobros que gestiona Experiencia Solar
 
 Experiencia Solar tiene su propia pestaña **Cobros**, dentro de su módulo, para
 gestionar los pagos de los clientes **sin entrar a Finanzas**: no ve gastos,
 cuentas ni resultados. Puede ver lo cobrado y lo pendiente de cada cliente,
 registrar un cobro nuevo (cobrado o previsto), marcarlo pagado, editar el
 monto, eliminarlo y **«Copiar resumen (WhatsApp)»**, que copia el mismo mensaje
-*Resumen de pagos* de 5.8. Desde su pestaña **no se crea ni se edita el plan de
+*Resumen de pagos* de 5.2. Desde su pestaña **no se crea ni se edita el plan de
 pagos**: eso se hace en el onboarding (o Finanzas, desde Cobros).
 
 Dos diferencias con Finanzas que Finanzas tiene que conocer:
@@ -694,111 +642,7 @@ Dos diferencias con Finanzas que Finanzas tiene que conocer:
 instante. En el historial del cliente aparecen solos **los cobros efectivos**,
 no los previstos.
 
-### 5.10 · Comisiones del asesor
-
-**Cómo nace.** Al marcar un lead como **ganado** (un *lead* es un cliente
-potencial en el pipeline comercial), Voltia PM toma el precio de la **última
-propuesta publicada** y congela la comisión del asesor con ese número. Al mismo
-tiempo crea un **pendiente en Finanzas**, un gasto previsto «Comisión venta
-[cliente] — [asesor]», por el monto **sin IVA** y con vencimiento el **día 1 del
-mes siguiente** a la venta. Las propuestas residenciales llevan un porcentaje fijo;
-las de empresas, un porcentaje base más una parte de lo que el asesor consiga
-por encima del markup de referencia. Los porcentajes se configuran en
-**Administración → Defaults de propuestas**, y cada comisión queda con el que
-regía cuando se publicó la propuesta.
-
-Si el cliente aceptó otra versión de la propuesta, el asesor la cambia en la
-ventana que aparece al ganar, y la comisión y el pendiente se recalculan. Una
-comisión ya pagada no se recalcula así.
-
-**Ventas sin propuesta.** Si la venta se cerró sin ninguna propuesta publicada en
-Voltia PM, no hay de dónde sacar el monto: la comisión se carga a mano.
-
-**La pantalla Comisiones** (en el menú): cada asesor ve solo las suyas; la
-gerencia comercial, Administración y Finanzas ven las de todos y filtran por
-asesor. Muestra el saldo a cobrar, lo cobrado en el año, la cantidad de ventas,
-un gráfico por mes y la tabla con filtros (todas, pendientes, pagas).
-
-**Cómo se paga.** Desde **Finanzas → Pendientes**: la comisión aparece como
-**Pendiente manual**, con vencimiento el día 1 del mes siguiente a la venta. Se
-usa **«Marcar pagado»**, que pide la fecha del pago y la cuenta de donde salió.
-La comisión pasa sola a **Pagada** en la pantalla Comisiones, con esa fecha.
-
-**Correcciones.** Solo el administrador puede editar (monto, fecha de venta,
-fecha de pago prevista) o borrar una comisión, con el botón **«Editar»** de la
-fila. Cada cambio queda registrado y la comisión muestra la marca «editada».
-También se puede cargar una **comisión suelta** a un asesor, sin lead, con
-**«Agregar comisión manual»** en la pantalla Comisiones (lo puede hacer quien
-puede cargar movimientos en Finanzas). La tarjeta de comisión de la ficha del
-proyecto que sugiere un porcentaje sirve solo para esa carga manual.
-
-### 5.11 · Pagos a instaladores tercerizados
-
-Se entra desde **Finanzas → Instaladores**. Muestra cada trabajo con el
-instalador, la fecha de la obra, el monto, lo pagado, el saldo y el estado
-(**pendiente**, **parcial** o **pagado**).
-
-**El pago lo genera el calendario.** La primera vez que Operaciones agenda una
-obra con un equipo **tercerizado**, el pago aparece solo, a nombre de la persona
-que cobra por ese equipo (se configura una vez, en Admin → Equipos). El monto es
-la mano de obra de la propuesta ganadora **con IVA**, porque el instalador
-factura. Si la propuesta no traía mano de obra, el pago nace en cero y marcado
-para cargar el monto. Las obras de equipo propio no tienen pago aparte.
-
-**Después no cambia solo**: si la obra se reagenda o cambia de equipo, Finanzas
-corrige el instalador o el monto a mano.
-
-**Cuándo se le paga:** el **50 % al arrancar la obra** y el **50 % al
-terminarla**. La orden de pago la da el responsable de Administración y Finanzas
-o Gerencia, cuando en Voltia PM la etapa de Ejecución de obra figura terminada.
-El monto no se negocia: el gerente de Operaciones se lo informa al tercerizado
-antes de agendar, y pagar más lo autoriza solo Gerencia.
-
-**Un gasto de obra que no estaba previsto** se carga en Finanzas asignado a la
-obra y se suma a su costeo. Quién lo aprueba está en el paso 2 del
-procedimiento.
-
-Finanzas:
-
-- **«Asignar»** o **«Editar»** un trabajo: el instalador y el monto.
-- **Registra los pagos** con **«Pagar»**, totales o parciales: monto, fecha y una
-  nota. No se puede pagar más que el saldo. No se elige cuenta.
-- **Corrige o anula una entrega** ya registrada, incluso con el trabajo saldado.
-- **Carga a mano** trabajos que no salen de un proyecto (una reparación en
-  garantía, una obra anterior), con **«Cargar pago manual»**.
-- **Filtra por instalador** y copia un **resumen para WhatsApp** con las obras en
-  curso y lo que falta de cada una, más las últimas tres saldadas (las que se
-  terminaron de pagar más recientemente, no las de obra más nueva). El botón
-  aparece solo con un instalador elegido, y arma el mensaje con lo que muestra
-  la lista: para que salga completo, el filtro de estado tiene que estar en
-  **Todos**. Sale así:
-
-  > <small>\*Pagos — [nombre del instalador]\*<br>
-  > <br>
-  > ⏳ \*Pendiente: [total que se le debe, en US$]\*<br>
-  > <br>
-  > \*En curso y por cobrar\*<br>
-  > • [código del proyecto] · [cliente] — [monto de la obra]<br>
-  > • [código del proyecto] · [cliente] — [monto de la obra] — cobrado [lo ya entregado], falta [lo que queda]<br>
-  > <br>
-  > \*Últimos trabajos saldados\*<br>
-  > ✅ [código del proyecto] · [cliente] — [monto] (pagado el [día y mes en que se terminó de pagar])</small>
-
-  Va un renglón por obra; el detalle «cobrado…, falta…» aparece solo si ya se le
-  entregó una parte. Si no se le debe nada, en lugar del pendiente dice
-  «✅ \*No queda nada pendiente.\*». Si hay una sola obra saldada, el título es
-  «\*Último trabajo saldado\*». Si el instalador no tiene trabajos, dice «No hay
-  trabajos registrados.». Los trabajos cargados a mano sin proyecto muestran solo
-  el nombre del cliente.
-
-Cada pago registrado es un gasto pagado «Mano de obra», **sin cuenta**, que
-entra solo a Movimientos y al estado de resultados. **Lo que se le debe al instalador no
-aparece como gasto futuro en el flujo de fondos**: se ve solo en esta pantalla.
-
-El instalador ve sus trabajos, lo cobrado y el saldo en **Mis cobros**, desde el
-menú de su cuenta. Solo puede mirar.
-
-### 5.12 · Facturación al cliente
+### 5.4 · Facturación al cliente
 
 No todos los clientes llevan factura. Cada proyecto tiene la casilla **«Lleva
 factura»** y una **nota** libre (para anotar RUT, razón social o a nombre de
@@ -806,6 +650,12 @@ quién facturar). Se cargan al crear el proyecto y se editan desde su ficha.
 
 En **Finanzas → Facturación** están los proyectos que llevan factura, con
 **Pendientes**, **Emitidas** y **Todas**. La nota se edita desde la lista.
+
+**Cobrado contra facturado.** Si una obra cuya factura salió desde Voltia PM
+cobró en dólares más de lo que se le facturó (las facturas menos las notas de
+crédito), la fila muestra el aviso **«hay cobro sin factura»**, con lo cobrado y
+lo facturado. Las facturas hechas por fuera de Voltia PM no entran en esta
+comparación.
 
 **Emitir la factura.** Voltia PM emite la factura electrónica directamente: no
 hace falta entrar al sistema de facturación electrónica. Se toca **«Emitir
@@ -883,18 +733,449 @@ PM no se puede revertir así: se anula con una nota de crédito.
 facturación electrónica. Si cada cobro tiene que llevar su recibo electrónico
 está pendiente de definir con el contador.
 
-### 5.13 · Cuentas bancarias y conciliación
+### 5.5 · Facturas de proveedores
 
-En **Finanzas → Cuentas** están las cuentas bancarias de Voltia, una tarjeta
-por cuenta con su saldo. Las cuentas se dan de alta en **Administración →
-Cuentas**. Las transferencias entre cuentas se hacen desde Movimientos (5.1).
+Se entra desde **Finanzas → Facturas**. Tiene dos partes: arriba, las facturas
+**por revisar**; abajo, el **registro** de todas.
+
+**Cómo llegan.** Voltia PM consulta la facturación electrónica **cada media
+hora, todos los días**; el botón **«Buscar facturas nuevas»** consulta en el
+momento. Trae **todas las facturas que DGI tiene registradas a nombre de
+Voltia** —así no se pierde ninguna aunque el mail no haya llegado— y las que
+llegaron por mail a la casilla publicada en DGI. Además, se pueden **cargar a
+mano** (ver más abajo). Los tres caminos terminan en la misma lista.
+
+**Las de cuenta corriente entran solas.** Si el proveedor está marcado como de
+**cuenta corriente** (5.6), después de cada consulta sus facturas pasan solas a
+la deuda, con la marca **«entró sola»**, para la revisión de cada semana. No
+entran solas, y quedan por revisar como las demás: las notas de crédito, las
+facturas en cero y las que se parecen a un gasto de ese proveedor ya cargado a
+mano (mismo número, o mismo monto con menos de una semana de diferencia).
+
+**Las facturas por revisar.** Por cada una, la persona de Finanzas elige:
+
+- **Cargar como deuda**: pasa a ser una factura a pagar del proveedor, con el
+  vencimiento según su plazo.
+- **Ya cargada: …**: aparece cuando ya había una factura cargada a mano del mismo
+  proveedor con el mismo número o el mismo monto. Se vinculan y no se duplica la
+  deuda.
+- **Descartar**: pide escribir el motivo. Una factura descartada se puede
+  **«Volver a la bandeja»**.
+- **Dar de alta proveedor**: cuando la factura es de una empresa que todavía no
+  está en Voltia PM. Propone el nombre registrado en DGI.
+
+**Notas de crédito de un proveedor.** En lugar de «Cargar como deuda» aparece
+**«Descontar de la deuda»**: baja lo que se le debe a ese proveedor, en la
+moneda de la nota, empezando por la deuda más vieja, **sin mover plata** (es un
+**ajuste**, ver 5.6). Si la nota es mayor que lo que se le debe, Voltia PM no la
+descuenta y la deja por revisar con el aviso. Si ya se había descontado a mano,
+se usa **«Marcar registrada»** y se anota cómo.
+
+**El proveedor se reconoce por el RUT**, nunca por el nombre. Por eso conviene
+que cada proveedor tenga su RUT cargado. Cuando una factura llega de un RUT que
+ningún proveedor tiene, se elige de qué proveedor es en **«¿De qué proveedor
+es?»**: queda asignado a **todas** las facturas por revisar con ese RUT, y el
+proveedor se queda con el RUT, así las siguientes llegan ya asignadas. Si el
+proveedor elegido tiene otro RUT, Voltia PM no deja asignarlo.
+
+**Cargar una factura a mano.** Es **el único formulario** para cargar una
+factura de proveedor: abre el mismo desde **«Cargar factura a mano»** (acá),
+desde **«Cargar factura»** en la ficha del proveedor y desde **«Nueva factura a
+pagar»** en Proveedores. Se completa proveedor (o su RUT, si todavía no está
+dado de alta), tipo de comprobante, serie, número, fecha, moneda, **total con
+IVA incluido** y, si se quiere, el IVA, el vencimiento, la obra y el PDF. Si se
+escribe el IVA, Voltia PM calcula el neto. La casilla **Cargarla como deuda
+ahora** la confirma en el mismo paso.
+
+Para lo que **no tiene factura electrónica** (un proveedor del exterior, una
+deuda sin comprobante), el mismo formulario tiene el enlace **«¿Sin factura
+electrónica? Cargar la deuda sin comprobante»**, que abre el formulario simple:
+proveedor, descripción, número (opcional), monto, moneda, fechas de emisión y de
+vencimiento, y proyecto (opcional). El monto va con IVA incluido. Si no se pone
+vencimiento, **vence sola** a los días de plazo del proveedor.
+
+**Una factura nunca se carga dos veces.** Cada comprobante se identifica por el
+RUT de quien lo emite, el tipo, la serie y el número:
+
+- Si ya está en Voltia PM, por cualquiera de los tres caminos, Voltia PM no la
+  carga y avisa por dónde llegó y en qué estado está.
+- Si se carga a mano y después la trae la facturación electrónica, se reconoce
+  como la misma.
+- Si ya había una deuda de ese proveedor cargada sin comprobante que parece la
+  misma —mismo número o mismo monto—, no se crea otra: queda por revisar para
+  vincularla.
+- Si dos personas resuelven la misma factura a la vez, la primera la toma y a la
+  segunda Voltia PM le avisa que ya está resuelta.
+
+**El neto y el IVA.** El monto de una factura se carga siempre **con IVA
+incluido**: es el total que figura en la factura y el que se le paga al
+proveedor. Cuando la factura llega por la facturación electrónica, la deuda se
+queda además con su **neto** y su **IVA**; cuando se carga a mano con el
+formulario de la factura, si se escribe el IVA Voltia PM calcula el neto. Son los
+que van al libro de compras del archivo para la contadora (5.15).
+
+**El PDF.** Cada factura tiene **Ver PDF**. Si llegó por mail, Voltia PM se lo
+pide a la facturación electrónica y lo guarda. Si llegó solo por DGI, que no
+guarda el PDF, o si no se consiguió, aparece **Subir PDF** para cargar el que
+mandó el proveedor.
+
+**El registro.** Abajo está el registro de **todas** las facturas de
+proveedores, para buscar cualquiera: las que llegaron por la facturación
+electrónica —en cualquier estado, también las descartadas y las de empresas sin
+dar de alta— y las que se cargaron a mano. Se filtra por proveedor (o por **Sin
+proveedor en el sistema**), por fechas, por origen y con un buscador. Cada
+factura muestra neto, IVA, total, vencimiento, por dónde llegó (DGI, mail o a
+mano), en qué está —por revisar, a pagar, pagada o descartada— y su PDF.
+
+### 5.6 · Proveedores: lo que se les debe, sus facturas y sus pagos
+
+**Lo que se debe por vencimiento.** Arriba de **Finanzas → Proveedores** están
+los totales: cuánto se debe en total, cuánto está **vencido**, cuánto **vence en
+los próximos 7 días** y cuánto **entre 8 y 30 días**. Abajo, una fila por
+proveedor con lo mismo, el saldo a favor (pagos hechos que todavía no se
+aplicaron a ninguna factura) y cuánto del límite de crédito está usado. Tocando
+un proveedor se ven sus facturas, cada una con su vencimiento y cuántos días le
+faltan.
+
+**El listado de proveedores**, más abajo, muestra cada proveedor con su saldo.
+Desde ahí se da de alta uno nuevo y se carga una factura con **«Nueva factura a
+pagar»** (el mismo formulario de 5.5).
+
+**Datos de un proveedor.** Se cargan al crear o editar el proveedor:
+**Plazo (días)**, **Límite de crédito** (vacío si no tiene) y la moneda del
+límite, y la casilla **Cuenta corriente**: se tilda cuando a ese proveedor se le
+compra a crédito y se le paga contra su estado de cuenta; sus facturas
+electrónicas entran solas a la deuda (5.5). Sin tildar, quedan por revisar.
+Conviene que cada proveedor tenga su **RUT** cargado: la facturación electrónica
+lo reconoce por el RUT, nunca por el nombre.
+
+**La ficha de un proveedor** (tocando uno en el listado) muestra arriba el
+**total adeudado**, el **saldo a favor** y el **saldo neto**, y tiene cuatro
+pestañas: **Facturas**, **Pagos**, **Estado de cuenta** (todos los movimientos
+con el saldo que va quedando; no se puede exportar) y **Conciliación** (ver más
+abajo). Los botones son **«Cargar factura»**, **«Registrar pago»**, **«Arrancar
+cuenta»**, **«Ajustar»**, **«Editar»** (los datos del proveedor) y **«Nuevo
+gasto»**, que es solo para una compra de contado (ver el lineamiento «Una factura
+se carga por un solo lugar; a un proveedor se le paga por un solo camino»).
+Cada factura se puede **editar** o **eliminar** desde la ficha.
+
+**Registrar un pago.** Es **el único camino** para pagarle a un proveedor. Se
+piden la fecha, el monto y la moneda, la **cuenta de donde sale la plata**
+(obligatoria, y de la misma moneda que el pago), el método (transferencia,
+efectivo, cheque, tarjeta…), una referencia y notas. Viene marcada la casilla
+**«Aplicar automáticamente a las facturas más viejas»**: así el pago **se
+descuenta solo de las facturas que se le deben, de la más vieja a la más
+nueva**, sin elegir factura por factura. Solo se descuenta de facturas en la
+misma moneda del pago. Cuando una factura queda pagada entera, toma como fecha
+de pago la del último pago que la saldó (un ajuste no cuenta como pago: si una
+factura se salda solo con ajustes, conserva la fecha que tenía).
+
+**Saldo a favor.** Si el pago es más de lo que se debe, el sobrante queda **a
+favor del proveedor**. **No se aplica solo** a las facturas que lleguen
+después: la factura nueva queda a pagar, y el saldo a favor se descuenta a mano.
+Para eso, en la pestaña **Pagos** se toca el pago que tiene saldo (lleva la
+marca «Saldo: …») y se usa **«Aplicar a más facturas»**. Lo que sí hace Voltia PM
+es mostrar el **saldo neto** del proveedor y proyectar su deuda en el flujo de
+fondos ya descontado el saldo a favor. También queda saldo a favor si se
+**elimina** una factura que ya tenía pagos: esos pagos no se pierden, quedan a
+favor para reaplicar (Voltia PM avisa cuántos se liberaron).
+
+**Pagar una factura puntual.** Al registrar el pago se destilda **«Aplicar
+automáticamente a las facturas más viejas»**: al guardar se abre **«Aplicar pago
+a facturas»**, donde se elige a qué facturas y cuánto a cada una. Desde el
+detalle de un pago (tocándolo en la pestaña Pagos) también se puede quitar una
+aplicación, **«Aplicar a más facturas»** y **«Anular»** el pago.
+
+**Ajustar.** Un **ajuste** baja lo que se le debe a un proveedor **sin que sea
+plata**: no sale de ninguna cuenta, no es gasto y no aparece en el estado de
+resultados ni en el flujo de fondos. Sirve para cerrar una diferencia que no
+tiene explicación o una deuda que ya no corresponde. **«Ajustar»** (en la ficha)
+o **«Ajustar diferencia»** (en la Conciliación) piden el monto, la moneda, la
+fecha y el **motivo**, que es obligatorio y queda registrado. El ajuste se
+descuenta de la deuda más vieja a la más nueva y siempre se aplica entero: nunca
+deja saldo a favor. En la pestaña Pagos aparece como **«Ajuste (no es
+plata)»**. No se edita: si quedó mal, se anula y se hace de nuevo.
+
+**Arrancar cuenta.** Deja lo que se le debe a un proveedor **igual a lo que dice
+su estado de cuenta**, desde esa fecha (el porqué está en el lineamiento «Borrón y
+cuenta nueva con cada proveedor»). Se abre con **«Arrancar cuenta»** en la ficha,
+o con **«Arrancar la cuenta con este estado de cuenta»** desde la Conciliación,
+que ya trae el saldo leído. Se completa:
+
+1. La **moneda**, la **fecha del estado de cuenta** y el **saldo que dice**.
+2. Las **deudas abiertas** en Voltia PM en esa moneda: se tildan las que **siguen
+   vigentes**. Vienen tildadas las que llegaron por factura electrónica y las de
+   octubre de 2026 en adelante; las demás se proponen cerrar.
+3. Una nota, si se quiere.
+
+Antes de confirmar, Voltia PM muestra la cuenta: la deuda vigente, cuántas
+deudas se cierran y por cuánto, y la diferencia con el estado de cuenta. Al
+confirmar:
+
+- Las deudas no tildadas **se cierran con un ajuste** («Cerrada al arrancar la
+  cuenta el …»).
+- Si el proveedor dice que se le debe **más**, la diferencia entra como una deuda
+  «**Saldo anterior** según estado de cuenta al …», con fecha anterior a la deuda
+  vigente más vieja, para que el próximo pago la cancele primero.
+- Si dice que se le debe **menos**, la diferencia se baja con otro ajuste.
+- **Los pagos y gastos ya cargados no se tocan.**
+
+**Conciliación con el estado de cuenta.** El saldo de la ficha es lo que Voltia
+le debe al proveedor, ya descontado el saldo a favor. Para compararlo con el
+estado de cuenta que manda el proveedor está la pestaña **Conciliación** de la
+ficha:
+
+1. Se sube el estado de cuenta con **«Subir estado de cuenta»**: sirve en
+   **PDF, Excel o una foto**. Solo si el documento no lo dice claro, se indica
+   la moneda y la fecha del corte («Al día»).
+2. La inteligencia artificial de Voltia PM lo lee y lo pasa a renglones
+   (facturas, notas de crédito y pagos). Tarda unos segundos.
+3. Voltia PM compara esos renglones con lo cargado para ese proveedor y muestra
+   el **saldo según el proveedor**, el **saldo según Voltia PM** y la
+   **diferencia** (si es positiva, el proveedor dice que se le debe más de lo
+   que figura en Voltia PM; si no hay diferencia, dice «Cuadra»).
+4. Abajo, en cuatro listas: lo que **coincide**; los **montos distintos** (el
+   mismo comprobante, con distinto importe de cada lado); lo que **falta cargar
+   en Voltia PM** (está en el estado de cuenta y no en Voltia PM: se revisan las
+   facturas por revisar o se carga); y lo que **el proveedor no tiene** (está en
+   Voltia PM y no en su estado de cuenta: puede ser un pago que el proveedor no
+   imputó o algo cargado de más).
+5. Después de corregir lo que faltaba, **«Volver a comparar»** repite la
+   comparación con lo cargado hoy, **sin volver a leer el archivo**.
+6. Lo que no se pueda explicar se resuelve con **«Ajustar diferencia»** o, si
+   conviene empezar de cero, con **«Arrancar la cuenta con este estado de
+   cuenta»**.
+
+Cada conciliación queda guardada en la ficha, con el archivo original para
+volver a verlo.
+
+### 5.7 · Pagos a instaladores tercerizados
+
+Se entra desde **Finanzas → Instaladores**. Muestra cada trabajo con el
+instalador, la fecha de la obra, el monto, lo pagado, el saldo y el estado
+(**pendiente**, **parcial** o **pagado**).
+
+**El pago lo genera el calendario.** La primera vez que Operaciones agenda una
+obra con un equipo **tercerizado**, el pago aparece solo, a nombre de la persona
+que cobra por ese equipo (se configura una vez, en Admin → Equipos). El monto es
+la mano de obra de la propuesta ganadora **con IVA**, porque el instalador
+factura. Si la propuesta no traía mano de obra, el pago nace en cero y marcado
+para cargar el monto. Las obras de equipo propio no tienen pago aparte.
+
+**Después no cambia solo**: si la obra se reagenda o cambia de equipo, Finanzas
+corrige el instalador o el monto a mano.
+
+**Cuándo se le paga:** el **50 % al arrancar la obra** y el **50 % al
+terminarla**. La orden de pago la da el responsable de Administración y Finanzas
+o Gerencia, cuando en Voltia PM la etapa de Ejecución de obra figura terminada.
+El monto no se negocia: el gerente de Operaciones se lo informa al tercerizado
+antes de agendar, y pagar más lo autoriza solo Gerencia.
+
+**Un gasto de obra que no estaba previsto** se carga en Finanzas asignado a la
+obra y se suma a su costeo. Quién lo aprueba está en el paso 3 del
+procedimiento diario (3.1).
+
+Finanzas:
+
+- **«Asignar»** o **«Editar»** un trabajo: el instalador y el monto.
+- **Registra los pagos** con **«Pagar»**, totales o parciales: monto, fecha y una
+  nota. No se puede pagar más que el saldo. No se elige cuenta.
+- **Corrige o anula una entrega** ya registrada, incluso con el trabajo saldado.
+- **Carga a mano** trabajos que no salen de un proyecto (una reparación en
+  garantía, una obra anterior), con **«Cargar pago manual»**.
+- **Filtra por instalador** y copia un **resumen para WhatsApp** con las obras en
+  curso y lo que falta de cada una, más las últimas tres saldadas (las que se
+  terminaron de pagar más recientemente, no las de obra más nueva). El botón
+  aparece solo con un instalador elegido, y arma el mensaje con lo que muestra
+  la lista: para que salga completo, el filtro de estado tiene que estar en
+  **Todos**. Sale así:
+
+  > <small>\*Pagos — [nombre del instalador]\*<br>
+  > <br>
+  > ⏳ \*Pendiente: [total que se le debe, en US$]\*<br>
+  > <br>
+  > \*En curso y por cobrar\*<br>
+  > • [código del proyecto] · [cliente] — [monto de la obra]<br>
+  > • [código del proyecto] · [cliente] — [monto de la obra] — cobrado [lo ya entregado], falta [lo que queda]<br>
+  > <br>
+  > \*Últimos trabajos saldados\*<br>
+  > ✅ [código del proyecto] · [cliente] — [monto] (pagado el [día y mes en que se terminó de pagar])</small>
+
+  Va un renglón por obra; el detalle «cobrado…, falta…» aparece solo si ya se le
+  entregó una parte. Si no se le debe nada, en lugar del pendiente dice
+  «✅ \*No queda nada pendiente.\*». Si hay una sola obra saldada, el título es
+  «\*Último trabajo saldado\*». Si el instalador no tiene trabajos, dice «No hay
+  trabajos registrados.». Los trabajos cargados a mano sin proyecto muestran solo
+  el nombre del cliente.
+
+Cada pago registrado es un gasto pagado «Mano de obra», **sin cuenta**, que
+entra solo a Movimientos y al estado de resultados. **Lo que se le debe al instalador no
+aparece como gasto futuro en el flujo de fondos**: se ve solo en esta pantalla
+y en la posición del Inicio.
+
+El instalador ve sus trabajos, lo cobrado y el saldo en **Mis cobros**, desde el
+menú de su cuenta. Solo puede mirar.
+
+### 5.8 · Costos fijos
+
+Los **costos fijos** son los gastos que se repiten (alquiler, contador,
+servicios). Se configuran una vez en **Finanzas → Costos fijos**, con
+**«Agregar costo fijo»**: nombre, descripción
+(opcional), **periodicidad** —**mensual**, **bimensual** (en los meses pares o
+en los impares) o **anual** (en un mes elegido)—, el **día del mes de pago** y un
+**monto de referencia** con su moneda. Los carga Finanzas (y también un administrador).
+
+**No generan movimientos solos.** Cada costo fijo figura en **Pendientes** (en el
+Inicio) desde que empieza el mes que le toca, y el **Flujo de fondos** los
+proyecta para los próximos 3 meses. Sale de Pendientes cuando:
+
+- se registra el pago: **«Marcar pagado»** en Pendientes abre el formulario de
+  **Nuevo movimiento** ya completado con la categoría **Costo fijo** y ese
+  costo elegido; se pone el **monto real** y se guarda. Ese monto pasa a ser el
+  que Voltia PM sugiere la próxima vez;
+- o se usa **«Saltear este mes»**, cuando ese mes no corresponde. Afecta solo
+  ese mes: el costo fijo sigue activo para los siguientes.
+
+Un costo fijo no se puede reagendar desde Pendientes: su fecha es la del día del
+mes configurado, y se cambia desde Finanzas → Costos fijos.
+
+### 5.9 · Banco
+
+Se entra desde **Finanzas → Banco**. Es el registro de **todo lo que Voltia PM
+leyó del banco**, cada movimiento con su **pareja** en Voltia PM (el movimiento o
+el pago cargado que le corresponde). La regla es simple: **cada movimiento del
+banco tiene que tener su movimiento cargado**.
+
+Los movimientos del banco los trae el **lector del banco**, un programa que lee
+los movimientos de cada cuenta en el home banking. Para saber de qué cuenta es
+cada uno, la cuenta tiene que tener cargado su **número de cuenta del banco**
+(en Administración → Cuentas). Una cuenta que el lector todavía no leyó dice
+«todavía no se leyó»: esa cuenta se controla con la conciliación mensual (5.12).
+
+**Arriba**, una tarjeta por cuenta: el **saldo en el banco** con la fecha y hora
+de la última lectura, cuántos movimientos tienen pareja y cuántos faltan cargar.
+
+**Abajo**, la lista, que se filtra por cuenta, por fechas y por estado. Cada
+movimiento del banco está en uno de estos estados:
+
+| Estado | Qué quiere decir | Qué se hace |
+|---|---|---|
+| **Coincide** | Voltia PM encontró una pareja (misma cuenta, monto y fecha cercana), pero nadie la confirmó | **«Confirmar»**: fija la pareja, que ya no se mueve aunque después se cargue algo parecido |
+| **Confirmada** | Una persona confirmó la pareja | Si la pareja está mal, **«Soltar»** |
+| **Falta cargar** | No hay nada cargado que coincida | **«Cargar»** abre «Nuevo movimiento» ya completado; **«No va»** pide el motivo, para lo que no se carga |
+| **No va** | Alguien decidió que no se carga, con su motivo | Si fue un error, **«Volver a comparar»** |
+| **Antes de comparar** | Es de antes de la fecha desde la que Voltia PM compara con el banco | Nada: se muestra, pero no se compara |
+
+Lo que falta cargar aparece también en **Por conciliar**, en el Inicio (5.1).
+
+### 5.10 · Tarjetas
+
+Se entra desde **Finanzas → Tarjetas**. **Una tarjeta de crédito es una cuenta
+más**: se da de alta como cualquier cuenta, con el tipo **«Tarjeta»**, una por
+tarjeta. Así:
+
+- **Cada gasto de la tarjeta** se carga en Movimientos como cualquier gasto,
+  eligiendo la tarjeta como cuenta.
+- **El pago de la tarjeta** es una **transferencia** desde la cuenta del banco a
+  la tarjeta.
+- Si después del pago el saldo de la tarjeta queda en cero, **cierra**.
+
+**Quién usa la tarjeta.** Para cada tarjeta se cargan el titular y los
+adicionales, cada uno con su **regla**: **Siempre de Voltia**, **Siempre
+personal** o **Se decide gasto por gasto**. Al agregar a alguien se tilda **«Es
+el socio»** si lo es: lo personal del socio va a la **cuenta del socio**; lo
+personal de cualquier otro, a **adelanto a descontar** de su sueldo.
+
+**La rendición del mes.** Se elige la tarjeta y el mes, y se ve:
+
+- Los totales: **De Voltia**, **Personal del socio**, **A descontar**, **Pagado
+  a la tarjeta** y el **saldo de la tarjeta** («Cierra en cero», o lo que se le
+  debe hoy).
+- La tabla de gastos, con la fecha, el gasto, el monto y **quién** lo hizo. Cada
+  gasto se marca **«Es personal»** o **«Es de Voltia»**. Mientras no se sabe,
+  figura **«¿Quién lo hizo?»** o **«Por decidir»**. Si se marca personal un gasto
+  hecho con una tarjeta de la empresa (regla «Siempre de Voltia»), Voltia PM
+  pregunta **quién autorizó** el gasto personal, y queda anotado.
+
+**Cuenta del socio.** Lo que suman los gastos personales del socio pagados por
+Voltia, menos lo que devolvió. La contadora la cancela con sueldo formal, con
+utilidades o con la devolución (ver el lineamiento «Lo personal no es gasto de
+Voltia»).
+
+**A descontar del sueldo.** Los gastos personales autorizados de empleados con
+una tarjeta de la empresa, todavía no descontados. Cuando se descuentan del
+sueldo, quien liquida los sueldos (el encargado de Finanzas, la contadora) toca
+**«Descontado»**.
+
+### 5.11 · Movimientos
+
+**La pestaña Movimientos muestra solo lo que ya pasó**: la plata que ya entró o
+ya salió, más los pagos a proveedores. Lo que todavía se espera (cobros
+previstos, facturas a pagar, comisiones sin pagar) no está acá: está en
+**Pendientes**, en el Inicio (5.1). Arriba se ven el **saldo actual en pesos** y
+el **saldo actual en dólares**.
+
+**«Nuevo movimiento»** carga algo que ya ocurrió: al guardarlo queda como
+pagado. El formulario no tiene campo de estado. Pide:
+
+- **Tipo**: **Ingreso** o **Gasto**.
+- **Categoría**. Para un ingreso: **Entrada proyecto**, **Cobro cliente**,
+  **Cuenta del socio** (cuando el socio devuelve lo que Voltia le pagó) u
+  **Otro**. Para un gasto: **Salida proyecto**, **Costo fijo**, **Costo
+  variable**, **Compra stock**, **Consumo stock**, **Cuenta del socio** (un gasto
+  personal del socio pagado por Voltia), **Adelanto a descontar** (un gasto
+  personal autorizado de un empleado) u **Otro**. Al cargar un gasto viene por
+  defecto **«Salida proyecto»**, la más habitual. Si se elige **Costo fijo**,
+  aparece la lista de costos fijos del mes para elegir a cuál corresponde (ver
+  5.8). **«Pago proveedor» no se ofrece**: a un proveedor se le paga con
+  «Registrar pago» en su ficha (5.6).
+- **Descripción**, **monto** y **moneda** (dólares por defecto, o pesos).
+- **Cuenta (opcional)**: si se elige una, la moneda pasa a ser la de la cuenta.
+  Para un gasto con tarjeta, se elige la tarjeta.
+- **Fecha**.
+- **Proveedor (opcional)**, solo en los gastos, y **Proyecto (opcional)**. Si
+  el proveedor elegido tiene deuda abierta en esa moneda, Voltia PM avisa
+  cuánto se le debe y que, si es un pago de esa deuda, se cargue con
+  «Registrar pago» en su ficha. El gasto con proveedor es solo para compras de
+  contado.
+
+**«Transferencia»** pasa plata de una cuenta a otra de la misma moneda: queda
+una salida en la cuenta de origen y una entrada en la de destino. Las
+transferencias no cuentan en el estado de resultados. El pago de una tarjeta se
+carga así.
+
+**Cómo se ve.** La pestaña arranca mostrando **todo el año en curso**; con
+**«Año en curso» / «Por mes»** se cambia a un solo mes, y se puede elegir el
+año. Se filtra por tipo (**Todos los tipos**, **Ingresos**, **Gastos**) y hay un
+buscador por descripción, proveedor, cliente, cuenta o monto. Arriba de la lista
+dice cuántos movimientos hay.
+
+Los **pagos a proveedores** aparecen en la lista, pero no se editan desde acá:
+se editan desde la ficha del proveedor (5.6).
+
+**Cómo se borra.** Con la papelera de la fila, o al abrir un movimiento para
+editarlo, abajo, con **«Eliminar movimiento»**. Las dos piden confirmación. Un
+movimiento atado a una comisión **no se puede borrar** desde Finanzas: se
+gestiona desde Comisiones. Nada con fecha de un **mes cerrado** se carga, se
+edita ni se borra (5.15).
+
+### 5.12 · Cuentas y conciliación mensual
+
+En **Finanzas → Cuentas** están las cuentas de Voltia (las bancarias y las
+tarjetas), una tarjeta por cuenta con su saldo. Las cuentas se dan de alta en
+**Administración → Cuentas**. Las transferencias entre cuentas se hacen desde
+Movimientos (5.11).
 
 **Conciliar una cuenta** es comparar el saldo que muestra Voltia PM con el real
-del banco. Se carga el **saldo real** que da el home banking y **su fecha**. Si
-hay diferencia, Voltia PM **ajusta el saldo de la cuenta a ese valor desde esa
-fecha**. **No se crea ningún movimiento de ajuste**: la diferencia no aparece
-como ingreso ni como gasto, así que no explica de dónde salió. Cada cuenta
-guarda el historial de sus conciliaciones.
+del banco. Se hace **una vez por mes**. Se carga el **saldo real** que da el home
+banking y **su fecha**. Si hay diferencia, el **motivo es obligatorio**: no se
+puede guardar sin escribir por qué no coincide. Voltia PM **toma el saldo del
+banco como bueno desde esa fecha**, sin crear ningún movimiento: la diferencia no
+aparece como ingreso ni como gasto, y lo único que la explica es el motivo
+escrito. Cada cuenta guarda el historial de sus conciliaciones.
+
+Lo normal es que no haga falta corregir nada: si todo lo del banco se cargó
+(5.9), el saldo coincide solo.
 
 **Dónde se pide la cuenta y dónde no.** Es obligatoria al registrar un pago a un
 proveedor y al marcar pagado un cobro o un pendiente manual. En **Nuevo
@@ -905,25 +1186,13 @@ Cuando el saldo de las cuentas no coincide con el flujo de fondos, todas las
 pantallas de Finanzas muestran un aviso («Hay un descalce…») con el botón
 **«Conciliar cuentas»**.
 
-### 5.14 · Cotización del dólar
+### 5.13 · Flujo de fondos
 
-Voltia PM trabaja en dólares, pero hay movimientos en pesos. Para pasarlos a
-dólares (en el estado de resultados, por ejemplo) usa **la última cotización
-cargada**. La cotización **se toma sola del Banco Central del Uruguay (BCU)**,
-el dólar interbancario, todos los días a las 14:00 hora de Uruguay. Nadie la
-carga a mano: no hay una pantalla para eso.
-
-**Ojo:** como se usa la última cotización y no la del día del movimiento, **el
-resultado de un mes ya cerrado cambia un poco cada vez que se carga una
-cotización nueva**. Es una decisión a revisar.
-
-### 5.15 · Flujo de fondos
-
-Muestra **cuánta plata va a haber** día a día: el saldo de hoy más lo que se
-espera cobrar y menos lo que hay que pagar. Proyecta **solo tres cosas**: los
-cobros pendientes de los clientes (las cuotas del plan de pagos y las
-anualidades del plan granizo), la deuda con proveedores y los costos fijos de
-cada mes.
+Se entra desde **Finanzas → Flujo**. Muestra **cuánta plata va a haber** día a
+día: el saldo de hoy más lo que se espera cobrar y menos lo que hay que pagar.
+Proyecta **solo tres cosas**: los cobros pendientes de los clientes (las cuotas
+del plan de pagos y las anualidades del plan granizo), la deuda con proveedores
+y los costos fijos de cada mes.
 
 - La deuda con un proveedor se proyecta **ya descontado su saldo a favor**, por
   moneda, empezando por la factura que vence primero.
@@ -935,7 +1204,8 @@ cada mes.
   no son de un proveedor, lo que se le debe a los instaladores, las compras de
   materiales que todavía no tienen factura, ni los cobros previstos que ya
   vencieron sin cobrarse. Por eso el flujo puede verse mejor de lo que es: esas
-  salidas existen igual.
+  salidas existen igual (la posición del Inicio sí las cuenta).
+- Los ajustes de deuda con proveedores no son plata y no aparecen.
 
 **Qué período abarca.** Arranca hoy, con el **saldo actual** —la suma de todas
 las cuentas activas, con los pesos pasados a dólares—, y proyecta **los próximos
@@ -944,20 +1214,11 @@ y no se pagó a un proveedor se muestra como si saliera hoy. El gráfico muestra
 saldo de los últimos 3 meses y de los próximos 3, y avisa si el saldo proyectado
 cae por debajo de cero.
 
-**La posición.** Arriba del flujo de fondos y del estado de resultados está el
-bloque **Posición**, todo en dólares: la **caja** (lo que hay en las cuentas),
-**lo que nos deben** —separado en vencido, próximos 7 días, de 8 a 30 días, más
-de 30 días y **sin fecha** (lo que una obra todavía debe sin tener una cuota
-prevista)—, **lo que debemos** —proveedores, otros compromisos, comisiones e
-instaladores, también por vencimiento— y el **neto**, con caja y sin caja. A
-diferencia del flujo, la posición **sí** cuenta las comisiones y lo que se le
-debe a los instaladores.
+### 5.14 · Estado de resultados
 
-### 5.16 · Estado de resultados
-
-Responde **«¿cuánto ganamos o perdimos en tal período?»** con la plata que
-efectivamente entró y salió. Se elige **mes, trimestre o año**. Todo se muestra
-**en dólares**.
+Se entra desde **Finanzas → Resultados**. Responde **«¿cuánto ganamos o perdimos
+en tal período?»** con la plata que efectivamente entró y salió. Se elige **mes,
+trimestre o año**. Todo se muestra **en dólares**.
 
 - Cuenta solo lo **pagado**, con la fecha en que se pagó.
 - Los pagos a proveedores cuentan **por la fecha y el monto de cada pago**: si
@@ -969,13 +1230,138 @@ efectivamente entró y salió. Se elige **mes, trimestre o año**. Todo se muest
 - El **Plan de Protección contra Granizo** va en un bloque propio: lo cobrado de
   anualidades menos lo gastado en reposiciones. Suma al resultado, pero no a los
   ingresos ni a los gastos de las obras.
+- **No cuentan**: los ajustes de deuda con proveedores, las transferencias entre
+  cuentas propias, la cuenta del socio y los adelantos a descontar.
 - Al final, el **resultado** y la **rentabilidad**.
-- Los pesos se pasan a dólares con la última cotización (ver 5.14).
+- Los pesos se pasan a dólares con la última cotización (ver 5.18).
 
 También se puede pedir desde el chat de Claude conectado a Voltia PM, para
 cualquier rango de fechas; da los mismos números.
 
-### 5.17 · El Plan de Protección contra Granizo, en lo que toca a Finanzas
+### 5.15 · Cierre de mes
+
+Se entra desde **Finanzas → Cierre**. **Cerrar un mes lo deja fijo**: nada con
+fecha de ese mes se puede cargar, editar ni borrar, y sus números no se mueven
+más. Arriba dice hasta qué día está cerrado. Por defecto se abre en el mes
+anterior; se puede elegir otro mes y año.
+
+**La lista de control.** Antes de cerrar se revisa. Cinco puntos los calcula
+Voltia PM solo (con una marca verde si están bien, o el detalle de lo que falta):
+
+- Todo lo del banco está cargado en Voltia PM.
+- Lo cargado como pagado o cobrado aparece en el banco.
+- Las facturas de proveedores del mes están revisadas.
+- Los costos fijos del mes están pagados.
+- Las obras vendidas que llevan factura están facturadas.
+
+Y cuatro los tilda una persona:
+
+- Los estados de cuenta de los proveedores principales, subidos y comparados.
+- Las tarjetas rendidas: cada gasto marcado de Voltia o personal, y el pago
+  cierra.
+- Los descuentos a empleados y la cuenta del socio, revisados.
+- La revisión del dueño.
+
+**El archivo para la contadora.** El botón **«Archivo para la contadora»** baja
+una planilla de Excel del mes con cuatro hojas: **Compras** (el libro de compras,
+con neto e IVA; las notas de crédito, en negativo), **Ventas** (lo facturado desde
+Voltia PM), **Ajustes** (cada ajuste de deuda con proveedores, con su motivo y
+quién lo hizo) y **Movimientos del mes**. Se puede bajar antes o después de
+cerrar.
+
+**Cerrar.** El botón **«Cerrar [mes]»**. Si queda algún punto de la lista sin
+resolver, se puede cerrar igual, pero hay que escribir por qué. Al cerrar, Voltia
+PM guarda una **foto** del mes: la caja de cada cuenta, la posición y el
+resultado del mes. El mes cerrado muestra quién lo cerró, cuándo, la nota y la
+caja al cerrar.
+
+**Reabrir.** Con **«Reabrir este mes»**, que pide el motivo (al menos diez
+letras) y lo deja registrado. Reabrir un mes reabre también los meses cerrados
+posteriores. Abajo está el **historial de cierres**, con cada cierre y cada
+reapertura con su motivo.
+
+Cierran y reabren el **dueño** y **Finanzas**; los demás ven la pantalla, pero no
+pueden cerrar.
+
+**Lo que el cierre no frena.** Lo que Voltia PM hace solo sigue entrando aunque
+tenga fecha de un mes cerrado: una factura de proveedor que se confirma (o que
+entra sola), una comisión que nace al ganar una venta, un cobro que registra
+Experiencia Solar o un pago a un instalador. Si eso pasa, el número del mes ya no
+coincide con la foto del cierre (ver el capítulo 6).
+
+### 5.16 · Historial: auditar lo que se hizo
+
+Se entra desde **Finanzas → Historial**. Es el registro de **todo lo que se
+cargó, cambió o borró** en Finanzas: movimientos y cobros, pagos a proveedores y
+cómo se aplicaron, ajustes, proveedores, cuentas, comisiones, pagos a
+instaladores, facturas recibidas, lo confirmado contra el banco y las
+conciliaciones.
+
+Cada renglón dice **cuándo**, **quién**, **qué** (alta, cambio, baja o cambio de
+estado) y el detalle. Cuando es un cambio, muestra **el valor de antes y el de
+después**: si alguien corrigió el monto de una factura de 1.220 a 1.250, queda
+escrito así, con su nombre y la hora.
+
+Se filtra por fechas, por persona, por tipo (movimientos, pagos, proveedores…),
+por alta/cambio/baja, y con un buscador sobre el detalle.
+
+No se puede editar ni borrar: es la constancia de lo que pasó. Es la herramienta
+para revisar los gastos mientras no exista un circuito de aprobación.
+
+### 5.17 · Comisiones del asesor
+
+**Cómo nace.** Al marcar un lead como **ganado** (un *lead* es un cliente
+potencial en el pipeline comercial), Voltia PM toma el precio de la **última
+propuesta publicada** y congela la comisión del asesor con ese número. Al mismo
+tiempo crea un **pendiente en Finanzas**, un gasto previsto «Comisión venta
+[cliente] — [asesor]», por el monto **sin IVA** y con vencimiento el **día 1 del
+mes siguiente** a la venta. Las propuestas residenciales llevan un porcentaje fijo;
+las de empresas, un porcentaje base más una parte de lo que el asesor consiga
+por encima del markup de referencia. Los porcentajes se configuran en
+**Administración → Defaults de propuestas**, y cada comisión queda con el que
+regía cuando se publicó la propuesta.
+
+Si el cliente aceptó otra versión de la propuesta, el asesor la cambia en la
+ventana que aparece al ganar, y la comisión y el pendiente se recalculan. Una
+comisión ya pagada no se recalcula así.
+
+**Ventas sin propuesta.** Si la venta se cerró sin ninguna propuesta publicada en
+Voltia PM, no hay de dónde sacar el monto: la comisión se carga a mano.
+
+**La pantalla Comisiones** (en el menú general, fuera de Finanzas): cada asesor
+ve solo las suyas; la gerencia comercial, Administración y Finanzas ven las de
+todos y filtran por asesor. Muestra el saldo a cobrar, lo cobrado en el año, la
+cantidad de ventas, un gráfico por mes y la tabla con filtros (todas,
+pendientes, pagas).
+
+**Cómo se paga.** Desde **Pendientes**, en el Inicio de Finanzas: la comisión
+aparece como **Pendiente manual**, con vencimiento el día 1 del mes siguiente a
+la venta. Se usa **«Marcar pagado»**, que pide la fecha del pago y la cuenta de
+donde salió. La comisión pasa sola a **Pagada** en la pantalla Comisiones, con
+esa fecha.
+
+**Correcciones.** Solo el administrador puede editar (monto, fecha de venta,
+fecha de pago prevista) o borrar una comisión, con el botón **«Editar»** de la
+fila. Cada cambio queda registrado y la comisión muestra la marca «editada».
+También se puede cargar una **comisión suelta** a un asesor, sin lead, con
+**«Agregar comisión manual»** en la pantalla Comisiones (lo puede hacer quien
+puede cargar movimientos en Finanzas). La tarjeta de comisión de la ficha del
+proyecto que sugiere un porcentaje sirve solo para esa carga manual.
+
+### 5.18 · Cotización del dólar
+
+Voltia PM trabaja en dólares, pero hay movimientos en pesos. Para pasarlos a
+dólares (en el estado de resultados, por ejemplo) usa **la última cotización
+cargada**. La cotización **se toma sola del Banco Central del Uruguay (BCU)**,
+el dólar interbancario, todos los días a las 14:00 hora de Uruguay. Nadie la
+carga a mano: no hay una pantalla para eso.
+
+**Ojo:** como se usa la última cotización y no la del día del movimiento, **el
+resultado en dólares de un mes ya cerrado cambia un poco cada vez que se carga
+una cotización nueva**, aunque nadie toque nada. La foto que se guarda al cerrar
+el mes conserva el resultado de ese momento. Es una decisión a revisar.
+
+### 5.19 · El Plan de Protección contra Granizo, en lo que toca a Finanzas
 
 El plan lo maneja **Experiencia Solar** (Experiencia Solar → Plan granizo). Por
 USD 12 por panel por año, IVA incluido, Voltia repone los paneles que rompa el
@@ -987,7 +1373,7 @@ granizo. A Finanzas le toca:
 - **Marcar cobrada una anualidad**: lo puede hacer Experiencia Solar desde el
   plan o Finanzas. Siempre con **la fecha real del pago**: el plan se activa con
   el pago, y la fecha decide desde cuándo cubre. Si la marca Experiencia Solar,
-  queda **sin cuenta** (ver 5.9), y Finanzas se la asigna.
+  queda **sin cuenta** (ver 5.3), y Finanzas se la asigna.
 - **Las reposiciones** (cuando se reponen paneles dañados) quedan como gasto del
   plan, con su costo real: un gasto «Plan granizo · reposición …».
 - **Si Finanzas borra el cobro** de una anualidad, el plan la muestra «Sin cobro
@@ -995,7 +1381,7 @@ granizo. A Finanzas le toca:
 - Los cobros del plan **no aparecen en Cobros** de la obra ni cuentan para su
   saldo.
 
-### 5.18 · Los indicadores del reporte semanal
+### 5.20 · Los indicadores del reporte semanal
 
 Todos los lunes a las 00:01 sale un correo, a una casilla fija, con los
 indicadores de la semana anterior (de lunes a domingo). También se ve en
@@ -1015,24 +1401,6 @@ indicadores, del mes que acaba de cerrar comparado con el anterior.
 
 ---
 
-### 5.19 · Historial: auditar lo que se hizo
-
-Se entra desde **Finanzas → Historial**. Es el registro de **todo lo que se
-cargó, cambió o borró** en Finanzas: movimientos y cobros, pagos a proveedores y
-cómo se aplicaron, proveedores, cuentas, comisiones, pagos a instaladores,
-facturas recibidas y conciliaciones.
-
-Cada renglón dice **cuándo**, **quién**, **qué** (alta, cambio, baja o cambio de
-estado) y el detalle. Cuando es un cambio, muestra **el valor de antes y el de
-después**: si alguien corrigió el monto de una factura de 1.220 a 1.250, queda
-escrito así, con su nombre y la hora.
-
-Se filtra por fechas, por persona, por tipo (movimientos, pagos, proveedores…),
-por alta/cambio/baja, y con un buscador sobre el detalle.
-
-No se puede editar ni borrar: es la constancia de lo que pasó. Es la herramienta
-para revisar los gastos mientras no exista un circuito de aprobación.
-
 ## 6 · Cuando algo sale mal
 
 ### Un proyecto aparece en Cobros sin plan de pagos
@@ -1044,30 +1412,72 @@ cliente. No se inventan fechas.
 
 ### Una cuota venció y el cliente no pagó
 
-Se mira primero si el pago entró y no se registró. Si no entró, se le pregunta
-al asesor si hubo algún cambio acordado. El reclamo al cliente lo hace
-Experiencia Solar, que es quien habla con él (va a pasar al área de
-Administración cuando esa área se haga cargo de Finanzas en Voltia PM).
+Se mira primero si el pago entró y no se registró (en **Banco** o en **Por
+conciliar**). Si no entró, se le pregunta al asesor si hubo algún cambio
+acordado. El reclamo al cliente lo hace Experiencia Solar, que es quien habla con
+él (va a pasar al área de Administración cuando esa área se haga cargo de
+Finanzas en Voltia PM).
+
+### Una obra muestra «hay cobro sin factura»
+
+La obra cobró más de lo que se le facturó. Se mira si el cliente lleva una
+factura por el total o por un porcentaje (la nota de facturación del proyecto y
+el asesor lo dicen). Si falta facturar, se emite lo que corresponde; si se
+facturó por fuera de Voltia PM, esa factura no entra en la comparación.
 
 ### El saldo de un proveedor no coincide con su estado de cuenta
 
-Se revisa en **Facturas de proveedores** si falta alguna factura (por ejemplo,
-una descartada por error o de un proveedor «sin proveedor en el sistema») y en
-la ficha del proveedor si hay pagos que quedaron como saldo a favor. Si el
-vencimiento de una factura no coincide con el plazo acordado, se habla con el
-proveedor: manda el plazo acordado.
+Se sube el estado de cuenta en la **Conciliación** de su ficha y se mira cada
+lista. Se revisa en **Facturas** si falta alguna factura (por ejemplo, una
+descartada por error o de un proveedor «sin proveedor en el sistema») y en la
+ficha si hay pagos que quedaron como saldo a favor. Lo que no tiene explicación
+se cierra con **«Ajustar diferencia»**, con su motivo; si lo viejo no tiene
+arreglo, se **arranca la cuenta** con ese estado de cuenta. Si el vencimiento de
+una factura no coincide con el plazo acordado, se habla con el proveedor: manda
+el plazo acordado.
 
-### Una factura del proveedor no llegó a la bandeja
+### Una factura del proveedor no llegó
 
-La bandeja trae las facturas de los últimos 45 días. Una factura más vieja, o una
-que DGI registró tarde, puede no entrar sola: se carga a mano desde la ficha del
-proveedor.
+La facturación electrónica trae las facturas de los últimos 45 días. Una factura
+más vieja, o una que DGI registró tarde, puede no entrar sola: se carga con
+**«Cargar factura a mano»** en Facturas (o **«Cargar factura»** en la ficha del
+proveedor, que es el mismo formulario).
 
 ### Una factura quedó cargada dos veces
 
-Si se cargó a mano y además llegó por la bandeja, en la bandeja se elige **«Ya
-cargada»** para vincularlas. Si ya se cargó dos veces como deuda, se elimina una
-desde la ficha del proveedor; si tenía pagos, quedan como saldo a favor.
+Si se cargó a mano y además llegó por la facturación electrónica, en las
+facturas por revisar se elige **«Ya cargada»** para vincularlas. Si ya se cargó
+dos veces como deuda, se elimina una desde la ficha del proveedor; si tenía
+pagos, quedan como saldo a favor. Por conciliar muestra los **posibles gastos
+cargados dos veces** para encontrarlos.
+
+### Una factura que entró sola no es de Voltia o está mal
+
+Las facturas de proveedores de cuenta corriente entran solas a la deuda y se
+revisan una vez por semana. Si una no corresponde, se elimina la deuda desde la
+ficha del proveedor (si ya tenía pagos, quedan como saldo a favor) y se le avisa
+al proveedor para que la anule con una nota de crédito.
+
+### Una nota de crédito no se pudo descontar
+
+Si la nota es mayor que lo que se le debe al proveedor en esa moneda, Voltia PM
+no la descuenta y la deja por revisar. Se mira con el proveedor si hay facturas
+sin cargar; si la nota quedó como plata a favor de Voltia, se habla con el
+proveedor y se anota con **«Marcar registrada»** cómo se resolvió.
+
+### Un movimiento del banco no se encuentra en Voltia PM, o al revés
+
+Lo que el banco muestra y no está cargado aparece en **Falta cargar**: se carga
+con «Cargar» o, si no va (por ejemplo, una transferencia entre cuentas propias ya
+cargada), con «No va» y el motivo. Lo cargado que el banco no muestra suele
+tener mal la cuenta, la fecha o el monto: se corrige el movimiento. Si una pareja
+que Voltia PM propuso está mal, se la **suelta** en Banco.
+
+### Un gasto de la tarjeta no se sabe de quién es
+
+Queda como **«¿Quién lo hizo?»** o **«Por decidir»** en Tarjetas. Se le pregunta
+al titular de la tarjeta. Mientras no se resuelva, la tarjeta no está rendida y
+el punto de la lista de control del cierre no se tilda.
 
 ### Una obra se reagendó con otro equipo y el pago al instalador quedó mal
 
@@ -1080,19 +1490,27 @@ Si no tiene propuesta publicada, la comisión se carga a mano. Si se tomó una
 propuesta que no era, el asesor la cambia; si ya estaba pagada, la corrige el
 administrador.
 
+### Hay que corregir algo de un mes cerrado
+
+Voltia PM no deja cargar, editar ni borrar nada con fecha de un mes cerrado, y
+avisa hasta qué día está cerrado. Si de verdad hay que corregirlo, el dueño o
+Finanzas **reabre el mes** en Finanzas → Cierre, escribiendo el motivo (reabre
+también los meses cerrados posteriores), se corrige, se vuelve a bajar el
+archivo para la contadora y se cierra de nuevo. Si la contadora ya había
+trabajado con el archivo anterior, se le avisa qué cambió.
+
 ### El resultado de un mes cerrado cambió
 
-Puede ser por una cotización del dólar nueva (5.14) o porque alguien cargó o
-corrigió un movimiento con fecha de ese mes. Voltia PM registra **quién editó
-o borró cada movimiento y cuándo**, pero **no qué dato cambió** (el monto
-anterior, la fecha anterior). Ese registro no se ve en Movimientos: si el
-movimiento es de un proyecto, aparece en el historial del proyecto.
+Puede ser por una cotización del dólar nueva (5.18) o por algo que Voltia PM
+cargó solo con fecha de ese mes, que el cierre no frena (5.15). Quién cargó,
+cambió o borró cada cosa, con el valor de antes y el de después, está en
+**Historial** (5.16). La foto que se guardó al cerrar dice cómo estaba.
 
 ### DGI rechazó una factura
 
-El proyecto vuelve solo a **Pendientes**, y en la fila se ve el motivo que dio
-DGI. Se corrige el dato que falló y se emite una factura nueva. Si el motivo no
-se entiende, se consulta con el contador antes de volver a emitir.
+El proyecto vuelve solo a **Pendientes** de Facturación, y en la fila se ve el
+motivo que dio DGI. Se corrige el dato que falló y se emite una factura nueva. Si
+el motivo no se entiende, se consulta con el contador antes de volver a emitir.
 
 ### Una factura quedó «Verificando» mucho tiempo
 
@@ -1115,7 +1533,7 @@ una vez por mes.
 |---|---|
 | **Voltia PM** | El sistema interno donde trabajan todas las áreas de Voltia: proyectos, clientes, calendario, finanzas. |
 | **Portal de Voltia** | Lo que ve el cliente: avance, documentación, reportes y reclamos. |
-| **Área de Administración** | El área de la contadora. Va a usar el módulo de Finanzas de Voltia PM y a hacerse cargo de reclamar los pagos atrasados. No confundir con **Administración** de Voltia PM, el menú de configuración del sistema. |
+| **Área de Administración** | El área de la contadora. Va a usar el módulo de Finanzas de Voltia PM y a hacerse cargo de reclamar los pagos atrasados. Liquida los sueldos. No confundir con **Administración** de Voltia PM, el menú de configuración del sistema. |
 | **UTE** | La empresa estatal de electricidad. Tiene que aprobar y **habilitar** la instalación para que el cliente pueda encenderla. |
 | **DGI** | La Dirección General Impositiva. Registra todas las facturas electrónicas. |
 | **CFE** | Comprobante fiscal electrónico: la factura electrónica (o nota de crédito, o nota de débito). |
@@ -1123,6 +1541,7 @@ una vez por mes.
 | **e-Factura** | La factura electrónica a una empresa, con su RUT. |
 | **e-Ticket** | La factura electrónica a una persona, con su cédula. |
 | **RUT** | El número de identificación tributaria de una empresa. Voltia PM reconoce a cada proveedor por su RUT. |
+| **SAS** | La sociedad por acciones simplificada: la empresa Voltia. No confundir con la empresa unipersonal con la que se trabajaba antes. |
 | **Etapa** | Cada uno de los ocho tramos de un proyecto, de Venta a Trámite UTE. |
 | **Onboarding** | La etapa del proyecto, después de cerrar la venta, en la que el asesor confirma la venta, firma el contrato, cobra la seña y define cómo va a pagar el cliente. |
 | **Lead** | Un cliente potencial, en el pipeline comercial. Cuando se gana la venta, se crea el proyecto. |
@@ -1136,11 +1555,26 @@ una vez por mes.
 | **A pagar** | Una factura que se debe y tiene vencimiento. |
 | **Costo fijo** | Un gasto que se repite todos los meses, el mismo día. |
 | **Pendiente manual** | Un gasto o cobro que se agenda a mano porque todavía no tiene factura ni movimiento. |
+| **Posición** | La foto de cómo está la empresa hoy, en dólares: lo que hay en las cuentas, lo que le deben y lo que debe. Está en el Inicio de Finanzas. |
+| **Cuenta corriente** (de un proveedor) | Un proveedor al que se le compra a crédito y se le paga contra su estado de cuenta. Sus facturas electrónicas entran solas a la deuda y se revisan una vez por semana. |
+| **Estado de cuenta** | El resumen que manda el proveedor con sus facturas, notas de crédito, pagos y lo que dice que se le debe. |
 | **Plazo de crédito** | Los días que un proveedor le da a Voltia para pagar una factura. |
 | **Límite de crédito** | El tope de deuda que acepta un proveedor. |
 | **Saldo a favor** | Plata pagada a un proveedor que todavía no se descontó de ninguna factura. |
+| **Ajuste** | Lo que baja la deuda con un proveedor **sin ser plata**: no sale de ninguna cuenta, no es gasto ni aparece en el estado de resultados. Lleva siempre su motivo. Se usa para cerrar una diferencia sin explicación, al arrancar la cuenta y al descontar una nota de crédito. |
+| **Arrancar la cuenta** | Dejar lo que se le debe a un proveedor igual a lo que dice su estado de cuenta en una fecha: lo viejo que no corresponde se cierra con ajustes, y los pagos ya cargados no se tocan. |
 | **Nota de crédito** | Un comprobante que descuenta algo de una factura ya emitida, o la anula entera. La emite quien hizo la factura: el proveedor a Voltia, o Voltia a su cliente. |
 | **Conciliar** | Comparar lo que dice Voltia PM con lo que dice el banco (o el proveedor) y corregir las diferencias. |
+| **Por conciliar** | La lista del Inicio de Finanzas con todo lo que todavía no se encuentra: lo del banco sin cargar, lo cargado que el banco no muestra, las facturas por revisar y los posibles gastos cargados dos veces. |
+| **Lector del banco** | El programa que lee los movimientos de las cuentas en el home banking y los trae a Voltia PM. |
+| **Pareja** | El movimiento o pago cargado en Voltia PM que le corresponde a un movimiento del banco. |
+| **Tarjeta** | Una tarjeta de crédito de Voltia. En Voltia PM es una cuenta más: los gastos se cargan con esa cuenta y el pago es una transferencia desde el banco. |
+| **Rendir la tarjeta** | Dejar dicho, cada mes, quién hizo cada gasto de la tarjeta y si fue de Voltia o personal, y que el pago la deje en cero. |
+| **Cuenta del socio** | Lo que el socio le debe a Voltia por gastos personales que Voltia pagó. No es sueldo ni gasto de la empresa; la contadora la cancela con sueldo formal, utilidades o devolución. |
+| **Adelanto a descontar** | Un gasto personal autorizado de un empleado, hecho con una tarjeta de la empresa, que se le descuenta del sueldo. |
+| **Cierre de mes** | Dejar fijo un mes ya revisado: después de cerrarlo, nada con fecha de ese mes se carga, se edita ni se borra, salvo que se reabra con motivo. |
+| **Archivo para la contadora** | La planilla de Excel de cada mes con las compras (neto e IVA), las ventas, los ajustes y los movimientos. |
+| **Neto e IVA** | El neto es el precio sin impuestos; el IVA, el impuesto que se le suma. El total de una factura es neto más IVA. |
 | **Flujo de fondos** | La proyección de cuánta plata va a haber, con lo que se espera cobrar y pagar. |
 | **Estado de resultados** | Cuánto se ganó o perdió en un período, con lo efectivamente cobrado y pagado (de caja). |
 | **De caja** | Que cuenta solo lo que ya se cobró o se pagó, no lo que se debe. |
@@ -1156,6 +1590,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.17 | 21 de octubre de 2026 | Se reordenan las herramientas según el menú nuevo de Finanzas: Inicio, Ventas, Compras, Bancos e Informes. Nuevas pantallas: Inicio (posición, lo que falta conciliar y pendientes), Banco, Tarjetas y Cierre. Cuentas por pagar pasa a estar arriba de Proveedores, y la bandeja de facturas recibidas, arriba de Facturas. Las facturas de proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana; las facturas llegan cada media hora. Las notas de crédito de proveedores se descuentan de la deuda desde la misma lista. Una factura se carga por un solo formulario y a un proveedor se le paga solo con «Registrar pago». Nuevos ajustes de deuda (no son plata) y «Arrancar cuenta» con el estado de cuenta: borrón y cuenta nueva con cada proveedor. Lo personal (cuenta del socio y adelantos a descontar del sueldo) no es gasto de Voltia. Conciliar una cuenta con diferencia pide el motivo. Nuevo cierre de mes, con su lista de control y el archivo para la contadora, y la rendición de tarjetas en el procedimiento mensual. Las transferencias entre cuentas y los ajustes dejan de contar en el estado de resultados. Aviso «hay cobro sin factura» en Facturación. Nuevos casos en «Cuando algo sale mal» y palabras nuevas en el glosario. |
 | 0.16 | 20 de octubre de 2026 | En la bandeja de facturas recibidas, elegir el proveedor de una factura lo asigna a todas las del mismo RUT. |
 | 0.15 | 16 de octubre de 2026 | Una venta cotizada sin comisión del vendedor no deja un pago pendiente de comisión. |
 | 0.14 | 16 de octubre de 2026 | En el resumen de WhatsApp al instalador, los últimos trabajos saldados son los que se terminaron de pagar más recientemente, con la fecha de ese pago. |

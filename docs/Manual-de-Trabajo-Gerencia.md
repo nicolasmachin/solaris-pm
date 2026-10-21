@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.22 — 19 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.23 — 21 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -416,7 +416,10 @@ la etapa de cobrar sin que nadie sepa qué cobrar ni cuándo.
   (30 días para todos, salvo EFERGIA con 10), no de la fecha que ponga la
   factura. Si no coinciden, se habla con el proveedor.
 - **Ninguna factura recibida entra a la deuda sin que una persona la revise**,
-  aunque llegue sola desde la facturación electrónica.
+  aunque llegue sola desde la facturación electrónica. **Salvo las de los
+  proveedores de cuenta corriente**, que desde el 20 de octubre de 2026 entran
+  solas y se revisan una vez por semana (ver «Las facturas de los proveedores de
+  cuenta corriente entran solas a la deuda»).
 
 **Desde cuándo rige.** 9 de octubre de 2026.
 
@@ -651,6 +654,118 @@ hábiles, los plazos vencerían en días en los que nadie puede cumplirlos.
 **A qué manuales afecta.** Al Procedimiento General (qué es un día hábil), al
 Manual de trabajo de Operaciones y al Manual de Posventa.
 
+### Las facturas de los proveedores de cuenta corriente entran solas a la deuda
+
+**Qué se decidió.** Un proveedor es **de cuenta corriente** cuando se le compra a
+crédito y se le paga contra su estado de cuenta (el resumen que manda con sus
+facturas, notas de crédito, pagos y lo que dice que se le debe). Las facturas
+electrónicas de esos proveedores **entran solas a la deuda**, sin esperar a que
+alguien las revise una por una, y Finanzas las revisa **una vez por semana**. Las
+facturas de los demás proveedores **siguen quedando por revisar** hasta que una
+persona de Finanzas las mira. Aun siendo de cuenta corriente, no entran solas las
+notas de crédito, las facturas en cero y las que se parecen a un gasto ya cargado
+a mano, para no contar dos veces lo mismo.
+
+**Por qué.** A los proveedores de cuenta corriente se les compra todas las
+semanas, y lo que se les debe se controla igual cada mes contra su estado de
+cuenta. Revisar cada factura antes de que sume a la deuda solo hacía que la deuda
+que mostraba Voltia PM fuera menor que la real. Con los demás proveedores, una
+factura que llega sin esperarla es más probable que sea un error.
+
+**Desde cuándo rige.** 20 de octubre de 2026. Reemplaza, solo para los
+proveedores de cuenta corriente, la regla del 9 de octubre de 2026 de que ninguna
+factura recibida entraba a la deuda sin que una persona la revisara.
+
+**A qué manuales afecta.** Al de Finanzas.
+
+### Borrón y cuenta nueva con los proveedores
+
+**Qué se decidió.**
+
+- **Lo que se le debe a cada proveedor arranca de cero el día que se concilia
+  con su estado de cuenta**: desde ese día, Voltia PM debe exactamente lo que el
+  proveedor dice en ese estado de cuenta.
+- **Los movimientos de caja no se tocan**: los pagos y gastos ya cargados quedan
+  como están, porque esa plata salió de verdad.
+- **Lo viejo que ya no corresponde se cierra con un ajuste**, siempre con su
+  motivo escrito. Un **ajuste** baja lo que se le debe a un proveedor **sin ser
+  plata**: no sale de ninguna cuenta, no es gasto y no aparece en el estado de
+  resultados.
+- **Las deudas viejas de la empresa unipersonal con Tiempo al Tiempo se registran
+  como compra de la SAS** (la empresa Voltia). Lo decidió la Dirección sabiendo que el
+  contador marcó un **riesgo fiscal**: queda anotado para revisarlo con la
+  contadora.
+
+**Por qué.** Lo cargado antes de ordenar las cuentas tenía facturas sin cargar,
+pagos sin aplicar y deudas anotadas dos veces. Arreglarlo renglón por renglón no
+termina nunca y no cambia lo que importa: que desde hoy lo que dice Voltia PM
+coincida con lo que dice cada proveedor. La caja no se toca porque es lo único
+que se puede comparar con el banco.
+
+**Desde cuándo rige.** 20 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Finanzas.
+
+### Los gastos personales no son gastos de Voltia
+
+**Qué se decidió.**
+
+- **Un gasto personal del socio pagado con plata de Voltia** (con una tarjeta de
+  Voltia o desde una de sus cuentas) va a la **cuenta del socio**: queda como
+  algo que el socio le debe a Voltia. **No se carga como sueldo.** La contadora
+  la cancela con sueldo formal, con utilidades o con la devolución de la plata.
+- **Un gasto personal de un empleado con una tarjeta de la empresa**, si fue
+  **autorizado**, se le **descuenta del sueldo**: queda como un adelanto, con el
+  nombre de quien lo autorizó. Lo marca descontado el encargado de Finanzas (la
+  contadora), que es quien liquida los sueldos.
+- Ni lo uno ni lo otro entra al estado de resultados.
+
+**Por qué.** Lo recomendó el contador y la Dirección lo aceptó: cargar lo
+personal como sueldo o como gasto de la empresa ensucia el resultado. Con la cuenta del socio, lo personal queda a la vista y se cancela
+de la forma que la contadora considere correcta. Con los empleados, lo que se
+autoriza se devuelve, y queda escrito quién lo autorizó.
+
+**Desde cuándo rige.** 20 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Finanzas.
+
+### Un mes cerrado no se toca
+
+**Qué se decidió.** Cada mes, Finanzas revisa una lista de control, le entrega a
+la contadora el archivo del mes y **cierra el mes**. Un mes cerrado **no se
+toca**: nada con fecha de ese mes se carga, se edita ni se borra. Si hace falta
+corregir algo, se **reabre**, y la reapertura **queda registrada con su motivo**,
+con quién la hizo y cuándo. Cierran y reabren **el dueño y Finanzas**, que son
+quienes tienen el permiso de cierre. Con algo de la lista sin resolver se puede
+cerrar igual, escribiendo por qué.
+
+**Por qué.** Si un mes que ya se le entregó a la contadora sigue cambiando, los
+números de Voltia PM y los de la contabilidad dejan de coincidir y nadie sabe cuál
+es el bueno. Reabrir es posible, pero tiene que costar una explicación.
+
+**Desde cuándo rige.** 20 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Finanzas.
+
+### Una factura de proveedor se carga por un solo lugar, y a un proveedor se le paga por un solo camino
+
+**Qué se decidió.**
+
+- **Una factura de proveedor se carga siempre con el mismo formulario**, entre
+  por donde entre, el que controla que la misma factura no se cargue dos veces.
+- **A un proveedor se le paga siempre con «Registrar pago» en su ficha**, para
+  que el pago se descuente de sus facturas.
+- **El gasto con un proveedor es solo para las compras de contado**, que no
+  dejan deuda.
+
+**Por qué.** Con dos caminos para lo mismo, una factura terminaba cargada dos
+veces o un pago quedaba suelto sin bajar la deuda, y el saldo del proveedor dejaba
+de coincidir con su estado de cuenta.
+
+**Desde cuándo rige.** 20 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Finanzas.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -682,6 +797,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.23 | 21 de octubre de 2026 | Se registran cinco decisiones de Finanzas: las facturas de los proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana (las demás siguen por revisar); borrón y cuenta nueva con cada proveedor desde que se concilia con su estado de cuenta, cerrando lo viejo con un ajuste que no es plata, y las deudas viejas de la unipersonal con Tiempo al Tiempo como compra de la SAS, con el riesgo fiscal a revisar con la contadora; los gastos personales del socio van a su cuenta y no como sueldo, y los de un empleado autorizados se le descuentan del sueldo; un mes cerrado no se toca y reabrirlo queda registrado con su motivo; una factura de proveedor se carga por un solo lugar y a un proveedor se le paga por un solo camino. |
 | 0.22 | 19 de octubre de 2026 | Con los tercerizados se va de a poco: lo único que se les exige en papeles es estar inscriptos como empresa con el seguro de accidentes del BSE, desde su primera obra con contrato, y la factura a los seis meses; se deja de pedir la documentación mensual de sueldos y aportes. El contrato con el tercerizado y su manual pasan a estar en borrador. |
 | 0.21 | 17 de octubre de 2026 | Se registra que con el cliente se habla por WhatsApp y que ningún paso del procedimiento exige una llamada; si se llama, se registra. Se registra que la bienvenida la manda Experiencia Solar, después de que el asesor presentó al referente. Se registra que la cadencia de contacto tiene un día de margen ("toca hoy") antes de contar como atraso. Se registra que Voltia no trabaja en Carnaval ni en Semana de Turismo, y que esos días no cuentan como hábiles. |
 | 0.20 | 16 de octubre de 2026 | Se registra que los reportes mensuales salen solos, sin revisión previa, apenas están listos. |
