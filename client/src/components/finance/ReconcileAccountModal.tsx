@@ -88,7 +88,7 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
           <button
             type="button"
             onClick={() => mut.mutate()}
-            disabled={!saldoRealValido || mut.isPending}
+            disabled={!saldoRealValido || mut.isPending || (!cuadra && notas.trim().length < 5)}
             className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--color-bg-app)] hover:opacity-90 disabled:opacity-50"
           >
             {mut.isPending ? 'Guardando…' : 'Confirmar conciliación'}
@@ -165,13 +165,15 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
           )}
 
           <div>
-            <label className="mb-1 block text-[11px] font-medium text-[var(--color-text-primary)]">Notas (opcional)</label>
+            <label className="mb-1 block text-[11px] font-medium text-[var(--color-text-primary)]">
+              {saldoRealValido && !cuadra ? 'Motivo de la diferencia (obligatorio)' : 'Notas (opcional)'}
+            </label>
             <textarea
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               rows={2}
               className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none resize-none"
-              placeholder="Ej: Conciliación mensual con extracto del banco"
+              placeholder={cuadra ? 'Ej: Conciliación mensual con extracto del banco' : 'Ej: comisiones del banco de setiembre sin cargar'}
             />
           </div>
         </div>

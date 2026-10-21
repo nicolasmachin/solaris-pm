@@ -16,9 +16,9 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
-import { pendientesPorCuenta, registrarLectura, registroBanco } from "../services/finance/bank-reconciliation.service.js";
+import { desvincularBanco, pendientesPorCuenta, registrarLectura, registroBanco, vincularBanco } from "../services/finance/bank-reconciliation.service.js";
 import { toDateOnlyString, todayUtc } from "../utils/dates.js";
-import { notFound, unauthorized } from "../utils/errors.js";
+import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -122,6 +122,52 @@ export async function registerConciliacionBancoRoutes(app: FastifyInstance) {
       fieldChanged: "ignoradoAt",
       oldValue: mov.ignoradoMotivo,
       description: `Volvió a comparar el movimiento del banco ${mov.descripcion} (${mov.account.nombre})`,
+    });
+    return { ok: true };
+  });
+
+  // Fijar la pareja (la propuesta, o una elegida a mano) y soltarla.
+  app.post("/finance/banco/movimientos/:id/vincular", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ movementId: z.string().optional(), paymentId: z.string().optional() }).strict()
+      .refine((b) => !!b.movementId !== !!b.paymentId, "Indicá un movimiento o un pago").parse(request.body);
+    const mov = await prisma.bankMovement.findUnique({ where: { id }, include: { account: { select: { nombre: true } } } });
+    if (!mov) throw notFound("BANK_MOVEMENT_NOT_FOUND", "Movimiento del banco no encontrado");
+    try {
+      await vincularBanco(id, body, user.id);
+    } catch (e) {
+      const code = (e as Error).message;
+      const msg: Record<string, string> = {
+        MOVEMENT_NOT_FOUND: "Movimiento no encontrado",
+        PAYMENT_NOT_FOUND: "Pago no encontrado",
+        CUENTA_DISTINTA: "Es de otra cuenta",
+        SENTIDO_DISTINTO: "Uno entra y el otro sale",
+      };
+      throw badRequest(code, msg[code] ?? "No se pudo vincular");
+    }
+    await createAuditEntry({
+      entityType: AuditEntityType.bank_movement,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Confirmó la pareja del movimiento del banco ${mov.descripcion} (${mov.account.nombre})`,
+    });
+    return { ok: true };
+  });
+
+  app.post("/finance/banco/movimientos/:id/desvincular", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const mov = await prisma.bankMovement.findUnique({ where: { id }, include: { account: { select: { nombre: true } } } });
+    if (!mov) throw notFound("BANK_MOVEMENT_NOT_FOUND", "Movimiento del banco no encontrado");
+    await desvincularBanco(id);
+    await createAuditEntry({
+      entityType: AuditEntityType.bank_movement,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Soltó la pareja del movimiento del banco ${mov.descripcion} (${mov.account.nombre})`,
     });
     return { ok: true };
   });

@@ -11,6 +11,7 @@ import {
 } from '../api/finance.api';
 import { NewSupplierInvoiceModal } from '../components/finance/NewSupplierInvoiceModal';
 import { CargarFacturaRecibidaModal } from '../components/finance/CargarFacturaRecibidaModal';
+import { CuentasPorPagarResumen } from './FinanceCuentasPorPagarTab';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Supplier } from '../types/finance.types';
 
@@ -229,7 +230,7 @@ export function FinanceSuppliers() {
   ];
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Proveedores</h1>
@@ -247,6 +248,10 @@ export function FinanceSuppliers() {
         </div>
       </div>
 
+      {/* Lo que se le debe a cada proveedor, por vencimiento (antes "Cuentas por pagar"). */}
+      <CuentasPorPagarResumen />
+
+      <h2 className="text-base font-semibold text-[var(--color-text-primary)] pt-2">Todos los proveedores</h2>
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />

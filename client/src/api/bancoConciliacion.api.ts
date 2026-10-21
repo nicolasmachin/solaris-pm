@@ -32,3 +32,38 @@ export const getPendientesBanco = () =>
 
 export const marcarNoVaBanco = (id: string, motivo: string) =>
   apiClient.post<{ ok: true }>(`/api/finance/banco/movimientos/${id}/no-va`, { motivo }).then(r => r.data);
+
+// ─── Registro: todo lo leído del banco, con su estado y su pareja ───────────
+
+export type EstadoBanco = 'CONFIRMADA' | 'COINCIDE' | 'FALTA_CARGAR' | 'NO_VA' | 'NO_SE_COMPARA';
+
+export interface ParejaPm {
+  id: string;
+  tipo: 'MOVIMIENTO' | 'PAGO';
+  fecha: string;
+  descripcion: string;
+  monto: number;
+}
+
+export interface MovimientoBancoRegistro extends PendienteBanco {
+  accountId: string;
+  cuenta: string;
+  moneda: Moneda;
+  dependencia: string | null;
+  estado: EstadoBanco;
+  pareja: ParejaPm | null;
+  noVaMotivo: string | null;
+  noVaPor: string | null;
+}
+
+export const getRegistroBanco = (params: { accountId?: string; desde?: string; hasta?: string }) =>
+  apiClient.get<{ movimientos: MovimientoBancoRegistro[] }>('/api/finance/banco/movimientos', { params }).then(r => r.data.movimientos);
+
+export const deshacerNoVaBanco = (id: string) =>
+  apiClient.post<{ ok: true }>(`/api/finance/banco/movimientos/${id}/deshacer-no-va`).then(r => r.data);
+
+export const vincularBanco = (id: string, destino: { movementId?: string; paymentId?: string }) =>
+  apiClient.post<{ ok: true }>(`/api/finance/banco/movimientos/${id}/vincular`, destino).then(r => r.data);
+
+export const desvincularBanco = (id: string) =>
+  apiClient.post<{ ok: true }>(`/api/finance/banco/movimientos/${id}/desvincular`).then(r => r.data);

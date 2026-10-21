@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { PosicionFinanciera } from '../components/finance/PosicionFinanciera';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import {
@@ -135,7 +134,6 @@ export function FinanceCashflowTab() {
 
   return (
     <div className="space-y-5">
-      <PosicionFinanciera />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Metric
           label="Saldo actual (USD + UYU a TC)"

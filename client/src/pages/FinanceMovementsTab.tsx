@@ -19,7 +19,6 @@ import { getDeudasAbiertas } from "../api/payments.api";
 import { ResponsiveTable, type Column } from "../components/ui/ResponsiveTable";
 import { Sheet } from "../components/ui/Sheet";
 import { ProjectPicker } from "../components/finance/ProjectPicker";
-import { FaltaCargarBanco } from "../components/finance/FaltaCargarBanco";
 import { getAccounts } from "../api/accounts.api";
 import { getProjects } from "../api/projects.api";
 import { listPendingFixedCosts, type FixedCostPendingDto } from "../api/fixedCosts.api";
@@ -95,6 +94,13 @@ function readPrefill(params: URLSearchParams): NewMovementPrefill | null {
   if (m) out.monto = m;
   const mn = params.get("moneda");
   if (mn === "USD" || mn === "UYU") out.moneda = mn;
+  // Desde "Por conciliar" (Inicio): un movimiento del banco que falta cargar.
+  const t = params.get("tipo");
+  if (t === "INGRESO" || t === "GASTO") out.tipo = t;
+  const a = params.get("accountId");
+  if (a) out.accountId = a;
+  const f = params.get("fecha");
+  if (f && /^\d{4}-\d{2}-\d{2}$/.test(f)) out.fecha = f;
   return Object.keys(out).length > 0 ? out : null;
 }
 
@@ -116,7 +122,7 @@ export function FinanceMovementsTab() {
       setPrefill(readPrefill(searchParams));
       // Limpiamos los params para no reabrir el modal en navegación back.
       const next = new URLSearchParams(searchParams);
-      ["new", "fixedCostId", "descripcion", "monto", "moneda"].forEach((k) => next.delete(k));
+      ["new", "fixedCostId", "descripcion", "monto", "moneda", "tipo", "accountId", "fecha"].forEach((k) => next.delete(k));
       setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -404,13 +410,6 @@ export function FinanceMovementsTab() {
           </button>
         </div>
       </div>
-
-      <FaltaCargarBanco
-        onCargar={(p) => {
-          setPrefill(p);
-          setShowForm(true);
-        }}
-      />
 
       {!isLoading && allItems.length > 0 && (
         <p className="text-[11px] text-[var(--color-text-muted)] font-mono">

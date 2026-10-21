@@ -13395,6 +13395,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const saldoCalculado = balance.saldoActual;
       const diferencia = roundMoney(body.saldoReal - saldoCalculado);
       const fecha = parseDateOnly(body.fecha);
+      // Una diferencia corre el saldo de la cuenta: tiene que quedar explicada.
+      if (Math.abs(diferencia) > 0.01 && (body.notas ?? "").trim().length < 5) {
+        throw badRequest("MOTIVO_REQUERIDO", "Hay diferencia con el banco: escribí el motivo.");
+      }
 
       const reconciliation = await prisma.$transaction(async (tx) => {
         if (Math.abs(diferencia) > 0.01) {

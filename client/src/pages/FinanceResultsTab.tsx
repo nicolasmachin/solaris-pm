@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { PosicionFinanciera } from '../components/finance/PosicionFinanciera';
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -39,7 +38,6 @@ export function FinanceResultsTab() {
 
   return (
     <div className="space-y-5">
-      <PosicionFinanciera />
       <div className="flex items-center gap-3 flex-wrap">
         <div className="inline-flex rounded-lg border border-[var(--color-border)] overflow-hidden text-sm">
           {(["MENSUAL", "TRIMESTRAL", "ANUAL"] as ResultsPeriodo[]).map((p) => (

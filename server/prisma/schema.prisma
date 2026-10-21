@@ -2050,6 +2050,7 @@ model FinanceMovement {
   seguroGranizoPeriodo    SeguroGranizoPeriodo?    @relation("SeguroGranizoPeriodoCobro")
   seguroGranizoGasto      SeguroGranizoSiniestro?  @relation("SeguroGranizoSiniestroGasto")
   seguroGranizoAmpliacion SeguroGranizoAmpliacion? @relation("SeguroGranizoAmpliacionCobro")
+  bankMovement            BankMovement?            @relation("BankMovementVinculo")
 
   @@index([fecha])
   @@index([mes, anio])
@@ -2778,9 +2779,10 @@ model Payment {
   createdById String?
   createdBy   User?   @relation("PaymentCreatedBy", fields: [createdById], references: [id])
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  bankMovement BankMovement? @relation("BankMovementVinculo")
 
   @@index([supplierId])
   @@index([fecha])
@@ -2852,6 +2854,17 @@ model BankMovement {
   ignoradoMotivo String?
   ignoradoPorId  String?
   ignoradoPor    User?     @relation("BankMovementIgnoradoPor", fields: [ignoradoPorId], references: [id])
+
+  // Pareja confirmada por una persona: queda fija y el emparejador no la mueve
+  // (un movimiento cargado después no se la puede "robar"). Lo no confirmado se
+  // sigue proponiendo al mirar. Un movimiento del banco va con un movimiento de
+  // Voltia PM o con un pago a proveedor, nunca con los dos.
+  movementId     String?          @unique
+  movement       FinanceMovement? @relation("BankMovementVinculo", fields: [movementId], references: [id], onDelete: SetNull)
+  paymentId      String?          @unique
+  payment        Payment?         @relation("BankMovementVinculo", fields: [paymentId], references: [id], onDelete: SetNull)
+  vinculadoAt    DateTime?
+  vinculadoPorId String?
 
   createdAt DateTime @default(now())
 

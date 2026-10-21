@@ -392,7 +392,8 @@ function BandejaRecibidas() {
 
 // ─── Pantalla ───────────────────────────────────────────────────────────────
 
-export function FinanceCuentasPorPagarTab() {
+/** Lo que se le debe a cada proveedor, por vencimiento. Va arriba de Proveedores. */
+export function CuentasPorPagarResumen() {
   const { data, isLoading } = useQuery({ queryKey: ['cuentas-por-pagar'], queryFn: getCuentasPorPagar });
   const excedidos = useMemo(() => (data?.proveedores ?? []).filter((p) => p.limite?.excedido), [data]);
 
@@ -418,7 +419,9 @@ export function FinanceCuentasPorPagarTab() {
           <ProveedoresTabla proveedores={data.proveedores} />
         </>
       )}
-      <BandejaRecibidas />
     </div>
   );
 }
+
+/** La bandeja de facturas recibidas. Va arriba de Facturas. */
+export { BandejaRecibidas };

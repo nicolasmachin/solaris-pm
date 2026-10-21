@@ -52,6 +52,10 @@ export type ResultadoLectura = {
   error?: string;
 };
 
+function normalizarTexto(t: string) {
+  return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
+}
+
 export async function registrarLectura(cuentas: LecturaCuenta[], leidoEn: Date): Promise<ResultadoLectura[]> {
   const out: ResultadoLectura[] = [];
   for (const c of cuentas) {
@@ -75,7 +79,9 @@ export async function registrarLectura(cuentas: LecturaCuenta[], leidoEn: Date):
       const monto = Math.round((credito > 0 ? credito : debito) * 100) / 100;
       const descripcion = m.descripcion.trim();
       const documento = m.documento?.trim() || null;
-      const base = [account.id, m.fecha, descripcion, documento ?? "", tipo, monto.toFixed(2)].join("|");
+      // La llave usa el texto normalizado: un espacio o un acento de diferencia
+      // entre dos lecturas no puede convertir el mismo movimiento en dos.
+      const base = [account.id, m.fecha, normalizarTexto(descripcion), normalizarTexto(documento ?? ""), tipo, monto.toFixed(2)].join("|");
       const n = (vistos.get(base) ?? 0) + 1;
       vistos.set(base, n);
       filas.push({
@@ -141,7 +147,8 @@ function emparejar(banco: Lado[], pm: Lado[], margen: number): Map<string, Lado>
       if (dif <= margen + 0.001 && dias <= DIAS_TOLERANCIA) candidatos.push({ b: b.id, p, dif, dias });
     }
   }
-  candidatos.sort((x, y) => x.dif - y.dif || x.dias - y.dias);
+  // Desempate fijo (por id) para que la misma consulta dé siempre las mismas parejas.
+  candidatos.sort((x, y) => x.dif - y.dif || x.dias - y.dias || x.b.localeCompare(y.b) || x.p.id.localeCompare(y.p.id));
   const parejas = new Map<string, Lado>();
   const usadosP = new Set<string>();
   for (const c of candidatos) {
@@ -165,7 +172,26 @@ async function conciliarCuenta(a: AccountConBanco) {
   const bankRows = await prisma.bankMovement.findMany({
     where: { accountId: a.id, fecha: { gte: desde }, ignoradoAt: null },
     orderBy: { fecha: "desc" },
+    include: {
+      movement: { select: { id: true, fecha: true, tipoMovimiento: true, monto: true, descripcion: true, deletedAt: true } },
+      payment: { select: { id: true, fecha: true, monto: true, referencia: true, deletedAt: true, supplier: { select: { nombre: true } } } },
+    },
   });
+  // Parejas confirmadas por una persona: quedan fijas.
+  const fijas = new Map<string, Lado>();
+  for (const r of bankRows) {
+    if (r.movement && !r.movement.deletedAt) {
+      fijas.set(r.id, { id: `m-${r.movement.id}`, fecha: r.movement.fecha, tipo: r.movement.tipoMovimiento, monto: Number(r.movement.monto), descripcion: r.movement.descripcion });
+    } else if (r.payment && !r.payment.deletedAt) {
+      fijas.set(r.id, {
+        id: `p-${r.payment.id}`, fecha: r.payment.fecha,
+        tipo: Number(r.payment.monto) < 0 ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
+        monto: Math.abs(Number(r.payment.monto)),
+        descripcion: `Pago a ${r.payment.supplier.nombre}${r.payment.referencia ? ` (${r.payment.referencia})` : ""}`,
+      });
+    }
+  }
+  const usadosFijos = new Set([...fijas.values()].map((l) => l.id));
   const pmDesde = addDays(desde, -DIAS_TOLERANCIA);
   const [movs, pagos] = await Promise.all([
     prisma.financeMovement.findMany({
@@ -200,8 +226,11 @@ async function conciliarCuenta(a: AccountConBanco) {
       descripcion: `Pago a ${p.supplier.nombre}${p.referencia ? ` (${p.referencia})` : ""}`,
     })),
   ];
-  const banco: Lado[] = bankRows.map((r) => ({ id: r.id, fecha: r.fecha, tipo: r.tipo, monto: Number(r.monto), descripcion: r.descripcion }));
-  return { bankRows, parejas: emparejar(banco, pm, MARGEN[a.moneda]) };
+  const banco: Lado[] = bankRows
+    .filter((r) => !fijas.has(r.id))
+    .map((r) => ({ id: r.id, fecha: r.fecha, tipo: r.tipo, monto: Number(r.monto), descripcion: r.descripcion }));
+  const propuestas = emparejar(banco, pm.filter((l) => !usadosFijos.has(l.id)), MARGEN[a.moneda]);
+  return { bankRows, parejas: new Map([...fijas, ...propuestas]), confirmadas: new Set(fijas.keys()) };
 }
 
 function aParejaPm(l: Lado): ParejaPm {
@@ -249,7 +278,8 @@ export async function pendientesPorCuenta(): Promise<CuentaConciliada[]> {
 
 // ─── Registro: todos los movimientos leídos del banco ───────────────────────
 
-export type EstadoBanco = "COINCIDE" | "FALTA_CARGAR" | "NO_VA" | "NO_SE_COMPARA";
+// COINCIDE = pareja propuesta (se recalcula al mirar); CONFIRMADA = una persona la fijó.
+export type EstadoBanco = "CONFIRMADA" | "COINCIDE" | "FALTA_CARGAR" | "NO_VA" | "NO_SE_COMPARA";
 
 export type MovimientoBancoRegistro = PendienteBanco & {
   accountId: string;
@@ -272,7 +302,7 @@ export async function registroBanco(filtro: { accountId?: string; desde: string;
 
   const out: MovimientoBancoRegistro[] = [];
   for (const a of accounts) {
-    const [{ parejas }, rows] = await Promise.all([
+    const [{ parejas, confirmadas }, rows] = await Promise.all([
       conciliarCuenta(a),
       prisma.bankMovement.findMany({
         where: { accountId: a.id, fecha: { gte: desde, lte: hasta } },
@@ -285,7 +315,7 @@ export async function registroBanco(filtro: { accountId?: string; desde: string;
         ? "NO_VA"
         : r.fecha < conciliarDesde
           ? "NO_SE_COMPARA"
-          : pareja ? "COINCIDE" : "FALTA_CARGAR";
+          : pareja ? (confirmadas.has(r.id) ? "CONFIRMADA" : "COINCIDE") : "FALTA_CARGAR";
       out.push({
         id: r.id,
         accountId: a.id,
@@ -305,4 +335,52 @@ export async function registroBanco(filtro: { accountId?: string; desde: string;
     }
   }
   return out.sort((x, y) => y.fecha.localeCompare(x.fecha) || x.cuenta.localeCompare(y.cuenta));
+}
+
+// ─── Fijar o soltar una pareja ──────────────────────────────────────────────
+
+/**
+ * Fija la pareja de un movimiento del banco: con un movimiento de Voltia PM o
+ * con un pago a proveedor de la misma cuenta y el mismo sentido. Queda fija:
+ * el emparejador ya no la mueve.
+ */
+export async function vincularBanco(bankId: string, destino: { movementId?: string; paymentId?: string }, userId: string) {
+  const b = await prisma.bankMovement.findUnique({ where: { id: bankId } });
+  if (!b) throw new Error("BANK_MOVEMENT_NOT_FOUND");
+  if (destino.movementId) {
+    const m = await prisma.financeMovement.findFirst({ where: { id: destino.movementId, deletedAt: null } });
+    if (!m) throw new Error("MOVEMENT_NOT_FOUND");
+    if (m.accountId !== b.accountId) throw new Error("CUENTA_DISTINTA");
+    if (m.tipoMovimiento !== b.tipo) throw new Error("SENTIDO_DISTINTO");
+  } else if (destino.paymentId) {
+    const p = await prisma.payment.findFirst({ where: { id: destino.paymentId, deletedAt: null } });
+    if (!p) throw new Error("PAYMENT_NOT_FOUND");
+    if (p.accountId !== b.accountId) throw new Error("CUENTA_DISTINTA");
+  } else {
+    throw new Error("DESTINO_REQUERIDO");
+  }
+  // Si ese movimiento ya estaba fijado a otra línea del banco, se suelta de ahí.
+  await prisma.$transaction([
+    prisma.bankMovement.updateMany({
+      where: destino.movementId ? { movementId: destino.movementId } : { paymentId: destino.paymentId },
+      data: { movementId: null, paymentId: null, vinculadoAt: null, vinculadoPorId: null },
+    }),
+    prisma.bankMovement.update({
+      where: { id: bankId },
+      data: {
+        movementId: destino.movementId ?? null,
+        paymentId: destino.paymentId ?? null,
+        vinculadoAt: new Date(),
+        vinculadoPorId: userId,
+        ignoradoAt: null, ignoradoMotivo: null, ignoradoPorId: null,
+      },
+    }),
+  ]);
+}
+
+export async function desvincularBanco(bankId: string) {
+  await prisma.bankMovement.update({
+    where: { id: bankId },
+    data: { movementId: null, paymentId: null, vinculadoAt: null, vinculadoPorId: null },
+  });
 }

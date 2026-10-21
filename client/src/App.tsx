@@ -51,9 +51,6 @@ const FinancePlaceholder = lazy(() =>
 const FinanceMovementsTab = lazy(() =>
   import("./pages/FinanceMovementsTab").then((module) => ({ default: module.FinanceMovementsTab })),
 );
-const FinancePendientesTab = lazy(() =>
-  import("./pages/FinancePendientesTab").then((module) => ({ default: module.FinancePendientesTab })),
-);
 const FinanceCashflowTab = lazy(() =>
   import("./pages/FinanceCashflowTab").then((module) => ({ default: module.FinanceCashflowTab })),
 );
@@ -64,7 +61,9 @@ const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((mod
 const FinanceFacturasProveedoresTab = lazy(() => import("./pages/FinanceFacturasProveedoresTab").then((module) => ({ default: module.FinanceFacturasProveedoresTab })));
 const FinanceHistorialTab = lazy(() => import("./pages/FinanceHistorialTab").then((module) => ({ default: module.FinanceHistorialTab })));
 const FinanceCostosFijosTab = lazy(() => import("./pages/AdminCostosFijos").then((module) => ({ default: module.TabCostosFijos })));
-const FinanceCuentasPorPagarTab = lazy(() => import("./pages/FinanceCuentasPorPagarTab").then((module) => ({ default: module.FinanceCuentasPorPagarTab })));
+const FinanceInicioTab = lazy(() => import("./pages/FinanceInicioTab").then((module) => ({ default: module.FinanceInicioTab })));
+const FinanceBancoTab = lazy(() => import("./pages/FinanceBancoTab").then((module) => ({ default: module.FinanceBancoTab })));
+const FinanceCierreTab = lazy(() => import("./pages/FinanceCierreTab").then((module) => ({ default: module.FinanceCierreTab })));
 const FinanceSupplierDetail = lazy(() => import("./pages/FinanceSupplierDetail").then((module) => ({ default: module.FinanceSupplierDetail })));
 const FinanceCuentas = lazy(() => import("./pages/FinanceCuentas").then((module) => ({ default: module.FinanceCuentas })));
 const FinanceCobros = lazy(() => import("./pages/FinanceCobros").then((module) => ({ default: module.FinanceCobros })));
@@ -397,11 +396,15 @@ export function App() {
             </PermissionRoute>
           }
         >
-          <Route index element={<Navigate to="movimientos" replace />} />
+          <Route index element={<Navigate to="inicio" replace />} />
+          <Route path="inicio" element={<FinanceInicioTab />} />
           <Route path="movimientos" element={<FinanceMovementsTab />} />
-          <Route path="pendientes" element={<FinancePendientesTab />} />
+          {/* Pendientes vive dentro de Inicio; Cuentas por pagar, arriba de Proveedores. */}
+          <Route path="pendientes" element={<Navigate to="../inicio" replace />} />
           <Route path="proveedores" element={<FinanceSuppliers />} />
-          <Route path="cuentas-por-pagar" element={<FinanceCuentasPorPagarTab />} />
+          <Route path="cuentas-por-pagar" element={<Navigate to="../proveedores" replace />} />
+          <Route path="banco" element={<FinanceBancoTab />} />
+          <Route path="cierre" element={<FinanceCierreTab />} />
           <Route path="facturas-proveedores" element={<FinanceFacturasProveedoresTab />} />
           <Route path="costos-fijos" element={<FinanceCostosFijosTab />} />
           <Route path="historial" element={<FinanceHistorialTab />} />

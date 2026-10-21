@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 
 import { Spinner } from '../components/ui/Spinner';
+import { BandejaRecibidas } from './FinanceCuentasPorPagarTab';
 import { getSuppliers } from '../api/finance.api';
 import {
   crearProveedorDesdeRut, getFacturasProveedores, type FacturaProveedorFila,
@@ -105,6 +106,9 @@ export function FinanceFacturasProveedoresTab() {
 
   return (
     <div className="space-y-5">
+      {/* Lo que llega por la facturación electrónica y todavía hay que revisar. */}
+      <BandejaRecibidas />
+      <h2 className="text-base font-semibold text-[var(--color-text-primary)] pt-2">Registro de facturas</h2>
       <p className="text-sm text-[var(--color-text-secondary)]">
         Todas las facturas de proveedores: las que llegaron por la facturación electrónica —también las de
         empresas que todavía no están dadas de alta como proveedor— y las que se cargaron a mano.
