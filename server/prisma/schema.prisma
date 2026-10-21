@@ -378,6 +378,15 @@ enum CategoriaPrincipal {
   // Cuota anual del seguro de granizo (autoseguro de Voltia). Es un ingreso
   // pero NO suma al saldo de la obra (budgetUsd): ver services/seguro-granizo.
   SEGURO_GRANIZO
+  // Gasto personal del socio pagado con plata de Voltia (su tarjeta, una
+  // adicional personal): queda como lo que el socio le debe a Voltia. No es
+  // gasto de la empresa ni sueldo: no entra al resultado. La contadora lo
+  // cancela (sueldo formal, utilidades o devolución).
+  CUENTA_SOCIO
+  // Gasto personal autorizado de un empleado con una tarjeta de la empresa: se
+  // le descuenta del sueldo. No entra al resultado; queda "a descontar" hasta
+  // que Finanzas lo marca descontado.
+  ADELANTO_PERSONAL
   OTRO
 }
 
@@ -2002,6 +2011,14 @@ model FinanceMovement {
   ivaTasa                 Float?                   @default(22.0)
   // Desglose de una factura de compra (crédito fiscal, libro de compras). Viene
   // de la factura electrónica al confirmarla; null = sin desglose (cargado a mano).
+  // Tarjeta de crédito: quién la usó (titular o adicional) y, para un adelanto
+  // a un empleado, cuándo se le descontó del sueldo.
+  tarjetaTitularId        String?
+  tarjetaTitular          TarjetaTitular?          @relation(fields: [tarjetaTitularId], references: [id], onDelete: SetNull)
+  descontadoAt            DateTime?
+  descontadoPorId         String?
+  // Gasto personal en una tarjeta de la empresa: quién lo autorizó.
+  personalAutorizadoPor   String?
   montoNeto               Decimal?                 @db.Decimal(14, 2)
   montoIva                Decimal?                 @db.Decimal(14, 2)
   tipoCambio              Decimal?                 @db.Decimal(10, 4)
@@ -2830,9 +2847,10 @@ model Account {
   reconciliations AccountReconciliation[]
   bankMovements   BankMovement[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+  tarjetaTitulares TarjetaTitular[]
 
   @@index([activa])
   @@index([tipo])
@@ -5767,4 +5785,34 @@ model CierreMes {
 
   @@index([anio, mes])
   @@map("cierres_mes")
+}
+
+// ─── Tarjetas de crédito ────────────────────────────────────────────────────
+// Una tarjeta es una cuenta (Account tipo TARJETA): cada gasto es un movimiento
+// de esa cuenta y el pago es una transferencia desde el banco. Cada tarjeta
+// tiene su titular y sus adicionales, con una regla para sus gastos:
+//  - VOLTIA: entran como gasto de Voltia (se puede pasar uno a personal, anotando quién autorizó);
+//  - PERSONAL: entran como gasto personal (cuenta del socio o adelanto);
+//  - MIXTA: se decide gasto por gasto.
+enum ReglaTarjeta {
+  VOLTIA
+  PERSONAL
+  MIXTA
+}
+
+model TarjetaTitular {
+  id           String             @id @default(cuid())
+  accountId    String
+  account      Account            @relation(fields: [accountId], references: [id])
+  nombre       String
+  regla        ReglaTarjeta       @default(VOLTIA)
+  // Lo personal de esta persona: CUENTA_SOCIO (el dueño) o ADELANTO_PERSONAL (un empleado).
+  personalComo CategoriaPrincipal @default(ADELANTO_PERSONAL)
+  activo       Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+
+  movements FinanceMovement[]
+
+  @@index([accountId])
+  @@map("tarjeta_titulares")
 }

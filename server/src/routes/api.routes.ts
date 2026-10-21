@@ -12892,7 +12892,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           tipoMovimiento: TipoMovimiento.INGRESO,
           cobrado: true,
           fecha: { gte: fechaInicio, lt: fechaFin },
-          categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
+          categoriaPrincipal: { notIn: [CategoriaPrincipal.AJUSTE_CONCILIACION, CategoriaPrincipal.CUENTA_SOCIO, CategoriaPrincipal.ADELANTO_PERSONAL, CategoriaPrincipal.TRANSFERENCIA] },
         },
         include: movInclude,
       });
@@ -12963,7 +12963,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           pagado: true,
           fecha: { gte: fechaInicio, lt: fechaFin },
           categoriaPrincipal: {
-            notIn: [...CATEGORIAS_DIRECTAS_PNL, CategoriaPrincipal.AJUSTE_CONCILIACION],
+            notIn: [...CATEGORIAS_DIRECTAS_PNL, CategoriaPrincipal.AJUSTE_CONCILIACION, CategoriaPrincipal.CUENTA_SOCIO, CategoriaPrincipal.ADELANTO_PERSONAL, CategoriaPrincipal.TRANSFERENCIA],
           },
           paymentApplications: { none: { payment: { deletedAt: null } } },
         },
@@ -13077,7 +13077,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           where: {
             deletedAt: null,
             fecha: { gte: fechaInicio, lt: fechaFin },
-            categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
+            categoriaPrincipal: { notIn: [CategoriaPrincipal.AJUSTE_CONCILIACION, CategoriaPrincipal.CUENTA_SOCIO, CategoriaPrincipal.ADELANTO_PERSONAL, CategoriaPrincipal.TRANSFERENCIA] },
             OR: [
               { tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
               { tipoMovimiento: TipoMovimiento.GASTO, pagado: true },

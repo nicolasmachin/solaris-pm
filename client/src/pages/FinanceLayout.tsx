@@ -22,6 +22,7 @@ const GRUPOS: Array<{ label: string | null; tabs: Array<{ to: string; label: str
     label: "Bancos",
     tabs: [
       { to: "banco", label: "Banco" },
+      { to: "tarjetas", label: "Tarjetas" },
       { to: "movimientos", label: "Movimientos" },
       { to: "cuentas", label: "Cuentas" },
     ],

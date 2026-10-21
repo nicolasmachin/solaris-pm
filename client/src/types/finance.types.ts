@@ -7,7 +7,7 @@ export type MovementSourceType = 'MANUAL' | 'PROJECT_MATERIALS';
 export type CategoriaPrincipal =
   | 'PROYECTO_ENTRADA' | 'COBRO_CLIENTE'
   | 'PROYECTO_SALIDA' | 'COMPRA_STOCK' | 'CONSUMO_STOCK' | 'PAGO_PROVEEDOR'
-  | 'FIJO' | 'VARIABLE' | 'TRANSFERENCIA' | 'SEGURO_GRANIZO' | 'OTRO';
+  | 'FIJO' | 'VARIABLE' | 'TRANSFERENCIA' | 'SEGURO_GRANIZO' | 'CUENTA_SOCIO' | 'ADELANTO_PERSONAL' | 'OTRO';
 export type MetodoPago = 'TRANSFERENCIA' | 'EFECTIVO' | 'CHEQUE' | 'TARJETA_DEBITO' | 'TARJETA_CREDITO' | 'CRYPTO' | 'OTRO' | 'AJUSTE';
 export type EstadoAprobacion =
   | 'BORRADOR' | 'REGISTRADO' | 'PENDIENTE_APROBACION'
@@ -31,6 +31,9 @@ export const CATEGORIA_LABEL: Record<CategoriaPrincipal, string> = {
   TRANSFERENCIA: 'Transferencia',
   // Nombre interno heredado; en pantalla es el plan, nunca "seguro".
   SEGURO_GRANIZO: 'Plan granizo',
+  // Lo personal pagado por Voltia: no es gasto de la empresa ni entra al resultado.
+  CUENTA_SOCIO: 'Cuenta del socio',
+  ADELANTO_PERSONAL: 'Adelanto a descontar',
   OTRO: 'Otro',
 };
 
@@ -87,8 +90,9 @@ export const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
 export const CATEGORIAS_INGRESO: CategoriaPrincipal[] = ['PROYECTO_ENTRADA', 'COBRO_CLIENTE'];
 
 export const CATEGORIAS_POR_TIPO: Record<TipoMovimiento, CategoriaPrincipal[]> = {
-  INGRESO: ['PROYECTO_ENTRADA', 'COBRO_CLIENTE', 'OTRO'],
-  GASTO: ['PROYECTO_SALIDA', 'FIJO', 'VARIABLE', 'COMPRA_STOCK', 'CONSUMO_STOCK', 'PAGO_PROVEEDOR', 'OTRO'],
+  // CUENTA_SOCIO como ingreso = el socio devuelve lo que Voltia le pagó.
+  INGRESO: ['PROYECTO_ENTRADA', 'COBRO_CLIENTE', 'CUENTA_SOCIO', 'OTRO'],
+  GASTO: ['PROYECTO_SALIDA', 'FIJO', 'VARIABLE', 'COMPRA_STOCK', 'CONSUMO_STOCK', 'PAGO_PROVEEDOR', 'CUENTA_SOCIO', 'ADELANTO_PERSONAL', 'OTRO'],
   AJUSTE: ['OTRO'],
 };
 

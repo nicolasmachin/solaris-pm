@@ -81,7 +81,9 @@ export async function calcularEstadoResultados(fechaInicio: Date, fechaFin: Date
       deletedAt: null,
       fecha: { gte: fechaInicio, lt: fechaFin },
       // Excluir ajustes de conciliación: no son operación, son ruido contable.
-      categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
+      // Lo personal pagado por Voltia (cuenta del socio, adelantos) no es gasto de la
+      // empresa, y una transferencia entre cuentas propias no es ni venta ni gasto.
+      categoriaPrincipal: { notIn: [CategoriaPrincipal.AJUSTE_CONCILIACION, CategoriaPrincipal.CUENTA_SOCIO, CategoriaPrincipal.ADELANTO_PERSONAL, CategoriaPrincipal.TRANSFERENCIA] },
       // Los gastos pagados vía Payment se cuentan por el pago real del mes
       // (query `payments` más abajo), no por el movimiento. Se excluyen acá
       // para no duplicar.

@@ -63,6 +63,7 @@ const FinanceHistorialTab = lazy(() => import("./pages/FinanceHistorialTab").the
 const FinanceCostosFijosTab = lazy(() => import("./pages/AdminCostosFijos").then((module) => ({ default: module.TabCostosFijos })));
 const FinanceInicioTab = lazy(() => import("./pages/FinanceInicioTab").then((module) => ({ default: module.FinanceInicioTab })));
 const FinanceBancoTab = lazy(() => import("./pages/FinanceBancoTab").then((module) => ({ default: module.FinanceBancoTab })));
+const FinanceTarjetasTab = lazy(() => import("./pages/FinanceTarjetasTab").then((module) => ({ default: module.FinanceTarjetasTab })));
 const FinanceCierreTab = lazy(() => import("./pages/FinanceCierreTab").then((module) => ({ default: module.FinanceCierreTab })));
 const FinanceSupplierDetail = lazy(() => import("./pages/FinanceSupplierDetail").then((module) => ({ default: module.FinanceSupplierDetail })));
 const FinanceCuentas = lazy(() => import("./pages/FinanceCuentas").then((module) => ({ default: module.FinanceCuentas })));
@@ -404,6 +405,7 @@ export function App() {
           <Route path="proveedores" element={<FinanceSuppliers />} />
           <Route path="cuentas-por-pagar" element={<Navigate to="../proveedores" replace />} />
           <Route path="banco" element={<FinanceBancoTab />} />
+          <Route path="tarjetas" element={<FinanceTarjetasTab />} />
           <Route path="cierre" element={<FinanceCierreTab />} />
           <Route path="facturas-proveedores" element={<FinanceFacturasProveedoresTab />} />
           <Route path="costos-fijos" element={<FinanceCostosFijosTab />} />
