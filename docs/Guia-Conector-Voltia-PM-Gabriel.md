@@ -27,7 +27,7 @@ Listo: queda conectado y no hay que volver a hacerlo.
 2. Fijate que el conector **Voltia PM** esté activado, en el botón de herramientas, abajo del cuadro donde se escribe.
 3. Preguntá como le preguntarías a una persona.
 
-**Ejemplos de lo que le podés preguntar:**
+**Algunos ejemplos** (la lista completa está en el punto 3):
 
 **Plantas de los clientes**
 - «¿Cómo viene generando la planta de Rodolfo Sosa en las últimas dos semanas, comparada con las demás?»
@@ -43,17 +43,64 @@ Listo: queda conectado y no hay que volver a hacerlo.
 - «¿Qué pagos a instaladores tercerizados están pendientes?»
 - «¿Qué documentos tiene cargados la obra de Pereyra? Leeme la memoria.»
 
-## 3. Lo que tenés que saber
+## 3. Todo lo que podés hacer
+
+Esto es lo que el conector te deja hacer con tu usuario. No hace falta saber el nombre de cada función: se pide con palabras comunes y Claude elige.
+
+**Obras**
+
+| Qué | Ejemplo |
+|---|---|
+| Buscar una obra por cliente o código | «Buscame la obra de Maurán» |
+| Ver cómo viene una obra: etapa, plazo, atraso, potencia, fechas, cuadrilla y trámite de UTE | «¿Cómo viene Barenof?» |
+| Ver las etapas y subetapas, con responsable y estado, o solo lo que falta | «¿Qué le falta a la obra de Suárez?» |
+| Ver los materiales con su estado de compra, y las fotos y videos de la obra | «¿Están comprados los materiales de Rodríguez?» |
+| Listar los documentos de la obra y **leerlos**: memorias, listas de materiales, planillas; los planos (unifilar, gabinete) los ve como imagen | «Leeme la lista de materiales de Pereyra» |
+| Ver la historia completa: etapas, comentarios, contactos, traspasos y tickets | «¿Qué pasó esta semana con la obra de Michelena?» |
+| Ver los pendientes de la obra de todo el equipo | «¿Qué pendientes hay en la obra de Ferrari?» |
+| **Dejar un comentario** en la obra | «Anotá en la obra de Barrella que el cliente pidió mover el inversor» |
+
+**Control de Operaciones**
+
+| Qué | Ejemplo |
+|---|---|
+| Obras con la etapa vencida o por vencer, de la más atrasada a la menos | «¿Qué obras de Operaciones están vencidas?» |
+| Obras vendidas sin fecha de instalación | «¿Qué obras no tienen fecha?» |
+| Cuánto dura de verdad cada etapa y cuánto se cumple el plazo | «¿Cuánto está tardando Validación de Operaciones?» |
+| Los trámites de UTE sin habilitar: a quién le toca y cuánto tarda cada paso | «¿Qué trámites de UTE están esperando por nosotros?» |
+| El trámite de UTE de una obra, hito por hito | «¿En qué está el trámite de Correa?» |
+| Los pagos a instaladores tercerizados: pagado, saldo, vencidos y obras sin instalador | «¿Qué le debemos a Fernando?» |
+
+**Plantas de los clientes**
+
+| Qué | Ejemplo |
+|---|---|
+| Buscar un cliente ya instalado y ver su ficha | «Mostrame la ficha de Álvaro García» |
+| Generación día por día, comparada con las demás plantas | «¿Cómo genera Rodolfo Sosa este mes?» |
+| La curva de un día, hora por hora | «La curva de ayer de Estilo» |
+| El inversor y el medidor ahora mismo, fase por fase y string por string | «¿Qué marca ahora el medidor de Rodolfo?» |
+| Las incidencias del monitoreo de toda la cartera o de una planta | «¿Qué plantas tienen incidencias abiertas?» |
+| El último reporte mensual de un cliente | «¿Qué dice el último reporte de Calleros?» |
+
+**Tus pendientes**
+
+| Qué | Ejemplo |
+|---|---|
+| Ver tus pendientes, crear uno atado a una obra, completarlo o ponerlo en espera | «Recordame el jueves llamar al proveedor por la obra de Saravia» |
+
+Si algo falla, pedile **«¿estás conectado a Voltia PM?»**: te muestra con qué usuario estás y qué podés ver.
+
+## 4. Lo que tenés que saber
 
 - **Son los datos reales de Voltia PM.** Lo que se lee es lo de producción, al momento.
-- **Si le pedís que escriba algo** (un comentario, un pendiente, mover una etapa), **se hace de verdad y queda a tu nombre**, igual que si lo hicieras desde Voltia PM. Antes de que escriba, leé lo que te propone.
+- **Si le pedís que escriba algo** (un comentario o un pendiente), **se hace de verdad y queda a tu nombre**, igual que si lo hicieras desde Voltia PM. Antes de que escriba, leé lo que te propone.
 - **Ves lo mismo que ves en Voltia PM:** el conector respeta tus permisos.
 - **Claude analiza, pero puede equivocarse.** Si un diagnóstico es importante (por ejemplo, mandar a alguien a una obra), confirmalo antes.
 - **Las plantas Huawei a veces no responden** a la primera. Si una consulta falla, pedile que lo intente de nuevo. De Huawei hay datos **hora por hora**, no minuto a minuto.
 - **Los datos de los clientes son confidenciales.** No compartas capturas de estas conversaciones fuera de Voltia.
 - **No sirve para cambiar Voltia PM** (pantallas, funciones, permisos). Si ves algo que habría que mejorar, pasáselo a Nicolás.
 
-## 4. Si algo no anda
+## 5. Si algo no anda
 
 - **No aparece Voltia PM en las herramientas:** fijate que esté activado, o abrí una conversación nueva.
 - **Dice que no tenés permiso:** avisale a Nicolás qué estabas consultando.
