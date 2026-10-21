@@ -51,7 +51,8 @@ export async function recalcMovementStatus(
       // Tomar fecha del último Payment que aplica
       const ultimaApp = activeApps.length > 0
         ? await tx.paymentApplication.findFirst({
-            where: { movementId, payment: { deletedAt: null } },
+            // Un ajuste no es un pago: si la saldó un ajuste, la deuda conserva su fecha.
+            where: { movementId, payment: { deletedAt: null, metodo: { not: MetodoPago.AJUSTE } } },
             orderBy: { payment: { fecha: "desc" } },
             include: { payment: true },
           })

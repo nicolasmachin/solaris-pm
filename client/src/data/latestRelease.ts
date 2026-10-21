@@ -24,8 +24,41 @@ export type Release = {
 
 export const LATEST_RELEASE: Release = {
   version: "13.0",
-  date: "20 de octubre de 2026",
+  date: "21 de octubre de 2026",
   sections: [
+    {
+      title: "Finanzas, ordenada como un programa de contabilidad",
+      items: [
+        "Menú en cinco grupos: Inicio, Ventas, Compras, Bancos e Informes.",
+        "Inicio junta la posición, lo que falta conciliar y los pendientes.",
+      ],
+    },
+    {
+      title: "Por conciliar: facturas, movimientos y banco se encuentran",
+      items: [
+        "Una sola lista con lo que el banco muestra y no está cargado, lo cargado que el banco no muestra, facturas por revisar y posibles duplicados.",
+        "Nueva pantalla Banco: lo que coincide se confirma con un clic y queda fijo.",
+      ],
+    },
+    {
+      title: "Proveedores al día con su estado de cuenta",
+      items: [
+        "Arrancar cuenta y Ajustar: la deuda queda igual a la del estado de cuenta, sin tocar la caja.",
+        "Las facturas de proveedores con cuenta corriente entran solas a la deuda; las notas de crédito se descuentan con un botón.",
+      ],
+    },
+    {
+      title: "Tarjetas, cuenta del socio y adelantos",
+      items: [
+        "Cada gasto de la tarjeta se marca de Voltia o personal; lo personal no cuenta como gasto de la empresa.",
+      ],
+    },
+    {
+      title: "Cierre de mes",
+      items: [
+        "Lista de control, archivo en Excel para la contadora y cierre: un mes cerrado no se cambia.",
+      ],
+    },
     {
       title: "Facturas de proveedores: el proveedor se elige una sola vez",
       items: [

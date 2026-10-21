@@ -36,6 +36,8 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 | `BILLER_TOKEN` | token de la API de Biller (facturación electrónica). Trae las facturas que nos emiten los proveedores a Finanzas → Cuentas por pagar. Vacío = el job no corre y la bandeja avisa que no está configurada |
 | `BILLER_URL` | `https://biller.uy` en producción (default del compose de prod); `https://test.biller.uy` es la cuenta de prueba |
 | `BILLER_SUCURSAL` | ID de la sucursal de Voltia en Biller productivo (Ajustes → Sucursales). Sin esto no se emiten facturas a clientes. En test es la 889 |
+| `BANCO_LECTOR_TOKEN` | token con el que el lector del banco manda sus lecturas a `POST /api/banco/lectura`. Sin esto la ruta responde 404 |
+| `CRON_BILLER_RECIBIDOS` | opcional; por defecto `*/30 * * * *` (facturas de proveedores cada media hora) |
 | `WHATSAPP_TOKEN` | token permanente del usuario del sistema `voltia-pm` de Meta (permisos de mensajes y de administración de WhatsApp). **Secreto** |
 | `META_APP_SECRET` | clave secreta de la aplicación "Voltia PM" (developers.facebook.com → Configuración → Básica). Valida la firma de cada aviso de Meta: sin ella el webhook rechaza todo. **Secreto** |
 | `WHATSAPP_VERIFY_TOKEN` | texto al azar que se inventa uno (`openssl rand -hex 24`) y se carga igual en Meta al guardar el webhook |
@@ -396,3 +398,14 @@ Para cambios riesgosos: probar la migración sobre una **copia** primero, hacerl
 dos pasos (**expand/contract**: agregar → backfill → luego quitar lo viejo), y tener
 el backup a mano. Quien prepare el cambio debe **avisar explícitamente** que la
 migración es riesgosa antes del deploy.
+
+
+## Deploy de Finanzas del 21-oct-2026 (conciliación, ajustes, cierre, tarjetas)
+
+Detalle de lo que entra: `docs/pendientes/finanzas-noche-21oct-hecho.md`.
+
+1. `./deploy.sh` — aplica las migraciones (todas aditivas; `compras_neto_iva_nc` rellena neto/IVA de las facturas ya confirmadas; `categorias_personales` solo agrega valores de enum y va sola a propósito).
+2. `docker compose -f docker-compose.prod.yml exec server npx tsx scripts/seed-cierre-mes-permiso.ts` y reiniciar el server (cache de permisos).
+3. En el `.env` de prod: `BANCO_LECTOR_TOKEN` (si se va a usar el lector del banco).
+4. En Finanzas → Cuentas: número de banco de BROU Pesos (`110875272-00001`) y BROU Dólares (`110875272-00002`).
+5. Avisar: los totales de ingresos y egresos del estado de resultados bajan en los meses con transferencias entre cuentas (el resultado neto no cambia).

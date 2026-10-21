@@ -2,6 +2,47 @@
 
 ## v13.0
 
+### 21 de octubre de 2026
+
+#### Finanzas, ordenada como un programa de contabilidad
+
+- El menú de Finanzas queda en cinco grupos: **Inicio**, **Ventas** (Cobros, Facturación), **Compras** (Facturas, Proveedores, Instaladores, Costos fijos), **Bancos** (Banco, Tarjetas, Movimientos, Cuentas) e **Informes** (Flujo, Resultados, Cierre, Historial).
+- **Inicio** junta lo que hay, lo que nos deben y lo que debemos, lo que falta conciliar y los pendientes de pagar y cobrar.
+- **Proveedores** muestra arriba lo que se le debe a cada uno, por vencimiento. **Facturas** muestra arriba las que llegaron y hay que revisar.
+
+#### Por conciliar: que las facturas, los movimientos y el banco se encuentren
+
+- En el Inicio, una sola lista con todo lo que falta: lo que el banco muestra y no está cargado, **lo cargado en Voltia PM que el banco no muestra**, las facturas por revisar y los **posibles gastos cargados dos veces**.
+- Nueva pantalla **Banco**: todo lo que leyó el banco, con su pareja en Voltia PM. Lo que coincide se confirma con un clic y queda fijo.
+
+#### Proveedores: la cuenta, al día con su estado de cuenta
+
+- **Arrancar cuenta**: en la ficha del proveedor (o desde la conciliación con su estado de cuenta) se deja lo que se le debe igual a lo que dice el proveedor. Las deudas que ya no van se cierran con un **ajuste**, y lo que el proveedor dice que se le debía de antes entra como saldo anterior.
+- **Ajustar**: baja lo que se le debe a un proveedor por una diferencia que no tiene explicación. Un ajuste no es plata: no sale de ninguna cuenta ni cuenta como gasto.
+- Los proveedores con **cuenta corriente** (casilla en su ficha) tienen sus facturas electrónicas cargadas solas como deuda, salvo que ya haya un gasto igual cargado. Quedan marcadas "entró sola" para revisarlas.
+- Las **notas de crédito** de un proveedor se descuentan de la deuda con un botón.
+- La factura de un proveedor se carga siempre por el mismo formulario, que controla que no esté repetida. Si al cargar un gasto se elige un proveedor al que se le debe, Voltia PM avisa que el pago va por **Registrar pago**.
+- Las facturas electrónicas guardan el neto y el IVA.
+- Las facturas de los proveedores se traen cada media hora.
+
+#### Tarjetas de crédito, cuenta del socio y adelantos
+
+- Nueva pantalla **Tarjetas**: cada gasto de la tarjeta se marca de Voltia o personal, según quién la usó (titular o adicional, cada uno con su regla). Si después del pago la tarjeta queda en cero, cierra.
+- Lo personal del socio queda en la **cuenta del socio**; lo personal de un empleado, autorizado, queda **a descontar del sueldo** hasta que se marca descontado. Nada de eso cuenta como gasto de Voltia.
+
+#### Cierre de mes
+
+- Nueva pantalla **Cierre**: lista de control del mes (lo que se puede saber solo y lo que tilda una persona), **archivo en Excel para la contadora** (compras, ventas, ajustes y movimientos) y el cierre. Un mes cerrado no se puede cambiar; reabrirlo queda registrado con su motivo.
+
+#### Facturación al cliente
+
+- Si una obra cobró más de lo que se le facturó, la lista de Facturación lo avisa.
+
+#### Arreglos
+
+- Las transferencias entre cuentas propias ya no suman como ingreso y como gasto en el estado de resultados. El resultado del mes no cambia, pero los totales de ingresos y egresos quedan bien.
+- Conciliar una cuenta con el banco con diferencia ahora pide escribir el motivo.
+
 ### 20 de octubre de 2026
 
 #### Facturas de proveedores: el proveedor se elige una sola vez

@@ -1,3 +1,18 @@
+> **Estado al 21-oct-2026 (mañana):** las fases 0 a 7 del plan revisado están hechas en
+> desarrollo, sin deploy. Detalle exacto en `docs/pendientes/finanzas-noche-21oct-hecho.md`.
+> El plan completo y la revisión de los 4 expertos están en el plan de la sesión
+> (`~/.claude/plans/cached-jumping-sphinx.md`).
+>
+> **Queda pendiente:**
+> - La carga de Tiempo al Tiempo y Würth en producción (script listo en
+>   `docs/pendientes/carga-20oct-tiempo-wurth.mjs`; ahora conviene hacerla con "Arrancar cuenta"
+>   cuando esté deployado).
+> - Robot de BROU: leer la tabla y mandarla (con Nicolás presente).
+> - Robot de BBVA en la Mac de Nicolás (con su sesión abierta).
+> - Scotiabank: ver cómo entra (usuario de consulta).
+> - Cotización de la fecha de cada operación (hoy se usa la última; decisión pendiente, toca todos los informes).
+> - Segunda etapa: casilla facturas@, renglones de facturas (Biller los da) y base de costos de insumos.
+
 # Plan único de Finanzas: facturas, movimientos y banco
 
 Armado el 20-oct-2026 juntando dos sesiones de trabajo (facturación Biller y
