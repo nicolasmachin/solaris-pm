@@ -31,6 +31,7 @@ import {
   type DispositivoGrowatt,
 } from "../growatt/client.js";
 import { evaluarExportacion, leerUmbralesExportacion } from "./exportacion.js";
+import { evaluarMedidor } from "./medidor.js";
 import { concurrencia, pctAlertaMasiva, pctErrorMasivo } from "./config.js";
 import { dateADia, diaAEvaluar, diaADate, sumarDias, type Dia } from "./dias.js";
 import {
@@ -395,6 +396,21 @@ async function evaluarPlanta(
   // El chequeo de exportación es lo único que la delata, así que pisa el OK.
   if (resultado.diagnostico === FvDiagnostico.OK && planta.projectId) {
     const conExport = await leerHistorialConExportacion(planta.projectId, desde, dia);
+    // Un medidor que mide al revés también se ve "OK" desde la generación, y
+    // además engaña al chequeo de exportación (de noche "exporta").
+    const medidor = evaluarMedidor({ dia, historial: conExport });
+    if (medidor.alerta) {
+      return {
+        resultado: {
+          ...resultado,
+          diagnostico: FvDiagnostico.MEDIDOR_INVERTIDO,
+          detalle: medidor.detalle!,
+          alerta: true,
+        },
+        generacionKwh,
+        requests,
+      };
+    }
     const veredicto = evaluarExportacion({
       dia,
       historial: conExport,

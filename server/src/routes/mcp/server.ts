@@ -19,6 +19,7 @@ import { registerMiDiaTools } from "./tools/mi-dia.js";
 import { registerMinutaTools } from "./tools/minuta.js";
 import { registerOperacionesTools } from "./tools/operaciones.js";
 import { registerPendientesTools } from "./tools/pendientes.js";
+import { registerPlantasTools } from "./tools/plantas.js";
 import { registerPropuestaTools } from "./tools/propuesta.js";
 import { registerProyectosTools } from "./tools/proyectos.js";
 import { registerVentasTools } from "./tools/ventas.js";
@@ -44,7 +45,13 @@ Reglas de uso:
 - Las acciones se ejecutan en nombre del usuario conectado y quedan auditadas.
 - Antes de escribir sobre un cliente potencial, confirmá con el usuario cuál es
   si hay más de una coincidencia posible. No adivines.
-- Los importes están en dólares salvo que se indique lo contrario.`;
+- Los importes están en dólares salvo que se indique lo contrario.
+- Para analizar cómo funciona una planta ("algo raro hay", "genera poco"):
+  generacion_planta (días y comparación con la cartera) → curva_horaria (forma
+  del día) → estado_en_vivo (inversor, strings y medidor ahora). Lo que es
+  físicamente imposible (exportar más de lo que se genera, exportar de noche)
+  apunta a un medidor mal conectado. Decir siempre qué es dato y qué es
+  deducción.`;
 }
 
 export function buildMcpServer(user: McpUser): McpServer {
@@ -65,6 +72,7 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerDocumentosTools(server, user);
   registerOperacionesTools(server, user);
   registerExperienciaSolarTools(server, user);
+  registerPlantasTools(server, user);
   registerFinanzasTools(server, user);
   registerMetricasTools(server, user);
 

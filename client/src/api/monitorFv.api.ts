@@ -7,6 +7,7 @@ export type FvDiagnostico =
   | "SIN_COMUNICACION"
   | "ERROR_DISPOSITIVO"
   | "SIN_EXPORTACION"
+  | "MEDIDOR_INVERTIDO"
   | "ESPERANDO_HABILITACION"
   | "SILENCIADA"
   | "SIN_DATOS_API";
@@ -20,6 +21,7 @@ export const DIAGNOSTICO_LABEL: Record<FvDiagnostico, string> = {
   SIN_COMUNICACION: "Sin comunicación",
   ERROR_DISPOSITIVO: "Falla del equipo",
   SIN_EXPORTACION: "No inyecta a la red",
+  MEDIDOR_INVERTIDO: "Medidor midiendo al revés",
   ESPERANDO_HABILITACION: "Esperando habilitación",
   SILENCIADA: "Silenciada",
   SIN_DATOS_API: "Sin datos",
@@ -30,6 +32,7 @@ export const DIAGNOSTICO_ORDER: FvDiagnostico[] = [
   "SIN_GENERACION",
   "ERROR_DISPOSITIVO",
   "SIN_EXPORTACION",
+  "MEDIDOR_INVERTIDO",
   "SIN_COMUNICACION",
   "SIN_DATOS_API",
   "GENERACION_BAJA",
@@ -45,6 +48,7 @@ export const DIAGNOSTICO_BADGE: Record<FvDiagnostico, string> = {
   SIN_COMUNICACION: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
   ERROR_DISPOSITIVO: "bg-red-500/15 text-red-400 border border-red-500/30",
   SIN_EXPORTACION: "bg-orange-500/15 text-orange-400 border border-orange-500/30",
+  MEDIDOR_INVERTIDO: "bg-orange-500/15 text-orange-400 border border-orange-500/30",
   ESPERANDO_HABILITACION: "bg-[var(--color-border)] text-[var(--color-text-muted)]",
   SILENCIADA: "bg-[var(--color-border)] text-[var(--color-text-muted)]",
   SIN_DATOS_API: "bg-blue-500/15 text-blue-400 border border-blue-500/30",

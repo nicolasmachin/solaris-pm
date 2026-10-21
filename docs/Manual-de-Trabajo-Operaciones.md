@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.5 · del 19/10/26
+**Voltia · Uruguay** · Versión 1.6 · del 21/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -94,6 +94,18 @@ Después de la obra, Operaciones vuelve a la casa del cliente por dos motivos di
 - **Termina cuando** el informe está cargado y el problema está resuelto.
 
 > *En definición:* cómo se agendan los mantenimientos y dónde se carga cada informe en Voltia PM todavía no está definido. Se completa cuando quede resuelto.
+
+**Antes de ir: analizar la planta desde el chat.** Cuando una planta "anda rara" —genera poco, el cliente dice que la factura no bajó, el monitoreo marcó algo—, Operaciones puede mirarla sin ir y sin pedirle nada a nadie, desde **el chat de Claude conectado a Voltia PM** (el asistente de inteligencia artificial que se usa en la computadora o el celular, con la conexión a Voltia PM activada). Se le pregunta en palabras comunes, por ejemplo *"¿cómo viene funcionando la planta de Rodolfo Sosa?"*, y Claude lee los datos de la planta y los explica:
+
+- **Día por día:** cuánto generó, cuánto exportó, cuánto consumió la casa y cuánto compró a UTE, comparado con lo que rindieron las demás plantas de Voltia ese mismo día. Si un día fue nublado, bajan todas; si baja solo esta, el problema es de la planta.
+- **Hora por hora** de un día: ahí se ven las sombras (cortes que se repiten a la misma hora todos los días) y los cortes del inversor.
+- **Ahora mismo:** el inversor, cada string con su voltaje y su corriente, cada fase, y lo que marca el medidor.
+
+Hay dos cosas que **son imposibles** y que Claude marca solas, porque delatan un error de conexión: que la planta **exporte más de lo que genera**, o que **exporte de noche**. Las dos quieren decir que el medidor quedó **al revés o mal conectado** (los transformadores de corriente dados vuelta o puestos en otra fase). El monitoreo diario también lo avisa.
+
+Lo que Claude deduce se toma como una **pista para revisar en el lugar**, no como un diagnóstico cerrado: una lectura suelta puede engañar, y lo que se ve desde afuera no reemplaza mirar el tablero. Si con la pista alcanza para resolver algo a distancia (por ejemplo, invertir la lectura del medidor desde la aplicación del inversor), se resuelve y se confirma después mirando los datos de nuevo: de noche, sin sol, todas las fases tienen que marcar compra.
+
+Para usarlo hace falta tener en Voltia PM el permiso de ver Experiencia Solar; se le pide al gerente de Operaciones.
 
 ## 3 · Del proyecto a la obra: plazos
 
@@ -1079,6 +1091,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.6 | 21 de octubre de 2026 | Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM antes de ir a una visita de soporte: generación día por día comparada con las demás plantas, hora por hora y el inversor y el medidor en el momento. Lo imposible (exportar más de lo que se genera, exportar de noche) delata un medidor mal conectado, y el monitoreo diario también lo avisa. |
 | 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Los documentos de UTE los imprime Logística y van con los materiales de la obra: en obra no se imprime nada. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 1.4 | 19 de octubre de 2026 | Al tercerizado se le exige estar inscripto como empresa y tener el seguro de accidentes del BSE desde su primera obra con contrato, y la factura a los seis meses; ya no se le pide todos los meses la documentación de sueldos y aportes. El contrato con el tercerizado pasa a estar en borrador, y el tercerizado tiene su propio manual. |
 | 1.3 | 17 de octubre de 2026 | El Carnaval y la Semana de Turismo no cuentan como días hábiles. |

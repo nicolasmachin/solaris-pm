@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.30 · del 19/10/26
+**Voltia · Uruguay** · Versión 1.31 · del 21/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1180,6 +1180,22 @@ contacta al cliente antes de que llame él.** Si el primero en enterarse de que 
 inversor tiene una luz roja es el cliente, el monitoreo no sirvió (Anexo E, tema
 17).
 
+El monitoreo también avisa cuando **el medidor de una planta quedó al revés o mal
+conectado**: lo delata que la planta figure exportando más de lo que generó. Desde
+afuera se ve como una planta sana, pero los reportes mensuales del cliente salen
+mal hasta que se corrija. Ese aviso va a Operaciones, que lo revisa.
+
+**Analizar una planta desde el chat.** Experiencia Solar puede mirar cómo viene
+funcionando cualquier planta desde **el chat de Claude conectado a Voltia PM** (el
+asistente de inteligencia artificial, con la conexión a Voltia PM activada),
+preguntando en palabras comunes, por ejemplo *"¿cómo viene funcionando la planta
+de Rodolfo Sosa?"*. Claude muestra la generación día por día comparada con las
+demás plantas de Voltia ese mismo día, la forma del día hora por hora, y el
+inversor y el medidor en el momento. Sirve para contestarle al cliente que
+pregunta "¿por qué genera menos?" con datos, y para pasarle a Operaciones una
+pista concreta antes de agendar una visita de soporte. Lo que Claude deduce es una
+pista, no un diagnóstico: el que revisa en el lugar es Operaciones.
+
 ### 12.1 · El Plan de Protección contra Granizo
 
 Por USD 12 por panel por año, IVA incluido, si el granizo le rompe paneles al
@@ -1962,6 +1978,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |
 | 1.30 | 19 de octubre de 2026 | Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 1.29 | 19 de octubre de 2026 | El cliente que se olvida la contraseña puede entrar al portal con un código que le llega al mail, sin resetearla. La pantalla de entrada avisa si el usuario no existe o si la contraseña no es la correcta. La sesión dura mientras se use: pide entrar de nuevo solo después de 10 días sin abrir el portal. |
 | 1.28 | 17 de octubre de 2026 | La conversación de expectativa inicial se hace por WhatsApp, no por teléfono: ningún paso del recorrido exige una llamada. Si el cliente prefiere hablar, se habla y se registra. La bienvenida la manda Experiencia Solar, después de que el asesor le presentó al referente como última tarea del onboarding de venta; antes la mandaba el vendedor. Todos los pasos tienen plazo. Mandar un mensaje modelo da el paso por hecho, y el acceso al portal, el contrato firmado y el alta en reportes se dan por hechos solos. Botón Abrir en WhatsApp. Un día de margen en la cadencia ("toca hoy") y la sección Para contactar hoy en el correo de la mañana. Los reclamos del portal avisan en el momento. Los feriados no laborables, el Carnaval y la Semana de Turismo no cuentan como días hábiles. |

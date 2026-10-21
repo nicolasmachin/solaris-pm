@@ -1200,6 +1200,35 @@ Cuando hay alerta, `incidencias.service.ts` abre (o extiende) una `FvIncidencia`
 Cuando la planta vuelve a generar, la cierra. El mail sólo informa lo que
 **empieza**: lo que sigue abierto no se repite todos los días.
 
+### Chequeos de la medición (pisan el `OK`)
+
+Una planta que genera normal sale `OK` en la tabla de arriba aunque su medidor
+ande mal. Por eso, **sólo cuando el diagnóstico dio `OK`**, se corren dos
+chequeos más sobre la serie diaria guardada (`leerHistorialConExportacion()`),
+en este orden:
+
+1. **`MEDIDOR_INVERTIDO`** — `monitor/medidor.ts` → `evaluarMedidor()` (pura,
+   tests en `medidor.test.ts`, `npm run test:fv-medidor`). Un día cuenta si
+   **exportó más de lo que generó** por al menos 2 kWh y 10 % de la generación
+   (`exportaMasDeLoQueGenera()`); alerta si pasa en 2 de los últimos 3 días con
+   dato del medidor **y** el día evaluado es uno de ellos (si ya se corrigió, se
+   cierra sola). Es físicamente imposible: el medidor tiene los transformadores
+   de corriente dados vuelta o en otra fase, y de noche cuenta la compra como
+   exportación. Nació con Estilo (julio) y Rodolfo Sosa (octubre de 2026). Los
+   días sin dato del medidor se saltean, no cortan.
+2. **`SIN_EXPORTACION`** — `monitor/exportacion.ts` → `evaluarExportacion()`:
+   dos días seguidos generando ≥ 5 kWh y exportando ≤ 0,5 kWh (umbrales en
+   `FV_MONITOR_EXPORT_*`). Suele ser la inyección limitada en el inversor.
+
+En **Huawei** el chequeo del medidor corre en `monitor-huawei.service.ts` con la
+serie del mes que ya vino en la misma llamada. Si FusionSolar ya marcó otra
+alerta (por ejemplo `ERROR_DISPOSITIVO`, que es justo lo que declara cuando el
+medidor anda mal), **no se la pisa** —hay una incidencia abierta por planta y un
+diagnóstico nuevo cerraría el anterior— pero el texto del medidor se **suma al
+detalle** ("Además: exportó más de lo que generó…"). No corre si la planta no
+generó o si la API no contestó. `SIN_EXPORTACION` no está implementado para
+Huawei.
+
 ## Permisos
 
 Todo el monitoreo usa `EXPERIENCIA_CLIENTES`: `VIEW` para las tres vistas y la

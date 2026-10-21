@@ -108,6 +108,7 @@ async function pedir(
 const get = (endpoint: string, params: Record<string, string | number>) =>
   pedir("GET", endpoint, params);
 
+export const growattPostCrudo = (endpoint: string, params: Record<string, string | number>) => post(endpoint, params);
 const post = (endpoint: string, params: Record<string, string | number>) =>
   pedir("POST", endpoint, params);
 

@@ -4842,6 +4842,11 @@ enum FvDiagnostico {
   // y desde afuera se ve como una planta sana. Es mensual, no diario: la
   // exportación viene del smart meter y sólo se conoce tras la ingesta.
   SIN_EXPORTACION
+  // Exporta más de lo que genera: el smart meter mide al revés o está mal
+  // conectado (transformadores de corriente dados vuelta). Los reportes al
+  // cliente salen mal y, si la inyección está limitada, puede recortar la
+  // generación. Ver monitor/medidor.ts.
+  MEDIDOR_INVERTIDO
   ESPERANDO_HABILITACION // todavía no pasó la habilitación UTE: no es un problema
   SILENCIADA
   SIN_DATOS_API // Growatt no respondió: problema NUESTRO, no del cliente

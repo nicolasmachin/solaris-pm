@@ -23,6 +23,7 @@ import { diagnosticarHuawei, leerUmbralesHuawei, type EstadoSalud } from "./diag
 import { guardarExportacionHuawei, guardarGeneracionDiaria } from "./generacion-diaria.service.js";
 import { resolverHabilitadoEn, resolverOperativaDesde, ETAPAS_UTE } from "./habilitacion.js";
 import { registrarDeteccion, resolverIncidencias } from "./incidencias.service.js";
+import { evaluarMedidor, type DiaMedidor } from "./medidor.js";
 
 export interface FilaHuawei {
   incidenciaId: string;
@@ -154,6 +155,34 @@ export async function ejecutarMonitorHuawei(fecha: Dia): Promise<ResumenMonitorH
         : null,
       umbrales,
     });
+
+    // Genera bien pero el medidor exporta más de lo que genera: mide al revés.
+    // Pisa el OK. Si ya hay otra alerta (FusionSolar marca "falla" justamente
+    // cuando el medidor anda mal), no se la pisa —la incidencia es una por
+    // planta— pero se le suma al detalle, para que se vea.
+    if (resultado.diagnostico !== FvDiagnostico.SIN_GENERACION && resultado.diagnostico !== FvDiagnostico.SIN_DATOS_API) {
+      const conMedidor = new Map<Dia, DiaMedidor>(
+        dias
+          .filter((d) => d.fecha <= fecha)
+          .map((d) => [
+            d.fecha as Dia,
+            {
+              generacionKwh: d.generacionKwh,
+              // Mismo filtro que guardarExportacionHuawei: sin consumo ni
+              // exportación, el medidor no reportó.
+              exportacionKwh: d.consumoKwh > 0 || d.exportacionKwh > 0 ? d.exportacionKwh : null,
+            },
+          ]),
+      );
+      const medidor = evaluarMedidor({ dia: fecha, historial: conMedidor });
+      if (medidor.alerta && resultado.diagnostico === FvDiagnostico.OK) {
+        resultado.diagnostico = FvDiagnostico.MEDIDOR_INVERTIDO;
+        resultado.detalle = medidor.detalle!;
+        resultado.alerta = true;
+      } else if (medidor.alerta && resultado.alerta) {
+        resultado.detalle = `${resultado.detalle.replace(/\.?$/, ".")} Además: ${medidor.detalle}`;
+      }
+    }
 
     resumen.porDiagnostico[resultado.diagnostico] =
       (resumen.porDiagnostico[resultado.diagnostico] ?? 0) + 1;

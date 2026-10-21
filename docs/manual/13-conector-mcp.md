@@ -309,6 +309,46 @@ excluidos de la lista de proyectos. Buscar uno con `buscar_proyecto` no lo
 encuentra; `buscar_generador` sí. Las descripciones de las dos herramientas se
 apuntan mutuamente para que el modelo elija bien.
 
+### Análisis de plantas
+
+Para que el equipo (Operaciones, Experiencia Solar) diagnostique una planta
+desde el chat sin consultar el servidor a mano. Todas de lectura, en
+`tools/plantas.ts`. El análisis lo hace el modelo; las herramientas le dan los
+datos y **marcan lo físicamente imposible**, que es lo que delata un error de
+conexión.
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `generacion_planta` | `EXPERIENCIA_CLIENTES:VIEW` | Día por día (30 por defecto, hasta 120): generación, exportación, consumo y compra de `ReporteFvGeneracionDiaria`, kWh/kWp contra la **mediana de la cartera** ese día (SQL `percentile_cont` sobre las demás plantas con potencia cargada; se compara solo si hay ≥ 5). Marca días que exportan más de lo que generan y días que rinden < 70 % de la cartera (con cartera > 1,5 kWh/kWp, para no marcar días nublados). |
+| `curva_horaria` | `EXPERIENCIA_CLIENTES:VIEW` | Un día hora por hora. **Growatt**: sale de `obtenerCurvaDia()` (la misma de la vista de energía, así que guarda el día en `FvCurvaDia` si no estaba), con pico y mínimo de cada hora y, con `detalle_5_min`, todos los puntos. Marca exportación sin sol y consumo cero sin sol. **Huawei**: llama en vivo a `getKpiStationHour` (no se guarda); trae solo generación y exportación por hora. |
+| `estado_en_vivo` | `EXPERIENCIA_CLIENTES:VIEW` | El momento actual. **Huawei**: `getDevList` + `getDevRealKpi` del inversor (tipo 1: potencia, voltaje y corriente por fase, cada `pvN`, temperatura) y del medidor (tipo 47: potencia por fase, convención **positivo = exporta**). Compara fase por fase: si el medidor exporta por una fase más que lo que el inversor le manda (+10 % y 300 W), avisa transformador dado vuelta o en otra fase; sin sol, cualquier fase exportando también. **Growatt**: `tlx_last_data` crudo (`growattPostCrudo()`), solo inversores MIN/TLX (tipo 7); strings, fases, y medidor en total (Growatt no lo da por fase). Muestra además lo que dice el último unifilar (paneles, strings, inversor) para comparar con lo que se ve. |
+| `incidencias_plantas` | `EXPERIENCIA_CLIENTES:VIEW` | `listarIncidencias()`: por defecto las abiertas de toda la cartera; con `project_id`, el historial de la planta. |
+
+**El permiso es el del panel de Monitoreo**, no `OPERACIONES:VIEW`: ese lo
+tienen también el instalador tercerizado, el capataz y los asesores, y estas
+herramientas muestran datos de todos los clientes. Al 21-oct-2026 el rol
+`OPERACIONES` **no** tiene `EXPERIENCIA_CLIENTES:VIEW` en producción: para que
+el equipo de Operaciones las use hay que dárselo desde Admin → Roles (abre
+también las pantallas de Experiencia Solar en lectura).
+
+**Limitaciones que sorprenden:**
+
+- Huawei no da historial del inversor ni del medidor: `getDevHistoryKpi`
+  devuelve `failCode 401` (no habilitado para nuestro usuario Northbound). Por
+  eso `estado_en_vivo` es solo el momento, y la descripción le pide al modelo
+  repetirla o hacerla de noche para confirmar.
+- Huawei informa el **voltaje por MPPT**: dos entradas del mismo MPPT muestran el
+  mismo voltaje. Una entrada en 0 A con el voltaje de otra que sí produce suele
+  ser una entrada sin usar, no un string caído; el aviso lo distingue (caso
+  Rodolfo: PV1 en 0 A comparte MPPT con PV2).
+- Un inversor que se cambió de dongle aparece dos veces en `getDevList`; la
+  entrada vieja viene toda en `null` y se descarta.
+- FusionSolar no siempre contesta (`HUAWEI_API_UNREACHABLE` tras los
+  reintentos): la herramienta lo dice en texto, no falla.
+- El rendimiento contra la cartera depende de la potencia cargada
+  (`ReporteFvConfig.potenciaInstaladaKwp` ?? `Project.capacityKwp`). Si está
+  mal (Rodolfo figuraba con 23 kWp teniendo 16,4), sale mal.
+
 ### Finanzas
 
 Todas de lectura. Cada número sale del **mismo servicio que usa la pantalla**:

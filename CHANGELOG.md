@@ -44,6 +44,15 @@
 
 - Si una obra cobró más de lo que se le facturó, la lista de Facturación lo avisa.
 
+#### Analizar una planta desde el chat de Claude
+- Desde el chat conectado a Voltia PM ahora se puede preguntar **"¿cómo viene funcionando la planta de tal cliente?"** y obtener el análisis con datos reales: generación, exportación, consumo y compra día por día, comparados con el resto de las plantas ese mismo día.
+- También se puede ver **la forma de un día, hora por hora** (para detectar sombras o cortes), y **el inversor y el medidor en este momento**: cada string, cada fase, y lo que marca el medidor.
+- Avisa solo lo imposible, que es lo que delata un error de conexión: un medidor que exporta más de lo que genera la planta, o que exporta de noche.
+- Lo pueden usar quienes ven Experiencia Solar.
+
+#### Monitoreo: medidor midiendo al revés
+- El monitoreo diario avisa cuando una planta **exporta más de lo que genera** dos de los últimos tres días: el medidor quedó al revés o mal conectado. Antes se veía como una planta sana y los reportes al cliente salían mal.
+
 #### Arreglos
 
 - Las transferencias entre cuentas propias ya no suman como ingreso y como gasto en el estado de resultados. El resultado del mes no cambia, pero los totales de ingresos y egresos quedan bien.
