@@ -54,6 +54,10 @@ Esto es lo que el conector te deja hacer con tu usuario. No hace falta saber el 
 | Buscar una obra por cliente o código | «Buscame la obra de Maurán» |
 | Ver cómo viene una obra: etapa, plazo, atraso, potencia, fechas, cuadrilla y trámite de UTE | «¿Cómo viene Barenof?» |
 | Ver las etapas y subetapas, con responsable y estado, o solo lo que falta | «¿Qué le falta a la obra de Suárez?» |
+| **Marcar una subetapa** (por ejemplo, completada o no aplica). Primero te muestra qué va a cambiar y te pide confirmar; sigue las mismas reglas que Voltia PM | «Marcá como completada la fecha de obra confirmada de Maurán» |
+| Ver los datos técnicos: paneles, inversor, red, techo y si va coplanar o inclinado, y el presupuesto de mano de obra al tercerizado | «¿Qué datos técnicos tiene la obra de Rodríguez?» |
+| Leer el **informe del capataz** completo: el informe, las notas y lo que dijo en los audios | «Leeme el informe del capataz de Barrella» |
+| Revisar los **entregables** para el control de obra: cuántas fotos de la lista hay, los videos de los ensayos y el final, los documentos de UTE firmados y el retiro de sobrantes | «¿Está todo cargado en la obra de Suárez para cerrarla?» |
 | Ver los materiales con su estado de compra, y las fotos y videos de la obra | «¿Están comprados los materiales de Rodríguez?» |
 | Listar los documentos de la obra y **leerlos**: memorias, listas de materiales, planillas; los planos (unifilar, gabinete) los ve como imagen | «Leeme la lista de materiales de Pereyra» |
 | Ver la historia completa: etapas, comentarios, contactos, traspasos y tickets | «¿Qué pasó esta semana con la obra de Michelena?» |
@@ -66,6 +70,8 @@ Esto es lo que el conector te deja hacer con tu usuario. No hace falta saber el 
 |---|---|
 | Obras con la etapa vencida o por vencer, de la más atrasada a la menos | «¿Qué obras de Operaciones están vencidas?» |
 | Obras vendidas sin fecha de instalación | «¿Qué obras no tienen fecha?» |
+| **El calendario de obras**: las próximas semanas por cuadrilla y por tercerizado, fechas tentativas y confirmadas, y los días libres | «¿Cómo viene el calendario de las próximas tres semanas?» |
+| **Tickets y mantenimientos**: los reclamos abiertos y los mantenimientos que vienen | «¿Qué tickets hay abiertos y qué mantenimientos vienen?» |
 | Cuánto dura de verdad cada etapa y cuánto se cumple el plazo | «¿Cuánto está tardando Validación de Operaciones?» |
 | Los trámites de UTE sin habilitar: a quién le toca y cuánto tarda cada paso | «¿Qué trámites de UTE están esperando por nosotros?» |
 | El trámite de UTE de una obra, hito por hito | «¿En qué está el trámite de Correa?» |
@@ -93,8 +99,9 @@ Si algo falla, pedile **«¿estás conectado a Voltia PM?»**: te muestra con qu
 ## 4. Lo que tenés que saber
 
 - **Son los datos reales de Voltia PM.** Lo que se lee es lo de producción, al momento.
-- **Si le pedís que escriba algo** (un comentario o un pendiente), **se hace de verdad y queda a tu nombre**, igual que si lo hicieras desde Voltia PM. Antes de que escriba, leé lo que te propone.
+- **Si le pedís que escriba algo** (un comentario, un pendiente o marcar una subetapa), **se hace de verdad y queda a tu nombre**, igual que si lo hicieras desde Voltia PM. Antes de que escriba, leé lo que te propone.
 - **Ves lo mismo que ves en Voltia PM:** el conector respeta tus permisos.
+- **Las fotos se cuentan, no se identifican:** Voltia PM sabe cuántas fotos hay contra las 23 de la lista, pero no cuál falta. Para eso hay que mirarlas.
 - **Claude analiza, pero puede equivocarse.** Si un diagnóstico es importante (por ejemplo, mandar a alguien a una obra), confirmalo antes.
 - **Las plantas Huawei a veces no responden** a la primera. Si una consulta falla, pedile que lo intente de nuevo. De Huawei hay datos **hora por hora**, no minuto a minuto.
 - **Los datos de los clientes son confidenciales.** No compartas capturas de estas conversaciones fuera de Voltia.
