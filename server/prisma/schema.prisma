@@ -1936,6 +1936,10 @@ model Supplier {
   // Tope de deuda que el proveedor nos acepta. null = sin límite.
   limiteCredito       Decimal?  @db.Decimal(14, 2)
   limiteCreditoMoneda Moneda    @default(USD)
+  // Cuenta corriente: se le compra a crédito y se le paga contra su estado de
+  // cuenta. Sus facturas electrónicas pasan solas a deuda (si no hay un gasto
+  // igual ya cargado). Las de los demás quedan por revisar.
+  cuentaCorriente     Boolean   @default(false)
   // Desde cuándo la cuenta con el proveedor está ordenada ("Arrancar cuenta"):
   // lo anterior se cerró con un ajuste o quedó en el saldo anterior. Informativo.
   cuentaDesde         DateTime? @db.Date

@@ -257,7 +257,12 @@ function FilaRecibida({ f, canEdit, proveedores }: {
         )}
       </td>
       <td className="px-3 py-2">
-        {f.estado === 'CONFIRMADA' && <span className="text-[12px] text-green-400">Cargada{f.movement ? `: ${f.movement.descripcion}` : ''}</span>}
+        {f.estado === 'CONFIRMADA' && (
+          <span className="text-[12px] text-green-400">
+            Deuda{f.movement ? `: ${f.movement.descripcion}` : ''}
+            {f.cargadaSola && <span className="ml-1 text-[11px] text-sky-300" title="Proveedor de cuenta corriente: pasó sola a deuda. Se revisa una vez por semana.">· entró sola</span>}
+          </span>
+        )}
         {f.estado === 'DESCARTADA' && (
           <div className="text-[12px] text-[var(--color-text-muted)]">
             Descartada: {f.motivoDescarte}

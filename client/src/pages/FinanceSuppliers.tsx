@@ -43,6 +43,7 @@ export function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
     limiteCredito: initial?.limiteCredito != null ? String(initial.limiteCredito) : '',
     limiteCreditoMoneda: initial?.limiteCreditoMoneda ?? 'USD',
     notas: initial?.notas ?? '',
+    cuentaCorriente: initial?.cuentaCorriente ?? false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,6 +65,7 @@ export function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
         // Vacío = sin límite de crédito.
         limiteCredito: form.limiteCredito ? Number(form.limiteCredito) : null,
         limiteCreditoMoneda: form.limiteCreditoMoneda as 'USD' | 'UYU',
+        cuentaCorriente: form.cuentaCorriente,
         ...(form.notas ? { notas: form.notas } : {}),
       };
       if (supplierId) {
@@ -95,6 +97,17 @@ export function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
         <div><label className={lbl}>Teléfono</label><input className={inp} value={form.telefono} onChange={e => setF('telefono', e.target.value)} /></div>
       </div>
       <div><label className={lbl}>Dirección</label><input className={inp} value={form.direccion} onChange={e => setF('direccion', e.target.value)} /></div>
+      <label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+        <input type="checkbox" className="mt-0.5 accent-[var(--color-accent)]" checked={form.cuentaCorriente}
+          onChange={e => setForm(p => ({ ...p, cuentaCorriente: e.target.checked }))} />
+        <span>
+          Cuenta corriente
+          <span className="block text-[11px] text-[var(--color-text-muted)]">
+            Se le compra a crédito y se le paga contra su estado de cuenta. Sus facturas electrónicas pasan solas a deuda
+            (salvo que ya haya un gasto igual cargado). Sin tildar, quedan por revisar.
+          </span>
+        </span>
+      </label>
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className={lbl}>Plazo (días)</label>

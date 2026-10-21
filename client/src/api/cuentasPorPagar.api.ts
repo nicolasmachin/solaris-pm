@@ -46,6 +46,8 @@ export type EstadoFacturaRecibida = 'PENDIENTE' | 'CONFIRMADA' | 'DESCARTADA';
 
 export interface FacturaRecibida {
   id: string;
+  /** Pasó sola a deuda (proveedor de cuenta corriente). */
+  cargadaSola?: boolean;
   rutEmisor: string;
   razonSocialEmisor: string | null;
   tipoCfe: number;

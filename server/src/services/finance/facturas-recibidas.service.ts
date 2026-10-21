@@ -179,3 +179,67 @@ async function confirmarNotaCredito(f: FacturaPendiente, supplierId: string, use
   });
   return r.ajuste.id;
 }
+
+// ─── Facturas que pasan solas a deuda ───────────────────────────────────────
+
+const DIAS_GASTO_IGUAL = 7;
+
+/** Actor de los procesos automáticos: el primer ADMIN (no hay usuario de sistema). */
+async function usuarioSistema(): Promise<string | null> {
+  const admin = await prisma.user.findFirst({
+    where: { deletedAt: null, role: { name: "ADMIN" } },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  return admin?.id ?? null;
+}
+
+/**
+ * Pasa a deuda las facturas por revisar de proveedores de cuenta corriente.
+ * Condiciones (si alguna no se cumple, queda por revisar para una persona):
+ *  - el proveedor tiene tildado "Cuenta corriente";
+ *  - es una factura (las notas de crédito las revisa una persona);
+ *  - no hay un gasto del mismo proveedor, moneda y monto a ±7 días, o con el
+ *    mismo número de factura, que todavía no tenga factura vinculada (sería la
+ *    misma compra cargada a mano: se vincula, no se duplica).
+ * Quedan marcadas "cargada sola" para la revisión semanal.
+ */
+export async function cargarSolasCuentaCorriente(): Promise<{ cargadas: number; aRevisar: number }> {
+  const pendientes = await prisma.facturaRecibida.findMany({
+    where: { estado: EstadoFacturaRecibida.PENDIENTE, supplier: { cuentaCorriente: true, deletedAt: null } },
+    orderBy: { fechaEmision: "asc" },
+  });
+  if (!pendientes.length) return { cargadas: 0, aRevisar: 0 };
+  const userId = await usuarioSistema();
+  if (!userId) return { cargadas: 0, aRevisar: pendientes.length };
+
+  let cargadas = 0;
+  let aRevisar = 0;
+  for (const f of pendientes) {
+    if (esNotaCredito(f.tipoCfe) || Number(f.total) <= 0) { aRevisar++; continue; }
+    const desde = new Date(f.fechaEmision.getTime() - DIAS_GASTO_IGUAL * 86_400_000);
+    const hasta = new Date(f.fechaEmision.getTime() + DIAS_GASTO_IGUAL * 86_400_000);
+    const parecidos = await prisma.financeMovement.findMany({
+      where: {
+        deletedAt: null, supplierId: f.supplierId!, moneda: f.moneda, tipoMovimiento: TipoMovimiento.GASTO,
+        facturaRecibida: null,
+        OR: [
+          { invoiceNumber: { contains: String(f.numero) } },
+          { monto: f.total, fecha: { gte: desde, lte: hasta } },
+        ],
+      },
+      select: { id: true },
+      take: 1,
+    });
+    if (parecidos.length) { aRevisar++; continue; }
+    try {
+      await confirmarFactura(f, {}, userId, { automatica: true });
+      cargadas++;
+    } catch (e) {
+      // Otra persona la resolvió en el medio, o algo no cierra: queda para revisar.
+      aRevisar++;
+      console.error(`[facturas-cuenta-corriente] ${f.id}:`, (e as Error).message);
+    }
+  }
+  return { cargadas, aRevisar };
+}

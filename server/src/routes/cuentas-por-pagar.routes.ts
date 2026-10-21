@@ -38,6 +38,7 @@ import {
 import { calcularVencimiento, getCuentasPorPagar } from "../services/finance/cuentas-por-pagar.service.js";
 import {
   cargarPendiente,
+  cargarSolasCuentaCorriente,
   confirmarFactura,
   tomarPendiente,
   etiquetaCfe,
@@ -139,6 +140,7 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
           enManual: f.enManual,
           pdf: f.pdfUrl ? "GUARDADO" : f.billerId ? "EN_BILLER" : "NO",
           estado: f.estado,
+          cargadaSola: f.cargadaSola,
           motivoDescarte: f.motivoDescarte,
           supplier: f.supplier ? { id: f.supplier.id, nombre: f.supplier.nombre } : null,
           movement: f.movement,
@@ -466,7 +468,8 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     if (!billerConfigurado()) throw badRequest("BILLER_NO_CONFIGURADO", "Falta configurar la cuenta de Biller.");
     const r = await sincronizarYRegistrar();
     if (!r.ok) throw new AppError(502, "BILLER_ERROR", `Biller no respondió bien: ${r.error}`);
-    return r;
+    const solas = await cargarSolasCuentaCorriente();
+    return { ...r, cargadasSolas: solas.cargadas };
   });
 
   app.post("/finance/facturas-recibidas/:id/confirmar", editar, async (request) => {

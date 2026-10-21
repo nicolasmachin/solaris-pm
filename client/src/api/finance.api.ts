@@ -55,6 +55,7 @@ export const createSupplier = (body: {
   direccion?: string;
   condicionPago?: string;
   plazoCreditoDias?: number;
+  cuentaCorriente?: boolean;
   limiteCredito?: number | null;
   limiteCreditoMoneda?: 'USD' | 'UYU';
   notas?: string;
@@ -70,6 +71,7 @@ export const patchSupplier = (id: string, body: Partial<{
   direccion: string | null;
   condicionPago: string | null;
   plazoCreditoDias: number;
+  cuentaCorriente?: boolean;
   limiteCredito: number | null;
   limiteCreditoMoneda: 'USD' | 'UYU';
   notas: string | null;

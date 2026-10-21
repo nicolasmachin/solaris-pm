@@ -112,6 +112,7 @@ export interface Supplier {
   direccion: string | null;
   condicionPago: string | null;
   plazoCreditoDias: number;
+  cuentaCorriente?: boolean;
   limiteCredito: number | null;
   limiteCreditoMoneda: 'USD' | 'UYU';
   notas: string | null;
