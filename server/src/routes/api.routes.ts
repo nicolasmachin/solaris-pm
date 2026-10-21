@@ -232,6 +232,14 @@ import {
   recalcMovementStatus,
   repartirFifo,
 } from "../services/finance/deuda-proveedor.service.js";
+import {
+  archivoContadora,
+  assertFechaAbierta,
+  CONTROLES_MANUALES,
+  fechaDeCierre,
+  listaDeControl,
+  rangoMes,
+} from "../services/finance/cierre-mes.service.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -6217,7 +6225,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // FINANZAS, que es donde ya vive el manejo de la plata.
     { module: Module.PAGOS_INSTALADOR,    actions: [Action.VIEW, Action.EDIT] },
     { module: Module.STOCK,               actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { module: Module.FINANZAS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    // COMPLETE = cerrar y reabrir un mes (Finanzas → Cierre).
+    { module: Module.FINANZAS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE] },
     { module: Module.METRICAS,            actions: [Action.VIEW] },
     { module: Module.INFORMES,            actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     // VIEW = entrar a Capacitación (qué áreas ve se define por sección).
@@ -11887,6 +11896,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
         orderBy: [{ facturaEmitida: "asc" }, { saleDate: "desc" }, { createdAt: "desc" }],
       });
 
+      // Cobrado (USD) por obra, para avisar si se cobró más de lo facturado:
+      // un ingreso sin comprobante es el riesgo fiscal más grande de facturar un porcentaje.
+      const cobrados = await prisma.financeMovement.groupBy({
+        by: ["projectId"],
+        where: {
+          deletedAt: null, tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true, moneda: Moneda.USD,
+          projectId: { in: projects.map((p) => p.id) },
+        },
+        _sum: { monto: true },
+      });
+      const cobradoPorObra = new Map(cobrados.map((c) => [c.projectId, Number(c._sum.monto ?? 0)]));
+      const VIVOS = ["EMITIENDO", "DUDOSO", "ESPERANDO_DGI", "ACEPTADO"];
+      const facturadoUsd = (cfes: Array<{ estado: string; moneda: Moneda; total: Prisma.Decimal; referenciaId: string | null }>) =>
+        Math.round(cfes
+          .filter((c) => VIVOS.includes(c.estado) && c.moneda === Moneda.USD)
+          .reduce((a, c) => a + (c.referenciaId ? -Number(c.total) : Number(c.total)), 0) * 100) / 100;
+
       const items = projects.map((p) => ({
         id: p.id,
         code: p.code,
@@ -11899,6 +11925,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         nota: p.facturaNota,
         salesperson: p.salesperson ?? null,
         cfes: p.cfesEmitidos.map(serializarCfe),
+        cobradoUsd: cobradoPorObra.get(p.id) ?? 0,
+        facturadoUsd: facturadoUsd(p.cfesEmitidos),
         factura: p.files[0]
           ? {
               id: p.files[0].id,
@@ -16067,6 +16095,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
       const body = movementCreateSchema.parse(request.body);
       const fecha = parseDateOnly(body.fecha);
+      await assertFechaAbierta(fecha);
       const mes = fecha.getUTCMonth() + 1;
       const anio = fecha.getUTCFullYear();
 
@@ -16435,6 +16464,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const body = movementPatchSchema.parse(request.body);
       const existing = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
       if (!existing) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      // Mes cerrado: ni lo que estaba ni a donde se mueve.
+      await assertFechaAbierta(existing.fecha, body.fecha ? parseDateOnly(body.fecha) : null);
 
       const updateData: Record<string, unknown> = { ...body };
       if (body.fecha) {
@@ -16572,6 +16603,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
       });
       if (!existing) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      await assertFechaAbierta(existing.fecha);
 
       // Bloqueo: si el movimiento corresponde a una comisión, no se borra desde
       // Finanzas (se gestiona desde el módulo Comisiones).
@@ -17549,6 +17581,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     app.post("/finance/payments", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
       const user = ensureUser(request);
       const body = paymentCreateSchema.parse(request.body);
+      await assertFechaAbierta(parseDateOnly(body.fecha));
       if (Math.abs(body.monto) < 0.005) {
         throw badRequest("MONTO_ZERO", "El monto del pago no puede ser 0");
       }
@@ -17648,6 +17681,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
       if (!body.aplicaciones?.length && !body.monto) throw badRequest("AJUSTE_VACIO", "Indicá el monto o a qué deudas va el ajuste.");
 
+      await assertFechaAbierta(body.fecha ? parseDateOnly(body.fecha) : todayUtc());
       const r = await prisma.$transaction(async (tx) => {
         const aplicaciones = body.aplicaciones?.length
           ? body.aplicaciones
@@ -17687,6 +17721,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const supplier = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
       if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
       const fecha = parseDateOnly(body.fecha);
+      await assertFechaAbierta(fecha);
       const fechaTxt = `${body.fecha.slice(8, 10)}/${body.fecha.slice(5, 7)}/${body.fecha.slice(0, 4)}`;
 
       const r = await prisma.$transaction(async (tx) => {
@@ -17767,6 +17802,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         include: { applications: { select: { montoAplicado: true } } },
       });
       if (!existing) throw notFound("PAYMENT_NOT_FOUND", "Pago no encontrado");
+      await assertFechaAbierta(existing.fecha, body.fecha ? parseDateOnly(body.fecha) : null);
 
       // Si se reduce monto, validar que no quede menos que lo aplicado
       if (body.monto != null) {
@@ -17831,6 +17867,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         include: { applications: { select: { id: true, movementId: true } }, supplier: { select: { nombre: true } } },
       });
       if (!existing) throw notFound("PAYMENT_NOT_FOUND", "Pago no encontrado");
+      await assertFechaAbierta(existing.fecha);
 
       const movementIds = existing.applications.map((a) => a.movementId);
       await prisma.$transaction(async (tx) => {
@@ -20158,6 +20195,108 @@ export async function registerApiRoutes(app: FastifyInstance) {
       caja: { USD: roundMoney(cajaUSD), UYU: roundMoney(cajaUYU), totalUsd: cajaEnUsd },
       netoConCaja: roundMoney(cajaEnUsd + posicion.neto),
     };
+  });
+
+  // ─── Cierre de mes ───────────────────────────────────────────────────────
+  // Ver services/finance/cierre-mes.service.ts. Cerrar y reabrir piden
+  // FINANZAS:COMPLETE (darlo solo a quien cierra: el dueño y la contadora).
+
+  app.get("/finance/cierres", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+    const cierres = await prisma.cierreMes.findMany({
+      orderBy: [{ anio: "desc" }, { mes: "desc" }, { cerradoAt: "desc" }],
+      take: 36,
+      include: { cerradoPor: { select: { name: true } }, reabiertoPor: { select: { name: true } } },
+    });
+    const fc = await fechaDeCierre();
+    return {
+      fechaCierre: fc ? toDateOnlyString(fc) : null,
+      cierres: cierres.map((c) => ({
+        id: c.id, anio: c.anio, mes: c.mes, cerradoAt: c.cerradoAt.toISOString(), cerradoPor: c.cerradoPor.name,
+        notaCierre: c.notaCierre, foto: c.foto, checklist: c.checklist,
+        reabiertoAt: c.reabiertoAt?.toISOString() ?? null, reabiertoPor: c.reabiertoPor?.name ?? null, motivoReapertura: c.motivoReapertura,
+      })),
+    };
+  });
+
+  app.get("/finance/cierres/control", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+    const q = z.object({ anio: z.coerce.number().int(), mes: z.coerce.number().int().min(1).max(12) }).parse(request.query);
+    return { items: await listaDeControl(q.anio, q.mes) };
+  });
+
+  app.get("/finance/cierres/archivo", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request, reply) => {
+    const q = z.object({ anio: z.coerce.number().int(), mes: z.coerce.number().int().min(1).max(12) }).parse(request.query);
+    const buf = await archivoContadora(q.anio, q.mes);
+    reply.header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    reply.header("Content-Disposition", contentDisposition("attachment", `Voltia ${q.anio}-${String(q.mes).padStart(2, "0")} para la contadora.xlsx`));
+    return reply.send(buf);
+  });
+
+  app.post("/finance/cierres", { preHandler: authorize(Module.FINANZAS, Action.COMPLETE) }, async (request) => {
+    const user = ensureUser(request);
+    const body = z.object({
+      anio: z.number().int(),
+      mes: z.number().int().min(1).max(12),
+      // Claves de los controles manuales que la persona tildó.
+      manuales: z.array(z.string()).default([]),
+      nota: z.string().trim().max(1000).optional(),
+    }).strict().parse(request.body);
+    const { inicio, fin } = rangoMes(body.anio, body.mes);
+    if (fin.getTime() > todayUtc().getTime() + 86_400_000) throw badRequest("MES_EN_CURSO", "Todavía no terminó ese mes.");
+    const yaCerrado = await prisma.cierreMes.findFirst({ where: { anio: body.anio, mes: body.mes, reabiertoAt: null } });
+    if (yaCerrado) throw conflict("MES_YA_CERRADO", "Ese mes ya está cerrado.");
+
+    const items = (await listaDeControl(body.anio, body.mes)).map((i) => (i.manual ? { ...i, ok: body.manuales.includes(i.clave) } : i));
+    const pendientes = items.filter((i) => !i.ok);
+    if (pendientes.length && (body.nota ?? "").length < 10) {
+      throw badRequest("CIERRE_CON_PENDIENTES", `Quedan ${pendientes.length} punto(s) sin resolver: para cerrar igual, escribí por qué.`);
+    }
+
+    // Foto del mes: caja por cuenta (hoy), deuda y lo que nos deben (hoy) y el resultado del mes.
+    const accounts = await prisma.account.findMany({ where: { deletedAt: null, activa: true }, select: { id: true, nombre: true, moneda: true } });
+    const caja = [];
+    for (const a of accounts) caja.push({ cuenta: a.nombre, moneda: a.moneda, saldo: (await computeAccountBalance(a.id)).saldoActual });
+    const posicion = await getPosicionFinanciera();
+    const resultado = await calcularEstadoResultados(inicio, fin);
+    const foto = JSON.parse(JSON.stringify({ tomadaAt: new Date().toISOString(), caja, posicion, resultado }));
+
+    const c = await prisma.cierreMes.create({
+      data: {
+        anio: body.anio, mes: body.mes, cerradoPorId: user.id, notaCierre: body.nota || null,
+        foto, checklist: JSON.parse(JSON.stringify(items)),
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.cierre_mes,
+      entityId: c.id,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Cerró el mes ${String(body.mes).padStart(2, "0")}/${body.anio}${pendientes.length ? ` con ${pendientes.length} punto(s) pendiente(s): ${body.nota}` : ""}`,
+    });
+    return { id: c.id };
+  });
+
+  app.post("/finance/cierres/:id/reabrir", { preHandler: authorize(Module.FINANZAS, Action.COMPLETE) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { motivo } = z.object({ motivo: z.string().trim().min(10).max(500) }).strict().parse(request.body);
+    const c = await prisma.cierreMes.findFirst({ where: { id, reabiertoAt: null } });
+    if (!c) throw notFound("CIERRE_NOT_FOUND", "Cierre no encontrado o ya reabierto");
+    // Reabrir un mes reabre también los posteriores (la fecha de cierre es una sola).
+    const posteriores = await prisma.cierreMes.findMany({
+      where: { reabiertoAt: null, OR: [{ anio: { gt: c.anio } }, { anio: c.anio, mes: { gte: c.mes } }] },
+    });
+    await prisma.cierreMes.updateMany({
+      where: { id: { in: posteriores.map((p) => p.id) } },
+      data: { reabiertoAt: new Date(), reabiertoPorId: user.id, motivoReapertura: motivo },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.cierre_mes,
+      entityId: c.id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Reabrió el mes ${String(c.mes).padStart(2, "0")}/${c.anio}${posteriores.length > 1 ? ` y ${posteriores.length - 1} posterior(es)` : ""}: ${motivo}`,
+    });
+    return { reabiertos: posteriores.length };
   });
 
   app.get("/finance/cashflow", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {

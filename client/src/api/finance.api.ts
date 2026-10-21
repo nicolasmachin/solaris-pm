@@ -797,6 +797,9 @@ export interface FacturacionRow {
   factura: { id: string; filename: string; mimeType: string; subidaEn: string | null } | null;
   /** Comprobantes emitidos por Biller: la factura y sus notas de crédito. */
   cfes: CfeEmitido[];
+  /** Lo cobrado en dólares en la obra y lo facturado por Biller (facturas − notas de crédito). */
+  cobradoUsd: number;
+  facturadoUsd: number;
 }
 
 export type EstadoCfe = 'EMITIENDO' | 'DUDOSO' | 'ESPERANDO_DGI' | 'ACEPTADO' | 'RECHAZADO' | 'ERROR';
@@ -933,3 +936,37 @@ export const subirFacturaCliente = (projectId: string, file: File) => {
 /** La URL para ver la factura en el navegador o bajarla. */
 export const urlFacturaCliente = (projectId: string, descargar = false) =>
   `/api/finance/facturacion/${projectId}/factura${descargar ? '?descargar=true' : ''}`;
+
+// ─── Cierre de mes ─────────────────────────────────────────────────────────
+
+export interface ItemControlCierre { clave: string; texto: string; ok: boolean; detalle?: string; manual?: boolean }
+
+export interface CierreMes {
+  id: string; anio: number; mes: number; cerradoAt: string; cerradoPor: string;
+  notaCierre: string | null; checklist: ItemControlCierre[];
+  foto: { tomadaAt: string; caja: Array<{ cuenta: string; moneda: 'USD' | 'UYU'; saldo: number }> } & Record<string, unknown>;
+  reabiertoAt: string | null; reabiertoPor: string | null; motivoReapertura: string | null;
+}
+
+export const getCierres = () =>
+  apiClient.get<{ fechaCierre: string | null; cierres: CierreMes[] }>('/api/finance/cierres').then(r => r.data);
+
+export const getControlCierre = (anio: number, mes: number) =>
+  apiClient.get<{ items: ItemControlCierre[] }>('/api/finance/cierres/control', { params: { anio, mes } }).then(r => r.data.items);
+
+export const cerrarMes = (body: { anio: number; mes: number; manuales: string[]; nota?: string }) =>
+  apiClient.post<{ id: string }>('/api/finance/cierres', body).then(r => r.data);
+
+export const reabrirMes = (id: string, motivo: string) =>
+  apiClient.post<{ reabiertos: number }>(`/api/finance/cierres/${id}/reabrir`, { motivo }).then(r => r.data);
+
+/** Descarga el Excel para la contadora (libro de compras, ventas, ajustes, movimientos). */
+export const descargarArchivoCierre = async (anio: number, mes: number) => {
+  const r = await apiClient.get('/api/finance/cierres/archivo', { params: { anio, mes }, responseType: 'blob' });
+  const url = URL.createObjectURL(r.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Voltia ${anio}-${String(mes).padStart(2, '0')} para la contadora.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+};

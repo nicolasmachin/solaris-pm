@@ -447,8 +447,17 @@ export function FinanceFacturacionTab() {
 
 /** La factura de Biller y sus notas de crédito, con el estado ante DGI. */
 function EstadoCfes({ p }: { p: FacturacionRow }) {
+  // Cobrado de más: si se cobró más de lo facturado, la diferencia es un ingreso
+  // sin comprobante. Solo se compara cuando la factura salió por Biller (las
+  // marcadas a mano no tienen monto).
+  const cobradoDeMas = p.cobradoUsd - p.facturadoUsd > 1;
   return (
     <div className="flex flex-col gap-1">
+      {cobradoDeMas && (
+        <span className="text-[10px] text-amber-300 max-w-[260px]" title="Lo cobrado en dólares supera lo facturado (facturas menos notas de crédito)">
+          Cobrado {fmtCurrency(p.cobradoUsd, 'USD')} · facturado {fmtCurrency(p.facturadoUsd, 'USD')}: hay cobro sin factura
+        </span>
+      )}
       {p.cfes.map((c) => (
         <div key={c.id} className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5 flex-wrap">

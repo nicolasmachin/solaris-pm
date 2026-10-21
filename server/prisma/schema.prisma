@@ -155,6 +155,7 @@ enum AuditEntityType {
   conciliacion_proveedor
   bank_movement
   cfe_emitido
+  cierre_mes
 }
 
 enum AuditAction {
@@ -630,6 +631,8 @@ model User {
   createdAt                      DateTime                       @default(now()) @db.Timestamptz(6)
   updatedAt                      DateTime                       @updatedAt @db.Timestamptz(6)
   whatsappMensajesEnviados       WhatsAppMensaje[]              @relation("WhatsAppMensajeEnviadoPor")
+  cierresMes                     CierreMes[]                    @relation("CierreMesCerradoPor")
+  reaperturasMes                 CierreMes[]                    @relation("CierreMesReabiertoPor")
 
   @@index([deletedAt])
   @@index([tenantId])
@@ -5735,4 +5738,29 @@ model LoginCode {
 
   @@index([userId, createdAt])
   @@map("login_codes")
+}
+
+// ─── Cierre de mes de Finanzas ──────────────────────────────────────────────
+// Un mes cerrado no cambia: nada con fecha de ese mes (o anterior) se carga,
+// edita ni borra (movimientos, pagos, ajustes). Reabrir queda registrado con
+// motivo. Al cerrar se guarda la foto del mes (saldos, deuda, lo que nos deben,
+// resultado) y la lista de control tal como estaba.
+model CierreMes {
+  id               String    @id @default(cuid())
+  anio             Int
+  mes              Int
+  cerradoAt        DateTime  @default(now())
+  cerradoPorId     String
+  cerradoPor       User      @relation("CierreMesCerradoPor", fields: [cerradoPorId], references: [id])
+  // Si se cerró con algo de la lista sin resolver, por qué.
+  notaCierre       String?
+  foto             Json
+  checklist        Json
+  reabiertoAt      DateTime?
+  reabiertoPorId   String?
+  reabiertoPor     User?     @relation("CierreMesReabiertoPor", fields: [reabiertoPorId], references: [id])
+  motivoReapertura String?
+
+  @@index([anio, mes])
+  @@map("cierres_mes")
 }
