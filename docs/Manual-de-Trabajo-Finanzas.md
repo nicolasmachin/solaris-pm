@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.18 · del 21/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.19 · del 22/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -449,11 +449,12 @@ empresa o de otra persona. Por eso se pregunta en cada factura.
 
 ## 5 · Las herramientas y cómo se usan
 
-Todo se hace en **Voltia PM**, menú **Finanzas**. Arriba hay una sola fila de
-pestañas, agrupadas como en los programas de contabilidad. Cada grupo lleva su
-nombre en letra chica antes de sus pestañas:
+Todo se hace en **Voltia PM**, menú **Finanzas**. A la izquierda hay un menú
+con las pantallas agrupadas como en los programas de contabilidad, cada grupo
+con su título; en el celular, el menú es un desplegable arriba. Junto a
+**Inicio** se ve cuántas cosas hay para hacer hoy:
 
-| Grupo | Pestañas | Para qué |
+| Grupo | Pantallas | Para qué |
 |---|---|---|
 | — | **Inicio** | Lo urgente: cómo se está (posición), lo que falta conciliar y lo que hay que pagar y cobrar |
 | **Ventas** | **Cobros**, **Facturación** | Lo que entra: los cobros a los clientes y las facturas que se les emiten |
@@ -1603,6 +1604,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.19 | 22 de octubre de 2026 | El menú de Finanzas pasa a la izquierda, con las pantallas agrupadas; en el celular es un desplegable. |
 | 0.18 | 21 de octubre de 2026 | Se agrega «Para hacer hoy»: la lista con todo lo pendiente de Finanzas arriba del Inicio, el mail de cada mañana y el número junto a Finanzas en el menú. |
 | 0.17 | 21 de octubre de 2026 | Se reordenan las herramientas según el menú nuevo de Finanzas: Inicio, Ventas, Compras, Bancos e Informes. Nuevas pantallas: Inicio (posición, lo que falta conciliar y pendientes), Banco, Tarjetas y Cierre. Cuentas por pagar pasa a estar arriba de Proveedores, y la bandeja de facturas recibidas, arriba de Facturas. Las facturas de proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana; las facturas llegan cada media hora. Las notas de crédito de proveedores se descuentan de la deuda desde la misma lista. Una factura se carga por un solo formulario y a un proveedor se le paga solo con «Registrar pago». Nuevos ajustes de deuda (no son plata) y «Arrancar cuenta» con el estado de cuenta: borrón y cuenta nueva con cada proveedor. Lo personal (cuenta del socio y adelantos a descontar del sueldo) no es gasto de Voltia. Conciliar una cuenta con diferencia pide el motivo. Nuevo cierre de mes, con su lista de control y el archivo para la contadora, y la rendición de tarjetas en el procedimiento mensual. Las transferencias entre cuentas y los ajustes dejan de contar en el estado de resultados. Aviso «hay cobro sin factura» en Facturación. Nuevos casos en «Cuando algo sale mal» y palabras nuevas en el glosario. |
 | 0.16 | 20 de octubre de 2026 | En la bandeja de facturas recibidas, elegir el proveedor de una factura lo asigna a todas las del mismo RUT. |

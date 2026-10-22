@@ -19,8 +19,12 @@ haciendo**: vender, comprar, mover plata, mirar números.
 
 ### Cómo se usa
 
-Una sola fila de pestañas, con el nombre del grupo antes de las suyas
-(`FinanceLayout.tsx` → `GRUPOS`). Sin segundo nivel: nada queda a dos clics.
+Menú lateral a la izquierda (`FinanceLayout.tsx` → `GRUPOS`): cada grupo con
+su título y sus pantallas, con un ícono cada una; el contenido va a la derecha.
+Junto a Inicio, el total de "Para hacer hoy" (`GET /finance/para-hacer-hoy/total`).
+En el celular (menos de `md`) el menú es un `<select>` con `optgroup` por grupo.
+Cambió el 22-oct-2026: la fila única de pestañas con separadores quedaba
+entreverada.
 
 | Grupo | Pestañas (ruta bajo `/finanzas/`) |
 |---|---|

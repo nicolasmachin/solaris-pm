@@ -1,5 +1,14 @@
 # Novedades
 
+## v13.1
+
+### 22 de octubre de 2026
+
+#### Finanzas con menú lateral
+
+- El menú de Finanzas pasa a la izquierda, ordenado en grupos (Ventas, Compras, Bancos, Informes) con un ícono por pantalla, en lugar de la fila larga de pestañas. Junto a Inicio se ve cuántas cosas hay para hacer hoy.
+- En el celular, el menú es un desplegable.
+
 ## v13.0
 
 ### 21 de octubre de 2026

@@ -23,6 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.1",
+  date: "22 de octubre de 2026",
+  sections: [
+    {
+      title: "Finanzas con menú lateral",
+      items: [
+        "El menú de Finanzas pasa a la izquierda, ordenado en grupos con un ícono por pantalla; junto a Inicio, cuántas cosas hay para hoy.",
+        "En el celular, el menú es un desplegable.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_0: Release = {
   version: "13.0",
   date: "21 de octubre de 2026",
   sections: [
@@ -795,6 +809,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.0",
+    shortDate: "21 oct",
+    highlights: RELEASE_13_0.sections.map((sec) => sec.title),
+  },
   {
     version: "12.9",
     shortDate: "19 oct",
