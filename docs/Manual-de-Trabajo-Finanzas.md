@@ -1015,6 +1015,10 @@ que ya trae el saldo leído. Se completa:
    octubre de 2026 en adelante; las demás se proponen cerrar.
 3. Una nota, si se quiere.
 
+Debajo de las deudas aparecen los **pagos con saldo sin usar** hasta la fecha del
+estado de cuenta (lo que sobró de un pago que no se usó entero), con cuánto
+sobra de cada uno: se cierran, porque el estado de cuenta ya los descuenta.
+
 Antes de confirmar, Voltia PM muestra la cuenta: la deuda vigente, cuántas
 deudas se cierran y por cuánto, y la diferencia con el estado de cuenta. Al
 confirmar, **lo que había quedado a favor de Voltia por pagos viejos** (lo que

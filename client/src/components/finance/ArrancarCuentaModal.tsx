@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Sheet } from '../ui/Sheet';
 import { arrancarCuentaProveedor, getDeudasAbiertas } from '../../api/payments.api';
+import { getSaldoAFavorProveedor } from '../../api/finance.api';
 import type { Moneda } from '../../types/finance.types';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
 import { todayLocalISO } from '../../utils/date';
@@ -48,6 +49,14 @@ export function ArrancarCuentaModal({ supplierId, supplierName, defaultMoneda = 
     queryFn: () => getDeudasAbiertas(supplierId, moneda),
   });
   const deudas = useMemo(() => data?.deudas ?? [], [data]);
+  // Pagos que sobraron sin usar (saldo a favor) hasta la fecha del estado de
+  // cuenta: el proveedor ya los tiene descontados, así que se cierran.
+  const { data: aFavor } = useQuery({
+    queryKey: ['saldo-a-favor', supplierId, moneda],
+    queryFn: () => getSaldoAFavorProveedor(supplierId, moneda),
+  });
+  const pagosAFavor = (aFavor?.payments ?? []).filter((p) => p.fecha.slice(0, 10) <= fecha);
+  const totalAFavor = pagosAFavor.reduce((a, p) => a + p.saldoSinAplicar, 0);
 
   useEffect(() => {
     setVigentes(new Set(deudas.filter((d) => d.deFacturaRecibida || (d.fecha ?? '') >= DESDE_BILLER).map((d) => d.id)));
@@ -66,7 +75,7 @@ export function ArrancarCuentaModal({ supplierId, supplierName, defaultMoneda = 
     try {
       await arrancarCuentaProveedor(supplierId, { moneda, fecha, saldoEstadoCuenta: saldo, cerrar: aCerrar.map((d) => d.id), ...(nota.trim() ? { nota: nota.trim() } : {}) });
       toast.success(`Cuenta con ${supplierName} ordenada: se le debe ${fmtCurrency(saldo, moneda)}`);
-      for (const k of ['account-summary', 'deudas-abiertas', 'suppliers', 'cuentas-por-pagar', 'payments', 'finance-pending', 'finance-cashflow', 'posicion']) {
+      for (const k of ['account-summary', 'deudas-abiertas', 'saldo-a-favor', 'supplier', 'suppliers', 'cuentas-por-pagar', 'payments', 'finance-pending', 'finance-cashflow', 'posicion']) {
         qc.invalidateQueries({ queryKey: [k] });
       }
       onClose();
@@ -94,8 +103,9 @@ export function ArrancarCuentaModal({ supplierId, supplierName, defaultMoneda = 
     >
       <div className="space-y-4">
         <p className="text-[12px] text-[var(--color-text-secondary)]">
-          Deja lo que se le debe a este proveedor igual a lo que dice su estado de cuenta. Los pagos y
-          gastos ya cargados no se tocan: lo que se cierra se cierra con un <b>ajuste</b>, que no es plata.
+          Deja lo que se le debe a este proveedor igual a lo que dice su estado de cuenta, que ya
+          descuenta los pagos hechos. Los pagos y gastos cargados no se borran: las deudas que no siguen se
+          cierran con un <b>ajuste</b> y lo que sobró de pagos viejos se cierra también; nada de eso es plata.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
@@ -147,8 +157,33 @@ export function ArrancarCuentaModal({ supplierId, supplierName, defaultMoneda = 
           )}
         </div>
 
+        {pagosAFavor.length > 0 && (
+          <div>
+            <p className={lbl}>Pagos con saldo sin usar (a favor de Voltia) — se cierran</p>
+            <div className="rounded-lg border border-[var(--color-border)] divide-y divide-[var(--color-border)]">
+              {pagosAFavor.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                  <span className="w-20 shrink-0 text-[12px] text-[var(--color-text-muted)]">{fmtDate(p.fecha)}</span>
+                  <span className="flex-1 text-[var(--color-text-primary)]">
+                    Pago de {fmtCurrency(p.monto, moneda)}{p.referencia ? ` (${p.referencia})` : ''}
+                  </span>
+                  <span className="tabular-nums text-[var(--color-text-secondary)]">sobran {fmtCurrency(p.saldoSinAplicar, moneda)}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              El estado de cuenta del proveedor ya los tiene descontados. Si quedaran, se descontarían de la próxima factura.
+            </p>
+          </div>
+        )}
+
         <div className="rounded-lg bg-[var(--color-bg-app)] border border-[var(--color-border)] px-3 py-2 text-sm space-y-1">
           <p>Deuda vigente en Voltia PM: <b className="tabular-nums">{fmtCurrency(deudaVigente, moneda)}</b></p>
+          {totalAFavor > 0.005 && (
+            <p className="text-[var(--color-text-secondary)]">
+              Se cierra el saldo a favor de pagos viejos: <b className="tabular-nums">{fmtCurrency(totalAFavor, moneda)}</b> (no es plata nueva).
+            </p>
+          )}
           {aCerrar.length > 0 && (
             <p className="text-[var(--color-text-secondary)]">
               Se cierran {aCerrar.length} deuda{aCerrar.length > 1 ? 's' : ''} por <b className="tabular-nums">{fmtCurrency(totalCerrar, moneda)}</b> con un ajuste.
