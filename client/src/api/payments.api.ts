@@ -35,6 +35,8 @@ export const createPayment = (body: {
   notas?: string;
   /** Default true en backend: aplica FIFO a las facturas adeudadas más viejas. */
   autoAplicar?: boolean;
+  /** Cuenta de otra moneda que la deuda: pesos por dólar. */
+  tipoCambio?: number;
 }) => apiClient.post<CreatePaymentResult>('/api/finance/payments', body).then(r => r.data);
 
 export const patchPayment = (id: string, body: Partial<{

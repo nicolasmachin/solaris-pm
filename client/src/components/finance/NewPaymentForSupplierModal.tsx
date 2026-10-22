@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { Sheet } from '../ui/Sheet';
 import { createPayment } from '../../api/payments.api';
 import { getAccounts } from '../../api/accounts.api';
+import { getExchangeRate } from '../../api/finance.api';
 import { ACCOUNT_TYPE_LABEL } from '../../types/accounts.types';
 import type { MetodoPago, Moneda } from '../../types/finance.types';
 import { fmtCurrency } from '../../lib/finance';
@@ -59,6 +60,19 @@ export function NewPaymentForSupplierModal({
     queryFn: () => getAccounts({ activa: 'true' }),
   });
   const accountsForCurrency = accounts.filter(a => a.moneda === form.moneda);
+  // Una deuda en pesos se puede pagar desde una cuenta en dólares y al revés,
+  // con la cotización del día (editable): la deuda baja en su moneda y de la
+  // cuenta sale el equivalente.
+  const otrasCuentas = accounts.filter(a => a.moneda !== form.moneda);
+  const cuenta = accounts.find(a => a.id === form.accountId);
+  const otraMoneda = !!cuenta && cuenta.moneda !== form.moneda;
+  const { data: cotizacion } = useQuery({ queryKey: ['exchange-rate'], queryFn: getExchangeRate, enabled: otraMoneda, retry: false });
+  const [tcTxt, setTcTxt] = useState('');
+  const tc = parseFloat((tcTxt || (cotizacion ? String(cotizacion.usdToUyu) : '')).replace(',', '.'));
+  const montoNum = parseFloat(form.monto);
+  const saleDeCuenta = otraMoneda && tc > 0 && isFinite(montoNum)
+    ? (cuenta!.moneda === 'UYU' ? montoNum * tc : montoNum / tc)
+    : null;
 
   function setF<K extends keyof typeof form>(k: K, v: typeof form[K]) {
     setForm(p => ({ ...p, [k]: v }));
@@ -70,6 +84,7 @@ export function NewPaymentForSupplierModal({
     const monto = parseFloat(form.monto);
     if (!isFinite(monto) || Math.abs(monto) < 0.005) { setError('El monto no puede ser 0'); return; }
     if (!form.accountId) { setError('Elegí una cuenta'); return; }
+    if (otraMoneda && !(tc > 0)) { setError('Falta la cotización del día'); return; }
     setSaving(true);
     try {
       const created = await createPayment({
@@ -80,6 +95,7 @@ export function NewPaymentForSupplierModal({
         moneda: form.moneda,
         metodo: form.metodo,
         autoAplicar: form.autoAplicar,
+        ...(otraMoneda ? { tipoCambio: tc } : {}),
         ...(form.referencia ? { referencia: form.referencia } : {}),
         ...(form.notas ? { notas: form.notas } : {}),
       });
@@ -134,7 +150,7 @@ export function NewPaymentForSupplierModal({
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lblStyle}>Fecha *</label><input type="date" className={inpStyle} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
             <div>
-              <label className={lblStyle}>Monto *</label>
+              <label className={lblStyle}>Monto (de la deuda) *</label>
               <div className="flex gap-2">
                 <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)]" value={form.moneda} onChange={e => setF('moneda', e.target.value as Moneda)}>
                   <option value="USD">USD</option><option value="UYU">UYU</option>
@@ -150,11 +166,35 @@ export function NewPaymentForSupplierModal({
               {accountsForCurrency.map(a => (
                 <option key={a.id} value={a.id}>{a.nombre} ({ACCOUNT_TYPE_LABEL[a.tipo]} · {a.moneda})</option>
               ))}
+              {otrasCuentas.length > 0 && (
+                <optgroup label={`En otra moneda (se convierte a la cotización)`}>
+                  {otrasCuentas.map(a => (
+                    <option key={a.id} value={a.id}>{a.nombre} ({ACCOUNT_TYPE_LABEL[a.tipo]} · {a.moneda})</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
-            {accountsForCurrency.length === 0 && (
-              <p className="text-[10px] text-[var(--color-warning-text)] mt-1">
-                No hay cuentas activas en {form.moneda}. Creá una desde Admin → Cuentas.
-              </p>
+            {otraMoneda && (
+              <div className="mt-2 grid grid-cols-2 gap-3 rounded-lg border border-[var(--color-border)] p-3">
+                <div>
+                  <label className={lblStyle}>Cotización (pesos por dólar) *</label>
+                  <input
+                    className={inpStyle} inputMode="decimal"
+                    value={tcTxt || (cotizacion ? String(cotizacion.usdToUyu) : '')}
+                    onChange={e => setTcTxt(e.target.value)}
+                  />
+                  <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
+                    {cotizacion && !tcTxt ? `La del ${cotizacion.date.slice(8, 10)}/${cotizacion.date.slice(5, 7)}. Cambiala si el banco usó otra.` : 'La que usó el banco.'}
+                  </p>
+                </div>
+                <div>
+                  <label className={lblStyle}>Sale de la cuenta</label>
+                  <p className="py-2 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+                    {saleDeCuenta != null ? fmtCurrency(Math.round(saleDeCuenta * 100) / 100, cuenta!.moneda) : '—'}
+                  </p>
+                  <p className="text-[10px] text-[var(--color-text-muted)]">La deuda baja {form.monto ? fmtCurrency(montoNum || 0, form.moneda) : 'en ' + form.moneda}.</p>
+                </div>
+              </div>
             )}
           </div>
           <div>

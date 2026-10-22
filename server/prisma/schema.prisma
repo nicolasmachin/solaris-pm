@@ -2834,8 +2834,14 @@ model Payment {
   supplier   Supplier @relation(fields: [supplierId], references: [id])
 
   fecha  DateTime @db.Date
+  // En la moneda de la deuda: es lo que se descuenta de las facturas.
   monto  Decimal  @db.Decimal(14, 2)
   moneda Moneda   @default(USD)
+  // Pago desde una cuenta de otra moneda (deuda en pesos pagada desde dólares o
+  // al revés): lo que salió de la cuenta, en la moneda de la cuenta, y la
+  // cotización usada (pesos por dólar). Null = misma moneda (sale `monto`).
+  montoCuenta Decimal? @db.Decimal(14, 2)
+  tipoCambio  Decimal? @db.Decimal(10, 4)
 
   metodo     MetodoPago @default(TRANSFERENCIA)
   referencia String?

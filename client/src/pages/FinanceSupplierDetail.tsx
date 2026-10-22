@@ -504,7 +504,7 @@ function isAutoPayment(p: { referencia: string | null; metodo: string }) {
 }
 
 function PagosTab({ pagos, total, filter, onFilterChange, onPagoClick }: {
-  pagos: { id: string; fecha: string; monto: number; moneda: 'USD' | 'UYU'; metodo: string; referencia: string | null; montoAplicado: number; saldoSinAplicar: number }[];
+  pagos: { id: string; fecha: string; monto: number; moneda: 'USD' | 'UYU'; metodo: string; referencia: string | null; montoAplicado: number; saldoSinAplicar: number; montoCuenta?: number | null; tipoCambio?: number | null; monedaCuenta?: 'USD' | 'UYU' | null }[];
   total: number;
   filter: 'all' | 'with-balance' | 'applied';
   onFilterChange: (f: 'all' | 'with-balance' | 'applied') => void;
@@ -564,7 +564,14 @@ function PagosTab({ pagos, total, filter, onFilterChange, onPagoClick }: {
                       </div>
                     </td>
                     <td className="px-3 py-2 text-[var(--color-text-muted)] text-[11px] truncate max-w-[200px]">{p.referencia ?? '—'}</td>
-                    <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap text-[var(--color-text-primary)]">{fmtCurrency(p.monto, p.moneda)}</td>
+                    <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap text-[var(--color-text-primary)]">
+                      {fmtCurrency(p.monto, p.moneda)}
+                      {p.montoCuenta != null && p.monedaCuenta && (
+                        <div className="text-[10px] text-[var(--color-text-muted)]" title="Pagado desde una cuenta de otra moneda">
+                          salió {fmtCurrency(p.montoCuenta, p.monedaCuenta)} a {p.tipoCambio}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap text-[var(--color-text-secondary)]">{fmtCurrency(p.montoAplicado, p.moneda)}</td>
                     <td className="px-2 py-2 text-right whitespace-nowrap">
                       {conSaldo ? (

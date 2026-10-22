@@ -240,6 +240,7 @@ import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators
 import { getGastoIA } from "../services/ai/usage-report.service.js";
 import { estadoEmision, serializarCfe } from "../services/biller/cfe-emitidos.service.js";
 import {
+  cerrarSaldoAFavorEnTx,
   crearAjusteEnTx,
   deudasAbiertasProveedor,
   recalcMovementStatus,
@@ -11140,14 +11141,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         _sum: { monto: true },
       });
       // Pagos: payments con accountId
-      const pagosAgg = await prisma.payment.aggregate({
+      // Un pago desde una cuenta de otra moneda resta lo que salió de la cuenta (montoCuenta).
+      const pagosRows = await prisma.payment.findMany({
         where: { accountId, deletedAt: null, ...fechaFilter },
-        _sum: { monto: true },
+        select: { monto: true, montoCuenta: true },
       });
 
       const ingresos = Number(ingresoAgg._sum.monto ?? 0);
       const gastos = Number(gastoAgg._sum.monto ?? 0);
-      const pagos = Number(pagosAgg._sum.monto ?? 0);
+      const pagos = pagosRows.reduce((a, r) => a + Number(r.montoCuenta ?? r.monto), 0);
       const saldoActual = Math.round((saldoInicial + ingresos - gastos - pagos) * 100) / 100;
       return { saldoInicial, ingresos, gastos, pagos, saldoActual };
     }
@@ -17168,6 +17170,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       id: string; supplierId: string;
       fecha: Date; monto: import("@prisma/client/runtime/library").Decimal;
       moneda: Moneda; metodo: MetodoPago;
+      montoCuenta?: import("@prisma/client/runtime/library").Decimal | null;
+      tipoCambio?: import("@prisma/client/runtime/library").Decimal | null;
       referencia: string | null; notas: string | null;
       accountId: string | null;
       createdById: string | null;
@@ -17191,6 +17195,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fecha: serializeDateOnly(p.fecha),
         monto: Number(p.monto),
         moneda: p.moneda,
+        // Pagado desde una cuenta de otra moneda: lo que salió de la cuenta y la cotización.
+        montoCuenta: p.montoCuenta != null ? Number(p.montoCuenta) : null,
+        tipoCambio: p.tipoCambio != null ? Number(p.tipoCambio) : null,
         metodo: p.metodo,
         referencia: p.referencia,
         notas: p.notas,
@@ -17379,6 +17386,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // Si true (default), el pago se aplica automáticamente FIFO a las facturas
       // adeudadas más viejas del proveedor. Si false, queda como saldo a favor.
       autoAplicar: z.boolean().default(true),
+      // Cuenta de otra moneda que la deuda: pesos por dólar con que se paga.
+      tipoCambio: z.coerce.number().positive().optional(),
     }).strict();
 
     const paymentPatchSchema = z.object({
@@ -17389,19 +17398,28 @@ export async function registerApiRoutes(app: FastifyInstance) {
       accountId: z.string().min(1).optional(),
       referencia: z.string().nullable().optional(),
       notas: z.string().nullable().optional(),
+      tipoCambio: z.coerce.number().positive().nullable().optional(),
     }).strict();
 
-    /** Valida la cuenta para un Payment: existe, está activa y misma moneda. */
-    async function validateAccountForPayment(accountId: string, moneda: Moneda) {
+    /**
+     * Valida la cuenta para un Payment (existe, está activa) y, si es de otra
+     * moneda que la deuda, calcula lo que sale de la cuenta con la cotización
+     * (pesos por dólar). Misma moneda → montoCuenta/tipoCambio null.
+     */
+    async function validateAccountForPayment(accountId: string, moneda: Moneda, monto?: number, tipoCambio?: number | null) {
       const account = await prisma.account.findFirst({ where: { id: accountId, deletedAt: null } });
       if (!account) throw badRequest("ACCOUNT_INVALID", "La cuenta seleccionada no existe");
       if (!account.activa) throw badRequest("ACCOUNT_INACTIVE", "La cuenta está inactiva");
-      if (account.moneda !== moneda) {
+      if (account.moneda === moneda) return { montoCuenta: null, tipoCambio: null };
+      if (!tipoCambio || tipoCambio <= 0) {
         throw badRequest(
-          "ACCOUNT_CURRENCY_MISMATCH",
-          `La moneda del pago (${moneda}) no coincide con la de la cuenta (${account.moneda}).`,
+          "TIPO_CAMBIO_REQUIRED",
+          `La deuda es en ${moneda} y la cuenta en ${account.moneda}: indicá la cotización del día.`,
         );
       }
+      const m = monto ?? 0;
+      const enCuenta = account.moneda === Moneda.UYU ? m * tipoCambio : m / tipoCambio;
+      return { montoCuenta: new Prisma.Decimal(Math.round(enCuenta * 100) / 100), tipoCambio: new Prisma.Decimal(tipoCambio) };
     }
 
     app.post("/finance/payments", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
@@ -17413,7 +17431,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
       const supplier = await prisma.supplier.findFirst({ where: { id: body.supplierId, deletedAt: null } });
       if (!supplier) throw badRequest("SUPPLIER_INVALID", "Proveedor no existe o está eliminado");
-      await validateAccountForPayment(body.accountId, body.moneda);
+      const conversion = await validateAccountForPayment(body.accountId, body.moneda, body.monto, body.tipoCambio);
 
       // Auto-aplicación FIFO: sólo tiene sentido para pagos positivos (un monto
       // negativo es una nota de crédito y no cancela facturas).
@@ -17427,6 +17445,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             fecha: parseDateOnly(body.fecha),
             monto: new Prisma.Decimal(body.monto),
             moneda: body.moneda,
+            ...conversion,
             metodo: body.metodo,
             referencia: body.referencia,
             notas: body.notas,
@@ -17448,6 +17467,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: isNegative
           ? `Pago negativo de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre} (nota de crédito)`
           : `Registró pago de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre}`
+            + (conversion.montoCuenta ? ` desde una cuenta en otra moneda (${Number(conversion.montoCuenta).toFixed(2)} a ${Number(conversion.tipoCambio)})` : "")
             + (aplicacion.facturasAfectadas > 0
                 ? ` · aplicado a ${aplicacion.facturasAfectadas} factura(s) por ${aplicacion.totalAplicado.toFixed(2)} ${body.moneda}`
                 : ""),
@@ -17551,6 +17571,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const fechaTxt = `${body.fecha.slice(8, 10)}/${body.fecha.slice(5, 7)}/${body.fecha.slice(0, 4)}`;
 
       const r = await prisma.$transaction(async (tx) => {
+        // Lo que sobra de pagos viejos (saldo a favor) también arranca de cero:
+        // el estado de cuenta del proveedor ya lo contempla.
+        const saldoAFavorCerrado = await cerrarSaldoAFavorEnTx(tx, {
+          supplierId: id, moneda: body.moneda, fecha, userId: user.id,
+          descripcion: `Saldo a favor anterior, cerrado al arrancar la cuenta el ${fechaTxt}`,
+        });
         const abiertas = await deudasAbiertasProveedor(tx, id, body.moneda);
         const cerrar = abiertas.filter((d) => body.cerrar.includes(d.id));
         if (cerrar.length !== body.cerrar.length) throw badRequest("DEUDA_NO_ABIERTA", "Una de las deudas a cerrar ya no está abierta.");
@@ -17601,7 +17627,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           });
         }
         await tx.supplier.update({ where: { id }, data: { cuentaDesde: fecha } });
-        return { ajusteCierre, saldoAnteriorId, ajusteDiferencia, deudaVigente, diferencia };
+        return { ajusteCierre, saldoAnteriorId, ajusteDiferencia, deudaVigente, diferencia, saldoAFavorCerrado };
       });
 
       await createAuditEntry({
@@ -17612,7 +17638,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: `Arrancó la cuenta con ${supplier.nombre} al ${fechaTxt} en ${body.moneda}: saldo del estado de cuenta ${body.saldoEstadoCuenta.toFixed(2)}`
           + (r.ajusteCierre ? `, cerró ${body.cerrar.length} deuda(s) por ${r.ajusteCierre.total.toFixed(2)} con un ajuste` : "")
           + (r.saldoAnteriorId ? `, cargó saldo anterior ${r.diferencia.toFixed(2)}` : "")
-          + (r.ajusteDiferencia ? `, bajó ${(-r.diferencia).toFixed(2)} con un ajuste` : ""),
+          + (r.ajusteDiferencia ? `, bajó ${(-r.diferencia).toFixed(2)} con un ajuste` : "")
+          + (r.saldoAFavorCerrado ? `, cerró el saldo a favor anterior de ${r.saldoAFavorCerrado.total.toFixed(2)}` : ""),
       });
       void checkInvariantOrWarn("arrancar cuenta proveedor", { supplierId: id });
       return r;
@@ -17648,9 +17675,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // Validar cuenta si cambia accountId o moneda
       const effectiveMoneda = body.moneda ?? existing.moneda;
       const effectiveAccountId = body.accountId ?? existing.accountId;
-      if (body.accountId !== undefined || body.moneda !== undefined) {
+      // Si cambia la cuenta, la moneda, el monto o la cotización, se recalcula lo
+      // que salió de la cuenta (pago desde una cuenta de otra moneda).
+      let conversion: Awaited<ReturnType<typeof validateAccountForPayment>> | null = null;
+      if (body.accountId !== undefined || body.moneda !== undefined || body.monto != null || body.tipoCambio !== undefined) {
         if (!effectiveAccountId) throw badRequest("ACCOUNT_REQUIRED", "Un pago requiere una cuenta");
-        await validateAccountForPayment(effectiveAccountId, effectiveMoneda);
+        conversion = await validateAccountForPayment(
+          effectiveAccountId, effectiveMoneda, body.monto ?? Number(existing.monto),
+          body.tipoCambio !== undefined ? body.tipoCambio : existing.tipoCambio != null ? Number(existing.tipoCambio) : null,
+        );
       }
 
       const data: Prisma.PaymentUpdateInput = {};
@@ -17661,6 +17694,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (body.accountId !== undefined) data.account = body.accountId ? { connect: { id: body.accountId } } : { disconnect: true };
       if (body.referencia !== undefined) data.referencia = body.referencia;
       if (body.notas !== undefined) data.notas = body.notas;
+      if (conversion) { data.montoCuenta = conversion.montoCuenta; data.tipoCambio = conversion.tipoCambio; }
 
       const updated = await prisma.payment.update({ where: { id }, data, include: { supplier: { select: { id: true, nombre: true } } } });
       const cambiosPago = await registrarCambios({
@@ -18179,6 +18213,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
           referencia: p.referencia,
           montoAplicado: Math.round(aplicado * 100) / 100,
           saldoSinAplicar,
+          // Pagado desde una cuenta de otra moneda.
+          montoCuenta: p.montoCuenta != null ? Number(p.montoCuenta) : null,
+          tipoCambio: p.tipoCambio != null ? Number(p.tipoCambio) : null,
+          monedaCuenta: p.montoCuenta != null ? (p.moneda === Moneda.USD ? Moneda.UYU : Moneda.USD) : null,
         };
       });
 

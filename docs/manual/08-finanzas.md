@@ -941,6 +941,20 @@ que **no** sea ajuste.
 
 ---
 
+## Pago a proveedor desde una cuenta de otra moneda
+
+`Payment.monto`/`moneda` siguen siendo **de la deuda** (FIFO, saldo a favor y
+aplicaciones no cambian). Si la cuenta es de otra moneda, `POST/PATCH
+/finance/payments` exige `tipoCambio` (pesos por dólar) y
+`validateAccountForPayment()` guarda `montoCuenta` (lo que sale de la cuenta, en
+su moneda) y `tipoCambio`; misma moneda → ambos null. Lo usan el saldo de la
+cuenta (`/accounts/:id/balance` suma `montoCuenta ?? monto`) y la conciliación
+con el banco (`bank-reconciliation.service.ts`). Resultados y flujo convierten
+`monto` en la moneda de la deuda, como siempre. La ventana
+(`NewPaymentForSupplierModal.tsx`) lista las cuentas de otra moneda aparte,
+propone la última cotización cargada y muestra lo que sale de la cuenta.
+Migración `20261022230000_pago_otra_moneda` (aditiva).
+
 ## Ajustes de deuda con un proveedor (y "Arrancar cuenta")
 
 ### Para qué existe
@@ -985,6 +999,15 @@ puntuales (`[{movementId, monto}]`; la pantalla solo usa `monto`). Audita como
 `moneda`, `fecha`, `saldoEstadoCuenta`, `cerrar` (ids de las deudas que **no**
 siguen vigentes) y `nota` opcional. En una transacción:
 
+0. `cerrarSaldoAFavorEnTx()` (`deuda-proveedor.service.ts`): lo que sobra sin
+   aplicar de los pagos de esa moneda con fecha ≤ la del arranque (saldo a
+   favor) se cierra con un GASTO `PAGO_PROVEEDOR` "Saldo a favor anterior,
+   cerrado al arrancar la cuenta el …", `impactaFlujo: false`, sin cuenta,
+   aplicado entero por esos pagos (queda PAGADO). No cuenta de nuevo en caja,
+   resultados ni flujo porque esos lados excluyen los movimientos con
+   aplicaciones (el hecho de caja es el pago). Antes del 22-oct no se cerraba
+   y el saldo a favor quedaba para la próxima factura (caso FIVISA); volver a
+   arrancar la cuenta lo corrige.
 1. Las deudas de `cerrar` se cierran por su saldo entero con **un** ajuste,
    motivo "Cerrada al arrancar la cuenta el dd/mm/aaaa".
 2. Se compara el saldo del estado de cuenta con la deuda vigente que queda:

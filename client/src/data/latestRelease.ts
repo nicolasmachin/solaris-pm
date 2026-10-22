@@ -52,6 +52,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Pagar desde una cuenta de otra moneda",
+      items: [
+        "Una deuda en pesos se puede pagar desde una cuenta en dólares, y al revés, con la cotización del día.",
+      ],
+    },
+    {
       title: "Filtros en las facturas recibidas",
       items: [
         "En Finanzas → Facturas, las facturas recibidas se filtran por proveedor, por tipo, por fecha y buscando por número, RUT o razón social.",
@@ -60,6 +66,7 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Arreglos",
       items: [
+        "«Arrancar cuenta» ahora deja también en cero lo que había quedado a favor por pagos viejos.",
         "En «Para hacer hoy», los avisos de comisiones y de costos fijos vencidos ahora abren su pantalla; los que se resuelven en el Inicio bajan hasta «Por conciliar».",
         "Al emitir una factura con un porcentaje, el monto con decimales se leía mal y salía 100 veces más grande; ahora se lee bien (no se emitió ninguna con el error).",
       ],

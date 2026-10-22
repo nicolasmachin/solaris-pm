@@ -421,4 +421,5 @@ Detalle de lo que entra: `docs/pendientes/finanzas-noche-21oct-hecho.md`.
    Ata a su momento las cuotas sin cobrar con los nombres del plan por defecto viejo, las renombra y les saca la fecha (al 22-oct, unas 27). Las de otros nombres quedan con su fecha (unas 13): pasarle la lista a Finanzas para que las revise.
 3. Si la simulación está bien, aplicar: el mismo comando con `--apply`.
 4. Avisar: desde ese momento algunas señas viejas nunca cobradas aparecen como "Cuota vencida" en Cobros y en "Para hacer hoy".
+4b. Segundo deploy del 22-oct: migración `20261022230000_pago_otra_moneda` (aditiva: `payments.montoCuenta` y `payments.tipoCambio`, nulas).
 5. Avisar a Finanzas: los proyectos que llevaban factura **con** nota (al 22-oct, 3; dos sin emitir) quedan "A definir" en Finanzas → Facturación; hay que cargarles el monto con **Definir**. Desde el deploy, crear un proyecto desde un lead ganado exige definir qué se le factura.

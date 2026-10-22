@@ -2,9 +2,10 @@
 // ajustes (pagos con metodo AJUSTE, sin cuenta: bajan la deuda sin ser plata).
 //
 // Lo usan los pagos y ajustes (api.routes.ts) y las notas de crédito recibidas
-// (cuentas-por-pagar.routes.ts), por eso vive acá.
+// (cuentas-por-pagar.routes.ts), por eso vive acá. También el cierre del saldo
+// a favor viejo al arrancar la cuenta con un proveedor.
 
-import { FinanceMovementStatus, MetodoPago, Moneda, Prisma, TipoMovimiento } from "@prisma/client";
+import { CategoriaPrincipal, EstadoAprobacion, FinanceMovementStatus, MetodoPago, Moneda, MovementSourceType, Prisma, TipoMovimiento } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { badRequest } from "../../utils/errors.js";
@@ -156,6 +157,65 @@ export async function crearAjusteEnTx(
     await recalcMovementStatus(tx, a.movementId);
   }
   return { id: p.id, total };
+}
+
+/**
+ * Lo que sobra de pagos viejos al proveedor (saldo a favor) hasta `fecha`, en
+ * una moneda: al arrancar la cuenta con su estado de cuenta, eso ya está
+ * contemplado por el proveedor y no puede quedar para comerse la próxima
+ * factura. Se cierra con un movimiento "Saldo a favor anterior" cancelado por
+ * esos mismos pagos: no es plata nueva (el movimiento queda pagado por pagos ya
+ * contados en caja y resultados, y por eso no cuenta de nuevo en ningún lado).
+ */
+export async function cerrarSaldoAFavorEnTx(
+  tx: Prisma.TransactionClient,
+  input: { supplierId: string; moneda: Moneda; fecha: Date; descripcion: string; userId: string },
+): Promise<{ id: string; total: number } | null> {
+  const pagos = await tx.payment.findMany({
+    where: {
+      supplierId: input.supplierId, moneda: input.moneda, deletedAt: null,
+      metodo: { not: MetodoPago.AJUSTE }, fecha: { lte: input.fecha }, monto: { gt: 0 },
+    },
+    include: { applications: { include: { movement: { select: { deletedAt: true } } } } },
+    orderBy: { fecha: "asc" },
+  });
+  const sobrantes = pagos
+    .map((p) => ({
+      id: p.id,
+      resto: Math.round((Number(p.monto) - p.applications
+        .filter((a) => !a.movement.deletedAt)
+        .reduce((a, x) => a + Number(x.montoAplicado), 0)) * 100) / 100,
+    }))
+    .filter((p) => p.resto > 0.005);
+  const total = Math.round(sobrantes.reduce((a, p) => a + p.resto, 0) * 100) / 100;
+  if (total <= 0.005) return null;
+  const m = await tx.financeMovement.create({
+    data: {
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR,
+      status: FinanceMovementStatus.A_PAGAR,
+      sourceType: MovementSourceType.MANUAL,
+      estadoAprobacion: EstadoAprobacion.REGISTRADO,
+      supplierId: input.supplierId,
+      descripcion: input.descripcion,
+      monto: new Prisma.Decimal(total),
+      moneda: input.moneda,
+      fecha: input.fecha,
+      dueDate: input.fecha,
+      mes: input.fecha.getUTCMonth() + 1,
+      anio: input.fecha.getUTCFullYear(),
+      pagado: false,
+      impactaFlujo: false,
+      creadoPorId: input.userId,
+    },
+  });
+  for (const p of sobrantes) {
+    await tx.paymentApplication.create({
+      data: { paymentId: p.id, movementId: m.id, montoAplicado: new Prisma.Decimal(p.resto) },
+    });
+  }
+  await recalcMovementStatus(tx, m.id);
+  return { id: m.id, total };
 }
 
 /** Reparte un monto FIFO sobre las deudas abiertas (para bajar una diferencia). */

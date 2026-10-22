@@ -33,11 +33,17 @@
 - En **Facturación** cada obra muestra por separado el **presupuesto** (lo que paga el cliente, con IVA), lo **que hay que facturarle** (con IVA y, abajo, sin IVA), lo **ya facturado** y lo que **falta facturar**. Las obras de antes que tenían una nota de facturación quedan «A definir», con un botón para cargar el monto.
 - Al emitir la factura, el monto que se propone es **lo que falta facturar de lo acordado**, y se muestra lo acordado y lo ya facturado.
 
+#### Pagar a un proveedor desde una cuenta de otra moneda
+
+- Una deuda en pesos se puede pagar desde una cuenta en dólares, y al revés. Se elige la cuenta, se confirma la cotización (viene la del día) y se ve cuánto sale de la cuenta. La deuda baja en su moneda y el saldo de la cuenta baja en la suya.
+
 #### Filtros en las facturas recibidas
 
 - En Finanzas → Facturas, la lista de facturas recibidas se puede filtrar por proveedor (también los que todavía no están dados de alta), por tipo (facturas o notas de crédito), por fecha y buscando por número, RUT o razón social.
 
 #### Arreglos
+
+- «Arrancar cuenta» con un proveedor ahora deja también en cero lo que había quedado a favor por pagos viejos; antes quedaba y se iba a descontar de la próxima factura. Para un proveedor ya arrancado, volver a arrancar la cuenta lo corrige.
 
 - En «Para hacer hoy», los avisos de comisiones sin pagar y de costos fijos vencidos llevaban al mismo Inicio y no pasaba nada: ahora abren Comisiones y Costos fijos. Los que se resuelven en el Inicio bajan hasta «Por conciliar».
 - Al emitir una factura con un porcentaje, el monto sin IVA con decimales se leía mal y la factura salía 100 veces más grande (50 % daba 5.000 en vez de 50). Ahora se lee bien. No llegó a emitirse ninguna factura con el error.

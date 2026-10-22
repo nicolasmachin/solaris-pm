@@ -22,6 +22,9 @@ export interface Payment {
   supplier: { id: string; nombre: string } | null;
   accountId: string | null;
   account: { id: string; nombre: string; tipo: 'BANCO' | 'EFECTIVO' | 'TARJETA' | 'OTRO'; moneda: Moneda } | null;
+  /** Pagado desde una cuenta de otra moneda: lo que salió de la cuenta y la cotización. */
+  montoCuenta?: number | null;
+  tipoCambio?: number | null;
   fecha: string;
   monto: number;
   moneda: Moneda;

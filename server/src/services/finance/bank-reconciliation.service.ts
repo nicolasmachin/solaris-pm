@@ -176,7 +176,7 @@ async function conciliarCuenta(a: AccountConBanco) {
     orderBy: { fecha: "desc" },
     include: {
       movement: { select: { id: true, fecha: true, tipoMovimiento: true, monto: true, descripcion: true, deletedAt: true } },
-      payment: { select: { id: true, fecha: true, monto: true, referencia: true, deletedAt: true, supplier: { select: { nombre: true } } } },
+      payment: { select: { id: true, fecha: true, monto: true, montoCuenta: true, referencia: true, deletedAt: true, supplier: { select: { nombre: true } } } },
     },
   });
   // Parejas confirmadas por una persona: quedan fijas.
@@ -188,7 +188,7 @@ async function conciliarCuenta(a: AccountConBanco) {
       fijas.set(r.id, {
         id: `p-${r.payment.id}`, fecha: r.payment.fecha,
         tipo: Number(r.payment.monto) < 0 ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
-        monto: Math.abs(Number(r.payment.monto)),
+        monto: Math.abs(Number(r.payment.montoCuenta ?? r.payment.monto)),
         descripcion: `Pago a ${r.payment.supplier.nombre}${r.payment.referencia ? ` (${r.payment.referencia})` : ""}`,
       });
     }
@@ -214,17 +214,18 @@ async function conciliarCuenta(a: AccountConBanco) {
     }),
     prisma.payment.findMany({
       where: { accountId: a.id, deletedAt: null, fecha: { gte: pmDesde } },
-      select: { id: true, fecha: true, monto: true, referencia: true, supplier: { select: { nombre: true } } },
+      select: { id: true, fecha: true, monto: true, montoCuenta: true, referencia: true, supplier: { select: { nombre: true } } },
     }),
   ]);
   const pm: Lado[] = [
     ...movs.map((m) => ({ id: `m-${m.id}`, fecha: m.fecha, tipo: m.tipoMovimiento, monto: Number(m.monto), descripcion: m.descripcion })),
     // Un Payment con monto negativo es una devolución del proveedor: entra plata.
+    // Desde una cuenta de otra moneda, en el banco se ve lo que salió de la cuenta.
     ...pagos.map((p) => ({
       id: `p-${p.id}`,
       fecha: p.fecha,
       tipo: Number(p.monto) < 0 ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
-      monto: Math.abs(Number(p.monto)),
+      monto: Math.abs(Number(p.montoCuenta ?? p.monto)),
       descripcion: `Pago a ${p.supplier.nombre}${p.referencia ? ` (${p.referencia})` : ""}`,
     })),
   ];
