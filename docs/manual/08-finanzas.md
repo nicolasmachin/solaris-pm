@@ -663,7 +663,10 @@ facturas que le emiten a Voltia se traen solas de la facturación electrónica
 - **Arriba, la bandeja** de facturas recibidas (`BandejaRecibidas`, exportada
   desde `FinanceCuentasPorPagarTab.tsx`). Por defecto muestra las **por
   revisar**; un selector deja ver las cargadas como deuda, las descartadas o
-  todas. Por fila: **Cargar como deuda** (o **Descontar de la deuda** si es una
+  todas. Debajo, filtros que se aplican en el navegador sobre lo que trajo esa
+  vista: proveedor (la clave es `supplier.id` o, sin proveedor, el RUT emisor,
+  así aparecen los no dados de alta), tipo (factura / nota de crédito), fecha
+  de emisión desde/hasta y texto (serie-número, RUT, razón social, proveedor). Por fila: **Cargar como deuda** (o **Descontar de la deuda** si es una
   nota de crédito), vincular a un gasto ya cargado, descartar con motivo,
   **¿De qué proveedor es?**, crear el proveedor, ver el PDF. Las que pasaron
   solas a deuda llevan la marca **"entró sola"**.

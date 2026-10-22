@@ -33,6 +33,10 @@
 - En **Facturación** cada obra muestra por separado el **presupuesto** (lo que paga el cliente, con IVA), lo **que hay que facturarle** (con IVA y, abajo, sin IVA), lo **ya facturado** y lo que **falta facturar**. Las obras de antes que tenían una nota de facturación quedan «A definir», con un botón para cargar el monto.
 - Al emitir la factura, el monto que se propone es **lo que falta facturar de lo acordado**, y se muestra lo acordado y lo ya facturado.
 
+#### Filtros en las facturas recibidas
+
+- En Finanzas → Facturas, la lista de facturas recibidas se puede filtrar por proveedor (también los que todavía no están dados de alta), por tipo (facturas o notas de crédito), por fecha y buscando por número, RUT o razón social.
+
 #### Arreglos
 
 - En «Para hacer hoy», los avisos de comisiones sin pagar y de costos fijos vencidos llevaban al mismo Inicio y no pasaba nada: ahora abren Comisiones y Costos fijos. Los que se resuelven en el Inicio bajan hasta «Por conciliar».

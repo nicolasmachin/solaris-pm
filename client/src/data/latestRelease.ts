@@ -52,6 +52,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Filtros en las facturas recibidas",
+      items: [
+        "En Finanzas → Facturas, las facturas recibidas se filtran por proveedor, por tipo, por fecha y buscando por número, RUT o razón social.",
+      ],
+    },
+    {
       title: "Arreglos",
       items: [
         "En «Para hacer hoy», los avisos de comisiones y de costos fijos vencidos ahora abren su pantalla; los que se resuelven en el Inicio bajan hasta «Por conciliar».",

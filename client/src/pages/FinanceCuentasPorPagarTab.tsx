@@ -334,6 +334,32 @@ function BandejaRecibidas() {
   });
 
   const [cargando, setCargando] = useState(false);
+  // Filtros sobre lo que trajo la vista elegida. El proveedor sale de las mismas
+  // facturas: así aparecen también los RUT que todavía no tienen proveedor.
+  const [proveedor, setProveedor] = useState('');
+  const [tipo, setTipo] = useState<'todos' | 'facturas' | 'nc'>('todos');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+  const [buscar, setBuscar] = useState('');
+  const claveProv = (f: FacturaRecibida) => f.supplier?.id ?? `rut:${f.rutEmisor}`;
+  const opcionesProv = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const f of data?.facturas ?? []) {
+      if (!m.has(claveProv(f))) m.set(claveProv(f), f.supplier?.nombre ?? f.razonSocialEmisor ?? `RUT ${f.rutEmisor}`);
+    }
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [data]);
+  const facturas = useMemo(() => {
+    const q = buscar.trim().toLowerCase();
+    return (data?.facturas ?? []).filter((f) =>
+      (!proveedor || claveProv(f) === proveedor)
+      && (tipo === 'todos' || (tipo === 'nc') === f.esNotaCredito)
+      && (!desde || f.fechaEmision.slice(0, 10) >= desde)
+      && (!hasta || f.fechaEmision.slice(0, 10) <= hasta)
+      && (!q || [`${f.serie}-${f.numero}`, String(f.numero), f.rutEmisor, f.razonSocialEmisor ?? '', f.supplier?.nombre ?? '']
+        .some((t) => t.toLowerCase().includes(q))));
+  }, [data, proveedor, tipo, desde, hasta, buscar]);
+  const hayFiltro = !!(proveedor || tipo !== 'todos' || desde || hasta || buscar.trim());
   const ultima = data?.ultimaSync;
   return (
     <section className="space-y-3">
@@ -374,9 +400,35 @@ function BandejaRecibidas() {
           {ultima.ok ? '' : ` — falló: ${ultima.error}`}
         </p>
       )}
-      {isLoading ? <Spinner /> : (data?.facturas.length ?? 0) === 0 ? (
+      {(data?.facturas.length ?? 0) > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5" value={proveedor} onChange={(e) => setProveedor(e.target.value)}>
+            <option value="">Todos los proveedores</option>
+            {opcionesProv.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+          </select>
+          <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5" value={tipo} onChange={(e) => setTipo(e.target.value as typeof tipo)}>
+            <option value="todos">Facturas y notas de crédito</option>
+            <option value="facturas">Solo facturas</option>
+            <option value="nc">Solo notas de crédito</option>
+          </select>
+          <label className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">Desde
+            <input type="date" className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-sm" value={desde} onChange={(e) => setDesde(e.target.value)} />
+          </label>
+          <label className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">Hasta
+            <input type="date" className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-sm" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+          </label>
+          <input className="min-w-[180px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5" placeholder="Buscar número, RUT, razón social…" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
+          {hayFiltro && (
+            <button className="text-xs text-[var(--color-accent)] hover:underline" onClick={() => { setProveedor(''); setTipo('todos'); setDesde(''); setHasta(''); setBuscar(''); }}>
+              Limpiar filtros
+            </button>
+          )}
+          <span className="text-xs text-[var(--color-text-muted)]">{facturas.length} de {data!.facturas.length}</span>
+        </div>
+      )}
+      {isLoading ? <Spinner /> : facturas.length === 0 ? (
         <p className={klass(card, 'p-6 text-center text-sm text-[var(--color-text-muted)]')}>
-          {estado === 'PENDIENTE' ? 'No hay facturas por revisar.' : 'No hay facturas en esta vista.'}
+          {hayFiltro ? 'Ninguna factura coincide con los filtros.' : estado === 'PENDIENTE' ? 'No hay facturas por revisar.' : 'No hay facturas en esta vista.'}
         </p>
       ) : (
         <div className={klass(card, 'overflow-x-auto')}>
@@ -388,7 +440,7 @@ function BandejaRecibidas() {
               </tr>
             </thead>
             <tbody>
-              {data!.facturas.map((f) => <FilaRecibida key={f.id} f={f} canEdit={canEdit} proveedores={proveedores} />)}
+              {facturas.map((f) => <FilaRecibida key={f.id} f={f} canEdit={canEdit} proveedores={proveedores} />)}
             </tbody>
           </table>
         </div>
