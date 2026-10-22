@@ -33,6 +33,10 @@
 - En **Facturación** cada obra muestra por separado el **presupuesto** (lo que paga el cliente, con IVA), lo **que hay que facturarle** (con IVA y, abajo, sin IVA), lo **ya facturado** y lo que **falta facturar**. Las obras de antes que tenían una nota de facturación quedan «A definir», con un botón para cargar el monto.
 - Al emitir la factura, el monto que se propone es **lo que falta facturar de lo acordado**, y se muestra lo acordado y lo ya facturado.
 
+#### Las facturas recibidas sugieren el gasto ya cargado
+
+- En las facturas por revisar, Voltia PM muestra los gastos ya cargados que más se parecen a cada factura —también los cargados sin proveedor, como el combustible—, del más probable al menos y con el porqué (mismo monto, a 2 días, la descripción nombra al proveedor…). Un toque y quedan vinculados. Si no sugiere ninguno, esa compra no se cargó.
+
 #### Pagar a un proveedor desde una cuenta de otra moneda
 
 - Una deuda en pesos se puede pagar desde una cuenta en dólares, y al revés. Se elige la cuenta, se confirma la cotización (viene la del día) y se ve cuánto sale de la cuenta. La deuda baja en su moneda y el saldo de la cuenta baja en la suya.

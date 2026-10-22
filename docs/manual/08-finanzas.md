@@ -667,7 +667,13 @@ facturas que le emiten a Voltia se traen solas de la facturación electrónica
   vista: proveedor (la clave es `supplier.id` o, sin proveedor, el RUT emisor,
   así aparecen los no dados de alta), tipo (factura / nota de crédito), fecha
   de emisión desde/hasta y texto (serie-número, RUT, razón social, proveedor). Por fila: **Cargar como deuda** (o **Descontar de la deuda** si es una
-  nota de crédito), vincular a un gasto ya cargado, descartar con motivo,
+  nota de crédito), vincular a un gasto ya cargado (sugerencias por puntaje:
+  `sugerir-gasto.service.ts` → `sugerirGastos()`/`puntuar()`; gastos sin
+  factura del mismo proveedor o sin proveedor a ±30 días; puntúa número,
+  monto exacto / sin IVA / en la otra moneda con la última cotización (±2,5 %)
+  / parecido, días de diferencia, proveedor y palabras de la descripción o del
+  rubro; mínimo 55, hasta 3; vincular admite otra moneda y le pone al gasto el
+  proveedor de la factura), descartar con motivo,
   **¿De qué proveedor es?**, crear el proveedor, ver el PDF. Las que pasaron
   solas a deuda llevan la marca **"entró sola"**.
 - **Abajo, el registro** de todas las facturas, con filtros.

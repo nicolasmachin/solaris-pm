@@ -69,7 +69,11 @@ export interface FacturaRecibida {
   motivoDescarte: string | null;
   supplier: { id: string; nombre: string } | null;
   movement: { id: string; descripcion: string; status: string } | null;
-  candidatas: Array<{ id: string; descripcion: string; invoiceNumber: string | null; monto: number; fecha: string | null; status: string }>;
+  /** Gastos ya cargados que se le parecen, del más probable al menos. */
+  candidatas: Array<{
+    id: string; descripcion: string; invoiceNumber: string | null; monto: number; moneda?: Moneda;
+    fecha: string | null; status: string; sinProveedor?: boolean; puntaje?: number; motivos?: string[];
+  }>;
 }
 
 export interface EstadoSync {

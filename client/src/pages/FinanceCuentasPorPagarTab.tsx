@@ -271,10 +271,18 @@ function FilaRecibida({ f, canEdit, proveedores }: {
         )}
         {f.estado === 'PENDIENTE' && canEdit && (
           <div className="flex flex-col gap-1.5">
+            {f.candidatas.length > 0 && (
+              <span className="text-[11px] text-[var(--color-text-muted)]">¿Ya está cargada? Gastos parecidos:</span>
+            )}
             {f.candidatas.map((c) => (
-              <button key={c.id} className={btn} disabled={ocupado} onClick={() => vincular.mutate(c.id)}
-                title="Ya estaba cargada a mano: se vincula sin crear deuda nueva">
-                Ya cargada: {c.invoiceNumber ? `${c.invoiceNumber} · ` : ''}{c.descripcion} ({fmtCurrency(c.monto, f.moneda)})
+              <button key={c.id} className={klass(btn, 'text-left')} disabled={ocupado} onClick={() => vincular.mutate(c.id)}
+                title="Si es esta compra, se vincula al gasto ya cargado y no se crea deuda nueva">
+                <span className={klass('mr-1.5 rounded px-1 text-[9px] font-mono uppercase', (c.puntaje ?? 100) >= 75 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300')}>
+                  {(c.puntaje ?? 100) >= 75 ? 'Muy probable' : 'Probable'}
+                </span>
+                {c.fecha ? `${c.fecha.slice(8, 10)}/${c.fecha.slice(5, 7)} · ` : ''}{c.descripcion} ({fmtCurrency(c.monto, c.moneda ?? f.moneda)})
+                {c.sinProveedor && <span className="text-[var(--color-text-muted)]"> · sin proveedor</span>}
+                {c.motivos?.length ? <span className="block text-[10px] text-[var(--color-text-muted)]">{c.motivos.join(' · ')}</span> : null}
               </button>
             ))}
             <div className="flex flex-wrap gap-1.5">

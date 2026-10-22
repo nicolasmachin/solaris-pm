@@ -52,6 +52,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Las facturas recibidas sugieren el gasto ya cargado",
+      items: [
+        "En las facturas por revisar se ven los gastos ya cargados más parecidos, también los cargados sin proveedor, con el porqué. Un toque y quedan vinculados.",
+      ],
+    },
+    {
       title: "Pagar desde una cuenta de otra moneda",
       items: [
         "Una deuda en pesos se puede pagar desde una cuenta en dólares, y al revés, con la cotización del día.",

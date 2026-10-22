@@ -855,9 +855,15 @@ quedan de cuántas hay; **«Limpiar filtros»** vuelve a mostrar todas.
 
 - **Cargar como deuda**: pasa a ser una factura a pagar del proveedor, con el
   vencimiento según su plazo.
-- **Ya cargada: …**: aparece cuando ya había una factura cargada a mano del mismo
-  proveedor con el mismo número o el mismo monto. Se vinculan y no se duplica la
-  deuda.
+- **«¿Ya está cargada? Gastos parecidos»**: Voltia PM busca entre los gastos ya
+  cargados a mano (del mismo proveedor o cargados **sin proveedor**, como el
+  combustible) los que más se parecen a la factura, y los muestra del más
+  probable al menos, marcados **«Muy probable»** o **«Probable»** y con el porqué:
+  mismo número, mismo monto, igual al monto sin IVA, el mismo monto en la otra
+  moneda, a cuántos días, si la descripción nombra al proveedor o es del rubro.
+  Si es esa compra, se toca y se vinculan: no se duplica nada, y el gasto toma el
+  proveedor y el número de la factura. Si no aparece ninguno, es que esa compra
+  **no se cargó**: se carga como deuda (y, si ya se pagó, se registra el pago).
 - **Descartar**: pide escribir el motivo. Una factura descartada se puede
   **«Volver a la bandeja»**.
 - **Dar de alta proveedor**: cuando la factura es de una empresa que todavía no
@@ -1567,7 +1573,8 @@ proveedor, que es el mismo formulario).
 ### Una factura quedó cargada dos veces
 
 Si se cargó a mano y además llegó por la facturación electrónica, en las
-facturas por revisar se elige **«Ya cargada»** para vincularlas. Si ya se cargó
+facturas por revisar se toca el gasto que aparece en **«¿Ya está cargada?»**
+para vincularlas. Si ya se cargó
 dos veces como deuda, se elimina una desde la ficha del proveedor; si tenía
 pagos, quedan como saldo a favor. Por conciliar muestra los **posibles gastos
 cargados dos veces** para encontrarlos.
@@ -1713,7 +1720,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.20 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM avisa cuándo un cliente está listo para cobrar y cuándo una cuota venció. Cobros muestra al entrar solo lo que falta cobrar, con el filtro nuevo «Listos para cobrar». Nueva tabla de cuándo queda lista cada cuota y cómo entran en el flujo de fondos. Lo que se le factura a cada cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo); Facturación muestra por separado presupuesto, a facturar, facturado y lo que falta, y al emitir se propone lo que falta facturar. Palabra nueva en el glosario: «A facturar». La lista de facturas recibidas se puede filtrar por proveedor, tipo, fecha y número. Un pago a proveedor se puede hacer desde una cuenta de otra moneda, con la cotización del día. «Arrancar cuenta» también cierra lo que quedaba a favor por pagos viejos. |
+| 0.20 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM avisa cuándo un cliente está listo para cobrar y cuándo una cuota venció. Cobros muestra al entrar solo lo que falta cobrar, con el filtro nuevo «Listos para cobrar». Nueva tabla de cuándo queda lista cada cuota y cómo entran en el flujo de fondos. Lo que se le factura a cada cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo); Facturación muestra por separado presupuesto, a facturar, facturado y lo que falta, y al emitir se propone lo que falta facturar. Palabra nueva en el glosario: «A facturar». La lista de facturas recibidas se puede filtrar por proveedor, tipo, fecha y número. Un pago a proveedor se puede hacer desde una cuenta de otra moneda, con la cotización del día. «Arrancar cuenta» también cierra lo que quedaba a favor por pagos viejos. En las facturas por revisar, Voltia PM sugiere los gastos ya cargados más parecidos (también los cargados sin proveedor), con el porqué. |
 | 0.19 | 22 de octubre de 2026 | El menú de Finanzas pasa a la izquierda, con las pantallas agrupadas; en el celular es un desplegable. Comisiones se suma al grupo Compras. Cada aviso de «Para hacer hoy» lleva a la pantalla donde se resuelve. |
 | 0.18 | 21 de octubre de 2026 | Se agrega «Para hacer hoy»: la lista con todo lo pendiente de Finanzas arriba del Inicio, el mail de cada mañana y el número junto a Finanzas en el menú. |
 | 0.17 | 21 de octubre de 2026 | Se reordenan las herramientas según el menú nuevo de Finanzas: Inicio, Ventas, Compras, Bancos e Informes. Nuevas pantallas: Inicio (posición, lo que falta conciliar y pendientes), Banco, Tarjetas y Cierre. Cuentas por pagar pasa a estar arriba de Proveedores, y la bandeja de facturas recibidas, arriba de Facturas. Las facturas de proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana; las facturas llegan cada media hora. Las notas de crédito de proveedores se descuentan de la deuda desde la misma lista. Una factura se carga por un solo formulario y a un proveedor se le paga solo con «Registrar pago». Nuevos ajustes de deuda (no son plata) y «Arrancar cuenta» con el estado de cuenta: borrón y cuenta nueva con cada proveedor. Lo personal (cuenta del socio y adelantos a descontar del sueldo) no es gasto de Voltia. Conciliar una cuenta con diferencia pide el motivo. Nuevo cierre de mes, con su lista de control y el archivo para la contadora, y la rendición de tarjetas en el procedimiento mensual. Las transferencias entre cuentas y los ajustes dejan de contar en el estado de resultados. Aviso «hay cobro sin factura» en Facturación. Nuevos casos en «Cuando algo sale mal» y palabras nuevas en el glosario. |

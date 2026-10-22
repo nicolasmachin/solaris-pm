@@ -36,6 +36,7 @@ import {
   TIPO_CFE_LABEL,
 } from "../services/biller/recibidos.service.js";
 import { calcularVencimiento, getCuentasPorPagar } from "../services/finance/cuentas-por-pagar.service.js";
+import { sugerirGastos } from "../services/finance/sugerir-gasto.service.js";
 import {
   cargarPendiente,
   cargarSolasCuentaCorriente,
@@ -83,35 +84,9 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
       take: 300,
     });
 
-    // Candidatas a "ya la cargaron a mano": mismo proveedor y moneda, sin
-    // factura recibida vinculada, y el número o el monto coinciden.
-    const pendientes = filas.filter((f) => f.estado === EstadoFacturaRecibida.PENDIENTE && f.supplierId);
-    const candidatasPorFila = new Map<string, Array<{ id: string; descripcion: string; invoiceNumber: string | null; monto: number; fecha: string | null; status: FinanceMovementStatus }>>();
-    if (pendientes.length > 0) {
-      const movs = await prisma.financeMovement.findMany({
-        where: {
-          deletedAt: null,
-          tipoMovimiento: TipoMovimiento.GASTO,
-          supplierId: { in: [...new Set(pendientes.map((p) => p.supplierId!))] },
-          facturaRecibida: null,
-        },
-        select: { id: true, supplierId: true, descripcion: true, invoiceNumber: true, monto: true, moneda: true, fecha: true, status: true },
-      });
-      for (const f of pendientes) {
-        const total = Number(f.total);
-        const c = movs
-          .filter((m) => m.supplierId === f.supplierId && m.moneda === f.moneda)
-          .filter((m) =>
-            (m.invoiceNumber ?? "").replace(/\D/g, "").endsWith(String(f.numero)) ||
-            Math.abs(Number(m.monto) - total) <= 0.01)
-          .slice(0, 5)
-          .map((m) => ({
-            id: m.id, descripcion: m.descripcion, invoiceNumber: m.invoiceNumber,
-            monto: Number(m.monto), fecha: toDateOnlyString(m.fecha), status: m.status,
-          }));
-        if (c.length > 0) candidatasPorFila.set(f.id, c);
-      }
-    }
+    // "¿Ya está cargada?": los gastos cargados a mano que más se parecen a cada
+    // factura por revisar, del más probable al menos (sugerir-gasto.service.ts).
+    const candidatasPorFila = await sugerirGastos(filas.filter((f) => f.estado === EstadoFacturaRecibida.PENDIENTE));
 
     return {
       billerConfigurado: billerConfigurado(),
@@ -608,19 +583,30 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
         where: { id: movementId, deletedAt: null },
         include: { facturaRecibida: { select: { id: true } } },
       });
-      if (!m || !m.supplierId) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      if (!m) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
       if (m.facturaRecibida) throw badRequest("MOVEMENT_YA_VINCULADO", "Ese movimiento ya está vinculado a otra factura recibida.");
-      if (m.moneda !== f.moneda) throw badRequest("MONEDA_NO_COINCIDE", "La factura y el movimiento están en monedas distintas.");
-      await resolverProveedor(f.rutEmisor, m.supplierId, tx);
+      // Puede estar en la otra moneda (el gasto se cargó convertido): se vincula igual
+      // y el gasto conserva su monto.
+      // Un gasto cargado sin proveedor toma el de la factura.
+      const supplierId = m.supplierId ?? f.supplierId;
+      if (!supplierId) {
+        throw badRequest("SUPPLIER_REQUIRED", "Ese gasto no tiene proveedor: elegí primero de qué proveedor es la factura.");
+      }
+      await resolverProveedor(f.rutEmisor, supplierId, tx);
       // Se completa lo que la carga manual no tenía; lo que tenía, se respeta.
       await tx.financeMovement.update({
         where: { id: m.id },
-        data: { invoiceNumber: m.invoiceNumber ?? `${f.serie}-${f.numero}` },
+        data: {
+          invoiceNumber: m.invoiceNumber ?? `${f.serie}-${f.numero}`,
+          supplierId,
+          // El desglose de la factura solo sirve si están en la misma moneda.
+          ...(m.moneda === f.moneda ? { montoNeto: m.montoNeto ?? f.totalNeto, montoIva: m.montoIva ?? f.totalIva } : {}),
+        },
       });
       await tx.facturaRecibida.update({
         where: { id: f.id },
         data: {
-          estado: EstadoFacturaRecibida.CONFIRMADA, supplierId: m.supplierId, movementId: m.id,
+          estado: EstadoFacturaRecibida.CONFIRMADA, supplierId, movementId: m.id,
           resueltaPorId: user.id, resueltaAt: new Date(),
         },
       });
