@@ -11,9 +11,13 @@
  *   contaminadas por el transformador de corriente al revés hasta el 24-jul.
  * - Rodolfo: "datos.txt" del trámite UTE en Drive y la solicitud de aumento de
  *   potencia (jun-2026): cuenta 5133896646, Residencial Doble, 25 kW contratados,
- *   26 paneles de 630 W = 16,4 kWp, mail rodolfo.sosa@estilosrl.com. Inversión
- *   USD 20.000: la mitad de la venta conjunta, igual que Estilo. El día de corte
- *   queda vacío hasta tener una factura.
+ *   26 paneles de 630 W = 16,4 kWp, mail rodolfo.sosa@estilosrl.com. Corte el 23
+ *   (factura B 9460374, período 23-ago a 23-sep-2026).
+ * - Inversión: las dos obras las pagó Estilo SAS juntas (USD 37.587 + IVA,
+ *   movimientos de PRY-2026-001). Se reparte en la proporción de los contratos
+ *   del 9-mar-2026 (Estilo USD 18.276 + IVA, Rodolfo USD 19.812 + IVA): Estilo
+ *   18.035 y Rodolfo 19.552, sin IVA porque la empresa lo recupera. Reemplaza el
+ *   50/50 a ojo del 15-oct.
  *
  * Los dos quedan con habilitado = false: no entran en la emisión ni en el envío
  * automático hasta que alguien revise el primer reporte y los prenda.
@@ -53,7 +57,9 @@ async function main() {
       destinatarios: [
         { email: "cristhian.sosa@estilosrl.com", nombre: "Cristhian Sosa" },
         { email: "rodolfo.sosa@estilosrl.com", nombre: "Rodolfo Sosa", esCopia: true },
+        { email: "contabilidad@estilosrl.com", nombre: "Contabilidad Estilo", esCopia: true },
       ],
+      inversionUsd: 18035,
     },
     usuario.id,
   );
@@ -68,12 +74,16 @@ async function main() {
       pctPunta: 0.15,
       pctLlano: 0.75,
       pctValle: 0.1,
-      inversionUsd: 20000,
+      inversionUsd: 19552,
       potenciaInstaladaKwp: 16.4,
+      diaCorteMedidor: 23,
       // Habilitado por UTE el 2-jul-2026.
       mesInicio: "2026-07",
       origenDatos: "HUAWEI",
-      destinatarios: [{ email: "rodolfo.sosa@estilosrl.com", nombre: "Rodolfo Sosa" }],
+      destinatarios: [
+        { email: "rodolfo.sosa@estilosrl.com", nombre: "Rodolfo Sosa" },
+        { email: "contabilidad@estilosrl.com", nombre: "Contabilidad Estilo", esCopia: true },
+      ],
     },
     usuario.id,
   );
