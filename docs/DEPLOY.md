@@ -409,3 +409,16 @@ Detalle de lo que entra: `docs/pendientes/finanzas-noche-21oct-hecho.md`.
 3. En el `.env` de prod: `BANCO_LECTOR_TOKEN` (si se va a usar el lector del banco).
 4. En Finanzas → Cuentas: número de banco de BROU Pesos (`110875272-00001`) y BROU Dólares (`110875272-00002`).
 5. Avisar: los totales de ingresos y egresos del estado de resultados bajan en los meses con transferencias entre cuentas (el resultado neto no cambia).
+
+## Deploy de Finanzas del 22-oct-2026 (cobros por momento de la obra y qué se le factura)
+
+1. `./deploy.sh` — aplica tres migraciones:
+   - `20261022200000_hito_cobro` (aditiva: enum `HitoCobro` + columna `finance_movements.hitoCobro`, nula);
+   - `20261022210000_monto_a_facturar` (aditiva: `projects.facturacionNormal` y `projects.facturarSinIvaUsd`, nulas);
+   - `20261022210100_facturacion_normal_existentes` (datos: pone facturación normal a los proyectos que llevaban factura sin nota; idempotente).
+2. Simular el paso de los planes viejos y revisar la lista:
+   `docker compose -f docker-compose.prod.yml exec server npx tsx scripts/backfill-hitos-cobro.ts`
+   Ata a su momento las cuotas sin cobrar con los nombres del plan por defecto viejo, las renombra y les saca la fecha (al 22-oct, unas 27). Las de otros nombres quedan con su fecha (unas 13): pasarle la lista a Finanzas para que las revise.
+3. Si la simulación está bien, aplicar: el mismo comando con `--apply`.
+4. Avisar: desde ese momento algunas señas viejas nunca cobradas aparecen como "Cuota vencida" en Cobros y en "Para hacer hoy".
+5. Avisar a Finanzas: los proyectos que llevaban factura **con** nota (al 22-oct, 3; dos sin emitir) quedan "A definir" en Finanzas → Facturación; hay que cargarles el monto con **Definir**. Desde el deploy, crear un proyecto desde un lead ganado exige definir qué se le factura.

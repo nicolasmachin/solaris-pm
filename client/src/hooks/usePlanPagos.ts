@@ -13,7 +13,11 @@ export type PlanCuota = {
   dueDate: string | null;
   status: "PREVISTO" | "COMPROMETIDO" | "A_PAGAR" | "PARCIALMENTE_PAGADO" | "PAGADO";
   cobrado: boolean;
+  // Momento de la obra al que está atada (null = cuota con fecha fija).
+  hitoCobro: HitoCobro | null;
 };
+
+export type HitoCobro = "SENIA" | "PREVIO_OBRA" | "OBRA_FINALIZADA" | "HABILITACION";
 
 export type GetPlanResponse = {
   hasPlan: boolean;
@@ -34,7 +38,8 @@ export type CreatePlanBody = {
   cuotas: Array<{
     descripcion: string;
     monto: number;
-    fechaPrevista: string; // yyyy-mm-dd
+    hitoCobro?: HitoCobro | null;
+    fechaPrevista?: string | null; // yyyy-mm-dd, solo si no tiene hitoCobro
   }>;
 };
 

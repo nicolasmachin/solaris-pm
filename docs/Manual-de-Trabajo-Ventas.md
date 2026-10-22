@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.3 · del 22/10/26
+**Voltia · Uruguay** · Versión 1.4 · del 22/10/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -385,6 +385,13 @@ El asesor arma el **calendario de pagos**: la seña más tres cuotas.
 | 50 % | Una seña al confirmar, y se completa el 50 % entre 10 y 15 días antes de la obra |
 | 30 % | Con la obra terminada |
 | 20 % | Cuando UTE habilita |
+
+**Las cuotas no llevan fecha**: cada una se cobra cuando llega su momento de la
+obra. Voltia PM le avisa a Finanzas que el cliente está **listo para cobrar** la
+cuota del 50 % diez días antes del primer día de obra agendado, la del 30 %
+cuando se da por terminada la obra y la del 20 % cuando se finaliza la
+habilitación de UTE. Por eso el asesor no inventa fechas: solo acuerda los
+montos y, si algo se pactó distinto, lo carga **en una fecha fija**.
 
 **Sin el 50 % pago no se da fecha de obra.** Con financiación bancaria, la
 condición es el crédito aprobado.
@@ -884,11 +891,25 @@ ventanas seguidas:
    sola y la carga Finanzas.
 3. **Crear proyecto desde lead:** los datos del lead ya vienen cargados, y la
    potencia y el presupuesto se toman de la última propuesta publicada (se pueden
-   corregir). Son obligatorios **Cliente**, **Ciudad**, **Provincia** y
-   **Potencia (kWp)**; la dirección, el mail, el teléfono, el presupuesto y la
-   **Fecha estimada fin obra** son opcionales (si la fecha queda vacía, Voltia PM
-   pone 90 días desde hoy, como referencia provisoria). Con **Crear proyecto** se
-   crea el proyecto y se abre su ficha.
+   corregir). El presupuesto es el **total que paga el cliente, con IVA**. Son
+   obligatorios **Cliente**, **Ciudad**, **Provincia**, **Potencia (kWp)** y
+   **¿Qué se le factura?**; la dirección, el mail, el teléfono, el presupuesto y
+   la **Fecha estimada fin obra** son opcionales (si la fecha queda vacía,
+   Voltia PM pone 90 días desde hoy, como referencia provisoria). Con **Crear
+   proyecto** se crea el proyecto y se abre su ficha.
+
+   **¿Qué se le factura?** Lo contesta el asesor, porque es quien lo acordó con
+   el cliente, y Finanzas emite la factura con eso:
+   - Si se le factura todo el presupuesto, se tilda **«Facturación normal»**. Se
+     puede dejar una nota, por ejemplo el RUT o la razón social a la que va la
+     factura.
+   - Si se le factura otra cosa (un descuento, una parte que financia el banco,
+     una parte a nombre de su empresa), se carga **el monto a facturar** y **el
+     motivo**. El monto se escribe **sin IVA**, **con IVA** o **como porcentaje
+     del presupuesto** (por ejemplo, 50): al llenar uno, los otros dos se
+     completan solos. Si no lleva factura, el monto es cero.
+
+   Si después cambia, se corrige desde la ficha del proyecto.
 
 **Qué hace Voltia PM al crear el proyecto:**
 
@@ -965,10 +986,14 @@ subetapa no se completa. Según cuál se elija, aparece:
   al banco.
 - **💵 Crear o editar el plan de pagos:** abre **Plan de pagos**, que muestra el
   presupuesto del proyecto, lo cobrado y lo pendiente, y propone el plan de
-  siempre: **Seña** (USD 500), **Pago previo 50 %**, **Pago obra terminada 30 %**
-  y **Pago obra habilitada 20 %**, con fechas provisorias a 7, 30, 60 y 90 días.
-  El asesor ajusta montos y fechas a lo que acordó con el cliente y toca **Crear
-  plan de pagos** (después, para cambiarlo, **Actualizar plan de pagos**).
+  siempre, sin fechas: **Seña** (USD 500), **Cuota 1 · previo a la obra**
+  (completa el 50 %), **Cuota 2 · obra finalizada** (30 %) y **Cuota 3 ·
+  habilitación finalizada** (20 %). La columna **Cuándo se cobra** dice el
+  momento de cada cuota (**Al firmar**, **Previo a la obra**, **Obra
+  finalizada**, **Habilitación finalizada**); para algo pactado distinto se
+  elige **En una fecha fija** y se pone la fecha. El asesor ajusta los montos a
+  lo que acordó con el cliente y toca **Crear plan de pagos** (después, para
+  cambiarlo, **Actualizar plan de pagos**).
   Necesita que el proyecto tenga el presupuesto cargado.
 - **¿Qué se acordó?** (con *Otro*): un texto libre, que se guarda solo al salir
   del campo.
@@ -1093,6 +1118,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.4 | 22 de octubre de 2026 | El plan de pagos ya no lleva fechas: cada cuota se cobra en su momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM le avisa a Finanzas cuándo cobrarla. Lo que se pacta distinto se carga en una fecha fija. Las cuotas se llaman «Cuota 1 · previo a la obra», «Cuota 2 · obra finalizada» y «Cuota 3 · habilitación finalizada». Al crear el proyecto, el asesor tiene que contestar **¿Qué se le factura?**: facturación normal (todo el presupuesto) u otro monto con su motivo; el presupuesto se aclara que es con IVA. |
 | 1.3 | 22 de octubre de 2026 | En la primera charla se le pregunta al cliente «¿Cómo nos conociste?» y se carga en el lead: las nueve respuestas posibles y cuándo va cada una. Voltia PM no deja crear un lead sin ese dato, y se puede corregir desde el panel del lead. |
 | 1.2 | 17 de octubre de 2026 | Se aclara que la bienvenida al cliente la manda Experiencia Solar: al asesor le toca presentarle al referente, como última tarea del onboarding. |
 | 1.1 | 16 de octubre de 2026 | En el costeo de la propuesta se pueden cambiar la comisión del vendedor y la del BBVA; ponerlas en cero las saca del precio. |

@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.31 · del 21/10/26
+**Voltia · Uruguay** · Versión 1.32 · del 22/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1729,9 +1729,10 @@ partes:
 - **Financiación bancaria:** se firma el contrato para presentar al banco, y la obra se agenda **recién con el crédito aprobado**. Por eso conviene que vaya adelantando lo que le pide el banco: es lo que más atrasa estas obras.
 - Para decirle cuánto le falta, mirá la pestaña **Cobros** de su ficha: ahí está qué pagó y qué queda previsto.
 
-**Política interna:** los montos y las fechas se sacan del **plan de pagos** del proyecto, no de memoria. Si no está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más cuesta arreglar.
+**Política interna:** los montos y los momentos de cobro se sacan del **plan de pagos** del proyecto, no de memoria. Si no está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más cuesta arreglar.
 
 - **Cuando el cliente paga**, Experiencia Solar lo marca en la pestaña **Cobros** con **Marcar pagado**, confirmando **la fecha en que entró la plata y el monto** que pagó (Voltia PM propone la fecha de hoy y el monto previsto; se corrigen si fue otro día u otro monto). Nadie lo revisa después: lo que se carga ahí es lo que queda.
+- **Las cuotas del plan no tienen fecha**: cada una se cobra en un momento de la obra. En la pestaña **Cobros**, en lugar de la fecha dice el momento («Previo a la obra», «Obra finalizada», «Habilitación finalizada»), y la etiqueta dice si ya está **Lista para cobrar** (llegó su momento), **Vencida** (pasaron 10 días sin cobrarla) o **Prevista** (todavía no). La cuota del 50 % queda lista 10 días antes del primer día de obra; la del 30 %, cuando se da por terminada la obra; la del 20 %, cuando se finaliza la habilitación de UTE: el mismo momento en que llega el aviso de que el cliente puede encender. Al cliente, entonces, se le dice **cuándo** paga por lo que pasa en su obra, no por una fecha. El resumen de pagos que se copia para WhatsApp también pone el momento en lugar de la fecha.
 - **Si una cuota vence y el cliente no pagó**, el reclamo lo hace Experiencia Solar, que es quien habla con él. Está decidido que esto pase al área de Administración (la contadora) cuando esa área se haga cargo de Finanzas en Voltia PM.
 
 **Cuándo escalar:** cualquier duda de montos, al asesor comercial.
@@ -1978,6 +1979,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |
 | 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |
 | 1.30 | 19 de octubre de 2026 | Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 1.29 | 19 de octubre de 2026 | El cliente que se olvida la contraseña puede entrar al portal con un código que le llega al mail, sin resetearla. La pantalla de entrada avisa si el usuario no existe o si la contraseña no es la correcta. La sesión dura mientras se use: pide entrar de nuevo solo después de 10 días sin abrir el portal. |

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 
-import { useCreatePlanPagos, usePlanPagos, type PlanCuota } from "../../hooks/usePlanPagos";
+import { useCreatePlanPagos, usePlanPagos, type HitoCobro, type PlanCuota } from "../../hooks/usePlanPagos";
 import { todayLocalISO } from "../../utils/date";
 import { Sheet } from "../ui/Sheet";
 
@@ -11,10 +11,22 @@ import { Sheet } from "../ui/Sheet";
 const SUM_TOLERANCE_USD = 1;
 const DEFAULT_SENIA_USD = 500;
 
+// Cada cuota se cobra en un momento de la obra (queda lista para cobrar sola
+// cuando llega, sin fecha) o en una fecha fija, para otros acuerdos.
+type Cuando = HitoCobro | "FECHA";
 type RowDraft = {
   descripcion: string;
   monto: number; // siempre representamos en number (NaN si está vacío)
-  fechaPrevista: string; // yyyy-mm-dd
+  cuando: Cuando;
+  fechaPrevista: string; // yyyy-mm-dd, solo para "FECHA"
+};
+
+const CUANDO_LABEL: Record<Cuando, string> = {
+  SENIA: "Al firmar",
+  PREVIO_OBRA: "Previo a la obra",
+  OBRA_FINALIZADA: "Obra finalizada",
+  HABILITACION: "Habilitación finalizada",
+  FECHA: "En una fecha fija",
 };
 
 const inp =
@@ -51,10 +63,10 @@ function buildDefaultPlan(saldoPendiente: number): RowDraft[] {
   cuota2 = r(cuota2);
   cuota3 = r(cuota3);
   return [
-    { descripcion: "Seña", monto: r(senia), fechaPrevista: addDaysISO(today, 7) },
-    { descripcion: "Pago previo 50%", monto: cuota1, fechaPrevista: addDaysISO(today, 30) },
-    { descripcion: "Pago obra terminada 30%", monto: cuota2, fechaPrevista: addDaysISO(today, 60) },
-    { descripcion: "Pago obra habilitada 20%", monto: cuota3, fechaPrevista: addDaysISO(today, 90) },
+    { descripcion: "Seña", monto: r(senia), cuando: "SENIA", fechaPrevista: today },
+    { descripcion: "Cuota 1 · previo a la obra", monto: cuota1, cuando: "PREVIO_OBRA", fechaPrevista: today },
+    { descripcion: "Cuota 2 · obra finalizada", monto: cuota2, cuando: "OBRA_FINALIZADA", fechaPrevista: today },
+    { descripcion: "Cuota 3 · habilitación finalizada", monto: cuota3, cuando: "HABILITACION", fechaPrevista: today },
   ];
 }
 
@@ -62,6 +74,7 @@ function planFromCuotas(cuotas: PlanCuota[]): RowDraft[] {
   return cuotas.map((c) => ({
     descripcion: c.descripcion,
     monto: c.monto,
+    cuando: c.hitoCobro ?? "FECHA",
     fechaPrevista: c.dueDate ?? todayLocalISO(),
   }));
 }
@@ -134,13 +147,13 @@ export function PlanPagosModal({
 
   function addCuota() {
     setRows((prev) => {
-      const lastDate = prev[prev.length - 1]?.fechaPrevista ?? todayLocalISO();
       return [
         ...prev,
         {
           descripcion: `Cuota ${prev.length}`,
           monto: 0,
-          fechaPrevista: addDaysISO(lastDate, 30),
+          cuando: "FECHA",
+          fechaPrevista: addDaysISO(todayLocalISO(), 30),
         },
       ];
     });
@@ -173,7 +186,8 @@ export function PlanPagosModal({
         cuotas: rows.map((r) => ({
           descripcion: r.descripcion.trim(),
           monto: r.monto,
-          fechaPrevista: r.fechaPrevista,
+          hitoCobro: r.cuando === "FECHA" ? null : r.cuando,
+          fechaPrevista: r.cuando === "FECHA" ? r.fechaPrevista : null,
         })),
       });
       toast.success(
@@ -276,7 +290,7 @@ export function PlanPagosModal({
                       <th className="px-2 py-2 text-left font-medium">Descripción</th>
                       <th className="px-2 py-2 text-right font-medium w-28">Monto (USD)</th>
                       <th className="px-2 py-2 text-right font-medium w-20">%</th>
-                      <th className="px-2 py-2 text-left font-medium w-36">Fecha esperada</th>
+                      <th className="px-2 py-2 text-left font-medium w-52">Cuándo se cobra</th>
                       <th className="px-2 py-2 w-10" />
                     </tr>
                   </thead>
@@ -319,13 +333,24 @@ export function PlanPagosModal({
                             }}
                           />
                         </td>
-                        <td className="px-2 py-2">
-                          <input
-                            type="date"
+                        <td className="px-2 py-2 space-y-1">
+                          <select
                             className={inp}
-                            value={r.fechaPrevista}
-                            onChange={(e) => patchRow(idx, { fechaPrevista: e.target.value })}
-                          />
+                            value={r.cuando}
+                            onChange={(e) => patchRow(idx, { cuando: e.target.value as Cuando })}
+                          >
+                            {(Object.keys(CUANDO_LABEL) as Cuando[]).map((k) => (
+                              <option key={k} value={k}>{CUANDO_LABEL[k]}</option>
+                            ))}
+                          </select>
+                          {r.cuando === "FECHA" && (
+                            <input
+                              type="date"
+                              className={inp}
+                              value={r.fechaPrevista}
+                              onChange={(e) => patchRow(idx, { fechaPrevista: e.target.value })}
+                            />
+                          )}
                         </td>
                         <td className="px-2 py-2 text-center">
                           <button
@@ -343,6 +368,11 @@ export function PlanPagosModal({
                   </tbody>
                 </table>
               </div>
+
+              <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
+                Las cuotas de un momento de la obra no llevan fecha: quedan listas para cobrar solas cuando llega ese momento
+                (la de antes de la obra, 10 días antes del primer día agendado) y la fecha se completa al cobrarlas.
+              </p>
 
               <div className="flex items-center justify-between mt-3">
                 <button

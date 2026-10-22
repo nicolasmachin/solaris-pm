@@ -825,6 +825,12 @@ model Project {
   // proyecto; "marcar emitida" es una acción del módulo Finanzas.
   llevaFactura                    Boolean                        @default(false)
   facturaNota                     String?
+  // Qué se le factura al cliente, definido por el asesor al ganar el lead.
+  // true = facturación normal (todo el presupuesto); false = otro monto
+  // (`facturarSinIvaUsd`, con el motivo en `facturaNota`; 0 = no lleva
+  // factura); null = sin definir (proyectos anteriores al 22-oct-2026).
+  facturacionNormal               Boolean?
+  facturarSinIvaUsd               Decimal?                       @db.Decimal(14, 2)
   facturaEmitida                  Boolean                        @default(false)
   facturaEmitidaEn                DateTime?                      @db.Timestamptz(6)
   deletedAt                       DateTime?                      @db.Timestamptz(6)
@@ -2017,6 +2023,14 @@ model ExchangeRate {
   @@map("exchange_rates")
 }
 
+// Momento de la obra al que se ata una cuota del plan de pagos.
+enum HitoCobro {
+  SENIA
+  PREVIO_OBRA
+  OBRA_FINALIZADA
+  HABILITACION
+}
+
 model FinanceMovement {
   id                      String                   @id @default(cuid())
   fecha                   DateTime
@@ -2052,6 +2066,10 @@ model FinanceMovement {
   status                  FinanceMovementStatus    @default(PAGADO)
   expectedDate            DateTime?                @db.Date
   dueDate                 DateTime?                @db.Date
+  // Cuota del plan de pagos atada a un momento de la obra en vez de a una
+  // fecha: queda lista para cobrar cuando ese momento llega (ver
+  // services/finance/hitos-cobro.service.ts). Null = cuota con fecha fija.
+  hitoCobro               HitoCobro?
   invoiceNumber           String?
   sourceType              MovementSourceType       @default(MANUAL)
   materialItemId          String?

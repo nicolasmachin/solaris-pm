@@ -35,9 +35,27 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Cobros que avisan solos cuándo cobrar",
+      items: [
+        "Las cuotas del plan de pagos ya no tienen fecha: seña, cuota 1 previo a la obra, cuota 2 con la obra finalizada y cuota 3 con la habilitación finalizada. La fecha se completa al cobrar.",
+        "Cada cuota queda lista para cobrar sola cuando llega su momento (la 1, diez días antes del primer día de obra) y vence a los diez días; lo pactado distinto se pone en una fecha fija.",
+        "Cobros avisa arriba cuántos clientes están listos para cobrar y los marca en la lista; al entrar ya no aparecen los que pagaron todo.",
+        "Los listos para cobrar aparecen también en «Para hacer hoy» y en el mail de cada mañana de Finanzas.",
+      ],
+    },
+    {
+      title: "Qué se le factura a cada cliente",
+      items: [
+        "Al ganar un lead, el asesor tiene que decir qué se le factura: «Facturación normal» (todo el presupuesto) o el monto y el motivo. Sin eso no se crea el proyecto.",
+        "El monto se escribe sin IVA, con IVA o como porcentaje del presupuesto, y los otros se calculan solos; con 0, no lleva factura.",
+        "Facturación muestra por separado el presupuesto, lo que hay que facturar, lo ya facturado y lo que falta; al emitir se propone lo que falta.",
+      ],
+    },
+    {
       title: "Arreglos",
       items: [
         "En «Para hacer hoy», los avisos de comisiones y de costos fijos vencidos ahora abren su pantalla; los que se resuelven en el Inicio bajan hasta «Por conciliar».",
+        "Al emitir una factura con un porcentaje, el monto con decimales se leía mal y salía 100 veces más grande; ahora se lee bien (no se emitió ninguna con el error).",
       ],
     },
   ],

@@ -642,6 +642,8 @@ export function serializeProject(project: {
   facturaUtePath?: string | null;
   llevaFactura?: boolean;
   facturaNota?: string | null;
+  facturacionNormal?: boolean | null;
+  facturarSinIvaUsd?: Prisma.Decimal | null;
   facturaEmitida?: boolean;
   facturaEmitidaEn?: Date | null;
   salespersonId: string | null;
@@ -682,6 +684,7 @@ export function serializeProject(project: {
     ...rest,
     capacityKwp: decimalToNumber(rest.capacityKwp),
     budgetUsd: decimalToNumber(rest.budgetUsd),
+    facturarSinIvaUsd: rest.facturarSinIvaUsd != null ? decimalToNumber(rest.facturarSinIvaUsd) : null,
     executedUsd: decimalToNumber(rest.executedUsd),
     estimatedMwhYear: decimalToNumber(rest.estimatedMwhYear),
     co2TonsAvoided: decimalToNumber(rest.co2TonsAvoided),

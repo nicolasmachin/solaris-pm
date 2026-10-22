@@ -80,8 +80,11 @@ de todas las pantallas del módulo, cada renglón con la cantidad y el enlace a
 donde se resuelve. Se calcula al pedirla: lo resuelto desaparece solo, no se
 tilda nada. Gravedad: **VENCIDO** (facturas por revisar con más de una semana,
 deuda vencida con proveedores, costos fijos vencidos sin pagar, cobros vencidos
-sin cobrar, CFE emitidos rechazados o dudosos de los últimos 30 días, el mes
-anterior sin cerrar desde el día 10), **HOY** (facturas por revisar, deuda que
+sin cobrar —con fecha vencida, o cuotas del plan con su momento cumplido hace
+más de 10 días; sin proyectos archivados ni prospectos—, CFE emitidos rechazados
+o dudosos de los últimos 30 días, el mes
+anterior sin cerrar desde el día 10), **HOY** (clientes listos para cobrar una
+cuota del plan, facturas por revisar, deuda que
 vence en 7 días, lo del banco sin cargar, lo cargado que el banco no muestra,
 posibles duplicados, gastos de tarjeta sin titular o sin decidir, obras que
 llevan factura con cobros y sin facturar) y **AVISO** (facturas que entraron
@@ -90,7 +93,8 @@ instaladores y comisiones pendientes, proveedores de cuenta corriente sin
 conciliar hace más de 30 días, cuentas que el lector del banco no leyó en 30
 horas, adelantos por descontar). Lo vencido va primero.
 Cada ítem lleva a la pantalla donde se resuelve (comisiones → `comisiones`,
-costos fijos vencidos → `costos-fijos`). Los que se resuelven en el mismo Inicio
+costos fijos vencidos → `costos-fijos`, cobros vencidos y listos para cobrar →
+`cobros?filtro=listos`). Los que se resuelven en el mismo Inicio
 (movimientos que el banco no muestra, posibles duplicados) llevan a
 `inicio#por-conciliar` y `ParaHacerHoy.tsx` baja hasta ese cuadro: un link al
 Inicio sin ancla no hacía nada visible, porque ya se estaba ahí.
@@ -174,7 +178,8 @@ de Flujo y de Resultados; se sacó de ahí). Todo en USD, con `ultimoUsdToUyu()`
 - **Nos deben** = `saldoPendienteUSD` de `listarCobrosPorProyecto()`, el mismo
   número que la pantalla Cobros. La parte con fecha sale de los INGRESO PREVISTO
   no cobrados (sin Plan granizo, sin archivados ni prospectos), topeados al saldo
-  de la obra. Lo que la obra debe por encima de sus previstos va a `SIN_FECHA`
+  de la obra; las cuotas atadas a un momento de la obra van por su fecha
+  esperada (`fechaDeCobro()`, ver "Cobros a clientes") y sin ella a `SIN_FECHA`. Lo que la obra debe por encima de sus previstos va a `SIN_FECHA`
   (`obrasSinPlanCompleto` las cuenta).
 - **Debemos** = cuatro partes:
   - proveedores (`getCuentasPorPagar()`, por vencimiento);
@@ -197,17 +202,33 @@ de Flujo y de Resultados; se sacó de ahí). Todo en USD, con `ultimoUsdToUyu()`
 ### Para qué existe
 
 Cada proyecto tiene una vista de **Cobros** que muestra, sobre el presupuesto,
-cuánto se cobró y cuánto falta. El **plan de pagos** permite dejar agendados los
-cobros previstos (seña + cuotas) para que aparezcan como pendientes hasta que
-entra la plata.
+cuánto se cobró y cuánto falta. El **plan de pagos** deja cargados los cobros
+previstos (seña + cuotas). Las cuotas del plan de siempre **no tienen fecha**:
+cada una está atada a un momento de la obra y queda **lista para cobrar** sola
+cuando ese momento llega, así Finanzas sabe a quién cobrarle sin mirar el
+calendario.
 
 ### Cómo se usa
 
+- **Listado** (`FinanceCobros.tsx`): arriba, si hay clientes con una cuota
+  lista, un aviso verde "N clientes están listos para cobrar una cuota · M con
+  la cuota vencida" con **Ver solo esos**. Junto al estado de cobro, la
+  etiqueta **Listo para cobrar** (verde) o **Cuota vencida** (roja), y esos
+  clientes van arriba. Filtro por defecto **Por cobrar (sin los completos)**;
+  además **Listos para cobrar**, **Todos, también los completos** y los estados
+  de siempre. El filtro se recuerda por navegador (`finance-cobros-filters-v2`);
+  `?filtro=listos` (el enlace de "Para hacer hoy") manda sobre lo recordado.
 - Se entra al detalle de cobros de un proyecto (desde Finanzas → Cobros o desde
-  la vista de Cobros del módulo Experiencia Solar).
+  la vista de Cobros del módulo Experiencia Solar). Las cuotas sin cobrar de un
+  momento de la obra muestran el momento en la columna de fecha ("Previo a la
+  obra") y la etiqueta **Lista para cobrar**, **Vencida** o **Previsto**
+  (`components/finance/HitoCuota.tsx`). El resumen de WhatsApp pone el momento
+  en lugar de la fecha.
 - Con el botón de plan de pagos se abre un modal que **precarga una sugerencia**
-  (seña + 3 cuotas) sobre el saldo pendiente, editable fila por fila (descripción,
-  monto, %, fecha). Al confirmar se crean los cobros previstos.
+  (seña + 3 cuotas) sobre el saldo pendiente, editable fila por fila
+  (descripción, monto, %, **cuándo se cobra**: Al firmar, Previo a la obra, Obra
+  finalizada, Habilitación finalizada o **En una fecha fija**, que pide la
+  fecha). Al confirmar se crean los cobros previstos.
 - Cada cobro se puede marcar pagado, editarle el monto o **eliminarlo** (papelera,
   con confirmación). Todo se refleja en Movimientos y en los totales.
 
@@ -223,8 +244,50 @@ entra la plata.
   del proyecto y crea el nuevo set en una transacción. Así "editar el plan"
   reconcilia sin duplicar. **No toca** los cobros ya cobrados (status != PREVISTO).
 - Sugerencia por defecto (`buildDefaultPlan` en `PlanPagosModal.tsx`): **50/30/20**
-  con **seña fija USD 500** sobre el saldo pendiente. Las 3 cuotas vienen nombradas
-  "Pago previo 50%", "Pago obra terminada 30%" y "Pago obra habilitada 20%".
+  con **seña fija USD 500** sobre el saldo pendiente: "Seña", "Cuota 1 · previo a
+  la obra", "Cuota 2 · obra finalizada" y "Cuota 3 · habilitación finalizada",
+  cada una atada a su momento y sin fecha.
+- **Cuotas atadas a un momento** (`FinanceMovement.hitoCobro`, enum `HitoCobro`;
+  null = cuota con fecha fija). Se guardan con `dueDate` null; `fecha`, que es
+  obligatoria en la tabla, queda la del día de creación y no significa nada
+  hasta que se cobra (al marcarla pagada se reemplaza por la fecha del cobro).
+  Cuándo queda lista se **calcula al pedirlo** con el estado del proyecto, nada
+  se sincroniza (`services/finance/hitos-cobro.service.ts`: `hitosDeProyectos()`
+  junta los momentos de varios proyectos en una tanda, `infoCuota()` calcula una
+  cuota, `fechaDeCobro()` da la fecha para proyectar, `cuotasListasPorProyecto()`
+  arma el "listo para cobrar" del listado y de "Para hacer hoy"):
+  - `SENIA`: desde que se crea la cuota (`createdAt`).
+  - `PREVIO_OBRA`: `DIAS_ANTES_OBRA` (10) antes del primer día de obra agendado
+    (el `startDate` más chico de los `InstallationSegment` de la agenda no
+    borrada). Si la obra se reagenda, se corre sola. Sin agenda, no tiene fecha.
+  - `OBRA_FINALIZADA`: cuando la etapa `EJECUCION_OBRA` está COMPLETED
+    (`actualEndDate`, o `updatedAt` si falta). No se usa
+    `InstallationSchedule.actualWorkEnd`: nada lo escribe.
+  - `HABILITACION`: `Project.postHabilitacionInicioEn`, que pone
+    `marcarHabilitacionEnProyecto()` al finalizar todos los trámites UTE (el
+    mismo momento del aviso "puede encender").
+  - **Vence** `DIAS_PARA_VENCER` (10) días después de quedar lista; para la
+    cuota 1 coincide con el primer día de obra.
+- **Fecha para proyectar** (`fechaDeCobro()`): la de siempre para las de fecha
+  fija; para las de un momento, el vencimiento si ya está lista, y si no una
+  estimación (cuota 2 = último día de obra agendado; cuota 3 = último día + 30;
+  la cuota 1 y la seña no se estiman). Una fecha movida a mano en el flujo
+  (`expectedDate`) manda sobre la estimación. Sin estimación = sin fecha.
+- Dónde se usa esa fecha:
+  - **Flujo de fondos** (`GET /finance/cashflow`): las cuotas de un momento van
+    en su fecha esperada; si ya está lista o vencida, hoy (es plata cobrable
+    ya); sin fecha, no se proyectan y vuelven aparte en `cobrosSinFecha`, que la
+    pantalla muestra en el cuadro **Cobros sin fecha**.
+  - **Posición financiera**: tramos por esa fecha; sin fecha → `SIN_FECHA`.
+  - **Pendientes** (`getPendingItemsCore()`): una cuota de un momento entra
+    recién cuando está lista, con su vencimiento como fecha.
+  - El aviso de "fecha pasada sin pagar" al guardar un movimiento
+    (`detectPastDateNotPaidWarning()`) no aplica a estas cuotas, y volver una a
+    PREVISTO no le pone `dueDate`.
+  - `GET /finance/cobros-by-project/:projectId` devuelve `fecha` null y `hito`
+    (`serializarInfo()`) en las cuotas sin cobrar de un momento; van al final,
+    en el orden de la obra. La lista devuelve `listoParaCobrar` por proyecto.
+  - El conector (cap. 13) las muestra con el momento que esperan.
 - La suma de las cuotas debe coincidir con el **saldo pendiente** (presupuesto −
   ya cobrado) con tolerancia de **USD 1** (`SUM_TOLERANCE_USD`), no contra el
   presupuesto bruto — así el plan se puede reabrir después de cobrar algo.
@@ -244,6 +307,13 @@ entra la plata.
   total es un plan válido). Solo se rechaza si lo **supera** (`SENIA_GTE_SALDO`).
   Antes bloqueaba con "mayor o igual", lo que impedía el pago único.
 - El plan admite **una sola cuota**.
+- **"Listo para cobrar" es solo para las cuotas del plan atadas a un momento.**
+  Los clientes sin plan (por ejemplo, financiación bancaria) o con otro acuerdo
+  cargado en fechas fijas siguen como antes: vencen por su fecha.
+- Decidido por Gerencia el 22-oct-2026: las cuotas se cobran por momento de la
+  obra porque así lo dice el contrato (la cuota 1 entre 10 y 15 días antes de
+  la obra, la 2 al terminarla, la 3 con la habilitación); una fecha inventada
+  al armar el plan no servía para nada.
 - Si el proyecto no tiene presupuesto, no se puede armar plan (`BUDGET_REQUIRED`).
 - Si no queda saldo pendiente, no hay nada que planificar (`SALDO_PENDIENTE_INVALID`).
 - **El plan es obligatorio para salir del onboarding** si la modalidad es pago
@@ -299,6 +369,16 @@ desde la lista de materiales.
 - Seña > 50% del saldo: **warning** (no bloquea), para confirmar que es intencional.
 - Editar el plan cuando ya hubo cobros parciales: la suma se valida contra el
   saldo pendiente actual, no contra el presupuesto original.
+- **Planes armados antes del 22-oct-2026**: `scripts/backfill-hitos-cobro.ts`
+  (simulación por defecto, `--apply`) ata las cuotas PREVISTAS con los nombres
+  del plan viejo ("Seña", "Pago previo…", "Pago obra terminada/finalizada…",
+  "Pago obra habilitada…") a su momento, las renombra y les saca la fecha. Las
+  de otro nombre ("Cuota 2", "Saldo", acuerdos especiales) quedan con su fecha
+  y el script las lista para revisarlas a mano.
+- Una cuota con el momento cumplido hace tiempo (por ejemplo, una seña de un
+  plan viejo nunca cobrada) aparece directamente **vencida**.
+- La cuota 2 depende de que se complete la etapa de ejecución de obra en Voltia
+  PM: si la obra terminó y nadie cerró la etapa, la cuota no queda lista.
 
 ---
 
@@ -313,13 +393,20 @@ viven en Voltia PM.
 
 ### Cómo se usa
 
-**Dónde:** Finanzas → Ventas → Facturación. Lista los proyectos con el check **lleva
-factura** (se prende al crear o editar el proyecto).
+**Dónde:** Finanzas → Ventas → Facturación. Lista los proyectos que **llevan
+factura** (se decide al crear el proyecto, ver «Qué se le factura» abajo).
+
+Columnas: cliente, vendedor con la fecha de venta debajo, **Presupuesto (con
+IVA)** —lo que paga el cliente—, **A facturar (con IVA)** —con el monto sin IVA y
+«Normal» u «Otro monto» debajo, y un lápiz para corregirlo; «A definir» con el
+botón **Definir** en los proyectos viejos—, **Facturado**, **Falta facturar**
+(a facturar con IVA − facturado, nunca negativo), nota, estado y factura.
 
 - **Emitir factura** (solo si Biller está habilitado, ver más abajo): abre el
   borrador en dos pasos.
-  1. **Datos**: primero, **¿cuánto se factura?** (monto sin IVA de la
-     cotización y porcentaje, 100 por defecto) y **¿a nombre de quién?** (el
+  1. **Datos**: primero, **¿cuánto se factura?** (monto sin IVA —lo que falta
+     facturar de lo acordado al vender, con lo acordado y lo ya facturado
+     escritos arriba— y porcentaje, 100 por defecto) y **¿a nombre de quién?** (el
      cliente del proyecto u otra persona o empresa; no viene elegido y el resto
      del formulario no aparece hasta contestarlo). Después: tipo (e-Ticket con
      cédula o e-Factura con RUT), documento, nombre o razón social, dirección,
@@ -357,12 +444,23 @@ Código: `services/biller/cfe-emitidos.service.ts`, rutas en
   `calle` + `numCalle` o `clientAddress`; ciudad/departamento = `locationCity` /
   `locationProvince`; mail = `clientEmail`. Contado por defecto. Devuelve también
   `clienteProyecto` (para volver a esos datos si se cambia el receptor) y `base`.
-- **Monto** (`montoSinIvaCotizacion()`): última `ProposalV2Version` PUBLISHED del
-  lead convertido en el proyecto (`SalesLead.convertedToProjectId`, mismo
-  criterio que la comisión): `calc.subtotalSinIva + calc.itemsAdicionalesTotalSinIva`.
-  Sin cotización (proyecto viejo o cargado a mano): `budgetUsd / 1,22`, avisado
-  en pantalla. El renglón = monto × porcentaje. `baseSinIva` y `porcentaje` se
-  guardan en `CfeEmitido` como dato; lo que se emite son los renglones.
+- **Monto** (`armarBorradorFactura()` → `base`): lo que **falta facturar** de lo
+  acordado = `montoAFacturar(p).sinIva` (ver «Qué se le factura») menos
+  `netoFacturado()` (CFE vivos en USD, facturas menos notas de crédito, dividido
+  1,22 porque el comprobante guarda el total con IVA), nunca negativo
+  (`fuente: "A_FACTURAR"`). El borrador devuelve además `acordado`
+  (`modo`, `sinIva`, `conIva`, `yaFacturadoSinIva`) para mostrarlo. Solo si el
+  proyecto está **a definir**, como antes: `montoSinIvaCotizacion()` (última
+  `ProposalV2Version` PUBLISHED del lead convertido,
+  `calc.subtotalSinIva + calc.itemsAdicionalesTotalSinIva`) o, sin cotización,
+  `budgetUsd / 1,22`, con el rótulo «falta definir cuánto se factura». El
+  renglón = monto × porcentaje. `baseSinIva` y `porcentaje` se guardan en
+  `CfeEmitido` como dato; lo que se emite son los renglones.
+- **Lectura del monto en la ventana** (`EmitirCfeModal.tsx` → `aNumero()`):
+  acepta «10.013,48» y «10013.48»; un punto seguido de 1 o 2 decimales es la
+  coma decimal. Hasta el 22-oct-2026 se borraba como separador de miles y un
+  monto con decimales quedaba 100 veces más grande (no se emitió ninguna
+  factura con el error).
 - **Receptor**: `receptor` = `CLIENTE` o `TERCERO` en el borrador, guardado como
   `CfeEmitido.aNombreDeTercero`; en la lista se ve "A nombre de …" y el
   porcentaje si es menor a 100. `GET /finance/facturacion/dgi-rut?rut=` arma
@@ -427,7 +525,8 @@ Código: `services/biller/cfe-emitidos.service.ts`, rutas en
 
 | Acción | Endpoint | Permiso |
 |---|---|---|
-| Listado (incluye `cfes` y `emision`) | `GET /finance/facturacion` | `FINANZAS:VIEW` |
+| Listado (incluye `cfes`, `aFacturar` y `emision`) | `GET /finance/facturacion` | `FINANZAS:VIEW` |
+| Definir o corregir qué se factura (`facturacion`), nota, marcar emitida | `PATCH /finance/facturacion/:projectId` | `FINANZAS:EDIT` |
 | CFEs del proyecto | `GET /finance/facturacion/:projectId/cfes` | `FINANZAS:VIEW` |
 | Borrador de factura | `GET /finance/facturacion/:projectId/borrador` | `FINANZAS:EDIT` |
 | Datos de un RUT en DGI | `GET /finance/facturacion/dgi-rut?rut=` | `FINANZAS:EDIT` |
@@ -449,9 +548,11 @@ Finanzas y no por `/files/:id/download` porque ese pide permiso de Operaciones.
   30-sep-2026): el endpoint exige `confirmado: true` y ningún job emite.
 - **Una factura por proyecto** (decidido el 14-oct-2026). Para facturar de nuevo
   hay que anular la anterior con una NC total.
-- **Se factura un porcentaje del monto sin IVA de la cotización**, no del
-  presupuesto: a veces se factura menos que lo vendido y el presupuesto del
-  sistema puede no tener relación (decidido por Nicolás el 14-oct-2026).
+- **Lo que se factura lo define el asesor al ganar el lead**, en dólares sin IVA
+  (decidido el 22-oct-2026). Reemplaza a la regla del 14-oct-2026 («un
+  porcentaje del monto sin IVA de la cotización»): la cotización no tiene los
+  descuentos de último momento y no coincidía con el presupuesto. La cotización
+  queda solo como respaldo para los proyectos «a definir».
 - **El receptor se pregunta siempre**: el cliente del proyecto puede querer la
   factura a nombre de su empresa u otra persona.
 - **Contado por defecto**: los cobros todavía no emiten recibo. Si un recibo
@@ -476,6 +577,51 @@ Finanzas y no por `/files/:id/download` porque ese pide permiso de Operaciones.
   5 minutos.
 - Si se pide el PDF antes de que DGI acepte, se guarda igual (ya trae CAE y
   código de seguridad).
+
+### Qué se le factura (definido al ganar el lead)
+
+**Para qué existe.** El presupuesto es lo que paga el cliente, con IVA; lo que
+se le factura puede ser otra cosa (un descuento, una parte que financia el
+banco, una parte a nombre de su empresa). Antes se adivinaba con una nota libre
+y el monto sin IVA de la cotización.
+
+**Cómo se usa.** El bloque **«¿Qué se le factura?»**
+(`components/finance/FacturacionCampos.tsx`) aparece en tres lugares: al crear
+el proyecto desde el lead ganado (`LeadToProjectModal.tsx`, obligatorio), al
+editar el proyecto (`ProjectDetail.tsx`, en lugar de «Lleva factura» + nota; si
+no se toca, no se manda) y en Facturación con el lápiz o **Definir**.
+
+- Casilla **«Facturación normal»**: se factura todo el presupuesto. Nota
+  opcional (RUT, razón social).
+- Sin tildar: **Sin IVA (USD)** (obligatorio), **Con IVA (USD)** y **% del
+  presupuesto**; al escribir en uno se calculan los otros dos (IVA 22 %; el
+  porcentaje es sobre el presupuesto, que es con IVA). **Motivo** obligatorio.
+  Monto 0 = no lleva factura.
+
+**Cómo funciona.** `services/finance/a-facturar.service.ts`:
+
+- Campos en `Project`: `facturacionNormal` (`true` normal, `false` otro monto,
+  `null` a definir) y `facturarSinIvaUsd`. `datosFacturacion()` deriva
+  `llevaFactura` (normal, o monto > 0) y `facturaNota` (el motivo o la nota).
+- `facturacionSchema` (zod) valida: sin normal, monto y motivo de al menos 3
+  letras. Lo aceptan `POST /leads/:id/convert` (**obligatorio**: sin él responde
+  `MISSING_PROJECT_FIELDS` «qué se le factura al cliente»), `POST /projects`,
+  `PATCH /projects/:id` (opcional; pisa `llevaFactura` y la nota) y
+  `PATCH /finance/facturacion/:projectId` (con entrada de auditoría).
+- `montoAFacturar()`: normal → `budgetUsd / 1,22` sin IVA y `budgetUsd` con IVA;
+  otro monto → `facturarSinIvaUsd` y ×1,22; a definir → nulos.
+- Migraciones `20261022210000_monto_a_facturar` (columnas) y
+  `20261022210100_facturacion_normal_existentes`: los proyectos que ya llevaban
+  factura **sin nota** pasan a facturación normal; los que tenían nota quedan
+  **a definir** para que Finanzas cargue el monto (en producción eran 3).
+
+**Casos borde.**
+
+- Facturación normal toma el presupuesto **de hoy**: si se cambia el
+  presupuesto, cambia lo que hay que facturar. Otro monto queda fijo.
+- «Falta facturar» compara con lo facturado por Biller; las facturas marcadas a
+  mano no tienen monto y no descuentan.
+- Un proyecto con monto 0 no lleva factura y no aparece en Facturación.
 
 ### Cobrado vs facturado
 

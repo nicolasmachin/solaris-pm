@@ -380,6 +380,15 @@ Cobros (`authorizeAny`), alcanza con `EXPERIENCIA_CLIENTES:VIEW`. En la matriz
 actual eso incluye a los asesores comerciales: ven los saldos de todas las
 obras, desde la app y desde el chat.
 
+**Cuotas atadas a un momento de la obra.** Las cuotas del plan sin fecha
+(seña, previo a la obra, obra finalizada, habilitación; ver cap. 08, "Cobros a
+clientes") llegan desde `cuotasPrevistasPorProyecto()` con el momento escrito en
+la descripción: "(se cobra con: obra finalizada; todavía no llegó)" mientras no
+llegó, sin vencimiento (caen en "sin fecha"), o "(lista para cobrar desde el …)"
+cuando llegó, con vencimiento 10 días después. Así `cobros_clientes` y
+`cobros_pendientes` las cuentan vencidas o por vencer igual que las de fecha
+fija.
+
 **Pesos y dólares.** Los totales de `cobros_pendientes` suman solo cuotas en
 dólares; una cuota en pesos se muestra con su monto pero no entra al total. El
 estado de resultados convierte con la última cotización (ver cap. 08, Estado de

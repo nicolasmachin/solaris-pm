@@ -214,6 +214,25 @@ export function FinanceCashflowTab() {
         <CashflowEventTable events={viewData.events} />
       </div>
 
+      {(data.cobrosSinFecha?.length ?? 0) > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-1">
+            Cobros sin fecha ({data.cobrosSinFecha!.length})
+          </h3>
+          <p className="text-xs text-[var(--color-text-muted)] mb-2">
+            Cuotas que se cobran en un momento de la obra, de obras que todavía no están agendadas. No entran en la proyección.
+          </p>
+          <ul className="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm">
+            {data.cobrosSinFecha!.map((c) => (
+              <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-2">
+                <span className="text-[var(--color-text-secondary)]">{c.descripcion}</span>
+                <span className="tabular-nums text-emerald-400">+{fmtCurrency(c.monto, c.moneda)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
         Gráfico consolidado en USD. TC UYU→USD usado: 1 USD = {data.fallbackUsdToUyu.toFixed(2)} UYU.
         Horizonte: hasta {fmtDate(data.horizonUntil)}.

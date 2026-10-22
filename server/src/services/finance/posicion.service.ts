@@ -28,6 +28,7 @@ import { diffInDays, todayUtc } from "../../utils/dates.js";
 import { listarCobrosPorProyecto, movimientoEnUsd } from "./cobros.service.js";
 import { PAGO_VISIBLE_WHERE } from "../installer-payment/installer-payment.service.js";
 import { getCuentasPorPagar, tramoDe, type Tramo } from "./cuentas-por-pagar.service.js";
+import { fechaDeCobro, hitosDeProyectos } from "./hitos-cobro.service.js";
 import { ultimoUsdToUyu } from "./tipo-cambio.js";
 
 type Tramos = Record<Tramo, number> & { SIN_FECHA: number; total: number };
@@ -61,9 +62,11 @@ export async function getPosicionFinanciera(hoy: Date = todayUtc()) {
       projectId: { not: null },
       project: { deletedAt: null, status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.PROSPECT] } },
     },
-    select: { projectId: true, monto: true, moneda: true, tipoCambio: true, fecha: true, dueDate: true, expectedDate: true },
+    select: { projectId: true, monto: true, moneda: true, tipoCambio: true, fecha: true, dueDate: true, expectedDate: true, hitoCobro: true, createdAt: true },
     orderBy: [{ dueDate: "asc" }, { fecha: "asc" }],
   });
+  // Las cuotas atadas a un momento de la obra van por su fecha esperada (sin obra agendada, sin fecha).
+  const hitos = await hitosDeProyectos(previstos.filter((m) => m.hitoCobro).map((m) => m.projectId!));
 
   const nosDeben = vacio();
   const previstoPorProyecto = new Map<string, number>();
@@ -75,7 +78,7 @@ export async function getPosicionFinanciera(hoy: Date = todayUtc()) {
     const usd = Math.min(movimientoEnUsd(m, usdToUyu), Math.max(0, tope));
     if (usd <= 0.005) continue;
     previstoPorProyecto.set(pid, (previstoPorProyecto.get(pid) ?? 0) + usd);
-    sumar(nosDeben, usd, m.dueDate ?? m.expectedDate ?? m.fecha, hoy);
+    sumar(nosDeben, usd, fechaDeCobro(m, hitos, hoy), hoy);
   }
   // Lo que las obras deben y no tiene una cuota prevista: sin fecha.
   let obrasSinPlanCompleto = 0;

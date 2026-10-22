@@ -3,8 +3,8 @@
 > **Capítulo parcial.** Están escritas las secciones "Fechas del proceso",
 > "Origen del lead (¿Cómo nos conoció?)", "Cotizador de propuestas: precargas y saludo de la carta", "Varias
 > instalaciones en una misma propuesta", "Costeo a medida de una cotización",
-> "Cotizador B2B: propuestas a empresas" y "Comisión del asesor: cómo se
-> registra al ganar". El resto del módulo funciona en producción pero
+> "Cotizador B2B: propuestas a empresas", "Qué se le factura: se define al
+> crear el proyecto" y "Comisión del asesor: cómo se registra al ganar". El resto del módulo funciona en producción pero
 > todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
@@ -792,6 +792,39 @@ Quien puede cotizar, puede cotizar B2B.
 - Al abrir el constructor sobre una versión publicada **antes** de este cambio,
   el aviso "sin cambios" del modal de publicación puede decir que hay cambios
   (el snapshot viejo no tiene `variante`). Es cosmético: no afecta cálculo ni PDF.
+
+---
+
+## Qué se le factura: se define al crear el proyecto
+
+### Para qué existe
+
+Que Finanzas sepa qué factura emitirle a cada cliente sin adivinarlo: el
+presupuesto (con IVA) es lo que paga el cliente, pero lo facturado puede ser
+menos (un descuento, una parte que financia el banco, una parte a nombre de su
+empresa).
+
+### Cómo se usa
+
+En la ventana **«Crear proyecto desde lead»** (`LeadToProjectModal.tsx`), que se
+abre al marcar el lead como ganado, el bloque **«¿Qué se le factura?»** es
+obligatorio: casilla **«Facturación normal»** (todo el presupuesto, nota
+opcional) o el monto **sin IVA / con IVA / % del presupuesto** (al escribir uno
+se calculan los otros) con el **motivo**. Monto 0 = no lleva factura. El campo
+del presupuesto se rotula «Presupuesto (USD, con IVA)».
+
+### Cómo funciona
+
+`POST /leads/:id/convert` recibe `facturacion` y sin ella responde
+`MISSING_PROJECT_FIELDS` («qué se le factura al cliente»). Se guarda con
+`datosFacturacion()` de `services/finance/a-facturar.service.ts`; el detalle de
+los campos y de cómo lo usa Finanzas está en el capítulo 08, «Qué se le factura
+(definido al ganar el lead)».
+
+### Reglas y decisiones
+
+- Lo define el asesor porque es quien lo acordó con el cliente (22-oct-2026).
+- El monto se guarda **sin IVA**, que es como se emite la factura.
 
 ---
 

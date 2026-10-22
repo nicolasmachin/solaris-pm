@@ -29,6 +29,7 @@ import { esCiUruguayaValida } from "../ute-extract/index.js";
 import { AppError, badRequest, conflict, notFound } from "../../utils/errors.js";
 import { parseDateOnly, toDateOnlyString } from "../../utils/dates.js";
 import { hoyUruguay } from "../../utils/uruguay.js";
+import { montoAFacturar } from "../finance/a-facturar.service.js";
 import { bajarPdfBiller, billerConfigurado, buscarRazonSocial } from "./recibidos.service.js";
 
 const BASE_URL = process.env.BILLER_URL ?? "https://test.biller.uy";
@@ -270,6 +271,23 @@ export function cuerpoBiller(b: BorradorCfe, numeroInterno: string, referenciaBi
  * Monto sin IVA de la última propuesta publicada del lead que se convirtió en
  * este proyecto (mismo criterio que la comisión): subtotal + adicionales.
  */
+/**
+ * Lo ya facturado al cliente, sin IVA y en dólares: facturas vivas menos sus
+ * notas de crédito. El comprobante guarda el total con IVA; se le saca el 22 %
+ * (todo lo que se le factura a un cliente va con IVA básico).
+ */
+async function netoFacturado(projectId: string): Promise<number> {
+  const cfes = await prisma.cfeEmitido.findMany({
+    where: {
+      projectId, moneda: Moneda.USD,
+      estado: { in: [EstadoCfeEmitido.EMITIENDO, EstadoCfeEmitido.DUDOSO, EstadoCfeEmitido.ESPERANDO_DGI, EstadoCfeEmitido.ACEPTADO] },
+    },
+    select: { total: true, referenciaId: true },
+  });
+  const total = cfes.reduce((a, c) => a + (c.referenciaId ? -Number(c.total) : Number(c.total)), 0);
+  return redondear(total / 1.22);
+}
+
 async function montoSinIvaCotizacion(projectId: string): Promise<{ sinIva: number; version: number } | null> {
   const lead = await prisma.salesLead.findFirst({ where: { convertedToProjectId: projectId }, select: { id: true } });
   if (!lead) return null;
@@ -355,13 +373,19 @@ export async function armarBorradorFactura(projectId: string) {
   const direccion = [p.calle, p.numCalle].filter((x) => x && x.trim()).join(" ").trim() || (p.clientAddress ?? "");
   const kwp = Number(p.capacityKwp);
   const kwpTxt = Number.isFinite(kwp) && kwp > 0 ? ` de ${kwp.toLocaleString("es-UY", { maximumFractionDigits: 2 })} kWp` : "";
-  const cotizacion = await montoSinIvaCotizacion(p.id);
-  // Sin cotización (proyecto viejo o cargado a mano): el presupuesto sin el IVA.
-  const base = cotizacion
-    ? { monto: cotizacion.sinIva, fuente: "COTIZACION" as const, version: cotizacion.version }
-    : p.budgetUsd != null && Number(p.budgetUsd) > 0
-      ? { monto: redondear(Number(p.budgetUsd) / 1.22), fuente: "PRESUPUESTO" as const, version: null }
-      : { monto: 0, fuente: null, version: null };
+  // Base: lo que falta facturar de lo acordado al ganar el lead (a facturar sin
+  // IVA − lo ya facturado sin IVA). Si el proyecto está "a definir", como antes:
+  // la última cotización sin IVA o, sin cotización, el presupuesto sin el IVA.
+  const acordado = montoAFacturar(p);
+  const yaFacturado = await netoFacturado(p.id);
+  const cotizacion = acordado.sinIva == null ? await montoSinIvaCotizacion(p.id) : null;
+  const base = acordado.sinIva != null
+    ? { monto: redondear(Math.max(0, acordado.sinIva - yaFacturado)), fuente: "A_FACTURAR" as const, version: null }
+    : cotizacion
+      ? { monto: cotizacion.sinIva, fuente: "COTIZACION" as const, version: cotizacion.version }
+      : p.budgetUsd != null && Number(p.budgetUsd) > 0
+        ? { monto: redondear(Number(p.budgetUsd) / 1.22), fuente: "PRESUPUESTO" as const, version: null }
+        : { monto: 0, fuente: null, version: null };
 
   const borrador: BorradorCfe = {
     tipoCfe: esRut ? TIPO_FACTURA_RUT : TIPO_FACTURA_CI,
@@ -402,6 +426,8 @@ export async function armarBorradorFactura(projectId: string) {
     // Los datos del cliente del proyecto, para volver a ellos si se cambia el receptor.
     clienteProyecto: borrador.cliente,
     base,
+    // Lo acordado al ganar el lead y lo ya facturado, sin IVA (para mostrarlo al emitir).
+    acordado: { ...acordado, yaFacturadoSinIva: yaFacturado },
     razonSocialDgi,
     proyecto: { id: p.id, code: p.code, clientName: p.clientName, budgetUsd: p.budgetUsd != null ? Number(p.budgetUsd) : null },
     nota: p.facturaNota,

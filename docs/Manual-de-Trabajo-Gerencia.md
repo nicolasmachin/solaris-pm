@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.24 — 22 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.25 — 22 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -403,7 +403,9 @@ clientes a Voltia y para qué fecha**. Para eso:
   existe desde que llega su factura, con el vencimiento que se haya negociado
   con ese proveedor.
 - **Ningún proyecto sale del onboarding sin saber cómo y cuándo paga el
-  cliente**: con pago directo, un plan de pagos con fechas; con financiación
+  cliente**: con pago directo, un plan de pagos (con el momento de la obra en
+  que se cobra cada cuota, ver «Las cuotas del plan se cobran por momento de
+  la obra»); con financiación
   bancaria, la proforma; en un caso particular, la explicación escrita de lo
   acordado. Vale también para los proyectos que ya estaban en onboarding.
 
@@ -425,6 +427,37 @@ la etapa de cobrar sin que nadie sepa qué cobrar ni cuándo.
 
 **A qué manuales afecta.** Al PGT y a los manuales de trabajo de Ventas y de
 Finanzas.
+
+### Las cuotas del plan se cobran por momento de la obra, no por fecha
+
+**Qué se decidió.** Las cuotas del plan de pagos de siempre **no llevan fecha**.
+Cada una se cobra cuando llega su momento de la obra, como dice el contrato:
+
+| Cuota | Se puede cobrar desde | Vence |
+|---|---|---|
+| Seña | Que se arma el plan | 10 días después |
+| 50 % (previo a la obra) | 10 días antes del primer día de obra agendado | El primer día de obra |
+| 30 % (obra finalizada) | Que se da por terminada la obra en Voltia PM | 10 días después |
+| 20 % (habilitación finalizada) | Que se finaliza la habilitación de UTE | 10 días después |
+
+Voltia PM avisa sola a Finanzas cuando un cliente está **listo para cobrar** y
+cuando una cuota **venció**. La fecha se completa cuando se cobra. Un acuerdo
+distinto con el cliente se carga con fecha fija, y vence por esa fecha. Los
+clientes sin plan (por ejemplo, con financiación bancaria) no cambian.
+
+**Por qué.** El contrato ata cada pago a lo que pasa en la obra, no a una
+fecha. Las fechas que se ponían al armar el plan eran inventadas (a 30, 60 y 90
+días) y no decían cuándo cobrar de verdad: Finanzas tenía que mirar el
+calendario y las etapas para saberlo, y las cuotas aparecían vencidas o al día
+sin que tuviera que ver con la obra.
+
+**Desde cuándo rige.** 22 de octubre de 2026. Los planes armados antes con los
+nombres del plan de siempre se pasan al esquema nuevo; los que tenían otro
+acuerdo quedan con sus fechas.
+
+**A qué manuales afecta.** Al PGT y a los manuales de trabajo de Ventas (arma
+el plan), Finanzas (cobra), Operaciones (agenda la obra y la da por terminada)
+y Experiencia Solar (le habla al cliente de sus pagos).
 
 ### Al instalador tercerizado se le debe la obra que se le agenda
 
@@ -533,11 +566,11 @@ de Ingeniería y al de Operaciones.
 las manda a DGI por la facturación electrónica. **Nada que va a DGI sale sin
 que una persona vea el borrador completo y lo confirme**: ni una factura, ni una
 nota de crédito, ni (cuando los haya) un recibo. Ningún automatismo emite solo.
-Cada obra lleva **una factura**. Se factura un **porcentaje del total sin IVA
-de la cotización**, que puede ser menos que el 100 % según lo acordado, y la
-factura puede ir **a nombre de otra persona o empresa** que el cliente del
-proyecto (por ejemplo, su empresa): las dos cosas se preguntan en cada factura.
-Lo emitido no se edita: se corrige con una nota de crédito.
+Cada obra lleva **una factura**, por lo que el asesor dejó definido al vender
+(ver «Lo que se le factura al cliente lo define quien vendió»), y la factura
+puede ir **a nombre de otra persona o empresa** que el cliente del proyecto (por
+ejemplo, su empresa): eso se pregunta en cada factura. Lo emitido no se edita:
+se corrige con una nota de crédito.
 
 **Por qué.** Una factura mal emitida no se puede borrar: se corrige con otro
 comprobante y los dos quedan registrados ante DGI. Revisar antes cuesta un
@@ -549,9 +582,34 @@ facturas salen de contado y los cobros no emiten comprobantes.
 
 **Desde cuándo rige.** La confirmación previa, desde el 30 de septiembre de 2026;
 la emisión desde Voltia PM y la factura única por obra, desde el 14 de octubre
-de 2026.
+de 2026. Del 14 al 22 de octubre de 2026 se facturaba un porcentaje del total
+sin IVA de la cotización; desde el 22, lo que definió el asesor.
 
 **A qué manuales afecta.** Al de Finanzas.
+
+### Lo que se le factura al cliente lo define quien vendió
+
+**Qué se decidió.** Al ganar la venta y crear el proyecto, el asesor **tiene que
+decir qué se le factura** al cliente: todo el presupuesto («facturación
+normal») u otro monto, con el motivo. Sin eso no se crea el proyecto. El monto
+se guarda **sin IVA**, que es como sale la factura; el asesor lo puede escribir
+sin IVA, con IVA o como porcentaje del presupuesto. Finanzas factura eso y, al
+emitir, Voltia PM le propone lo que falta facturar. El presupuesto, en cambio,
+es siempre **el total que paga el cliente, con IVA**.
+
+**Por qué.** Se factura distinto de lo que paga el cliente más seguido de lo
+que parece: un descuento de último momento, una parte que financia el banco,
+una parte a nombre de la empresa del cliente. Antes Finanzas partía del monto
+de la cotización, que no tiene esos cambios, y de una nota libre; los números
+no coincidían y había que preguntar. Quien sabe lo acordado es quien vendió.
+
+**Desde cuándo rige.** 22 de octubre de 2026. Los proyectos vendidos antes que
+tenían una nota de facturación quedan «a definir» hasta que Finanzas cargue el
+monto; los que no tenían nota se toman como facturación normal.
+
+**A qué manuales afecta.** A los de Ventas (lo carga al crear el proyecto) y
+Finanzas (factura con eso), y al PGT (es parte de lo que Ventas le pasa a
+Finanzas).
 
 ### Lo que comenta Gerencia se ve como de Gerencia
 
@@ -818,6 +876,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.25 | 22 de octubre de 2026 | Se registra que las cuotas del plan de pagos se cobran por momento de la obra y no por fecha: la del 50 % desde diez días antes de la obra, la del 30 % con la obra terminada y la del 20 % con la habilitación, y que cada una vence a los diez días de poder cobrarse. Se registra también que lo que se le factura al cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo, guardado sin IVA), y se corrige la decisión de las facturas al cliente, que ya no parte de la cotización. |
 | 0.24 | 22 de octubre de 2026 | Se registra que de cada lead se pregunta y se carga cómo nos conoció, para medir qué canal trae ventas. |
 | 0.23 | 21 de octubre de 2026 | Se registran cinco decisiones de Finanzas: las facturas de los proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana (las demás siguen por revisar); borrón y cuenta nueva con cada proveedor desde que se concilia con su estado de cuenta, cerrando lo viejo con un ajuste que no es plata, y las deudas viejas de la unipersonal con Tiempo al Tiempo como compra de la SAS, con el riesgo fiscal a revisar con la contadora; los gastos personales del socio van a su cuenta y no como sueldo, y los de un empleado autorizados se le descuentan del sueldo; un mes cerrado no se toca y reabrirlo queda registrado con su motivo; una factura de proveedor se carga por un solo lugar y a un proveedor se le paga por un solo camino. |
 | 0.22 | 19 de octubre de 2026 | Con los tercerizados se va de a poco: lo único que se les exige en papeles es estar inscriptos como empresa con el seguro de accidentes del BSE, desde su primera obra con contrato, y la factura a los seis meses; se deja de pedir la documentación mensual de sueldos y aportes. El contrato con el tercerizado y su manual pasan a estar en borrador. |

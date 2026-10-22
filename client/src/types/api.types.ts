@@ -435,6 +435,9 @@ export interface Project {
   uteCodigoAS: string | null;
   // Facturación al cliente. No todos los clientes "llevan factura".
   llevaFactura: boolean;
+  // Qué se le factura: true = todo el presupuesto; false = facturarSinIvaUsd; null = a definir.
+  facturacionNormal?: boolean | null;
+  facturarSinIvaUsd?: number | null;
   facturaNota: string | null;
   facturaEmitida: boolean;
   facturaEmitidaEn: string | null;

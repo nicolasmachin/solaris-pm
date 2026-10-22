@@ -12,6 +12,7 @@
 // (solo PROYECTO_ENTRADA, estado PAGADO y en dólares nominales), así que el
 // saldo de una vista y otra puede no coincidir en proyectos con cobros en pesos.
 
+import { cuotasListasPorProyecto, HITO_LABEL, hitosDeProyectos, infoCuota } from "./hitos-cobro.service.js";
 import {
   CategoriaPrincipal,
   FinanceMovementStatus,
@@ -115,8 +116,12 @@ export async function listarCobrosPorProyecto(filtro: FiltroCobros) {
     cobrosByProject.set(m.projectId, arr);
   }
 
+  // Cuotas del plan atadas a un momento de la obra que ya llegó: "listo para cobrar".
+  const listas = await cuotasListasPorProyecto(projectIds);
+
   const items = projects.map((p) => {
     const cobros = cobrosByProject.get(p.id) ?? [];
+    const lista = listas.get(p.id);
     let totalCobradoUSD = 0;
     let ultimoCobro: Date | null = null;
     for (const c of cobros) {
@@ -144,6 +149,9 @@ export async function listarCobrosPorProyecto(filtro: FiltroCobros) {
       estadoCobranza,
       ultimoCobro: ultimoCobro ? serializeDateOnly(ultimoCobro) : null,
       cantidadCobros: cobros.length,
+      listoParaCobrar: lista
+        ? { cuotas: lista.cantidad, vencidas: lista.vencidas, montoUSD: roundMoney(lista.montoUsd), descripciones: lista.cuotas }
+        : null,
     };
   });
 
@@ -203,20 +211,30 @@ export async function cuotasPrevistasPorProyecto(
       sourceType: MovementSourceType.MANUAL,
       deletedAt: null,
     },
-    select: { id: true, projectId: true, descripcion: true, monto: true, moneda: true, dueDate: true },
+    select: { id: true, projectId: true, descripcion: true, monto: true, moneda: true, dueDate: true, hitoCobro: true, createdAt: true, expectedDate: true },
     orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
   });
+  // Cuotas atadas a un momento de la obra: vencen DIAS_PARA_VENCER después de
+  // quedar listas; antes de eso no tienen fecha y se dice qué momento esperan.
+  const hitos = await hitosDeProyectos(rows.filter((r) => r.hitoCobro).map((r) => r.projectId!));
 
   for (const r of rows) {
     if (!r.projectId) continue;
     const arr = map.get(r.projectId) ?? [];
+    const info = infoCuota(r, hitos.get(r.projectId));
+    let descripcion = r.descripcion.replace(/^\[PLAN\]\s*/, "");
+    if (info) {
+      descripcion += info.listo
+        ? ` (lista para cobrar desde el ${serializeDateOnly(info.listoDesde)})`
+        : ` (se cobra con: ${HITO_LABEL[info.hito].toLowerCase()}; todavía no llegó)`;
+    }
     arr.push({
       id: r.id,
       projectId: r.projectId,
-      descripcion: r.descripcion.replace(/^\[PLAN\]\s*/, ""),
+      descripcion,
       monto: Number(r.monto),
       moneda: r.moneda,
-      dueDate: r.dueDate ? serializeDateOnly(r.dueDate) : null,
+      dueDate: info ? (info.listo ? serializeDateOnly(info.venceEl) : null) : r.dueDate ? serializeDateOnly(r.dueDate) : null,
     });
     map.set(r.projectId, arr);
   }

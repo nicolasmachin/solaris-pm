@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { EstadoCuota, fechaOMomento } from '../../../components/finance/HitoCuota';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Search, Copy, X, Trash2 } from 'lucide-react';
@@ -42,9 +43,10 @@ function buildResumenWhatsApp(data: CobroDetail): string {
   const usd = kpis.USD;
   const fechaKey = (c: CobroDetail['cobros'][number]) => c.fecha ?? c.dueDate ?? '';
   const fmtFila = (c: CobroDetail['cobros'][number], emoji: string) =>
-    `${emoji} ${fmtDate(fechaKey(c))} · ${stripPlan(c.descripcion)} · ${fmtCurrency(c.monto, c.moneda)}`;
+    `${emoji} ${fechaOMomento(c)} · ${stripPlan(c.descripcion)} · ${fmtCurrency(c.monto, c.moneda)}`;
   const recibidos = cobros.filter(c => c.status !== 'PREVISTO').sort((a, b) => fechaKey(a).localeCompare(fechaKey(b)));
-  const previstos = cobros.filter(c => c.status === 'PREVISTO').sort((a, b) => fechaKey(a).localeCompare(fechaKey(b)));
+  // Ya vienen en orden: las de fecha fija primero y las de un momento de la obra en el orden de la obra.
+  const previstos = cobros.filter(c => c.status === 'PREVISTO');
 
   const lines: string[] = [];
   lines.push(`*Resumen de pagos — ${project.clientName}*`);
@@ -293,8 +295,8 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
                 {data.cobros.length === 0 ? (
                   <p className="text-sm text-[var(--color-text-muted)] py-4 text-center">Todavía no hay cobros cargados.</p>
                 ) : (
-                  [...data.cobros]
-                    .sort((a, b) => (a.fecha ?? '').localeCompare(b.fecha ?? ''))
+                  // Vienen ordenados del servidor (las cuotas sin fecha, al final en el orden de la obra).
+                  data.cobros
                     .map(c => {
                       const previsto = c.status === 'PREVISTO';
                       const editing = editId === c.id;
@@ -302,12 +304,12 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
                         <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/30 px-3 py-2">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className={klass('text-[9px] font-mono px-1.5 py-0.5 rounded uppercase border', previsto ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30')}>
-                                {previsto ? 'Previsto' : 'Cobrado'}
-                              </span>
+                              {previsto ? <EstadoCuota c={c} /> : (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">Cobrado</span>
+                              )}
                               <span className="text-sm text-[var(--color-text-primary)] truncate">{stripPlan(c.descripcion)}</span>
                             </div>
-                            <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{fmtDate(c.fecha ?? c.dueDate ?? '')}</div>
+                            <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{fechaOMomento(c)}</div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {pagoId === c.id ? (

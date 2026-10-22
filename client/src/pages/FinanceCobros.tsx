@@ -1,16 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { HandCoins, Search } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { ResponsiveTable, type Column } from '../components/ui/ResponsiveTable';
 import { getCobrosByProject } from '../api/finance.api';
-import type { EstadoCobranza } from '../api/finance.api';
+import type { CobroProjectItem, EstadoCobranza } from '../api/finance.api';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
-const FILTER_KEY = 'finance-cobros-filters-v1';
+// v2: el filtro por defecto pasó a ser "por cobrar" (sin los completos).
+const FILTER_KEY = 'finance-cobros-filters-v2';
 
 const ESTADO_LABEL: Record<EstadoCobranza, string> = {
   SIN_PRESUPUESTO: 'Sin presupuesto',
@@ -28,14 +29,24 @@ const ESTADO_BADGE_CLASS: Record<EstadoCobranza, string> = {
   EXCEDIDO: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
 };
 
-type EstadoFilter = 'all' | EstadoCobranza;
+// 'por_cobrar' (por defecto): todo menos los que ya pagaron todo, que si no
+// llenan la lista con cada obra que alguna vez tuvo un proyecto.
+// 'listos': los que tienen una cuota del plan lista para cobrar.
+type EstadoFilter = 'por_cobrar' | 'listos' | 'all' | EstadoCobranza;
 
 export function FinanceCobros() {
   const navigate = useNavigate();
-  const [estado, setEstado] = useState<EstadoFilter>('all');
+  const [params, setParams] = useSearchParams();
+  const [estado, setEstado] = useState<EstadoFilter>('por_cobrar');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
+    // Desde "Para hacer hoy" se llega con ?filtro=listos: manda sobre lo guardado.
+    if (params.get('filtro') === 'listos') {
+      setEstado('listos');
+      setParams({}, { replace: true });
+      return;
+    }
     try {
       const raw = localStorage.getItem(FILTER_KEY);
       if (raw) {
@@ -44,9 +55,10 @@ export function FinanceCobros() {
         if (typeof p.search === 'string') setSearch(p.search);
       }
     } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    localStorage.setItem(FILTER_KEY, JSON.stringify({ estado, search }));
+    try { localStorage.setItem(FILTER_KEY, JSON.stringify({ estado, search })); } catch { /* ignore */ }
   }, [estado, search]);
 
   const { data, isLoading } = useQuery({
@@ -57,12 +69,18 @@ export function FinanceCobros() {
   const projects = data?.projects ?? [];
   const totales = data?.totales;
 
+  const listos = useMemo(() => projects.filter(p => p.listoParaCobrar), [projects]);
+
   const filtered = useMemo(() => {
     let out = projects;
-    if (estado !== 'all') out = out.filter(p => p.estadoCobranza === estado);
+    if (estado === 'por_cobrar') out = out.filter(p => p.estadoCobranza !== 'COMPLETO');
+    else if (estado === 'listos') out = out.filter(p => p.listoParaCobrar);
+    else if (estado !== 'all') out = out.filter(p => p.estadoCobranza === estado);
     const q = search.trim().toLowerCase();
     if (q) out = out.filter(p => p.clientName.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
-    return out;
+    // Los listos para cobrar arriba (los vencidos primero).
+    const peso = (p: (typeof projects)[number]) => (p.listoParaCobrar ? (p.listoParaCobrar.vencidas ? 0 : 1) : 2);
+    return [...out].sort((a, b) => peso(a) - peso(b));
   }, [projects, estado, search]);
 
   // Columnas declarativas para <ResponsiveTable>. En ≥md tabla equivalente;
@@ -110,9 +128,12 @@ export function FinanceCobros() {
     {
       key: 'estado', label: 'Estado',
       render: (p) => (
-        <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase border', ESTADO_BADGE_CLASS[p.estadoCobranza])}>
-          {ESTADO_LABEL[p.estadoCobranza]}
-        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase border', ESTADO_BADGE_CLASS[p.estadoCobranza])}>
+            {ESTADO_LABEL[p.estadoCobranza]}
+          </span>
+          {p.listoParaCobrar && <ListoParaCobrar l={p.listoParaCobrar} />}
+        </div>
       ),
     },
     {
@@ -152,6 +173,25 @@ export function FinanceCobros() {
         </div>
       )}
 
+      {listos.length > 0 && estado !== 'listos' && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3">
+          <HandCoins className="h-5 w-5 shrink-0 text-emerald-400" />
+          <p className="flex-1 text-sm text-[var(--color-text-primary)]">
+            <span className="font-semibold">{listos.length} cliente{listos.length !== 1 ? 's' : ''}</span>{' '}
+            {listos.length !== 1 ? 'están listos' : 'está listo'} para cobrar una cuota
+            {listos.some(p => p.listoParaCobrar!.vencidas) && (
+              <span className="text-red-300"> · {listos.filter(p => p.listoParaCobrar!.vencidas).length} con la cuota vencida</span>
+            )}
+          </p>
+          <button
+            onClick={() => setEstado('listos')}
+            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-emerald-400"
+          >
+            Ver solo esos
+          </button>
+        </div>
+      )}
+
       {/* Filtros */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
@@ -169,7 +209,9 @@ export function FinanceCobros() {
           onChange={e => setEstado(e.target.value as EstadoFilter)}
           className="px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)]"
         >
-          <option value="all">Todos los estados</option>
+          <option value="por_cobrar">Por cobrar (sin los completos)</option>
+          <option value="listos">Listos para cobrar</option>
+          <option value="all">Todos, también los completos</option>
           <option value="PENDIENTE">Pendientes</option>
           <option value="PARCIAL">Parciales</option>
           <option value="COMPLETO">Completos</option>
@@ -198,5 +240,21 @@ export function FinanceCobros() {
         )}
       </div>
     </div>
+  );
+}
+
+// Marca de "cuota lista para cobrar" en el listado: verde, o roja si ya venció.
+function ListoParaCobrar({ l }: { l: NonNullable<CobroProjectItem['listoParaCobrar']> }) {
+  return (
+    <span
+      title={`${l.descripciones.join(' · ')} — ${fmtCurrency(l.montoUSD, 'USD')}`}
+      className={klass(
+        'inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded uppercase border',
+        l.vencidas ? 'bg-red-500/15 text-red-300 border-red-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      )}
+    >
+      <HandCoins className="h-3 w-3" />
+      {l.vencidas ? 'Cuota vencida' : 'Listo para cobrar'}
+    </span>
   );
 }

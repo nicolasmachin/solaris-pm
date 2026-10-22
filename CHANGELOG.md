@@ -16,9 +16,27 @@
 - Se puede completar o corregir desde el panel del lead. Los leads cargados antes quedan sin dato, para completarlos si el cliente lo cuenta.
 - Desde el chat de Claude se puede cargar al crear o editar un lead, y pedir cuántos leads, propuestas y ventas trajo cada canal en un período, con el monto vendido.
 
+#### Cobros que avisan solos cuándo cobrar
+
+- Las cuotas del plan de pagos ya no tienen fecha: se cobran cuando llega su momento de la obra. El plan de siempre queda en **Seña**, **Cuota 1 · previo a la obra**, **Cuota 2 · obra finalizada** y **Cuota 3 · habilitación finalizada**, y la fecha se completa al cobrar.
+- Cada cuota queda **lista para cobrar** sola: la seña desde que se arma el plan, la cuota 1 diez días antes del primer día de obra agendado (si la obra se reagenda, se corre), la 2 cuando se da por terminada la obra y la 3 cuando se finaliza la habilitación de UTE. Si pasan diez días sin cobrarla, queda **vencida**.
+- Para lo que se acuerda distinto con el cliente, cada cuota se puede poner **en una fecha fija**, como antes.
+- En **Cobros**, un aviso arriba dice cuántos clientes están listos para cobrar, con el botón «Ver solo esos», y en la lista llevan la marca «Listo para cobrar» o «Cuota vencida». Al entrar ya no aparecen los clientes que pagaron todo: se ven eligiendo «Todos, también los completos».
+- Los clientes listos para cobrar aparecen también en «Para hacer hoy» y en el mail de cada mañana de Finanzas.
+- En el flujo de fondos, las cuotas de obras todavía sin agendar van en un cuadro aparte, «Cobros sin fecha».
+
+#### Qué se le factura a cada cliente
+
+- Al ganar un lead y crear el proyecto, el asesor tiene que decir **qué se le factura**: tilda **«Facturación normal»** (se factura todo el presupuesto) o carga el monto a facturar y el motivo (un descuento, una parte que financia el banco, a nombre de su empresa…). Sin eso no se crea el proyecto.
+- El monto se puede escribir **sin IVA, con IVA o como porcentaje del presupuesto** (por ejemplo 50): al llenar uno, los otros dos se calculan solos. Con monto 0, el proyecto queda como que no lleva factura.
+- Lo mismo se puede corregir desde la ficha del proyecto, donde reemplaza a «Lleva factura».
+- En **Facturación** cada obra muestra por separado el **presupuesto** (lo que paga el cliente, con IVA), lo **que hay que facturarle** (con IVA y, abajo, sin IVA), lo **ya facturado** y lo que **falta facturar**. Las obras de antes que tenían una nota de facturación quedan «A definir», con un botón para cargar el monto.
+- Al emitir la factura, el monto que se propone es **lo que falta facturar de lo acordado**, y se muestra lo acordado y lo ya facturado.
+
 #### Arreglos
 
 - En «Para hacer hoy», los avisos de comisiones sin pagar y de costos fijos vencidos llevaban al mismo Inicio y no pasaba nada: ahora abren Comisiones y Costos fijos. Los que se resuelven en el Inicio bajan hasta «Por conciliar».
+- Al emitir una factura con un porcentaje, el monto sin IVA con decimales se leía mal y la factura salía 100 veces más grande (50 % daba 5.000 en vez de 50). Ahora se lee bien. No llegó a emitirse ninguna factura con el error.
 
 ## v13.0
 

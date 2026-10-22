@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil, Copy, Trash2 } from 'lucide-react';
 import { usePlanPagos } from '../hooks/usePlanPagos';
 import { PlanPagosModal } from '../components/finance/PlanPagosModal';
+import { EstadoCuota, fechaOMomento } from '../components/finance/HitoCuota';
 import { PayManualPendingModal } from '../components/finance/PayManualPendingModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Spinner } from '../components/ui/Spinner';
@@ -37,14 +38,13 @@ function buildResumenWhatsApp(data: CobroDetail): string {
   const usd = kpis.USD;
   const fechaKey = (c: CobroDetail['cobros'][number]) => c.fecha ?? c.dueDate ?? '';
   const fmtFila = (c: CobroDetail['cobros'][number], emoji: string) =>
-    `${emoji} ${fmtDate(fechaKey(c))} · ${stripPlan(c.descripcion)} · ${fmtCurrency(c.monto, c.moneda)}`;
+    `${emoji} ${fechaOMomento(c)} · ${stripPlan(c.descripcion)} · ${fmtCurrency(c.monto, c.moneda)}`;
 
   const recibidos = cobros
     .filter(c => c.status !== 'PREVISTO')
     .sort((a, b) => fechaKey(a).localeCompare(fechaKey(b)));
-  const previstos = cobros
-    .filter(c => c.status === 'PREVISTO')
-    .sort((a, b) => fechaKey(a).localeCompare(fechaKey(b)));
+  // Ya vienen en orden: las de fecha fija primero y las de un momento de la obra en el orden de la obra.
+  const previstos = cobros.filter(c => c.status === 'PREVISTO');
 
   const lines: string[] = [];
   lines.push(`*Resumen de pagos — ${project.clientName}*`);
@@ -234,15 +234,11 @@ export function FinanceCobroDetail() {
                     const isPrevisto = c.status === 'PREVISTO';
                     return (
                       <tr key={c.id} className="hover:bg-[var(--color-bg-card-hover)] transition-colors">
-                        <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums">{fmtDate(c.fecha ?? c.dueDate ?? '')}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums">{fechaOMomento(c)}</td>
                         <td className="px-4 py-3 text-[var(--color-text-primary)]">
                           <span className="inline-flex items-center gap-2">
                             {stripPlan(c.descripcion)}
-                            {isPrevisto && (
-                              <span className="rounded border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-mono font-semibold uppercase tracking-wider text-amber-300">
-                                Previsto
-                              </span>
-                            )}
+                            {isPrevisto && <EstadoCuota c={c} />}
                           </span>
                         </td>
                         <td className={klass('px-4 py-3 text-right tabular-nums', isPrevisto ? 'text-amber-400/80' : 'text-emerald-400')}>{fmtCurrency(c.monto, c.moneda)}</td>
@@ -429,7 +425,7 @@ function PlanPagosBannerOrButton({
               Este proyecto todavía no tiene plan de pagos previstos.
             </p>
             <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-              Generá un plan basado en el presupuesto (seña + cuotas). Podés ajustar montos, % y fechas antes de confirmar.
+              Generá un plan basado en el presupuesto: seña y tres cuotas que se cobran en cada momento de la obra. Podés ajustar montos y % antes de confirmar.
             </p>
           </div>
         </div>

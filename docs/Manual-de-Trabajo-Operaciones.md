@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.7 · del 21/10/26
+**Voltia · Uruguay** · Versión 1.8 · del 22/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -397,6 +397,8 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - **Realización de la obra** (capataz). La obra hecha según el proyecto (lo que cambió, anotado con su motivo y una foto), la puesta en marcha y los ensayos, el video del ensayo anti-isla (sin él no se puede completar), las fotos, los documentos de UTE firmados y el recorrido con el cliente. La **planilla de materiales usados** es opcional por ahora.
 - **Retiro de sobrantes** (capataz). Lo que sobró se retira de la casa del cliente, o por lo menos el retiro queda **coordinado con el cliente**, y el lugar queda limpio. Lo coordina el capataz, dentro del plazo de la etapa. **La etapa no se cierra con materiales olvidados en la casa del cliente.**
 - **Control de obra** (gerente de Operaciones). Alguien que no estuvo en la obra verifica, con las fotos, los videos y los documentos, que se hizo según el proyecto y con el estándar de calidad, y que están todos los entregables. Si algo no está como se espera, pide las correcciones. Con esta subetapa completa, la etapa se cierra.
+
+**Lo que agenda y cierra Operaciones le avisa a Finanzas cuándo cobrar.** Las cuotas del cliente que paga directo no tienen fecha: se cobran según lo que pasa en la obra. La cuota del 50 % queda lista para cobrar **10 días antes del primer día de obra agendado en el calendario** (si la obra se reagenda, se corre sola), y la del 30 % **cuando se cierra la etapa de Ejecución de Obra**. Por eso la fecha del calendario tiene que ser la real y la etapa se cierra apenas termina el control de obra: una obra terminada con la etapa abierta es un cobro que Finanzas no ve.
 
 ![El panel de Ejecución de Obra: el botón para cargar las fotos y sus subetapas.](captura:ops-panel-obra)
 
@@ -1104,6 +1106,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.8 | 22 de octubre de 2026 | Se agrega que agendar la obra y cerrar la etapa de Ejecución de Obra le avisan a Finanzas cuándo cobrar: la cuota del 50 % queda lista 10 días antes del primer día de obra, y la del 30 % al cerrar la etapa. |
 | 1.7 | 21 de octubre de 2026 | Se agrega «El chat de Claude» en las herramientas: el calendario de obras con los días libres de cada cuadrilla, los entregables de una obra y qué falta, los tickets y los mantenimientos que vienen, el informe del capataz, los datos técnicos de la obra, y cómo cambiar el estado de una subetapa desde el chat, que solo se hace cuando se confirma. |
 | 1.6 | 21 de octubre de 2026 | Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM antes de ir a una visita de soporte: generación día por día comparada con las demás plantas, hora por hora y el inversor y el medidor en el momento. Lo imposible (exportar más de lo que se genera, exportar de noche) delata un medidor mal conectado, y el monitoreo diario también lo avisa. |
 | 1.5 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Los documentos de UTE los imprime Logística y van con los materiales de la obra: en obra no se imprime nada. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |

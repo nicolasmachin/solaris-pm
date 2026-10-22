@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Versión 1.2 — 17 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.3 — 22 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -260,10 +260,12 @@ cliente entra en la **etapa 1 de Experiencia Solar** (E1). Desde ahí, la etapa
 deja de ser de Ventas.
 
 **El onboarding no se cierra sin saber cómo y cuándo paga el cliente.** Si paga
-directo, el asesor deja armado el **plan de pagos** con sus fechas; si va con
+directo, el asesor deja armado el **plan de pagos**, que dice cuánto se cobra
+en cada momento de la obra (no en una fecha); si va con
 **financiación bancaria**, la **proforma** para el banco; si es un caso
 particular, la explicación escrita de lo que se acordó. Sin eso el proyecto no
-avanza.
+avanza. Al crear el proyecto, el asesor también deja dicho **qué se le factura**
+al cliente: todo el presupuesto u otro monto, con el motivo.
 
 **Después del onboarding.** El asesor sigue el cobro, para que no quede en una
 zona gris sin que nadie lo mire: si va con financiación bancaria, sigue el
@@ -423,8 +425,8 @@ Posventa).
 ### Finanzas
 
 **Qué hace.** Cobra a los clientes según el plan de pagos que dejó armado Ventas,
-paga a los proveedores, a los instaladores y las comisiones, emite las facturas
-y lleva los resultados de la empresa. Si una cuota vence sin pagarse, el
+cada cuota cuando llega su momento de la obra, paga a los proveedores, a los instaladores y las comisiones, emite las facturas
+por lo que dejó definido Ventas y lleva los resultados de la empresa. Si una cuota vence sin pagarse, el
 reclamo al cliente lo hace Experiencia Solar, que es quien habla con él; está
 decidido que pase al área de Administración cuando esa área tome Finanzas. Su
 trabajo con un proyecto termina cuando está cobrado entero y sus gastos, pagados. El detalle está en el Manual de
@@ -644,6 +646,7 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.3 | 22 de octubre de 2026 | Las cuotas del plan de pagos se cobran cuando llega cada momento de la obra, no en una fecha fijada de antemano. Al crear el proyecto, Ventas deja dicho qué se le factura al cliente, y Finanzas factura eso. |
 | 1.2 | 17 de octubre de 2026 | Se aclara qué es un día hábil: de lunes a viernes, sin feriados no laborables, Carnaval ni Semana de Turismo. |
 | 1.1 | 14 de octubre de 2026 | En el traspaso de Ingeniería a Operaciones se suman los datos de la instalación (paneles, inversor, red, techo y si van coplanares o inclinados), coincidiendo en la pre-ingeniería y el unifilar: la Pre-Ingeniería no se da por terminada sin ellos. |
 | 1.0 | 12 de octubre de 2026 | Primera versión aprobada. De los borradores anteriores no hay registro de cambios. |

@@ -7,6 +7,7 @@
 
 import {
   CategoriaPrincipal,
+  HitoCobro,
   EstadoAprobacion,
   FinanceMovementStatus,
   Moneda,
@@ -19,6 +20,8 @@ import {
 import { prisma } from "../lib/prisma.js";
 import { completarPorEvidencia, EVIDENCIA_PLAN_PAGOS } from "./checklist-evidencias.js";
 import { AppError, badRequest, notFound } from "../utils/errors.js";
+import { todayUtc } from "../utils/dates.js";
+import { hitosDeProyectos, infoCuota, serializarInfo } from "./finance/hitos-cobro.service.js";
 
 export const PLAN_PREFIX = "[PLAN] ";
 
@@ -26,10 +29,14 @@ export const PLAN_PREFIX = "[PLAN] ";
 // de centavos al recalcular % ↔ monto en el cliente.
 const SUM_TOLERANCE_USD = 1;
 
+// Una cuota va atada a un momento de la obra (`hitoCobro`, sin fecha: queda
+// lista para cobrar cuando llega) o a una fecha fija (`fechaPrevista`), para
+// los acuerdos que no siguen el plan de siempre.
 export type PlanCuotaInput = {
   descripcion: string;
   monto: number;
-  fechaPrevista: string; // ISO yyyy-mm-dd
+  hitoCobro?: HitoCobro | null;
+  fechaPrevista?: string | null; // ISO yyyy-mm-dd, obligatoria sin hitoCobro
 };
 
 export type PlanCuotaOutput = {
@@ -40,6 +47,8 @@ export type PlanCuotaOutput = {
   dueDate: string | null;
   status: FinanceMovementStatus;
   cobrado: boolean;
+  hitoCobro: HitoCobro | null;
+  hito: ReturnType<typeof serializarInfo>;
 };
 
 export type GetPlanResult = {
@@ -75,7 +84,9 @@ function stripPlanPrefix(desc: string): string {
   return desc.startsWith(PLAN_PREFIX) ? desc.slice(PLAN_PREFIX.length) : desc;
 }
 
-function toCuotaOutput(m: FinanceMovement): PlanCuotaOutput {
+const ORDEN_HITO: Record<HitoCobro, number> = { SENIA: 0, PREVIO_OBRA: 1, OBRA_FINALIZADA: 2, HABILITACION: 3 };
+
+function toCuotaOutput(m: FinanceMovement, hito: ReturnType<typeof serializarInfo> = null): PlanCuotaOutput {
   return {
     id: m.id,
     descripcion: stripPlanPrefix(m.descripcion),
@@ -84,6 +95,8 @@ function toCuotaOutput(m: FinanceMovement): PlanCuotaOutput {
     dueDate: m.dueDate ? m.dueDate.toISOString().slice(0, 10) : null,
     status: m.status,
     cobrado: m.cobrado,
+    hitoCobro: m.hitoCobro,
+    hito,
   };
 }
 
@@ -123,13 +136,18 @@ export async function getPlanPagos(projectId: string): Promise<GetPlanResult> {
 
   const presupuestoUsd = project.budgetUsd ? Number(project.budgetUsd) : null;
   const saldoPendiente = (presupuestoUsd ?? 0) - totalCobrado;
+  const hitos = (await hitosDeProyectos([projectId])).get(projectId);
+  const hoy = todayUtc();
+  // Las de un momento de la obra, en el orden de la obra; después las de fecha fija.
+  const orden = (m: FinanceMovement) => (m.hitoCobro ? ORDEN_HITO[m.hitoCobro] : 10);
+  const ordenadas = [...cuotas].sort((a, b) => orden(a) - orden(b));
 
   return {
     hasPlan: cuotas.length > 0,
     presupuestoUsd,
     totalCobrado,
     saldoPendiente,
-    cuotas: cuotas.map(toCuotaOutput),
+    cuotas: ordenadas.map((m) => toCuotaOutput(m, serializarInfo(infoCuota(m, hitos, hoy)))),
   };
 }
 
@@ -198,10 +216,14 @@ export async function createPlanPagos(args: {
     if (!Number.isFinite(c.monto) || c.monto <= 0) {
       throw badRequest("CUOTA_MONTO_INVALID", `Monto inválido para "${c.descripcion}".`);
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(c.fechaPrevista)) {
+    if (c.hitoCobro) {
+      if (!Object.values(HitoCobro).includes(c.hitoCobro)) {
+        throw badRequest("CUOTA_HITO_INVALID", `Momento de cobro inválido para "${c.descripcion}".`);
+      }
+    } else if (!c.fechaPrevista || !/^\d{4}-\d{2}-\d{2}$/.test(c.fechaPrevista)) {
       throw badRequest(
         "CUOTA_FECHA_INVALID",
-        `Fecha inválida para "${c.descripcion}" (esperado yyyy-mm-dd).`,
+        `"${c.descripcion}" necesita una fecha o un momento de la obra.`,
       );
     }
   }
@@ -252,7 +274,10 @@ export async function createPlanPagos(args: {
     const now = new Date();
     const createdRows: FinanceMovement[] = [];
     for (const cuota of cuotas) {
-      const fecha = new Date(`${cuota.fechaPrevista}T00:00:00.000Z`);
+      // Atada a un momento: no tiene fecha (dueDate null). `fecha` es obligatoria
+      // en la tabla y queda la de creación; al cobrarla se reemplaza por la del cobro.
+      const hitoCobro = cuota.hitoCobro ?? null;
+      const fecha = hitoCobro ? todayUtc() : new Date(`${cuota.fechaPrevista}T00:00:00.000Z`);
       const created = await tx.financeMovement.create({
         data: {
           fecha,
@@ -269,7 +294,8 @@ export async function createPlanPagos(args: {
           status: FinanceMovementStatus.PREVISTO,
           sourceType: MovementSourceType.MANUAL,
           estadoAprobacion: EstadoAprobacion.REGISTRADO,
-          dueDate: fecha,
+          dueDate: hitoCobro ? null : fecha,
+          hitoCobro,
           projectId,
           accountId: null,
           creadoPorId: userId,
@@ -289,7 +315,7 @@ export async function createPlanPagos(args: {
   return {
     created: result.createdRows.length,
     replaced: result.existingCount,
-    cuotas: result.createdRows.map(toCuotaOutput),
+    cuotas: result.createdRows.map((m) => toCuotaOutput(m)),
   };
 }
 

@@ -9,6 +9,7 @@ import {
   type CfeEmitido, type EstadoCfe, type FacturacionRow,
 } from '../api/finance.api';
 import { EmitirCfeModal } from '../components/finance/EmitirCfeModal';
+import { draftAInput, draftDesde, FacturacionCampos, type FacturacionDraft } from '../components/finance/FacturacionCampos';
 import { usePermission } from '../hooks/usePermission';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 
@@ -41,6 +42,21 @@ export function FinanceFacturacionTab() {
   const [search, setSearch] = useState('');
   // Nota en edición: null = ninguna. Se edita en un pequeño modal.
   const [editing, setEditing] = useState<{ id: string; clientName: string; value: string } | null>(null);
+  // Qué se le factura, en edición (definir los "a definir" o corregir).
+  const [definiendo, setDefiniendo] = useState<{ p: FacturacionRow; draft: FacturacionDraft } | null>(null);
+  const definirMutation = useMutation({
+    mutationFn: (v: { id: string; draft: FacturacionDraft }) => {
+      const f = draftAInput(v.draft);
+      if (typeof f === 'string') throw new Error(f);
+      return patchFacturacion(v.id, { facturacion: f });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['facturacion'] });
+      toast.success('Monto a facturar guardado');
+      setDefiniendo(null);
+    },
+    onError: (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? (e as Error).message),
+  });
   // Proyecto cuya factura se está subiendo, para deshabilitar sólo ese botón.
   const [subiendo, setSubiendo] = useState<string | null>(null);
   // Emisión por Biller abierta (factura o nota de crédito).
@@ -153,16 +169,75 @@ export function FinanceFacturacionTab() {
     },
     {
       key: 'vendedor', label: 'Vendedor', className: 'text-[var(--color-text-secondary)] text-[13px]',
-      render: (p) => p.salesperson?.name ?? '—',
+      render: (p) => (
+        <>
+          {p.salesperson?.name ?? '—'}
+          <div className="text-[10px] text-[var(--color-text-muted)]">{p.saleDate ? `Vendido ${fmtDate(p.saleDate)}` : ''}</div>
+        </>
+      ),
     },
     {
-      key: 'presupuesto', label: 'Presupuesto USD', align: 'right',
-      className: 'tabular-nums text-[var(--color-text-primary)]',
+      key: 'presupuesto', label: 'Presupuesto (con IVA)', align: 'right',
+      className: 'tabular-nums whitespace-nowrap text-[var(--color-text-secondary)]',
       render: (p) => (p.budgetUsd != null ? fmtCurrency(p.budgetUsd, 'USD') : '—'),
     },
     {
-      key: 'venta', label: 'Fecha venta', className: 'text-[var(--color-text-muted)] text-[11px]',
-      render: (p) => (p.saleDate ? fmtDate(p.saleDate) : '—'),
+      // Lo que se acordó facturarle al ganar el lead; puede no ser todo el presupuesto.
+      key: 'afacturar', label: 'A facturar (con IVA)', align: 'right',
+      render: (p) => {
+        const a = p.aFacturar;
+        const editar = canEdit && (
+          <button
+            onClick={() => setDefiniendo({
+              p,
+              draft: draftDesde(
+                { facturacionNormal: a.modo === 'A_DEFINIR' ? null : a.modo === 'NORMAL', facturarSinIvaUsd: a.sinIva, facturaNota: p.nota },
+                p.budgetUsd,
+              ),
+            })}
+            className="text-[10px] text-[var(--color-accent)] hover:underline"
+            title="Definir o corregir cuánto se factura"
+          >
+            {a.modo === 'A_DEFINIR' ? 'Definir' : '✎'}
+          </button>
+        );
+        if (a.modo === 'A_DEFINIR') {
+          return (
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded uppercase border bg-amber-500/15 text-amber-300 border-amber-500/30">A definir</span>
+              {editar}
+            </div>
+          );
+        }
+        return (
+          <div className="flex flex-col items-end gap-0.5 tabular-nums">
+            <span className="whitespace-nowrap text-[var(--color-text-primary)] font-medium">{a.conIva != null ? fmtCurrency(a.conIva, 'USD') : '—'}</span>
+            <span className="whitespace-nowrap text-[10px] text-[var(--color-text-muted)]">
+              {a.sinIva != null ? `${fmtCurrency(a.sinIva, 'USD')} sin IVA` : ''}
+            </span>
+            <span className="flex items-center gap-1.5 whitespace-nowrap text-[10px] text-[var(--color-text-muted)]">
+              {a.modo === 'NORMAL' ? 'Normal' : 'Otro monto'} {editar}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'facturado', label: 'Facturado', align: 'right',
+      className: 'tabular-nums whitespace-nowrap text-emerald-400',
+      render: (p) => (p.facturadoUsd ? fmtCurrency(p.facturadoUsd, 'USD') : '—'),
+    },
+    {
+      key: 'falta', label: 'Falta facturar', align: 'right',
+      render: (p) => {
+        if (p.aFacturar.conIva == null) return <span className="text-[var(--color-text-muted)]">—</span>;
+        const falta = Math.round((p.aFacturar.conIva - p.facturadoUsd) * 100) / 100;
+        return (
+          <span className={klass('tabular-nums whitespace-nowrap', falta > 0.5 ? 'text-amber-400' : 'text-[var(--color-text-muted)]')}>
+            {fmtCurrency(Math.max(0, falta), 'USD')}
+          </span>
+        );
+      },
     },
     {
       key: 'nota', label: 'Nota',
@@ -403,6 +478,41 @@ export function FinanceFacturacionTab() {
             onClose={() => setEmitiendo(null)}
           />
         )
+      )}
+
+      {/* Qué se le factura */}
+      {definiendo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setDefiniendo(null); }}
+        >
+          <div className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-2xl">
+            <p className="text-[11px] font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-1">¿Qué se le factura?</p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">{definiendo.p.clientName}</p>
+            <p className="text-[11px] text-[var(--color-text-muted)] mb-3">
+              Presupuesto: {definiendo.p.budgetUsd != null ? fmtCurrency(definiendo.p.budgetUsd, 'USD') : '—'} (con IVA)
+            </p>
+            <FacturacionCampos
+              value={definiendo.draft}
+              onChange={(draft) => setDefiniendo({ ...definiendo, draft })}
+              presupuesto={definiendo.p.budgetUsd}
+              inputCls="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              labelCls="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono"
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button onClick={() => setDefiniendo(null)} className="px-3 py-1.5 rounded-md border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)]">
+                Cancelar
+              </button>
+              <button
+                onClick={() => definirMutation.mutate({ id: definiendo.p.id, draft: definiendo.draft })}
+                disabled={definirMutation.isPending}
+                className="px-3 py-1.5 rounded-md bg-[var(--color-accent)] text-gray-900 text-sm font-semibold disabled:opacity-50"
+              >
+                {definirMutation.isPending ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal de edición de nota */}

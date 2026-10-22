@@ -42,6 +42,8 @@ export interface CashflowDto {
   alertaNegativo: boolean;
   horizonUntil: string;
   historyFrom: string;
+  // Cuotas atadas a un momento de una obra que todavía no está agendada.
+  cobrosSinFecha?: Array<{ id: string; descripcion: string; monto: number; moneda: "USD" | "UYU" }>;
 }
 
 export async function getCashflow(): Promise<CashflowDto> {

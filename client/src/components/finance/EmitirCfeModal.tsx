@@ -30,7 +30,14 @@ function errorMsg(err: unknown, fallback: string) {
 
 const redondear = (n: number) => Math.round(n * 100) / 100;
 const TASA_IVA: Record<number, number> = { 1: 0, 2: 0.1, 3: 0.22 };
-const aNumero = (v: string) => Number(v.replace(/\./g, '').replace(',', '.'));
+// Acepta "10.013,48" (como se escribe acá) y "10013.48" (como viene de la
+// cotización): un punto con 1 o 2 decimales detrás es la coma decimal, no un
+// separador de miles. Antes se borraba y el monto quedaba 100 veces más grande.
+const aNumero = (v: string) => {
+  const t = v.trim();
+  if (!t.includes(',') && /^\d+\.\d{1,2}$/.test(t)) return Number(t);
+  return Number(t.replace(/\./g, '').replace(',', '.'));
+};
 
 /** Neto, IVA y total: mismo cálculo que el servidor (precios sin IVA). */
 function totales(items: BorradorCfe['items']) {
@@ -68,7 +75,9 @@ export function EmitirCfeModal(props: Props) {
   const [disponible, setDisponible] = useState<number | null>(null);
   // Factura: de dónde sale el monto sin IVA, y a nombre de quién va. El receptor
   // no viene elegido: se pregunta siempre.
-  const [base, setBase] = useState<{ monto: number; fuente: 'COTIZACION' | 'PRESUPUESTO' | null; version: number | null } | null>(null);
+  const [base, setBase] = useState<{ monto: number; fuente: 'A_FACTURAR' | 'COTIZACION' | 'PRESUPUESTO' | null; version: number | null } | null>(null);
+  // Lo acordado al ganar el lead y lo ya facturado (sin IVA).
+  const [acordado, setAcordado] = useState<{ modo: string; sinIva: number | null; yaFacturadoSinIva: number } | null>(null);
   const [baseTxt, setBaseTxt] = useState('');
   const [pctTxt, setPctTxt] = useState('100');
   const [clienteProyecto, setClienteProyecto] = useState<BorradorCfe['cliente'] | null>(null);
@@ -94,7 +103,8 @@ export function EmitirCfeModal(props: Props) {
           setNota(r.nota);
           setMandarMail(!!r.borrador.emailCliente);
           setBase(r.base);
-          setBaseTxt(r.base.monto ? String(r.base.monto) : '');
+          setAcordado(r.acordado);
+          setBaseTxt(r.base.monto ? String(r.base.monto).replace('.', ',') : '');
           setClienteProyecto(r.clienteProyecto);
           setMailProyecto(r.borrador.emailCliente);
         });
@@ -294,12 +304,20 @@ export function EmitirCfeModal(props: Props) {
                   {!esNC && (
                     <div className="space-y-2 rounded-lg border border-[var(--color-border)] p-3">
                       <p className="text-[12px] font-semibold text-[var(--color-text-primary)]">¿Cuánto se factura?</p>
+                      {acordado?.sinIva != null && (
+                        <p className="text-[11px] text-[var(--color-text-muted)] tabular-nums">
+                          Acordado al vender ({acordado.modo === 'NORMAL' ? 'facturación normal' : 'otro monto'}): {fmtCurrency(acordado.sinIva, 'USD')} sin IVA
+                          {acordado.yaFacturadoSinIva > 0 && <> · ya facturado {fmtCurrency(acordado.yaFacturadoSinIva, 'USD')} sin IVA</>}
+                        </p>
+                      )}
                       <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
                         <div>
                           <label className={labelCls}>
-                            Monto sin IVA {base?.fuente === 'COTIZACION'
-                              ? `(cotización v${base.version})`
-                              : base?.fuente === 'PRESUPUESTO' ? '(sin cotización: presupuesto de la obra sin IVA)' : ''}
+                            Monto sin IVA {base?.fuente === 'A_FACTURAR'
+                              ? '(lo que falta facturar)'
+                              : base?.fuente === 'COTIZACION'
+                                ? `(cotización v${base.version}: falta definir cuánto se factura)`
+                                : base?.fuente === 'PRESUPUESTO' ? '(presupuesto sin IVA: falta definir cuánto se factura)' : ''}
                           </label>
                           <input className={inputCls} inputMode="decimal" value={baseTxt} onChange={(e) => aplicarPorcentaje(e.target.value, pctTxt)} />
                         </div>

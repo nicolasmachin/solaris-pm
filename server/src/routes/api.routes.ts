@@ -24,6 +24,7 @@ import {
   ExpenseSourceType,
   FileAttachmentTipo,
   FinanceMovementStatus,
+  HitoCobro,
   FixedCostPeriodicity,
   MaterialStatus,
   MovementSourceType,
@@ -87,6 +88,8 @@ import { syncCommissionFromMovement } from "../services/commission/sync-commissi
 import { etiquetaDocumentoComercial } from "../services/documentos-generados.service.js";
 import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
+import { fechaDeCobro, hitosDeProyectos, infoCuota, serializarInfo } from "../services/finance/hitos-cobro.service.js";
+import { datosFacturacion, type Facturacion, facturacionSchema, montoAFacturar } from "../services/finance/a-facturar.service.js";
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
 import { UTE_DOC_KEYS, type UteDocKey } from "../services/ute-docs/coordinates.js";
 import { extractFromDocument } from "../services/ute-extract/index.js";
@@ -304,9 +307,11 @@ const projectCreateSchema = z
     saleDate: dateOnlySchema.optional(),
     solarSystem: solarSystemCreateSchema.optional(),
     // Facturación al cliente (ver modelo Project). El check y la nota; la emisión
-    // se maneja aparte desde Finanzas.
+    // se maneja aparte desde Finanzas. `facturacion` (normal u otro monto) manda
+    // sobre los otros dos.
     llevaFactura: z.boolean().optional(),
     facturaNota: z.string().max(2000).nullable().optional(),
+    facturacion: facturacionSchema.optional(),
   })
   .strict();
 
@@ -374,6 +379,7 @@ const projectPatchSchema = z
     // la emisión es una acción del módulo Finanzas (endpoint propio).
     llevaFactura: z.boolean().optional(),
     facturaNota: z.string().max(2000).nullable().optional(),
+    facturacion: facturacionSchema.optional(),
   })
   .strict();
 
@@ -958,6 +964,8 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   // Facturación al cliente (check + nota). La emisión se maneja aparte en Finanzas.
   if (source.llevaFactura !== undefined) normalized.llevaFactura = Boolean(source.llevaFactura);
   if (source.facturaNota !== undefined) normalized.facturaNota = source.facturaNota || null;
+  // Qué se factura (normal u otro monto): pisa llevaFactura y la nota.
+  if (source.facturacion !== undefined) Object.assign(normalized, datosFacturacion(source.facturacion as Facturacion));
 
   return normalized;
 }
@@ -1006,6 +1014,8 @@ const projectFieldLabels: Record<string, string> = {
   clientAddress: "dirección del cliente",
   llevaFactura: "lleva factura",
   facturaNota: "nota de facturación",
+  facturacionNormal: "facturación normal",
+  facturarSinIvaUsd: "monto a facturar sin IVA",
 };
 
 const solarSystemFieldLabels: Record<string, string> = {
@@ -1866,8 +1876,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         clientPhone: body.clientPhone || null,
         clientAddress: body.clientAddress || null,
         salespersonId: body.salespersonId ?? null,
-        llevaFactura: body.llevaFactura ?? false,
-        facturaNota: body.facturaNota || null,
+        ...(body.facturacion
+          ? datosFacturacion(body.facturacion)
+          : { llevaFactura: body.llevaFactura ?? false, facturaNota: body.facturaNota || null }),
         createdById: user.id,
         ...(body.solarSystem
           ? {
@@ -7626,6 +7637,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       plannedEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
+      // Qué se le factura al cliente: obligatorio al crear el proyecto.
+      facturacion: facturacionSchema.optional(),
     })
     .strict()
     .optional();
@@ -7676,6 +7689,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (!locationCity) missing.push("ciudad");
     if (!locationProvince) missing.push("provincia");
     if (!capacityKwpFinal || capacityKwpFinal <= 0) missing.push("potencia (kWp)");
+    if (!body.facturacion) missing.push("qué se le factura al cliente");
     if (missing.length > 0) {
       throw badRequest(
         "MISSING_PROJECT_FIELDS",
@@ -7714,6 +7728,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         clientEmail: (body.clientEmail ?? clientEmail ?? "") || "",
         clientPhone: (body.clientPhone ?? clientPhone ?? "") || "",
         modalidadPago: body.modalidadPago ?? null,
+        ...(body.facturacion ? datosFacturacion(body.facturacion) : {}),
         salespersonId: lead.assignedToId ?? null,
         createdById: user.id,
       },
@@ -11376,6 +11391,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         orderBy: { fecha: "asc" },
       });
 
+      const hitosDetalle = await hitosDeProyectos(previstos.some((p) => p.hitoCobro) ? [projectId] : []);
+      const ORDEN_HITO = { SENIA: 0, PREVIO_OBRA: 1, OBRA_FINALIZADA: 2, HABILITACION: 3 } as const;
+      const claveOrden = (c: { fecha: string | null; hito: { hito: HitoCobro } | null }) =>
+        c.fecha ?? `9999-${c.hito ? ORDEN_HITO[c.hito.hito] : 9}`;
+
       // KPIs por moneda.
       const kpisPorMoneda: Record<Moneda, { presupuesto: number; cobrado: number; pendiente: number; saldoAFavor: number }> = {
         [Moneda.USD]: { presupuesto: 0, cobrado: 0, pendiente: 0, saldoAFavor: 0 },
@@ -11449,11 +11469,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // Tabla: pagados + previstos mezclados, ordenados por fecha ascendente.
         // `status` distingue PAGADO vs PREVISTO; `dueDate` se incluye para que el
         // front elija qué fecha mostrar.
+        // Las cuotas atadas a un momento de la obra que no se cobraron no tienen
+        // fecha (null): van al final, en el orden de la obra, con `hito`.
         cobros: [...cobros, ...previstos]
           .map((c) => ({
             id: c.id,
-            fecha: serializeDateOnly(c.fecha),
+            fecha: c.hitoCobro && !c.cobrado ? null : serializeDateOnly(c.fecha),
             dueDate: serializeDateOnly(c.dueDate),
+            hito: c.cobrado ? null : serializarInfo(infoCuota(c, hitosDetalle.get(projectId))),
             descripcion: c.descripcion,
             monto: Number(c.monto),
             moneda: c.moneda,
@@ -11464,7 +11487,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             observaciones: c.observaciones,
             status: c.status,
           }))
-          .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? "")),
+          .sort((a, b) => claveOrden(a).localeCompare(claveOrden(b))),
         estadoCuenta,
         tipoCambio: fallbackUsdToUyu,
       };
@@ -11571,7 +11594,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const esPagado = body.estado === "PAGADO";
         data.status = esPagado ? FinanceMovementStatus.PAGADO : FinanceMovementStatus.PREVISTO;
         data.cobrado = esPagado;
-        if (!esPagado && !mov.dueDate) data.dueDate = mov.fecha;
+        if (!esPagado && !mov.dueDate && !mov.hitoCobro) data.dueDate = mov.fecha;
       }
 
       const updated = await prisma.financeMovement.update({ where: { id: movementId }, data });
@@ -11654,6 +11677,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         select: {
           id: true, code: true, clientName: true, status: true, budgetUsd: true,
           saleDate: true, facturaEmitida: true, facturaEmitidaEn: true, facturaNota: true,
+          facturacionNormal: true, facturarSinIvaUsd: true,
           salesperson: { select: { id: true, name: true } },
           // El archivo de la factura que se le mandó al cliente, si se adjuntó.
           files: {
@@ -11698,6 +11722,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         facturaEmitida: p.facturaEmitida,
         facturaEmitidaEn: p.facturaEmitidaEn ? serializeDate(p.facturaEmitidaEn) : null,
         nota: p.facturaNota,
+        // Qué hay que facturarle (definido al ganar el lead) — con y sin IVA.
+        aFacturar: montoAFacturar(p),
         salesperson: p.salesperson ?? null,
         cfes: p.cfesEmitidos.map(serializarCfe),
         cobradoUsd: cobradoPorObra.get(p.id) ?? 0,
@@ -11821,9 +11847,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const body = z.object({
         facturaEmitida: z.boolean().optional(),
         facturaNota: z.string().max(2000).nullable().optional(),
+        // Corregir o definir qué se factura (los proyectos "a definir").
+        facturacion: facturacionSchema.optional(),
       }).parse(request.body);
 
       const project = await findProjectOrThrow(projectId);
+      if (body.facturacion) {
+        const updated = await prisma.project.update({ where: { id: projectId }, data: datosFacturacion(body.facturacion) });
+        const m = montoAFacturar(updated);
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: projectId,
+          projectId,
+          userId: user.id,
+          action: AuditAction.updated,
+          fieldChanged: "facturarSinIvaUsd",
+          description: m.modo === "NORMAL"
+            ? `Definió facturación normal (todo el presupuesto) en el proyecto ${project.code}`
+            : `Definió facturar USD ${m.sinIva} sin IVA en el proyecto ${project.code}: ${body.facturacion.motivo ?? ""}`,
+        });
+        return serializeProject(updated);
+      }
       if (!project.llevaFactura) {
         throw new AppError(400, "PROJECT_SIN_FACTURA", "El proyecto no está marcado como que lleva factura");
       }
@@ -11914,7 +11958,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
             z.object({
               descripcion: z.string().trim().min(1).max(120),
               monto: z.number().positive(),
-              fechaPrevista: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+              // Un momento de la obra o una fecha fija (lo valida createPlanPagos).
+              hitoCobro: z.nativeEnum(HitoCobro).nullable().optional(),
+              fechaPrevista: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
             }),
           )
           .min(1),
@@ -13335,8 +13381,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       fecha: Date; status: FinanceMovementStatus; cobrado: boolean;
       tipoMovimiento: TipoMovimiento;
       expectedDate: Date | null; dueDate: Date | null;
+      hitoCobro?: HitoCobro | null;
     }): { type: "PAST_DATE_NOT_PAID"; message: string } | null {
       if (isMovementConcreted(row)) return null;
+      // Cuota atada a un momento de la obra: su `fecha` no es un vencimiento.
+      if (row.hitoCobro) return null;
       const pendientes: FinanceMovementStatus[] = [
         FinanceMovementStatus.PREVISTO,
         FinanceMovementStatus.COMPROMETIDO,
@@ -19675,8 +19724,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
       include: { project: { select: { id: true, code: true, clientName: true } } },
     });
+    // Cuotas atadas a un momento de la obra: entran recién cuando están listas
+    // para cobrar, con su vencimiento (antes no hay nada que hacer).
+    const hitosPend = await hitosDeProyectos(manualPrevistos.filter((m) => m.hitoCobro && m.projectId).map((m) => m.projectId!));
     for (const m of manualPrevistos) {
-      const fecha = m.dueDate ?? m.expectedDate ?? m.fecha;
+      let fecha = m.dueDate ?? m.expectedDate ?? m.fecha;
+      if (m.hitoCobro) {
+        const info = infoCuota(m, m.projectId ? hitosPend.get(m.projectId) : undefined, now);
+        if (!info?.listo || !info.venceEl) continue;
+        fecha = info.venceEl;
+      }
       items.push({
         id: `manual-${m.id}`,
         sourceType: "MANUAL_PENDING",
@@ -20218,16 +20275,34 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // El NOT deja pasar los cobros sin proyecto (projectId null).
         NOT: { project: { status: { in: [ProjectStatus.ARCHIVED, ProjectStatus.PROSPECT] } } },
         OR: [
-          { expectedDate: { gte: now, lte: horizon } },
-          { dueDate: { gte: now, lte: horizon } },
-          { fecha: { gte: now, lte: horizon } },
+          { hitoCobro: null, expectedDate: { gte: now, lte: horizon } },
+          { hitoCobro: null, dueDate: { gte: now, lte: horizon } },
+          { hitoCobro: null, fecha: { gte: now, lte: horizon } },
+          // Las atadas a un momento de la obra no tienen fecha: se filtran abajo.
+          { hitoCobro: { not: null } },
         ],
       },
       include: { project: { select: { clientName: true } } },
     });
-    const cobroEvents: CashflowEvent[] = cobrosPendientes.map((m) => {
-      const fechaRef = m.expectedDate ?? m.dueDate ?? m.fecha;
-      return {
+    // Cuotas atadas a un momento: van en su fecha esperada; si ya están listas o
+    // vencidas, hoy (es plata cobrable ya); sin obra agendada, a "sin fecha".
+    const hitosCobro = await hitosDeProyectos(cobrosPendientes.filter((m) => m.hitoCobro).map((m) => m.projectId!));
+    const cobrosSinFecha: Array<{ id: string; descripcion: string; monto: number; moneda: Moneda }> = [];
+    const cobroEvents: CashflowEvent[] = cobrosPendientes.flatMap((m) => {
+      let fechaRef: Date = m.expectedDate ?? m.dueDate ?? m.fecha;
+      if (m.hitoCobro) {
+        const f = fechaDeCobro(m, hitosCobro);
+        if (!f) {
+          cobrosSinFecha.push({
+            id: m.id, monto: Number(m.monto), moneda: m.moneda,
+            descripcion: m.project ? `${m.project.clientName} — ${m.descripcion}` : m.descripcion,
+          });
+          return [];
+        }
+        fechaRef = f < now ? now : f;
+        if (fechaRef > horizon) return [];
+      }
+      return [{
         id: `cc:${m.id}`,
         fecha: serializeDateNonNull(fechaRef),
         descripcion: m.project ? `${m.project.clientName} — ${m.descripcion}` : m.descripcion,
@@ -20237,7 +20312,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         impacto: "POSITIVO",
         sourceType: "CLIENT_COBRO",
         sourceId: m.id,
-      };
+      } as CashflowEvent];
     });
 
     // 6) Combinar y ordenar por fecha.
@@ -20354,6 +20429,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       alertaNegativo,
       horizonUntil: serializeDateNonNull(horizon),
       historyFrom: serializeDateNonNull(fromPast),
+      // Cuotas atadas a un momento de una obra que todavía no tiene fecha: no se
+      // proyectan, pero se muestran aparte para que no desaparezcan.
+      cobrosSinFecha,
     };
   });
 

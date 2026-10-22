@@ -577,6 +577,20 @@ export interface CobroProjectItem {
   estadoCobranza: EstadoCobranza;
   ultimoCobro: string | null;
   cantidadCobros: number;
+  // Cuotas del plan cuyo momento de la obra ya llegó (null = ninguna).
+  listoParaCobrar: { cuotas: number; vencidas: number; montoUSD: number; descripciones: string[] } | null;
+}
+
+// Cuota atada a un momento de la obra (seña, previo a la obra, obra
+// finalizada, habilitación): sin fecha hasta que se cobra.
+export interface HitoCuota {
+  hito: 'SENIA' | 'PREVIO_OBRA' | 'OBRA_FINALIZADA' | 'HABILITACION';
+  hitoLabel: string;
+  listo: boolean;
+  vencida: boolean;
+  listoDesde: string | null;
+  venceEl: string | null;
+  fechaEsperada: string | null;
 }
 
 export interface CobrosListResponse {
@@ -615,8 +629,10 @@ export interface CobroDetail {
   };
   cobros: Array<{
     id: string;
-    fecha: string;
+    // null en las cuotas atadas a un momento de la obra que todavía no se cobraron.
+    fecha: string | null;
     dueDate: string | null;
+    hito: HitoCuota | null;
     descripcion: string;
     monto: number;
     moneda: Moneda;
@@ -784,6 +800,20 @@ export const getIncomeStatementYearlyBreakdown = (anio: number) =>
 
 // ─── Facturación al cliente (facturas pendientes de emisión) ────────────────
 
+/** NORMAL: todo el presupuesto; OTRO_MONTO: lo que cargó el asesor; A_DEFINIR: proyecto viejo sin definir. */
+export interface AFacturar {
+  modo: 'NORMAL' | 'OTRO_MONTO' | 'A_DEFINIR';
+  sinIva: number | null;
+  conIva: number | null;
+}
+
+/** Lo que se manda para definir la facturación (al ganar el lead, en el proyecto o en Finanzas). */
+export interface FacturacionInput {
+  normal: boolean;
+  sinIvaUsd?: number | null;
+  motivo?: string | null;
+}
+
 export interface FacturacionRow {
   id: string;
   code: string;
@@ -794,6 +824,8 @@ export interface FacturacionRow {
   facturaEmitida: boolean;
   facturaEmitidaEn: string | null;
   nota: string | null;
+  /** Qué hay que facturarle, definido al ganar el lead. */
+  aFacturar: AFacturar;
   salesperson: { id: string; name: string } | null;
   /** La factura que se le mandó al cliente, si está adjunta. */
   factura: { id: string; filename: string; mimeType: string; subidaEn: string | null } | null;
@@ -877,7 +909,8 @@ export const getBorradorFactura = (projectId: string) =>
     borrador: BorradorCfe;
     clienteProyecto: BorradorCfe['cliente'];
     /** Monto sin IVA del que se parte: la última cotización publicada o, si no hay, el presupuesto sin IVA. */
-    base: { monto: number; fuente: 'COTIZACION' | 'PRESUPUESTO' | null; version: number | null };
+    base: { monto: number; fuente: 'A_FACTURAR' | 'COTIZACION' | 'PRESUPUESTO' | null; version: number | null };
+    acordado: AFacturar & { yaFacturadoSinIva: number };
     razonSocialDgi: string | null;
     proyecto: { id: string; code: string; clientName: string; budgetUsd: number | null };
     nota: string | null;
@@ -920,7 +953,7 @@ export const getFacturacion = (params?: { estado?: 'pendiente' | 'emitida' | 'to
 
 export const patchFacturacion = (
   projectId: string,
-  body: { facturaEmitida?: boolean; facturaNota?: string | null },
+  body: { facturaEmitida?: boolean; facturaNota?: string | null; facturacion?: FacturacionInput },
 ) => apiClient.patch(`/api/finance/facturacion/${projectId}`, body).then(r => r.data);
 
 /** Sube la factura del cliente. Reemplaza a la anterior si ya había una. */

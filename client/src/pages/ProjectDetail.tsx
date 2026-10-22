@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { draftAInput, draftDesde, FacturacionCampos, type FacturacionDraft } from "../components/finance/FacturacionCampos";
+import type { FacturacionInput } from "../api/finance.api";
 import { ValesObraPanel } from '../components/project/ValesObraPanel';
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -142,8 +144,15 @@ function EditProjectModal({
     project.firstDateScheduledAt ? project.firstDateScheduledAt.slice(0, 10) : ""
   );
   const [saleDate, setSaleDate] = useState(project.saleDate ?? "");
-  const [llevaFactura, setLlevaFactura] = useState(project.llevaFactura);
-  const [facturaNota, setFacturaNota] = useState(project.facturaNota ?? "");
+  // Qué se le factura: solo se manda si se tocó (los proyectos viejos "a definir"
+  // se pueden guardar sin definirlo).
+  const [facturacion, setFacturacion] = useState<FacturacionDraft>(() =>
+    draftDesde(
+      { facturacionNormal: project.facturacionNormal ?? null, facturarSinIvaUsd: project.facturarSinIvaUsd ?? null, facturaNota: project.facturaNota ?? null },
+      project.budgetUsd ?? null,
+    ),
+  );
+  const [facturacionTocada, setFacturacionTocada] = useState(false);
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => {
@@ -162,8 +171,7 @@ function EditProjectModal({
           ? new Date(firstDateScheduledAt).toISOString()
           : null,
         saleDate: saleDate || null,
-        llevaFactura,
-        facturaNota: facturaNota.trim() || null,
+        ...(facturacionTocada ? { facturacion: draftAInput(facturacion) as FacturacionInput } : {}),
       });
     },
     onSuccess: () => {
@@ -243,28 +251,14 @@ function EditProjectModal({
             </div>
           </div>
           <div style={{ border: "1px solid var(--color-border)", borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={llevaFactura}
-                onChange={e => setLlevaFactura(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: "var(--color-accent)" }}
-              />
-              <span style={{ fontSize: 13, color: "var(--color-text-primary)" }}>Lleva factura</span>
-              <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>— el cliente exige factura fiscal</span>
-            </label>
-            {llevaFactura ? (
-              <div>
-                <label style={labelStyle}>Nota de facturación</label>
-                <textarea
-                  style={{ ...inputStyle, minHeight: 52, resize: "vertical" }}
-                  rows={2}
-                  placeholder="RUT, razón social, a nombre de quién facturar, etc."
-                  value={facturaNota}
-                  onChange={e => setFacturaNota(e.target.value)}
-                />
-              </div>
-            ) : null}
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)" }}>¿Qué se le factura?</span>
+            <FacturacionCampos
+              value={facturacion}
+              onChange={(d) => { setFacturacion(d); setFacturacionTocada(true); }}
+              presupuesto={budgetUsd.trim() === "" ? null : parseFloat(budgetUsd)}
+              inputCls="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+              labelCls="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono"
+            />
           </div>
         </div>
 
@@ -273,7 +267,11 @@ function EditProjectModal({
             Cancelar
           </button>
           <button
-            onClick={() => mutate()}
+            onClick={() => {
+              const f = facturacionTocada ? draftAInput(facturacion) : null;
+              if (typeof f === "string") return toast.error(f);
+              mutate();
+            }}
             disabled={isPending}
             style={{ padding: "7px 16px", borderRadius: 6, border: "none", background: "var(--color-accent)", color: "#000", fontSize: 13, fontWeight: 600, cursor: isPending ? "not-allowed" : "pointer", opacity: isPending ? 0.6 : 1 }}
           >

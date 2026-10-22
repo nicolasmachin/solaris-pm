@@ -15,6 +15,7 @@ import {
   EstadoFacturaRecibida,
   FinanceMovementStatus,
   InstallerPaymentStatus,
+  ProjectStatus,
   ReglaTarjeta,
   TipoMovimiento,
 } from "@prisma/client";
@@ -25,6 +26,7 @@ import { hoyUruguay } from "../../utils/uruguay.js";
 import { getCuentasPorPagar } from "./cuentas-por-pagar.service.js";
 import { pendientesPorCuenta } from "./bank-reconciliation.service.js";
 import { porConciliar } from "./por-conciliar.service.js";
+import { cuotasListasPorProyecto } from "./hitos-cobro.service.js";
 
 export type Gravedad = "VENCIDO" | "HOY" | "AVISO";
 export type ItemHoy = { clave: string; grupo: string; texto: string; cantidad: number; link: string; gravedad: Gravedad };
@@ -94,9 +96,16 @@ export async function paraHacerHoy(): Promise<ItemHoy[]> {
     where: {
       deletedAt: null, tipoMovimiento: TipoMovimiento.INGRESO, cobrado: false, fecha: { lt: hoy },
       categoriaPrincipal: { in: [CategoriaPrincipal.PROYECTO_ENTRADA, CategoriaPrincipal.COBRO_CLIENTE] },
+      // Las atadas a un momento de la obra no vencen por fecha: van abajo.
+      hitoCobro: null,
+      project: { deletedAt: null, status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.PROSPECT] } },
     },
   });
-  add({ clave: "cobros", grupo: "Ventas", texto: "cobros a clientes vencidos sin cobrar", cantidad: cobrosVencidos, link: "/finanzas/cobros", gravedad: "VENCIDO" });
+  // Cuotas del plan atadas a un momento de la obra que ya llegó.
+  const listas = [...(await cuotasListasPorProyecto()).values()];
+  const cuotasVencidas = listas.reduce((n, l) => n + l.vencidas, 0);
+  add({ clave: "cobros", grupo: "Ventas", texto: "cobros a clientes vencidos sin cobrar", cantidad: cobrosVencidos + cuotasVencidas, link: "/finanzas/cobros?filtro=listos", gravedad: "VENCIDO" });
+  add({ clave: "cobros_listos", grupo: "Ventas", texto: "clientes listos para cobrar una cuota", cantidad: listas.filter((l) => l.cantidad > l.vencidas).length, link: "/finanzas/cobros?filtro=listos", gravedad: "HOY" });
   const sinFacturar = await prisma.project.count({
     where: {
       deletedAt: null, llevaFactura: true, facturaEmitida: false,

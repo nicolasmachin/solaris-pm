@@ -5,6 +5,8 @@ import { toast } from "react-hot-toast";
 import { X } from "lucide-react";
 
 import { convertLeadWithBody, getConversionDefaults, getLead } from "../../api/leads.api";
+import type { FacturacionInput } from "../../api/finance.api";
+import { DRAFT_VACIO, draftAInput, FacturacionCampos, type FacturacionDraft } from "../finance/FacturacionCampos";
 
 const inp =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
@@ -41,6 +43,7 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
   const [locationProvince, setLocationProvince] = useState("Montevideo");
   const [budgetUsd, setBudgetUsd] = useState("");
   const [plannedEndDate, setPlannedEndDate] = useState("");
+  const [facturacion, setFacturacion] = useState<FacturacionDraft>(DRAFT_VACIO);
   const [saving, setSaving] = useState(false);
 
   // Hidratar 1 vez, esperando también a los defaults (o a que fallen, para no
@@ -71,6 +74,7 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
         locationProvince: locationProvince.trim(),
         budgetUsd: budgetUsd ? Number(budgetUsd) : null,
         plannedEndDate: plannedEndDate || null,
+        facturacion: draftAInput(facturacion) as FacturacionInput,
       }),
     onSuccess: (project) => {
       const codeStr = (project as { code?: string }).code;
@@ -93,6 +97,8 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
     if (!locationProvince.trim()) return toast.error("Falta la provincia");
     const n = Number(capacityKwp);
     if (!n || n <= 0) return toast.error("Falta la potencia (kWp)");
+    const fact = draftAInput(facturacion);
+    if (typeof fact === "string") return toast.error(fact);
     setSaving(true);
     convertMut.mutate(undefined, { onSettled: () => setSaving(false) });
   }
@@ -199,7 +205,7 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
                   />
                 </div>
                 <div>
-                  <label className={lbl}>Presupuesto (USD)</label>
+                  <label className={lbl}>Presupuesto (USD, con IVA)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -226,6 +232,16 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
                 <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
                   Si lo dejás vacío, se calcula 90 días desde hoy como placeholder.
                 </p>
+              </div>
+              <div className="rounded-lg border border-[var(--color-border)] p-3">
+                <p className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">¿Qué se le factura? *</p>
+                <FacturacionCampos
+                  value={facturacion}
+                  onChange={setFacturacion}
+                  presupuesto={budgetUsd ? Number(budgetUsd) : null}
+                  inputCls={inp}
+                  labelCls={lbl}
+                />
               </div>
               <div className="flex gap-2 pt-2">
                 <button

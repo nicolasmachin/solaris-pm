@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.19 · del 22/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.20 · del 22/10/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -78,7 +78,7 @@ termina con su **cierre**.
 
 | De | Qué recibe | Dónde lo ve en Voltia PM |
 |---|---|---|
-| **Ventas** (el asesor comercial) | Cada proyecto vendido llega con su **modalidad de pago** y lo que esa modalidad pide: el plan de pagos, la proforma para el banco o la explicación escrita de lo acordado. También indica si el proyecto **lleva factura** | Finanzas → Cobros; Finanzas → Facturación |
+| **Ventas** (el asesor comercial) | Cada proyecto vendido llega con su **modalidad de pago** y lo que esa modalidad pide: el plan de pagos, la proforma para el banco o la explicación escrita de lo acordado. También deja dicho **qué se le factura**: todo el presupuesto («facturación normal») u otro monto, con el motivo | Finanzas → Cobros; Finanzas → Facturación |
 | **Ventas** (al ganar la venta) | La **comisión del asesor**, que se registra sola con el precio de la última propuesta publicada | Comisiones; Finanzas → Inicio (Pendientes) |
 | **Operaciones** (al agendar la obra con un equipo tercerizado) | El **pago de la mano de obra** al instalador, a nombre de quien cobra por ese equipo | Finanzas → Instaladores |
 | **Logística** | Las **compras fuera de la lista de materiales** de más de USD 200 por gasto (hasta ese monto las aprueba el gerente de Operaciones, con rendición de cuentas) | Las aprueba Finanzas o Gerencia. Lo de la lista lo compra directo el encargado de compras. Todo gasto queda **auditable**: ver 5.16 |
@@ -155,7 +155,9 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
   corriente, marcadas «entró sola» en Finanzas → Facturas): que sean de Voltia,
   que el monto y la obra estén bien. Una vez por semana.
 - **Revisar los posibles gastos cargados dos veces** que muestra Por conciliar.
-- **Revisar Cobros**: qué cuotas vencieron sin cobrar. Si una cuota está
+- **Revisar Cobros**: qué clientes están **listos para cobrar** una cuota y
+  qué cuotas vencieron sin cobrar (los dos aparecen también en «Para hacer
+  hoy», todos los días). Si una cuota está
   vencida, se le pregunta al asesor qué pasó antes de reclamarle al cliente.
   **El reclamo al cliente lo hace Experiencia Solar**, que es quien habla con
   él. Está decidido que pase al **área de Administración** (la contadora)
@@ -209,7 +211,8 @@ En los primeros días del mes se deja en orden el mes que terminó y se lo
    pago: con **pago directo**, el plan de pagos; con **financiación bancaria**,
    la proforma; con **otro**, la explicación. Sin eso el proyecto no avanza.
 3. **Se cobra la seña** y, con pago directo, **el 50 % entre 10 y 15 días antes
-   de la obra**. **Sin el 50 % pago no se da fecha de obra.** Con financiación
+   de la obra**. Esa cuota queda **lista para cobrar** sola 10 días antes del
+   primer día de obra agendado en el calendario. **Sin el 50 % pago no se da fecha de obra.** Con financiación
    bancaria, la condición es el crédito aprobado. La gestión con el banco la sigue
    el asesor hasta que termina.
 4. **Logística compra**; Finanzas aprueba lo que pasa los topes. Las facturas de
@@ -217,9 +220,13 @@ En los primeros días del mes se deja en orden el mes que terminó y se lo
    demás las revisa Finanzas.
 5. **Operaciones agenda la obra.** Si es con un equipo tercerizado, aparece solo
    el pago de la mano de obra al instalador.
-6. **Obra terminada**: se cobra el **30 %**.
-7. **UTE habilita** la instalación: se cobra el **20 %**.
-8. Si el proyecto **lleva factura**, Finanzas la emite desde Voltia PM (ver 5.4).
+6. **Obra terminada**: se cobra el **30 %**. La cuota queda lista para cobrar
+   cuando Operaciones da por terminada la etapa de ejecución de obra en Voltia PM.
+7. **UTE habilita** la instalación: se cobra el **20 %**. La cuota queda lista
+   para cobrar cuando se finaliza la habilitación, el mismo momento en que
+   Experiencia Solar recibe el aviso de que el cliente puede encender.
+8. Si el proyecto **lleva factura**, Finanzas la emite desde Voltia PM por lo que
+   dejó definido el asesor al vender (ver 5.4).
 9. El trabajo de Finanzas con el proyecto termina cuando está **cobrado entero y
    sus gastos pagados**.
 
@@ -366,20 +373,32 @@ pago** y lo que esa modalidad pide:
 
 | Modalidad | Lo que tiene que quedar hecho |
 |---|---|
-| **Pago directo** con Voltia | El **plan de pagos**, con la fecha y el monto de cada cobro |
+| **Pago directo** con Voltia | El **plan de pagos**, con el monto de cada cobro y en qué momento de la obra se cobra |
 | **Financiación bancaria** | La **proforma** para el banco |
 | **Otro** (un canje, una condición negociada) | La explicación escrita de qué se acordó |
 
 Para Finanzas esto quiere decir que cada proyecto vendido llega con sus cobros
-previstos y sus fechas, y que en **Cobros** se ve qué se espera cobrar y cuándo.
+previstos, y que en **Cobros** se ve qué se espera cobrar y cuándo se puede
+cobrar.
 La regla vale también para los proyectos que ya estaban en onboarding.
 
 ### El plan de pagos lo arma el asesor; Finanzas lo cobra
 
 El plan de pagos lo arma el asesor en el onboarding, porque es quien lo acordó
 con el cliente. Finanzas también lo puede crear o editar desde Cobros. **Los
-montos y las fechas de cobro salen siempre del plan de pagos**, nunca de
+montos y los momentos de cobro salen siempre del plan de pagos**, nunca de
 memoria: un número mal dicho sobre plata es de lo que más cuesta arreglar.
+
+### Las cuotas se cobran cuando llega su momento de la obra, no en una fecha
+
+Las cuotas del plan de siempre **no tienen fecha**, porque el contrato no las
+ata a una fecha sino a lo que pasa en la obra: la seña al firmar, el 50 % antes
+de la obra, el 30 % con la obra terminada y el 20 % con la habilitación de UTE.
+Voltia PM marca cada cuota **«Lista para cobrar»** cuando llega su momento y la
+marca **vencida** si pasaron **10 días** sin cobrarla (para la cuota previa a la
+obra, eso cae justo en el primer día de obra). La fecha se completa cuando se
+cobra. Para un acuerdo distinto, la cuota se carga **en una fecha fija** y
+vence por esa fecha, como cualquier cobro.
 
 ### Un cobro se marca pagado con la fecha en que entró la plata
 
@@ -437,9 +456,15 @@ emite por su cuenta. El motivo: **lo emitido no se edita**. Una factura con un
 error se corrige con una nota de crédito, y las dos quedan registradas en DGI.
 Es más barato revisar antes que corregir después.
 
-**Una factura por proyecto.** Puede ser por toda la cotización o por una parte:
-se factura el porcentaje que se acordó. Si hay que rehacerla, se anula entera
-con una nota de crédito y se emite otra.
+**Una factura por proyecto.** Puede ser por todo el presupuesto o por una parte:
+se factura lo que dejó definido el asesor al ganar la venta. Si hay que
+rehacerla, se anula entera con una nota de crédito y se emite otra.
+
+**Lo que se factura lo define quien vendió.** El presupuesto es lo que paga el
+cliente, con IVA. Lo que se le factura puede ser menos: un descuento, una parte
+que financia el banco, una parte a nombre de su empresa. Lo sabe el asesor,
+porque lo acordó él, y lo deja escrito al crear el proyecto. Finanzas no lo
+adivina ni lo saca de la cotización.
 
 **La factura puede ir a nombre de otro.** El cliente del proyecto es siempre la
 persona con la que se trabajó, pero la factura puede salir a nombre de su
@@ -480,7 +505,7 @@ Es la primera pantalla de Finanzas y tiene cuatro partes, de arriba abajo.
 
 **Para hacer hoy.** La lista de todo lo que falta en Finanzas, junta: facturas
 de proveedores por revisar, deudas que vencen o ya vencieron, lo del banco sin
-cargar, cobros atrasados, obras que cobraron y no se facturaron, gastos de
+cargar, cobros atrasados, clientes listos para cobrar una cuota, obras que cobraron y no se facturaron, gastos de
 tarjeta sin decidir, costos fijos sin pagar, el cierre del mes anterior, y más.
 Cada renglón dice cuántos hay y lleva a la pantalla donde se resuelve. Lo
 vencido va primero, en rojo; lo de hoy, en amarillo; y lo que es para mirar
@@ -491,7 +516,7 @@ hoy); a Gerencia le llega solo lo vencido.
 **La posición.** Todo en dólares: la **caja** (lo que hay en las cuentas), **lo
 que nos deben** —separado en vencido, próximos 7 días, de 8 a 30 días, más de
 30 días y **sin fecha** (lo que una obra todavía debe sin tener una cuota
-prevista)—, **lo que debemos** —proveedores, otros compromisos, comisiones e
+prevista, y las cuotas de un momento de la obra que todavía no tiene fecha)—, **lo que debemos** —proveedores, otros compromisos, comisiones e
 instaladores, también por vencimiento— y el **neto**, con caja y sin caja. A
 diferencia del flujo de fondos, la posición **sí** cuenta las comisiones y lo que
 se le debe a los instaladores.
@@ -557,9 +582,18 @@ debe a un proveedor entra con su factura, no antes».
 proyectos vendidos, estén en obra o ya habilitados, porque que la obra esté
 habilitada no dice si el cliente terminó de pagar. Solo quedan afuera las ventas
 caídas (proyectos archivados) y lo que todavía no se vendió. Por cada proyecto:
-el presupuesto, lo cobrado y lo pendiente. Se filtra por cómo está el pago:
-**Pendientes**, **Parciales**, **Completos**, **Excedidos** o **Sin
-presupuesto** (o **Todos los estados**).
+el presupuesto, lo cobrado y lo pendiente.
+
+- Al entrar se ven solo los que **tienen algo por cobrar**: los que ya pagaron
+  todo no aparecen, salvo que se elija **«Todos, también los completos»** o
+  **«Completos»** en el filtro. El filtro también tiene **«Listos para
+  cobrar»**, **Pendientes**, **Parciales**, **Excedidos** y **Sin
+  presupuesto**. Voltia PM recuerda el último filtro elegido.
+- Si algún cliente tiene una cuota lista para cobrar, arriba aparece un aviso
+  verde con cuántos son (y cuántos tienen la cuota vencida) y el botón **«Ver
+  solo esos»**.
+- En la lista, esos clientes llevan junto al estado la etiqueta **«Listo para
+  cobrar»** (verde) o **«Cuota vencida»** (roja), y van primero.
 
 **Comentarios y archivos del cobro.** Al pie del detalle de cada cliente está
 el bloque **Comentarios y archivos**: ahí Finanzas anota lo que se acordó con el
@@ -568,8 +602,11 @@ proyecto. Queda en el proyecto y en la ficha del cliente, marcado como de
 Finanzas.
 
 **El detalle de un cliente** (tocando un proyecto) muestra los cobros ya
-recibidos y los **previstos** del plan, ordenados por fecha. Los previstos se
-distinguen con la etiqueta **PREVISTO**. Los totales cuentan solo lo
+recibidos y los **previstos** del plan. Las cuotas de un momento de la obra no
+tienen fecha: en la columna de fecha dice el momento («Previo a la obra»,
+«Obra finalizada»…) y van al final, en el orden de la obra. Cada previsto lleva
+una etiqueta: **LISTA PARA COBRAR** (ya llegó su momento), **VENCIDA** (pasaron
+10 días) o **PREVISTO** (todavía no). Los totales cuentan solo lo
 efectivamente cobrado: lo previsto no infla el «Cobrado». El detalle tiene dos
 pestañas, **Cobros** y **Estado de cuenta**. Desde el detalle se puede:
 
@@ -596,10 +633,11 @@ pestañas, **Cobros** y **Estado de cuenta**. Desde el detalle se puede:
   > ✅ [fecha] · [descripción del cobro] · [monto]<br>
   > <br>
   > \*Próximos pagos\*<br>
-  > ⏳ [fecha] · [descripción de la cuota] · [monto]</small>
+  > ⏳ [fecha o momento de la obra] · [descripción de la cuota] · [monto]</small>
 
-  Va un renglón por cada pago recibido y por cada cuota prevista, ordenados por
-  fecha. Si el proyecto no tiene potencia cargada, la segunda línea dice solo
+  Va un renglón por cada pago recibido y por cada cuota prevista. En las cuotas
+  que se cobran en un momento de la obra, en lugar de la fecha va el momento
+  (por ejemplo, «Obra finalizada»). Si el proyecto no tiene potencia cargada, la segunda línea dice solo
   «Obra [código]». Si no hay pagos recibidos o no quedan cuotas, ese bloque no
   aparece. **Ojo:** el «Cobrado» del resumen suma solo lo cobrado en dólares;
   si el cliente pagó algo en pesos, ese pago aparece en la lista pero no en el
@@ -608,13 +646,15 @@ pestañas, **Cobros** y **Estado de cuenta**. Desde el detalle se puede:
 **El plan de pagos.** Es el conjunto de **todos los cobros previstos** del
 proyecto. Si un proyecto tiene presupuesto y todavía no tiene cobros previstos,
 aparece el aviso con **«Crear plan de pagos →»**. La ventana viene con una
-sugerencia sobre lo que falta cobrar: una seña de USD 500 a los 7 días y tres
-cuotas, **«Pago previo 50%»** (completa el 50 %, a los 30 días), **«Pago obra
-terminada 30%»** (a los 60 días) y **«Pago obra habilitada 20%»** (a los 90
-días). Las fechas sugeridas son solo un punto de partida: se ponen las que se
-acordaron con el cliente.
-Cada cuota se puede cambiar (descripción, monto, porcentaje, fecha), agregar o
-quitar. Reglas:
+sugerencia sobre lo que falta cobrar, **sin fechas**: una **«Seña»** de USD 500
+(al firmar) y tres cuotas, **«Cuota 1 · previo a la obra»** (completa el 50 %),
+**«Cuota 2 · obra finalizada»** (30 %) y **«Cuota 3 · habilitación
+finalizada»** (20 %). La columna **«Cuándo se cobra»** dice el momento de cada
+una: **Al firmar**, **Previo a la obra**, **Obra finalizada**, **Habilitación
+finalizada** o **En una fecha fija**, que pide la fecha (para lo que se acordó
+distinto con el cliente).
+Cada cuota se puede cambiar (descripción, monto, porcentaje, cuándo se cobra),
+agregar o quitar. Una cuota nueva viene «en una fecha fija». Reglas:
 
 - La suma de las cuotas tiene que dar **lo que falta cobrar** (presupuesto menos
   lo ya cobrado), con un margen de USD 1. Si no cierra, no se puede confirmar.
@@ -627,6 +667,21 @@ quitar. Reglas:
 **La regla del onboarding.** Con pago directo, el onboarding no se cierra sin
 plan de pagos. Un proyecto que ya tiene cobrado el 99 % del presupuesto cuenta
 como «con plan» aunque no le queden previstos.
+
+**Cuándo queda lista cada cuota.**
+
+| Cuota | Queda lista para cobrar | Vence |
+|---|---|---|
+| Seña | Desde que se crea el plan | 10 días después |
+| Previo a la obra | 10 días antes del primer día de obra agendado en el calendario; si la obra se reagenda, se corre sola | El primer día de obra |
+| Obra finalizada | Cuando se da por terminada la etapa de ejecución de obra | 10 días después |
+| Habilitación finalizada | Cuando se finaliza la habilitación de UTE | 10 días después |
+| En una fecha fija | No se marca «lista»: vence en su fecha, como siempre | Su fecha |
+
+Si la obra terminó pero nadie dio por terminada la etapa en Voltia PM, la cuota
+2 no queda lista: vale la pena preguntarle a Operaciones. Los clientes **sin
+plan de pagos** (por ejemplo, los que pagan con un crédito del banco) no tienen
+cuotas y nunca aparecen como listos para cobrar.
 
 **Ojo:** «Cobrado» y «Pendiente» de la lista no se calculan igual que el plan:
 la lista suma todo lo cobrado, pasando los pesos a dólares; el plan cuenta solo
@@ -659,12 +714,33 @@ no los previstos.
 
 ### 5.4 · Facturación al cliente
 
-No todos los clientes llevan factura. Cada proyecto tiene la casilla **«Lleva
-factura»** y una **nota** libre (para anotar RUT, razón social o a nombre de
-quién facturar). Se cargan al crear el proyecto y se editan desde su ficha.
+**Qué se le factura a cada cliente.** Al ganar la venta, cuando crea el
+proyecto, el asesor contesta **«¿Qué se le factura?»**. No se puede crear el
+proyecto sin contestarlo:
+
+- **«Facturación normal»**: se le factura todo el presupuesto. Se puede dejar
+  una nota (por ejemplo, el RUT o la razón social a la que va la factura).
+- Si no es normal, se carga **el monto a facturar** y **el motivo**. El monto se
+  puede escribir de tres formas, y al llenar una las otras dos se completan
+  solas: **sin IVA**, **con IVA** o **como porcentaje del presupuesto** (por
+  ejemplo, 50). Si el monto es cero, el proyecto queda como que **no lleva
+  factura**.
+
+Lo mismo se corrige desde la ficha del proyecto o desde la lista de
+Facturación (el lápiz junto al monto).
 
 En **Finanzas → Facturación** están los proyectos que llevan factura, con
-**Pendientes**, **Emitidas** y **Todas**. La nota se edita desde la lista.
+**Pendientes**, **Emitidas** y **Todas**. Cada fila muestra por separado:
+
+- **Presupuesto (con IVA)**: lo que paga el cliente en total.
+- **A facturar (con IVA)**: lo que hay que facturarle; abajo, el mismo monto sin
+  IVA y si es «Normal» u «Otro monto».
+- **Facturado**: lo que ya se le facturó desde Voltia PM.
+- **Falta facturar**: la diferencia.
+
+Los proyectos vendidos antes de este cambio que tenían una nota de facturación
+aparecen **«A definir»**: Finanzas les carga el monto con **«Definir»**, mirando
+la nota y preguntándole al asesor. La nota se sigue editando desde la lista.
 
 **Cobrado contra facturado.** Si una obra cuya factura salió desde Voltia PM
 cobró en dólares más de lo que se le facturó (las facturas menos las notas de
@@ -677,11 +753,13 @@ hace falta entrar al sistema de facturación electrónica. Se toca **«Emitir
 factura»** en el proyecto y se abre el borrador, en dos pasos:
 
 1. **Datos.** Primero hay que contestar dos preguntas:
-   - **¿Cuánto se factura?** Se parte del **total sin IVA de la cotización**
-     que aceptó el cliente, y se elige **qué porcentaje** facturar: el 100 % o
-     menos, según lo que se haya acordado. El IVA se suma encima. Si el proyecto
-     no tiene cotización en Voltia PM, se parte del presupuesto de la obra sin
-     el IVA, y la pantalla lo avisa.
+   - **¿Cuánto se factura?** Viene propuesto **lo que falta facturar** de lo
+     que dejó definido el asesor, sin IVA, y arriba se lee lo acordado y lo ya
+     facturado. Se puede elegir **qué porcentaje** de ese monto facturar (100 %
+     por defecto). El IVA se suma encima. Si el proyecto está «A definir», se
+     parte de la cotización sin IVA (o, sin cotización, del presupuesto sin IVA)
+     y la pantalla avisa que falta definir cuánto se factura: conviene
+     definirlo antes.
    - **¿A nombre de quién va la factura?** Del cliente del proyecto, o de otra
      persona o empresa: es común que el cliente la quiera a nombre de su
      empresa. No viene marcada ninguna opción: se pregunta siempre. Con otra
@@ -1209,6 +1287,13 @@ Proyecta **solo tres cosas**: los cobros pendientes de los clientes (las cuotas
 del plan de pagos y las anualidades del plan granizo), la deuda con proveedores
 y los costos fijos de cada mes.
 
+- Las cuotas que se cobran en un momento de la obra van en la fecha en que se
+  espera cobrarlas: si ya están listas o vencidas, **hoy**; si no, una fecha
+  estimada (la de obra terminada, el último día de obra agendado; la de
+  habilitación, un mes después). Las de obras que todavía **no están
+  agendadas** no se pueden ubicar: se listan abajo, en **«Cobros sin fecha»**,
+  y no entran en la proyección.
+
 - La deuda con un proveedor se proyecta **ya descontado su saldo a favor**, por
   moneda, empezando por la factura que vence primero.
 - Con el **filtro por tipo de movimiento** se prenden o apagan los tipos, con
@@ -1217,7 +1302,7 @@ y los costos fijos de cada mes.
 - La fecha de un evento proyectado se puede cambiar tocándola.
 - **No aparecen**: las comisiones de los asesores, los compromisos a pagar que
   no son de un proveedor, lo que se le debe a los instaladores, las compras de
-  materiales que todavía no tienen factura, ni los cobros previstos que ya
+  materiales que todavía no tienen factura, ni los cobros previstos con fecha fija que ya
   vencieron sin cobrarse. Por eso el flujo puede verse mejor de lo que es: esas
   salidas existen igual (la posición del Inicio sí las cuenta).
 - Los ajustes de deuda con proveedores no son plata y no aparecen.
@@ -1435,9 +1520,8 @@ Finanzas en Voltia PM).
 
 ### Una obra muestra «hay cobro sin factura»
 
-La obra cobró más de lo que se le facturó. Se mira si el cliente lleva una
-factura por el total o por un porcentaje (la nota de facturación del proyecto y
-el asesor lo dicen). Si falta facturar, se emite lo que corresponde; si se
+La obra cobró más de lo que se le facturó. Se mira cuánto había que facturarle
+(la columna **A facturar** y su motivo, que dejó el asesor). Si falta facturar, se emite lo que corresponde; si se
 facturó por fuera de Voltia PM, esa factura no entra en la comparación.
 
 ### El saldo de un proveedor no coincide con su estado de cuenta
@@ -1552,6 +1636,7 @@ una vez por mes.
 | **UTE** | La empresa estatal de electricidad. Tiene que aprobar y **habilitar** la instalación para que el cliente pueda encenderla. |
 | **DGI** | La Dirección General Impositiva. Registra todas las facturas electrónicas. |
 | **CFE** | Comprobante fiscal electrónico: la factura electrónica (o nota de crédito, o nota de débito). |
+| **A facturar** | Lo que hay que facturarle a un cliente: todo el presupuesto («facturación normal») u otro monto que dejó definido el asesor al vender, con su motivo. Puede ser menos que lo que paga el cliente. |
 | **Facturación electrónica** | El servicio por el que Voltia emite y recibe los CFE. Voltia PM emite por ahí las facturas a los clientes, y de ahí llegan solas las facturas de los proveedores. |
 | **e-Factura** | La factura electrónica a una empresa, con su RUT. |
 | **e-Ticket** | La factura electrónica a una persona, con su cédula. |
@@ -1563,7 +1648,8 @@ una vez por mes.
 | **Propuesta** | La cotización que se le presenta al cliente. De la última publicada salen el precio de la venta, la comisión y el pago al instalador. |
 | **Seña** | El primer pago del cliente, que se cobra al confirmar la venta. |
 | **Modalidad de pago** | Cómo paga el cliente: pago directo, financiación bancaria u otro. |
-| **Plan de pagos** | Los cobros previstos de un proyecto, con su fecha y su monto. |
+| **Plan de pagos** | Los cobros previstos de un proyecto, con su monto y en qué momento de la obra se cobra cada uno (o en qué fecha, si se acordó distinto). |
+| **Lista para cobrar** | Una cuota del plan cuyo momento de la obra ya llegó. Si pasan 10 días sin cobrarla, queda vencida. |
 | **Proforma** | El documento que se le da al cliente para presentar al banco cuando paga con financiación bancaria. |
 | **Movimiento** | Cada entrada o salida de plata registrada en Voltia PM, pasada o futura. |
 | **Previsto** | Un movimiento que se espera que ocurra pero todavía no ocurrió. |
@@ -1605,6 +1691,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.20 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM avisa cuándo un cliente está listo para cobrar y cuándo una cuota venció. Cobros muestra al entrar solo lo que falta cobrar, con el filtro nuevo «Listos para cobrar». Nueva tabla de cuándo queda lista cada cuota y cómo entran en el flujo de fondos. Lo que se le factura a cada cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo); Facturación muestra por separado presupuesto, a facturar, facturado y lo que falta, y al emitir se propone lo que falta facturar. Palabra nueva en el glosario: «A facturar». |
 | 0.19 | 22 de octubre de 2026 | El menú de Finanzas pasa a la izquierda, con las pantallas agrupadas; en el celular es un desplegable. Comisiones se suma al grupo Compras. Cada aviso de «Para hacer hoy» lleva a la pantalla donde se resuelve. |
 | 0.18 | 21 de octubre de 2026 | Se agrega «Para hacer hoy»: la lista con todo lo pendiente de Finanzas arriba del Inicio, el mail de cada mañana y el número junto a Finanzas en el menú. |
 | 0.17 | 21 de octubre de 2026 | Se reordenan las herramientas según el menú nuevo de Finanzas: Inicio, Ventas, Compras, Bancos e Informes. Nuevas pantallas: Inicio (posición, lo que falta conciliar y pendientes), Banco, Tarjetas y Cierre. Cuentas por pagar pasa a estar arriba de Proveedores, y la bandeja de facturas recibidas, arriba de Facturas. Las facturas de proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana; las facturas llegan cada media hora. Las notas de crédito de proveedores se descuentan de la deuda desde la misma lista. Una factura se carga por un solo formulario y a un proveedor se le paga solo con «Registrar pago». Nuevos ajustes de deuda (no son plata) y «Arrancar cuenta» con el estado de cuenta: borrón y cuenta nueva con cada proveedor. Lo personal (cuenta del socio y adelantos a descontar del sueldo) no es gasto de Voltia. Conciliar una cuenta con diferencia pide el motivo. Nuevo cierre de mes, con su lista de control y el archivo para la contadora, y la rendición de tarjetas en el procedimiento mensual. Las transferencias entre cuentas y los ajustes dejan de contar en el estado de resultados. Aviso «hay cobro sin factura» en Facturación. Nuevos casos en «Cuando algo sale mal» y palabras nuevas en el glosario. |

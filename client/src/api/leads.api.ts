@@ -142,6 +142,8 @@ export interface ConvertLeadBody {
   plannedEndDate?: string | null;
   startDate?: string;
   modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | null;
+  /** Qué se le factura al cliente (obligatorio). */
+  facturacion?: { normal: boolean; sinIvaUsd?: number | null; motivo?: string | null };
 }
 
 export async function convertLeadWithBody(id: string, body: ConvertLeadBody): Promise<Project> {

@@ -107,6 +107,7 @@ export async function patchProject(
     uteCodigoPS?: string | null;
     uteCodigoAS?: string | null;
     llevaFactura?: boolean;
+    facturacion?: { normal: boolean; sinIvaUsd?: number | null; motivo?: string | null };
     facturaNota?: string | null;
     modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | "OTRO";
     modalidadPagoNota?: string | null;
