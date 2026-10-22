@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.23 — 21 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.24 — 22 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -766,6 +766,27 @@ de coincidir con su estado de cuenta.
 
 **A qué manuales afecta.** Al de Finanzas.
 
+### De cada lead se registra cómo nos conoció
+
+**Qué se decidió.** A todo cliente potencial se le pregunta en la primera charla
+cómo conoció a Voltia, y la respuesta se carga en Voltia PM al registrarlo: sin
+ese dato, no se lo puede crear. Las respuestas posibles son fijas (anuncio pago en
+Instagram o Facebook, redes sin anuncio, recomendación, Google o la web,
+LinkedIn, inteligencia artificial, ya es cliente, marca aliada u otro). A los
+leads cargados antes no se les inventa: quedan sin dato, salvo que el cliente lo
+cuente.
+
+**Por qué.** Hasta ahora se sabía qué canal traía consultas, pero no cuál traía
+ventas: al pasar a lead se perdía de dónde venía. Las metas de Marketing a 2027
+(por ejemplo, que un 30 % de las ventas no venga de la publicidad paga en Meta)
+se miden con este dato.
+
+**Desde cuándo rige.** Aprobado el 21 de octubre de 2026; en Voltia PM desde el
+22 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de trabajo de Ventas (la primera charla y la
+carga del lead).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -797,6 +818,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.24 | 22 de octubre de 2026 | Se registra que de cada lead se pregunta y se carga cómo nos conoció, para medir qué canal trae ventas. |
 | 0.23 | 21 de octubre de 2026 | Se registran cinco decisiones de Finanzas: las facturas de los proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana (las demás siguen por revisar); borrón y cuenta nueva con cada proveedor desde que se concilia con su estado de cuenta, cerrando lo viejo con un ajuste que no es plata, y las deudas viejas de la unipersonal con Tiempo al Tiempo como compra de la SAS, con el riesgo fiscal a revisar con la contadora; los gastos personales del socio van a su cuenta y no como sueldo, y los de un empleado autorizados se le descuentan del sueldo; un mes cerrado no se toca y reabrirlo queda registrado con su motivo; una factura de proveedor se carga por un solo lugar y a un proveedor se le paga por un solo camino. |
 | 0.22 | 19 de octubre de 2026 | Con los tercerizados se va de a poco: lo único que se les exige en papeles es estar inscriptos como empresa con el seguro de accidentes del BSE, desde su primera obra con contrato, y la factura a los seis meses; se deja de pedir la documentación mensual de sueldos y aportes. El contrato con el tercerizado y su manual pasan a estar en borrador. |
 | 0.21 | 17 de octubre de 2026 | Se registra que con el cliente se habla por WhatsApp y que ningún paso del procedimiento exige una llamada; si se llama, se registra. Se registra que la bienvenida la manda Experiencia Solar, después de que el asesor presentó al referente. Se registra que la cadencia de contacto tiene un día de margen ("toca hoy") antes de contar como atraso. Se registra que Voltia no trabaja en Carnaval ni en Semana de Turismo, y que esos días no cuentan como hábiles. |

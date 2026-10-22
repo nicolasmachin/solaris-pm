@@ -30,6 +30,7 @@ import {
 
 import { prisma } from "../../lib/prisma.js";
 import { instantesUruguay, type RangoDias } from "../../utils/uruguay.js";
+import { resumirPorOrigen, type FilaOrigen } from "../sales/origen-lead.js";
 
 // ─── Obras realizadas ─────────────────────────────────────────────────────────
 
@@ -235,6 +236,47 @@ export async function visitasRealizadas(dias: RangoDias): Promise<Visita[]> {
     orderBy: { visitCompletedAt: "asc" },
   });
   return leads.map((l) => ({ cliente: l.clientName, asesor: l.assignedTo?.name ?? null, fecha: l.visitCompletedAt! }));
+}
+
+// ─── Por origen del lead ──────────────────────────────────────────────────────
+
+/**
+ * Leads, propuestas y ventas del período agrupados por "¿Cómo nos conoció?".
+ * Mismas definiciones que `indicadoresDelPeriodo`, así que los totales cierran
+ * con los del reporte: un lead que entró en el período y una venta cerrada en
+ * el período no tienen por qué ser el mismo lead.
+ */
+export async function leadsPorOrigen(dias: RangoDias): Promise<FilaOrigen[]> {
+  const { inicio, fin } = instantesUruguay(dias);
+  const [leads, propuestas, ventas] = await Promise.all([
+    prisma.salesLead.findMany({
+      where: { deletedAt: null, createdAt: { gte: inicio, lt: fin } },
+      select: { origen: true },
+    }),
+    prisma.salesLead.findMany({
+      where: { deletedAt: null, proposalSentAt: { gte: inicio, lt: fin } },
+      select: { origen: true },
+    }),
+    prisma.salesLead.findMany({
+      where: { deletedAt: null, stage: SalesStage.CERRADO_GANADO, closedAt: { gte: inicio, lt: fin } },
+      select: {
+        origen: true,
+        estimatedBudgetUsd: true,
+        commission: { select: { proposalVersion: { select: { snapshot: true } } } },
+        proposalV2Versions: {
+          where: { status: "PUBLISHED", discardedAt: null },
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          select: { snapshot: true },
+        },
+      },
+    }),
+  ]);
+  return resumirPorOrigen({
+    leads,
+    propuestas,
+    ventas: ventas.map((v) => ({ origen: v.origen, montoUsd: montoDeVenta(v) })),
+  });
 }
 
 // ─── Conteos y tiempos del embudo ─────────────────────────────────────────────

@@ -521,6 +521,21 @@ enum SalesStage {
   CERRADO_PERDIDO
 }
 
+// De dónde vino el lead ("¿Cómo nos conoció?"). Es la base para medir qué
+// canal trae ventas, no solo consultas. Los leads anteriores al campo quedan
+// en null: no se reconstruye un dato que nadie preguntó.
+enum OrigenLead {
+  ANUNCIO_META
+  REDES_ORGANICO
+  RECOMENDACION
+  GOOGLE_WEB
+  LINKEDIN
+  INTELIGENCIA_ARTIFICIAL
+  CLIENTE_EXISTENTE
+  MARCA_ALIADA
+  OTRO
+}
+
 enum ProposalStatus {
   PENDING
   PROCESSING
@@ -1822,6 +1837,11 @@ model SalesLead {
   // El cliente contrata el seguro de granizo. Al convertir el lead en proyecto
   // se crea la póliza (pendiente de inicio hasta la habilitación UTE).
   contrataSeguroGranizo Boolean              @default(false)
+  // "¿Cómo nos conoció?". Obligatorio al crear desde la pantalla de Ventas;
+  // opcional por API y conector. OTRO exige `origenDetalle`, que en el resto
+  // de los valores es una aclaración libre (quién lo recomendó, qué marca).
+  origen                OrigenLead?
+  origenDetalle         String?
   lastReclamoAt         DateTime?            @db.Timestamptz(6)
   // Fecha de "alta comercial" del lead. Por default copia createdAt en
   // los registros nuevos (auto-fill en el handler de POST), pero es
@@ -1853,6 +1873,7 @@ model SalesLead {
   updatedAt             DateTime             @updatedAt @db.Timestamptz(6)
 
   @@index([stage])
+  @@index([origen])
   @@index([tenantId])
   @@index([assignedToId])
   @@index([createdAt])

@@ -10,6 +10,12 @@
 - En el celular, el menú es un desplegable.
 - **Comisiones** se suma al menú de Finanzas, dentro de Compras.
 
+#### Ventas: cómo nos conoció cada cliente
+
+- Al crear un lead hay que contestar **¿Cómo nos conoció?**: anuncio en Instagram o Facebook, redes sin anuncio, recomendación, Google o la web, LinkedIn, inteligencia artificial, ya es cliente, marca aliada u otro. Al lado se puede aclarar quién lo recomendó, qué marca o qué anuncio; con «Otro», la aclaración es obligatoria.
+- Se puede completar o corregir desde el panel del lead. Los leads cargados antes quedan sin dato, para completarlos si el cliente lo cuenta.
+- Desde el chat de Claude se puede cargar al crear o editar un lead, y pedir cuántos leads, propuestas y ventas trajo cada canal en un período, con el monto vendido.
+
 #### Arreglos
 
 - En «Para hacer hoy», los avisos de comisiones sin pagar y de costos fijos vencidos llevaban al mismo Inicio y no pasaba nada: ahora abren Comisiones y Costos fijos. Los que se resuelven en el Inicio bajan hasta «Por conciliar».

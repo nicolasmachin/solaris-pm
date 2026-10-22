@@ -11,8 +11,10 @@ import { z } from "zod";
 import {
   avanceMetas,
   indicadoresDelPeriodo,
+  leadsPorOrigen,
   type Indicadores,
 } from "../../../services/metricas/indicadores.service.js";
+import { describirOrigen } from "../../../services/sales/origen-lead.js";
 import { tiemposPorEtapa } from "../../../services/metricas/tiempos-etapa.service.js";
 import { inicioDiaUruguay } from "../../../utils/uruguay.js";
 import { requirePermission, type McpUser } from "../context.js";
@@ -159,6 +161,61 @@ export function registerMetricasTools(server: McpServer, user: McpUser) {
         ventasTxt,
         asesores,
         ...detalle,
+      );
+    },
+  );
+
+  server.registerTool(
+    "leads_por_origen",
+    {
+      title: "Leads y ventas por origen",
+      description:
+        "Por cada respuesta a \"¿Cómo nos conoció?\" (anuncio en Meta, redes sin " +
+        "anuncio, recomendación, Google, LinkedIn, inteligencia artificial, ya cliente, " +
+        "marca aliada, otro): cuántos leads entraron, cuántas propuestas se enviaron, " +
+        "cuántas ventas se ganaron y el monto vendido en el período. Mismas definiciones " +
+        "que `indicadores`, así que los totales coinciden. \"Sin dato\" son los leads " +
+        "cargados antes de que existiera la pregunta o sin responderla. Sin período, el " +
+        "mes en curso.",
+      inputSchema: { ...periodoInput },
+      annotations: { readOnlyHint: true },
+    },
+    async (args) => {
+      await requirePermission(user, Module.METRICAS, Action.VIEW);
+      const periodo = resolverPeriodo(args);
+      const filas = await leadsPorOrigen(periodo);
+
+      if (filas.length === 0) return texto(`Leads por origen — ${periodo.etiqueta}`, "No hubo movimiento en el período.");
+
+      const tot = filas.reduce(
+        (t, f) => ({
+          leads: t.leads + f.leads,
+          propuestas: t.propuestas + f.propuestas,
+          ventas: t.ventas + f.ventas,
+          monto: t.monto + f.montoUsd,
+        }),
+        { leads: 0, propuestas: 0, ventas: 0, monto: 0 },
+      );
+      const cuantos = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+      const pct = (n: number, de: number) => (de > 0 ? ` (${Math.round((n / de) * 100)}%)` : "");
+
+      const renglones = filas.map(
+        (f) =>
+          `- ${describirOrigen(f.origen, null)}: ${cuantos(f.leads, "lead", "leads")}${pct(f.leads, tot.leads)} · ` +
+          `${cuantos(f.propuestas, "propuesta", "propuestas")} · ${cuantos(f.ventas, "venta", "ventas")}${pct(f.ventas, tot.ventas)} · ` +
+          `${usd(f.montoUsd) ?? "USD 0"}` +
+          (f.ventasSinMonto ? ` (${f.ventasSinMonto} sin monto)` : ""),
+      );
+
+      const sinDato = filas.find((f) => f.origen === null);
+      return texto(
+        `Leads por origen — ${periodo.etiqueta}`,
+        renglones.join("\n"),
+        `TOTAL: ${tot.leads} leads · ${tot.propuestas} propuestas · ${tot.ventas} ventas · ${usd(tot.monto) ?? "USD 0"}`,
+        sinDato
+          ? "Ojo: \"Sin dato\" pesa mientras haya leads cargados antes de la pregunta. " +
+            "Los porcentajes por origen son confiables solo sobre lo que tiene dato."
+          : null,
       );
     },
   );

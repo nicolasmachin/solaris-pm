@@ -125,11 +125,11 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
-| `buscar_lead` | `VENTAS:VIEW` | Busca por nombre, teléfono, email, dirección o código. Excluye los cerrados salvo que se pidan. Devuelve hasta 15. |
-| `ficha_lead` | `VENTAS:VIEW` | Contacto, etapa, **relevamiento técnico**, fechas, propuestas, pendientes y últimos 8 comentarios. Avisa si hay minuta cargada. |
+| `buscar_lead` | `VENTAS:VIEW` | Busca por nombre, teléfono, email, dirección o código. Excluye los cerrados salvo que se pidan. Devuelve hasta 15, con cómo nos conoció. |
+| `ficha_lead` | `VENTAS:VIEW` | Contacto, etapa, cómo nos conoció, **relevamiento técnico**, fechas, propuestas, pendientes y últimos 8 comentarios. Avisa si hay minuta cargada. |
 | `ver_propuesta` | `VENTAS:VIEW` | Números comerciales de una propuesta + enlace al PDF. |
-| `crear_lead` | `VENTAS:CREATE` | Alta. Se asigna al usuario que la crea. |
-| `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca, y las cinco fechas del proceso (alta, propuesta enviada, visita agendada, visita realizada, cierre) como día `AAAA-MM-DD` o `"borrar"`. Las fechas se guardan a las 00:00 de Uruguay, como en la app (cap. 02, Fechas del proceso). |
+| `crear_lead` | `VENTAS:CREATE` | Alta. Se asigna al usuario que la crea. Acepta `origen` y `origen_detalle` (cómo nos conoció), opcionales acá; si no vienen, avisa que quedó sin cargar (cap. 02, Origen del lead). |
+| `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca, `origen` y `origen_detalle`, y las cinco fechas del proceso (alta, propuesta enviada, visita agendada, visita realizada, cierre) como día `AAAA-MM-DD` o `"borrar"`. Las fechas se guardan a las 00:00 de Uruguay, como en la app (cap. 02, Fechas del proceso). |
 | `mover_etapa` | `VENTAS:EDIT` | Cambia la etapa del pipeline. |
 | `comentar_lead` | `VENTAS:COMMENT` | Deja un comentario en el historial. |
 
@@ -390,6 +390,7 @@ resultados), y lo dice al pie de la respuesta.
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
 | `indicadores` | `METRICAS:VIEW` | Los indicadores del mail de los lunes para cualquier período: leads, propuestas, visitas, ventas con monto, perdidas, conversión, tiempos del embudo, obras realizadas y kWp. `comparar` agrega el período anterior equivalente (`periodoAnterior()`), `por_asesor` el desglose por vendedor, `detalle` la lista de visitas y obras (las ventas se listan siempre). |
+| `leads_por_origen` | `METRICAS:VIEW` | Por cada respuesta a "¿Cómo nos conoció?": leads, propuestas, ventas ganadas y monto vendido del período, con su porcentaje. Mismas definiciones que `indicadores`, así que los totales coinciden. Los leads sin el dato salen como "Sin dato", al final. |
 | `metas` | `METRICAS:VIEW` | Avance de las metas trimestrales y anuales: objetivo, logrado, % y "en ritmo" / "atrasada"; si el período ya cerró, "cumplida" / "no cumplida". |
 | `tiempos_etapas` | `METRICAS:VIEW` | Duración real de cada etapa de obra y cumplimiento del plazo. Sin período, todo el histórico. |
 

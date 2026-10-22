@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.2 · del 17/10/26
+**Voltia · Uruguay** · Versión 1.3 · del 22/10/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -76,7 +76,8 @@ sabe cómo sigue. Lo único que sigue después es **la modalidad de pago**:
    avanzar (la factura de UTE y fotos del techo). Muchos quedan acá, al ver el
    precio, y está bien: el speech también filtra.
 2. **Lead.** Quien manda su factura de UTE pasa a ser un **lead**, un cliente
-   potencial, y recién ahí se registra en Voltia PM.
+   potencial, y recién ahí se registra en Voltia PM, con **cómo nos conoció**
+   (ver «¿Cómo nos conociste?», más abajo).
 3. **Propuesta.** Se arma la propuesta comercial y se le envía.
 4. **Visita de venta.** A quien quiere avanzar se le ofrece una visita a su casa.
    La visita incluye el **relevamiento técnico**, para ir una sola vez. Al salir
@@ -128,6 +129,39 @@ factura de UTE y las fotos del techo, que es lo que lo convierte en lead.
 > Luego de la propuesta comercial, si queres avanzar podemos coordinar un relevamiento en el lugar, y aprovechar la instancia para sacarte todas las dudas.<br>
 > Quedo a las órdenes.<br>
 > Saludos!</small>
+
+### ¿Cómo nos conociste?
+
+En la primera charla, el asesor le pregunta al cliente, tal cual:
+
+> <small>¿Cómo nos conociste?</small>
+
+y lo carga en Voltia PM al registrar el lead. Es la única forma de saber qué
+canal trae **ventas**, y no solo consultas: la planilla de indicadores cuenta las
+consultas por canal, pero una vez que la consulta pasa a lead, sin este dato se
+pierde de dónde vino. Con él se miden las metas de Marketing (por ejemplo, cuántas
+ventas llegan sin publicidad paga).
+
+Las respuestas posibles son nueve:
+
+| Respuesta | Cuándo |
+|---|---|
+| Anuncio en Instagram o Facebook | Vio un anuncio pago de Voltia |
+| Redes sociales (sin anuncio) | Vio contenido de Voltia o de Nicolás que no era un anuncio |
+| Recomendación | Se lo recomendó un cliente o un conocido |
+| Google o la web | Buscó en Google o entró a la página de Voltia |
+| LinkedIn | Llegó por LinkedIn |
+| Inteligencia artificial | Se lo recomendó ChatGPT, Gemini, Claude u otra |
+| Ya es cliente | Ya tiene una instalación de Voltia (una ampliación, otra propiedad) |
+| Marca aliada | Llegó por una marca con la que Voltia hace contenido (Würth, INGCO) |
+| Otro | Ninguna de las anteriores: se escribe cuál |
+
+Al lado va un **detalle** libre, que conviene llenar siempre que se sepa: quién lo
+recomendó, qué marca, qué anuncio. Con **Otro** es obligatorio, porque «otro» a
+secas no dice nada.
+
+Si el cliente no se acuerda o duda entre dos, se carga lo que diga primero. Lo
+que no se hace es adivinar: si nadie se lo preguntó, se le pregunta.
 
 ### La propuesta: con qué datos, qué precio y cuántas versiones
 
@@ -596,10 +630,12 @@ solo los leads asignados al asesor. Sin tildarla se ven los de todos. En el
 celular, las dos cosas están en el botón **Filtros**.
 
 **Cargar un lead nuevo.** Botón **Nuevo lead**, arriba a la derecha. Pide el
-nombre (lo único que Voltia PM exige), el mail, el teléfono, la dirección, los
-kWp y el presupuesto estimados, la factura de UTE mensual en dólares, el tipo de
-techo, a quién se asigna y unas notas iniciales. Con **Crear lead** entra en
-Nuevo lead. El teléfono Voltia PM no lo exige, pero el asesor lo carga siempre
+nombre, el mail, el teléfono, la dirección, los kWp y el presupuesto estimados,
+la factura de UTE mensual en dólares, el tipo de techo, **¿Cómo nos conoció?**
+(con su **Detalle**), a quién se asigna y unas notas iniciales. Voltia PM exige
+dos cosas: el nombre y cómo nos conoció; si es **Otro**, también el detalle.
+Mientras falte alguna, el botón **Crear lead** queda apagado. Con **Crear lead**
+entra en Nuevo lead. El teléfono Voltia PM no lo exige, pero el asesor lo carga siempre
 (ver «Antes de la visita»).
 
 **Cómo se mueve un lead.** Hay tres caminos y hacen lo mismo:
@@ -663,8 +699,11 @@ venta y crear el proyecto»).
   presentación de Experiencia Solar», al final de este capítulo).
 - **Los datos del lead:** nombre, mail, teléfono, dirección, kWp estimados,
   presupuesto, lo que paga de UTE por mes (en dólares), tipo de techo, **Tipo de
-  cliente** (*Residencial* o *Empresa (B2B)*), **Asignado a** y notas. Se cambian
-  y se toca **Guardar cambios**: sin ese botón, no se guardan.
+  cliente** (*Residencial* o *Empresa (B2B)*), **¿Cómo nos conoció?** con su
+  detalle, **Asignado a** y notas. Se cambian y se toca **Guardar cambios**: sin
+  ese botón, no se guardan. Los leads cargados antes de que existiera la pregunta
+  muestran **Sin dato (preguntárselo)**: si en la próxima charla el cliente lo
+  cuenta, se completa ahí; si no, queda vacío.
 - **Cambiar etapa:** el mismo selector de etapa, con las siete.
 - **Fechas del proceso:** cinco fechas —**Fecha de creación**, **Propuesta
   enviada**, **Visita agendada**, **Visita realizada** y **Fecha de cierre**—,
@@ -1054,6 +1093,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.3 | 22 de octubre de 2026 | En la primera charla se le pregunta al cliente «¿Cómo nos conociste?» y se carga en el lead: las nueve respuestas posibles y cuándo va cada una. Voltia PM no deja crear un lead sin ese dato, y se puede corregir desde el panel del lead. |
 | 1.2 | 17 de octubre de 2026 | Se aclara que la bienvenida al cliente la manda Experiencia Solar: al asesor le toca presentarle al referente, como última tarea del onboarding. |
 | 1.1 | 16 de octubre de 2026 | En el costeo de la propuesta se pueden cambiar la comisión del vendedor y la del BBVA; ponerlas en cero las saca del precio. |
 | 1.0 | 14 de octubre de 2026 | Primera versión completa del manual: el procedimiento, los lineamientos, las herramientas de Voltia PM, a quién se le pregunta qué y qué hacer cuando algo sale mal quedan cerrados. Lo que todavía depende de algo pendiente queda marcado en el texto (la firma de los asesores por Voltia). |

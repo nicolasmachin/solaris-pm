@@ -1,7 +1,7 @@
 # 02 · Ventas
 
 > **Capítulo parcial.** Están escritas las secciones "Fechas del proceso",
-> "Cotizador de propuestas: precargas y saludo de la carta", "Varias
+> "Origen del lead (¿Cómo nos conoció?)", "Cotizador de propuestas: precargas y saludo de la carta", "Varias
 > instalaciones en una misma propuesta", "Costeo a medida de una cotización",
 > "Cotizador B2B: propuestas a empresas" y "Comisión del asesor: cómo se
 > registra al ganar". El resto del módulo funciona en producción pero
@@ -112,6 +112,98 @@ del chat.
 - Un lead puede llegar a `CERRADO_GANADO` sin pasar por `VISITADO`, y en ese caso
   no hay fecha de visita: el promedio de "visita a cierre" lo ignora en vez de
   contarlo como cero.
+
+---
+
+# Origen del lead (¿Cómo nos conoció?)
+
+## Para qué existe
+
+Para saber qué canal trae **ventas**, no solo consultas. La planilla de
+indicadores cuenta las consultas por canal, pero al pasar a lead se perdía de
+dónde venía. Es la base de las metas de Marketing a 2027 (encargo de Tabaré,
+aprobado por Nicolás el 21-oct-2026).
+
+## Cómo se usa
+
+- **Alta** (Ventas → **Nuevo lead**): el selector **¿Cómo nos conoció?** es
+  obligatorio, y con **Otro** también el **Detalle**. Mientras falte, **Crear
+  lead** queda apagado.
+- **Panel del lead**: el mismo campo, editable, junto a "Tipo de cliente". En los
+  leads viejos aparece **Sin dato (preguntárselo)** y se puede dejar así.
+- **Chat de Claude**: `crear_lead` y `editar_lead` aceptan `origen` y
+  `origen_detalle`; `buscar_lead` y `ficha_lead` lo muestran; `leads_por_origen`
+  da el reporte (cap. 13).
+
+## Cómo funciona
+
+Dos columnas en `sales_leads` (migración `20261022180000_lead_origen`, aditiva):
+`origen` (enum `OrigenLead`, nullable, con índice) y `origenDetalle` (texto).
+
+| Valor | Etiqueta |
+|---|---|
+| `ANUNCIO_META` | Anuncio en Instagram o Facebook |
+| `REDES_ORGANICO` | Redes sociales (sin anuncio) |
+| `RECOMENDACION` | Recomendación |
+| `GOOGLE_WEB` | Google o la web |
+| `LINKEDIN` | LinkedIn |
+| `INTELIGENCIA_ARTIFICIAL` | Inteligencia artificial |
+| `CLIENTE_EXISTENTE` | Ya es cliente |
+| `MARCA_ALIADA` | Marca aliada |
+| `OTRO` | Otro (exige detalle) |
+
+La lógica vive en `server/src/services/sales/origen-lead.ts`, sin base, con sus
+pruebas (`npm run test:origen-lead`):
+
+- `normalizarOrigen()` la usan `crearLead()` y `editarLead()`: recorta el
+  detalle (vacío → null), borra el detalle si se borra el origen y rechaza
+  `OTRO` sin detalle (`400 ORIGEN_DETALLE_REQUIRED`). En la edición valida contra
+  lo que el lead ya tiene, así que vaciar solo el detalle de un `OTRO` también se
+  rechaza, y cambiar solo el origen conserva el detalle.
+- `ORIGEN_LEAD_LABEL` y `describirOrigen()` dan las etiquetas del conector y de la
+  auditoría ("Actualizó cómo nos conoció del lead 'X' de Recomendación a Otro").
+- `resumirPorOrigen()` agrupa para el reporte. La consulta está en
+  `services/metricas/indicadores.service.ts` → `leadsPorOrigen()`.
+
+Las etiquetas de la pantalla están repetidas en `client/src/types/leads.types.ts`
+(`ORIGEN_LEAD_OPTIONS`, con ejemplos y el texto de ayuda del detalle); el campo es
+`components/sales/OrigenLeadField.tsx`.
+
+## Permisos
+
+Los del lead: crear con `VENTAS:CREATE`, editar con `VENTAS:EDIT`, ver con
+`VENTAS:VIEW`. El reporte `leads_por_origen` pide `METRICAS:VIEW`, como
+`indicadores`.
+
+## Reglas y decisiones
+
+- **Obligatorio solo en la pantalla.** `POST /api/leads` y `crear_lead` lo
+  aceptan opcional: el bot de minutas y las cargas por planilla crean leads sin
+  preguntarlo, y exigirlo los rompía. `crear_lead` avisa cuando queda sin cargar.
+- **Los leads viejos quedan en null.** No se infiere un dato que nadie preguntó;
+  en el reporte figuran como "Sin dato".
+- **El reporte usa las definiciones de `indicadores`**: leads por `createdAt`,
+  propuestas por `proposalSentAt`, ventas ganadas por `closedAt`, monto con
+  `montoDeVenta()`. Son hechos del período, no una cohorte: un lead que entró en
+  el período y una venta cerrada en él no tienen por qué ser el mismo. A cambio,
+  los totales coinciden con `indicadores` (verificado el 22-oct-2026 en local
+  para el año 2026).
+- **Preparado para WhatsApp** (parte 2 del encargo, pendiente de número real):
+  `origenDesdeAnuncio()` arma `ANUNCIO_META` con el título y el id del anuncio
+  del bloque `referral`, y `completarOrigenSiFalta()` lo aplica solo si el lead no
+  tiene origen —lo que contestó el cliente vale más que la inferencia—. Hoy no los
+  llama nadie (cap. 15).
+
+## Casos borde
+
+- **Mientras haya leads viejos, "Sin dato" domina el reporte**: los porcentajes
+  por origen solo son confiables sobre lo que tiene dato, y la herramienta lo
+  avisa.
+- Las ventas sin monto determinable (sin comisión, sin propuesta publicada y sin
+  presupuesto estimado) cuentan como venta pero no suman; el reporte dice
+  cuántas son.
+- El listado de leads y el Kanban **no** muestran el origen todavía; solo el
+  panel del lead.
 
 ---
 

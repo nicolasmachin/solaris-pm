@@ -39,6 +39,7 @@ import {
   PhaseType,
   Prisma,
   ProjectStatus,
+  OrigenLead,
   ProposalVariante,
   Role,
   SalesStage,
@@ -7122,6 +7123,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // Si viene, respeta lo que mandó el usuario (alta comercial con fecha
     // pasada). Si no viene, el handler hace new Date() como default.
     leadCreatedAt: z.string().datetime({ offset: true }).optional().nullable(),
+    // Opcional en la API (el bot de minutas y las cargas por planilla crean
+    // leads sin preguntarlo); la pantalla de Ventas lo exige.
+    origen: z.nativeEnum(OrigenLead).optional().nullable(),
+    origenDetalle: z.string().max(500).optional().nullable(),
   });
 
   const leadPatchSchema = z.object({
@@ -7141,6 +7146,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     visitScheduledAt: z.string().datetime({ offset: true }).optional().nullable(),
     visitCompletedAt: z.string().datetime({ offset: true }).optional().nullable(),
     closedAt: z.string().datetime({ offset: true }).optional().nullable(),
+    origen: z.nativeEnum(OrigenLead).optional().nullable(),
+    origenDetalle: z.string().max(500).optional().nullable(),
   });
 
   const leadStagePatchSchema = z
@@ -7394,6 +7401,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       address: lead.address,
       stage: lead.stage,
       tipoCliente: lead.tipoCliente,
+      origen: lead.origen,
+      origenDetalle: lead.origenDetalle,
       estimatedKwp: lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) : null,
       estimatedBudgetUsd: lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) : null,
       uteBillMonthlyUsd: lead.uteBillMonthlyUsd ? decimalToNumber(lead.uteBillMonthlyUsd) : null,

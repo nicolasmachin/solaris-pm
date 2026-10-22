@@ -11,6 +11,31 @@ export type SalesStage =
   | "CERRADO_GANADO"
   | "CERRADO_PERDIDO";
 
+// "¿Cómo nos conoció?". Mismo orden y etiquetas que el backend
+// (server/src/services/sales/origen-lead.ts).
+export type OrigenLead =
+  | "ANUNCIO_META"
+  | "REDES_ORGANICO"
+  | "RECOMENDACION"
+  | "GOOGLE_WEB"
+  | "LINKEDIN"
+  | "INTELIGENCIA_ARTIFICIAL"
+  | "CLIENTE_EXISTENTE"
+  | "MARCA_ALIADA"
+  | "OTRO";
+
+export const ORIGEN_LEAD_OPTIONS: Array<{ value: OrigenLead; label: string; detalle: string }> = [
+  { value: "ANUNCIO_META", label: "Anuncio en Instagram o Facebook", detalle: "Qué anuncio, si lo recuerda" },
+  { value: "REDES_ORGANICO", label: "Redes sociales (sin anuncio)", detalle: "Qué red o qué publicación" },
+  { value: "RECOMENDACION", label: "Recomendación", detalle: "Quién lo recomendó" },
+  { value: "GOOGLE_WEB", label: "Google o la web", detalle: "Qué buscó, si lo recuerda" },
+  { value: "LINKEDIN", label: "LinkedIn", detalle: "Aclaración (opcional)" },
+  { value: "INTELIGENCIA_ARTIFICIAL", label: "Inteligencia artificial (ChatGPT, Gemini…)", detalle: "Cuál" },
+  { value: "CLIENTE_EXISTENTE", label: "Ya es cliente", detalle: "Ampliación, otra propiedad…" },
+  { value: "MARCA_ALIADA", label: "Marca aliada (Würth, INGCO…)", detalle: "Qué marca" },
+  { value: "OTRO", label: "Otro", detalle: "Contá cómo nos conoció (obligatorio)" },
+];
+
 export const STAGE_LABELS: Record<SalesStage, string> = {
   NUEVO_LEAD: "Nuevo lead",
   COTIZADO: "Cotizado",
@@ -115,6 +140,9 @@ export interface LeadDetail {
   stage: SalesStage;
   /** Residencial o empresa: clasifica y precarga el cotizador que corresponde. */
   tipoCliente: ProposalVariante;
+  /** "¿Cómo nos conoció?". null en los leads anteriores a la pregunta. */
+  origen: OrigenLead | null;
+  origenDetalle: string | null;
   estimatedKwp: number | null;
   estimatedBudgetUsd: number | null;
   uteBillMonthlyUsd: number | null;

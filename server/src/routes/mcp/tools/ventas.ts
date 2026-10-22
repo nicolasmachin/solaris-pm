@@ -5,7 +5,7 @@
 // Cada una audita con `source: "mcp"` para poder medir qué se hace por acá.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { Action, Module, ProposalVariante, SalesStage, TaskStatus } from "@prisma/client";
+import { Action, Module, OrigenLead, ProposalVariante, SalesStage, TaskStatus } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../../../lib/prisma.js";
@@ -16,6 +16,7 @@ import {
   editarLead,
   moverEtapaLead,
 } from "../../../services/sales/leads.service.js";
+import { describirOrigen, ORIGEN_LEAD_LABEL } from "../../../services/sales/origen-lead.js";
 import { interpretarMarkup } from "../../../services/proposal/calculator.js";
 import { describirInversores, listaInversoresDistintos } from "../../../services/proposal/inversores.js";
 import { hasPermission } from "../../../middleware/authorize.middleware.js";
@@ -34,6 +35,14 @@ function auditMeta(tool: string) {
 
 /** Cuántos resultados devuelve una búsqueda. Más que esto no se lee en un chat. */
 const LIMITE_BUSQUEDA = 15;
+
+/** Valores aceptados para el origen, con su significado, para la descripción. */
+const ORIGEN_DESCRIPCION =
+  "Cómo nos conoció. Valores: " +
+  Object.entries(ORIGEN_LEAD_LABEL)
+    .map(([k, v]) => `${k} = ${v}`)
+    .join("; ") +
+  ". Preguntarlo si no se sabe; no adivinarlo.";
 
 export function registerVentasTools(server: McpServer, user: McpUser) {
   // ── Lectura ──────────────────────────────────────────────────────────────
@@ -78,6 +87,8 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
           clientEmail: true,
           address: true,
           stage: true,
+          origen: true,
+          origenDetalle: true,
           assignedTo: { select: { name: true } },
         },
       });
@@ -96,6 +107,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
             l.clientPhone,
             l.address,
             l.assignedTo ? `asesor: ${l.assignedTo.name}` : null,
+            `origen: ${describirOrigen(l.origen, l.origenDetalle)}`,
           ]
             .filter(Boolean)
             .join(" · ");
@@ -152,6 +164,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         ["Código", lead.code],
         ["Etapa", ETAPA_LABEL[lead.stage] ?? lead.stage],
         ["Asesor", lead.assignedTo?.name],
+        ["Cómo nos conoció", describirOrigen(lead.origen, lead.origenDetalle)],
         ["Reclamos", lead.reclamosCount > 0 ? `${lead.reclamosCount} (último: ${fechaCorta(lead.lastReclamoAt)})` : null],
         ["Motivo de pérdida", lead.lostReason],
         ["Convertido en proyecto", lead.convertedToProject?.code],
@@ -479,7 +492,8 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       title: "Crear cliente potencial",
       description:
         "Da de alta un cliente potencial nuevo. Solo el nombre es obligatorio. " +
-        "Antes de crear uno, buscá por nombre o teléfono para no duplicar.",
+        "Antes de crear uno, buscá por nombre o teléfono para no duplicar. Conviene " +
+        "cargar `origen` (cómo nos conoció): es lo que permite medir qué canal trae ventas.",
       inputSchema: {
         nombre: z.string().min(1).describe("Nombre del cliente o de la empresa"),
         telefono: z.string().optional(),
@@ -493,6 +507,11 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         potencia_estimada_kwp: z.number().positive().optional(),
         tipo_techo: z.string().optional(),
         notas: z.string().optional(),
+        origen: z.nativeEnum(OrigenLead).optional().describe(ORIGEN_DESCRIPCION),
+        origen_detalle: z
+          .string()
+          .optional()
+          .describe("Aclaración del origen: quién lo recomendó, qué marca, qué anuncio. Obligatorio si origen es OTRO."),
       },
     },
     async (args) => {
@@ -508,6 +527,8 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
           estimatedKwp: args.potencia_estimada_kwp ?? null,
           roofType: args.tipo_techo ?? null,
           notes: args.notas ?? null,
+          origen: args.origen ?? null,
+          origenDetalle: args.origen_detalle ?? null,
           // El asesor es quien lo carga, salvo que después se reasigne desde
           // la app.
           assignedToId: user.id,
@@ -525,7 +546,9 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
           ["Email", lead.clientEmail],
           ["Dirección", lead.address],
           ["Asesor", user.name],
+          ["Cómo nos conoció", lead.origen ? describirOrigen(lead.origen, lead.origenDetalle) : null],
         ]),
+        lead.origen ? null : "No quedó cargado cómo nos conoció: si lo sabés, pasalo con editar_lead.",
       );
     },
   );
@@ -536,7 +559,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       title: "Editar cliente potencial",
       description:
         "Corrige los datos de contacto o de relevamiento de un cliente potencial, y " +
-        "las fechas del proceso (alta, propuesta enviada, visita agendada, visita " +
+        "cómo nos conoció (origen), y las fechas del proceso (alta, propuesta enviada, visita agendada, visita " +
         "realizada, cierre). Las fechas se completan solas al avanzar el lead: " +
         "cambiarlas acá es para corregirlas o cargar una que faltó, y solo si la " +
         "persona lo pide. Solo cambia lo que se manda. No sirve para cambiar la etapa " +
@@ -551,6 +574,8 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         presupuesto_estimado_usd: z.number().positive().optional(),
         tipo_techo: z.string().optional(),
         notas: z.string().optional(),
+        origen: z.nativeEnum(OrigenLead).optional().describe(ORIGEN_DESCRIPCION),
+        origen_detalle: z.string().optional().describe("Aclaración del origen. Obligatoria si origen es OTRO."),
         fecha_alta: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("AAAA-MM-DD, o \"borrar\" para dejarla vacía."),
         fecha_propuesta_enviada: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("AAAA-MM-DD, o \"borrar\"."),
         fecha_visita_agendada: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("Día en que se ACORDÓ la visita con el cliente (no el día de la visita). AAAA-MM-DD, o \"borrar\"."),
@@ -590,6 +615,8 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         }),
         ...(args.tipo_techo !== undefined && { roofType: args.tipo_techo }),
         ...(args.notas !== undefined && { notes: args.notas }),
+        ...(args.origen !== undefined && { origen: args.origen }),
+        ...(args.origen_detalle !== undefined && { origenDetalle: args.origen_detalle }),
         ...fechasPedidas,
       };
 
@@ -615,6 +642,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
           ["Presupuesto estimado", lead.estimatedBudgetUsd ? usd(Number(lead.estimatedBudgetUsd)) : null],
           ["Tipo de techo", lead.roofType],
           ["Notas", lead.notes],
+          ["Cómo nos conoció", lead.origen ? describirOrigen(lead.origen, lead.origenDetalle) : null],
           ["Alta", fechaLargaUruguay(lead.leadCreatedAt)],
           ["Propuesta enviada", fechaLargaUruguay(lead.proposalSentAt)],
           ["Visita agendada", fechaLargaUruguay(lead.visitScheduledAt)],

@@ -107,6 +107,13 @@ Crear una plantilla queda en auditoría.
 - **Las conversaciones no están vinculadas todavía a leads ni a clientes**: se
   listan por teléfono. Vincularlas (por teléfono exacto, nunca por nombre) es el
   paso siguiente, junto con la pantalla de Conversaciones de Experiencia Solar.
+- **Anuncios "click to WhatsApp"**: el primer mensaje trae un bloque `referral`
+  (id y título del anuncio, URL, `ctwa_clid`), que hoy queda solo en
+  `whatsapp_mensajes.payload`. Al vincular la conversación con un lead (o crearlo
+  desde ella) hay que llamar a `origenDesdeAnuncio()` + `completarOrigenSiFalta()`
+  de `services/sales/origen-lead.ts` (cap. 02, Origen del lead). Falta verificar
+  con un anuncio de prueba que el `referral` llega también con el número en modo
+  coexistencia; es una suposición.
 
 ## Archivos
 

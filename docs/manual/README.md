@@ -36,7 +36,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | # | Capítulo | Cubre | Estado |
 |---|---|---|---|
 | 01 | [Fundamentos](01-fundamentos.md) | Autenticación, permisos, auditoría, archivos, versionado de documentos, arranque del servidor | ✅ Completo |
-| 02 | [Ventas](02-ventas.md) | Leads, pipeline, reclamos, propuestas comerciales, conversión a proyecto, comisiones | 🟡 Parcial (fechas del proceso · cotizador: precargas y saludo · varios inversores (iguales o distintos) · costeo a medida · cotizador B2B · comisión al ganar · presentación de Experiencia Solar) |
+| 02 | [Ventas](02-ventas.md) | Leads, pipeline, reclamos, propuestas comerciales, conversión a proyecto, comisiones | 🟡 Parcial (fechas del proceso · origen del lead · cotizador: precargas y saludo · varios inversores (iguales o distintos) · costeo a medida · cotizador B2B · comisión al ganar · presentación de Experiencia Solar) |
 | 03 | [Proyectos](03-proyectos.md) | Pipeline de obra, etapas, subetapas, checklists, ampliaciones, traspasos | 🟡 Parcial (etapa mostrada · control de tiempos · documentos comerciales y contrato firmado) |
 | 04 | [Tareas y tickets](04-tareas.md) | Tareas de proyecto, tareas sueltas, estado en espera, Mis tareas, tickets | ✅ Completo |
 | 05 | [Ingeniería](05-ingenieria.md) | Unifilar, materiales, triángulos, pre-ingeniería, visitas técnicas, proyecto final | 🟡 Parcial (consolidador de materiales · catálogo de materiales · plantillas y lista de materiales · foto del material · gabinetes · justificación de potencia UTE) |

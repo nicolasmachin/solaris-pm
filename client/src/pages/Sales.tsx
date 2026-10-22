@@ -40,6 +40,7 @@ import { CommissionCaptureModal } from "../components/sales/CommissionCaptureMod
 import { getLeadCommission } from "../api/comisiones.api";
 import { LeadProposalsList } from "../components/sales/LeadProposalsList";
 import { LeadTasks } from "../components/sales/LeadTasks";
+import { OrigenLeadField, origenIncompleto } from "../components/sales/OrigenLeadField";
 import { LargeModal } from "../components/ui/LargeModal";
 import { PresentacionExperienciaSolar } from "../components/sales/PresentacionExperienciaSolar";
 import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
@@ -56,7 +57,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Spinner } from "../components/ui/Spinner";
 import { useAuthStore } from "../store/auth.store";
 import type { User } from "../types/api.types";
-import type { LeadListItem, LeadStageGroup, SalesStage } from "../types/leads.types";
+import type { LeadListItem, LeadStageGroup, OrigenLead, SalesStage } from "../types/leads.types";
 import { KANBAN_COLUMNS, STAGE_COLORS, STAGE_LABELS } from "../types/leads.types";
 import { LeadsListView } from "../components/sales/LeadsListView";
 import { SalesViewToggle, useSalesView } from "../components/sales/SalesViewToggle";
@@ -71,6 +72,11 @@ const LOST_STAGE = "CERRADO_PERDIDO";
 // los use la vista de lista. Se mantiene el nombre histórico para no
 // tocar los call sites del Kanban.
 const COLUMN_COLORS = STAGE_COLORS;
+
+/** El mensaje del backend si vino uno (p. ej. "Otro" sin detalle), o el genérico. */
+function apiErrorMessage(err: unknown, fallback: string): string {
+  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
+}
 
 function formatMoney(value: number | null) {
   if (value === null) return "—";
@@ -130,7 +136,12 @@ function NewLeadModal({
     roofType: "",
     notes: "",
     assignedToId: user?.id ?? "",
+    origen: "" as OrigenLead | "",
+    origenDetalle: "",
   });
+  // "¿Cómo nos conoció?" es obligatorio al crear desde acá: sin ese dato no se
+  // puede medir qué canal trae ventas.
+  const origenValido = Boolean(form.origen) && !origenIncompleto(form.origen, form.origenDetalle);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -145,13 +156,15 @@ function NewLeadModal({
         roofType: form.roofType || null,
         notes: form.notes || null,
         assignedToId: form.assignedToId || null,
+        origen: form.origen || null,
+        origenDetalle: form.origenDetalle.trim() || null,
       }),
     onSuccess: () => {
       toast.success("Lead creado");
       queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
       onClose();
     },
-    onError: () => toast.error("No se pudo crear el lead"),
+    onError: (err) => toast.error(apiErrorMessage(err, "No se pudo crear el lead")),
   });
 
   return (
@@ -164,7 +177,8 @@ function NewLeadModal({
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button
             onClick={() => createMutation.mutate()}
-            disabled={!form.clientName.trim()}
+            disabled={!form.clientName.trim() || !origenValido}
+            title={!origenValido ? "Falta completar cómo nos conoció" : undefined}
             loading={createMutation.isPending}
           >
             Crear lead
@@ -192,6 +206,16 @@ function NewLeadModal({
             />
           </label>
         ))}
+
+        <OrigenLeadField
+          className="md:col-span-2"
+          required
+          origen={form.origen}
+          detalle={form.origenDetalle}
+          onChange={({ origen, detalle }) =>
+            setForm((current) => ({ ...current, origen, origenDetalle: detalle }))
+          }
+        />
 
         <label className="md:col-span-2">
           <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Asignar a</span>
@@ -487,6 +511,8 @@ function LeadPanel({
     notes: "",
     assignedToId: "",
     tipoCliente: "RESIDENCIAL" as ProposalVariante,
+    origen: "" as OrigenLead | "",
+    origenDetalle: "",
   });
 
   useEffect(() => {
@@ -503,6 +529,8 @@ function LeadPanel({
       notes: lead.notes ?? "",
       assignedToId: lead.assignedTo?.id ?? "",
       tipoCliente: lead.tipoCliente ?? "RESIDENCIAL",
+      origen: lead.origen ?? "",
+      origenDetalle: lead.origenDetalle ?? "",
     });
     setLostReason(lead.lostReason ?? "");
     setDates({
@@ -528,12 +556,15 @@ function LeadPanel({
         notes: form.notes || null,
         assignedToId: form.assignedToId || null,
         tipoCliente: form.tipoCliente,
+        origen: form.origen || null,
+        origenDetalle: form.origenDetalle.trim() || null,
       }),
     onSuccess: () => {
       toast.success("Lead actualizado");
       queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
     },
+    onError: (err) => toast.error(apiErrorMessage(err, "No se pudo guardar el lead")),
   });
 
   const datesMutation = useMutation({
@@ -749,6 +780,13 @@ function LeadPanel({
                 <option value="EMPRESA">Empresa (B2B)</option>
               </select>
             </label>
+            <OrigenLeadField
+              origen={form.origen}
+              detalle={form.origenDetalle}
+              onChange={({ origen, detalle }) =>
+                setForm((current) => ({ ...current, origen, origenDetalle: detalle }))
+              }
+            />
             <label>
               <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Asignado a</span>
               <select
@@ -774,7 +812,12 @@ function LeadPanel({
             </label>
           </div>
 
-          <Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()} className="w-full">
+          <Button
+            loading={saveMutation.isPending}
+            disabled={origenIncompleto(form.origen, form.origenDetalle)}
+            onClick={() => saveMutation.mutate()}
+            className="w-full"
+          >
             Guardar cambios
           </Button>
         </section>

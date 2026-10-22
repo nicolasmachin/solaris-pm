@@ -36,6 +36,7 @@
     "test:lead-proposals": "node --import tsx --test src/services/proposal/lead-proposals.service.test.ts",
     "test:viability": "node --import tsx --test src/services/proposal/viability.service.test.ts",
     "test:lead-attachments": "node --import tsx --test src/services/sales/sales.service.test.ts",
+    "test:origen-lead": "node --import tsx --test src/services/sales/origen-lead.test.ts",
     "test:project-fields": "node --import tsx --test src/validators/projectFields.test.ts",
     "test:interaction-ownership": "node --import tsx --test src/services/clientes/ownership.test.ts",
     "test:commission": "node --import tsx --test src/services/commission/commission.service.test.ts",

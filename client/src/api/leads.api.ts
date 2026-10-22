@@ -1,5 +1,5 @@
 import { apiClient as api } from "./axios";
-import type { LeadDetail, LeadProposal, LeadStageGroup, ProposalListItem, SalesStage } from "../types/leads.types";
+import type { LeadDetail, LeadProposal, LeadStageGroup, OrigenLead, ProposalListItem, SalesStage } from "../types/leads.types";
 import type { Project } from "../types/api.types";
 import type { ProposalVariante } from "../types/proposals-v2";
 
@@ -75,6 +75,8 @@ export async function createLead(body: {
   roofType?: string | null;
   notes?: string | null;
   assignedToId?: string | null;
+  origen?: OrigenLead | null;
+  origenDetalle?: string | null;
 }): Promise<{ id: string; code: string }> {
   const { data } = await api.post<{ id: string; code: string }>("/api/leads", body);
   return data;
@@ -99,6 +101,8 @@ export async function patchLead(
     visitScheduledAt?: string | null;
     visitCompletedAt?: string | null;
     closedAt?: string | null;
+    origen?: OrigenLead | null;
+    origenDetalle?: string | null;
   },
 ): Promise<void> {
   await api.patch(`/api/leads/${id}`, body);

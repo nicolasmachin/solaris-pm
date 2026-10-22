@@ -8,13 +8,14 @@
 // Cada función recibe un `actor` —quién la ejecuta— y un `metadata` opcional
 // que viaja a la auditoría. El conector lo usa para marcar `source: "mcp"`.
 
-import { AuditAction, AuditEntityType, Prisma, ProposalVariante, SalesStage } from "@prisma/client";
+import { AuditAction, AuditEntityType, OrigenLead, Prisma, ProposalVariante, SalesStage } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../audit.service.js";
 import { congelarComisionAlGanar } from "../commission/commission.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { diaUruguayIso } from "../../utils/uruguay.js";
+import { normalizarOrigen, ORIGEN_LEAD_LABEL } from "./origen-lead.js";
 
 export interface LeadActor {
   id: string;
@@ -110,6 +111,9 @@ export interface CrearLeadInput {
   notes?: string | null;
   assignedToId?: string | null;
   leadCreatedAt?: string | null;
+  /** "¿Cómo nos conoció?". Opcional acá: la pantalla lo exige, la API y el conector no. */
+  origen?: OrigenLead | null;
+  origenDetalle?: string | null;
 }
 
 export async function crearLead(params: {
@@ -118,6 +122,8 @@ export async function crearLead(params: {
   metadata?: LeadAuditMetadata;
 }) {
   const { data, actor } = params;
+  // Valida antes de consumir un código: OTRO sin detalle no se guarda.
+  const origen = normalizarOrigen(data);
   const code = await generateLeadCode();
 
   const lead = await prisma.salesLead.create({
@@ -138,6 +144,8 @@ export async function crearLead(params: {
       roofType: data.roofType ?? null,
       notes: data.notes ?? null,
       assignedToId: data.assignedToId ?? null,
+      origen: origen.origen ?? null,
+      origenDetalle: origen.origenDetalle ?? null,
       // Fecha de alta comercial. Si vino explícita (cargar un lead viejo con su
       // fecha real), se respeta; si no, ahora.
       leadCreatedAt: data.leadCreatedAt ? new Date(data.leadCreatedAt) : new Date(),
@@ -180,6 +188,12 @@ function toDateOrNull(value: string | null | undefined): Date | null {
   return value ? new Date(value) : null;
 }
 
+/** Etiquetas de auditoría de los campos que no son fechas pero conviene nombrar. */
+const CAMPO_LABEL: Record<string, string> = {
+  origen: "cómo nos conoció",
+  origenDetalle: "el detalle de cómo nos conoció",
+};
+
 const FECHA_LABEL: Record<string, string> = {
   leadCreatedAt: "la fecha de alta",
   proposalSentAt: "la fecha de propuesta enviada",
@@ -207,9 +221,12 @@ export async function editarLead(params: {
   });
   if (!existing) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
 
+  const origen = normalizarOrigen(data, existing);
+
   const lead = await prisma.salesLead.update({
     where: { id: leadId },
     data: {
+      ...origen,
       ...(data.clientName !== undefined && { clientName: data.clientName }),
       ...(data.clientEmail !== undefined && { clientEmail: data.clientEmail }),
       ...(data.clientPhone !== undefined && { clientPhone: data.clientPhone }),
@@ -261,6 +278,8 @@ export async function editarLead(params: {
       tipoCliente: lead.tipoCliente,
       notes: lead.notes,
       assignedToId: lead.assignedToId,
+      origen: lead.origen,
+      origenDetalle: lead.origenDetalle,
       // Las fechas del proceso también quedan auditadas: se pueden corregir a
       // mano y cambian las métricas.
       leadCreatedAt: lead.leadCreatedAt,
@@ -269,9 +288,16 @@ export async function editarLead(params: {
       visitCompletedAt: lead.visitCompletedAt,
       closedAt: lead.closedAt,
     },
-    labels: FECHA_LABEL,
+    labels: { ...CAMPO_LABEL, ...FECHA_LABEL },
     formatter: ({ field, label, oldValue, newValue }) => {
-      const fmt = (v: string | null) => (v && field in FECHA_LABEL ? fechaUruguayCorta(v) : v);
+      const fmt = (v: string | null) =>
+        !v
+          ? v
+          : field in FECHA_LABEL
+            ? fechaUruguayCorta(v)
+            : field === "origen"
+              ? (ORIGEN_LEAD_LABEL[v as OrigenLead] ?? v)
+              : v;
       return `Actualizó ${label} del lead '${existing.clientName}' de ${fmt(oldValue) ?? "vacío"} a ${fmt(newValue) ?? "vacío"}`;
     },
     metadata: params.metadata,
