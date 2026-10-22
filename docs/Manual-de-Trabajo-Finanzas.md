@@ -458,12 +458,13 @@ con su título; en el celular, el menú es un desplegable arriba. Junto a
 |---|---|---|
 | — | **Inicio** | Lo urgente: cómo se está (posición), lo que falta conciliar y lo que hay que pagar y cobrar |
 | **Ventas** | **Cobros**, **Facturación** | Lo que entra: los cobros a los clientes y las facturas que se les emiten |
-| **Compras** | **Facturas**, **Proveedores**, **Instaladores**, **Costos fijos** | Lo que sale: las facturas de los proveedores, lo que se les debe y se les paga, los instaladores tercerizados y los gastos de todos los meses |
+| **Compras** | **Facturas**, **Proveedores**, **Instaladores**, **Costos fijos**, **Comisiones** | Lo que sale: las facturas de los proveedores, lo que se les debe y se les paga, los instaladores tercerizados, los gastos de todos los meses y las comisiones de los asesores |
 | **Bancos** | **Banco**, **Tarjetas**, **Movimientos**, **Cuentas** | Dónde está la plata: lo que dice el banco, las tarjetas de crédito, cada entrada y salida, y las cuentas |
 | **Informes** | **Flujo**, **Resultados**, **Cierre**, **Historial** | Qué dice todo junto: el flujo de fondos, el estado de resultados, el cierre de cada mes y el registro de todo lo que se hizo |
 
-Al entrar a Finanzas se abre el **Inicio**. Las **Comisiones** tienen su propia
-sección en el menú general de Voltia PM, fuera de Finanzas (5.17).
+Al entrar a Finanzas se abre el **Inicio**. Las **Comisiones** están en el grupo
+Compras y también en el menú de la cuenta de cada usuario, para que los asesores
+vean las suyas (5.17).
 
 En el celular, las listas de Finanzas se ven como tarjetas y las ventanas se
 abren como un panel desde abajo; en la computadora se ven como tablas.
@@ -1342,7 +1343,7 @@ comisión ya pagada no se recalcula así.
 **Ventas sin propuesta.** Si la venta se cerró sin ninguna propuesta publicada en
 Voltia PM, no hay de dónde sacar el monto: la comisión se carga a mano.
 
-**La pantalla Comisiones** (en el menú general, fuera de Finanzas): cada asesor
+**La pantalla Comisiones** (en Finanzas → Compras, y en el menú de la cuenta para los asesores): cada asesor
 ve solo las suyas; la gerencia comercial, Administración y Finanzas ven las de
 todos y filtran por asesor. Muestra el saldo a cobrar, lo cobrado en el año, la
 cantidad de ventas, un gráfico por mes y la tabla con filtros (todas,
@@ -1604,7 +1605,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.19 | 22 de octubre de 2026 | El menú de Finanzas pasa a la izquierda, con las pantallas agrupadas; en el celular es un desplegable. |
+| 0.19 | 22 de octubre de 2026 | El menú de Finanzas pasa a la izquierda, con las pantallas agrupadas; en el celular es un desplegable. Comisiones se suma al grupo Compras. Cada aviso de «Para hacer hoy» lleva a la pantalla donde se resuelve. |
 | 0.18 | 21 de octubre de 2026 | Se agrega «Para hacer hoy»: la lista con todo lo pendiente de Finanzas arriba del Inicio, el mail de cada mañana y el número junto a Finanzas en el menú. |
 | 0.17 | 21 de octubre de 2026 | Se reordenan las herramientas según el menú nuevo de Finanzas: Inicio, Ventas, Compras, Bancos e Informes. Nuevas pantallas: Inicio (posición, lo que falta conciliar y pendientes), Banco, Tarjetas y Cierre. Cuentas por pagar pasa a estar arriba de Proveedores, y la bandeja de facturas recibidas, arriba de Facturas. Las facturas de proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana; las facturas llegan cada media hora. Las notas de crédito de proveedores se descuentan de la deuda desde la misma lista. Una factura se carga por un solo formulario y a un proveedor se le paga solo con «Registrar pago». Nuevos ajustes de deuda (no son plata) y «Arrancar cuenta» con el estado de cuenta: borrón y cuenta nueva con cada proveedor. Lo personal (cuenta del socio y adelantos a descontar del sueldo) no es gasto de Voltia. Conciliar una cuenta con diferencia pide el motivo. Nuevo cierre de mes, con su lista de control y el archivo para la contadora, y la rendición de tarjetas en el procedimiento mensual. Las transferencias entre cuentas y los ajustes dejan de contar en el estado de resultados. Aviso «hay cobro sin factura» en Facturación. Nuevos casos en «Cuando algo sale mal» y palabras nuevas en el glosario. |
 | 0.16 | 20 de octubre de 2026 | En la bandeja de facturas recibidas, elegir el proveedor de una factura lo asigna a todas las del mismo RUT. |

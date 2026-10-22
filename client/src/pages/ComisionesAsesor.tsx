@@ -69,7 +69,8 @@ function StatusBadge({ status }: { status: CommissionStatus }) {
   );
 }
 
-export function ComisionesAsesor() {
+// `enFinanzas`: montada dentro del menú de Finanzas, que ya pone el margen y el título.
+export function ComisionesAsesor({ enFinanzas = false }: { enFinanzas?: boolean }) {
   // Admin/finanzas (FINANZAS:VIEW) y gerencia comercial (COMISIONES:EDIT) ven las
   // comisiones de todos y pueden filtrar por persona; el resto ve solo las propias.
   const canSeeAll = usePermission("FINANZAS", "VIEW") || usePermission("COMISIONES", "EDIT");
@@ -120,10 +121,12 @@ export function ComisionesAsesor() {
   const rows = listQ.data ?? [];
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 pb-24 space-y-6">
+    <div className={enFinanzas ? "space-y-6" : "max-w-6xl mx-auto p-4 sm:p-6 pb-24 space-y-6"}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Comisiones</h1>
+          {enFinanzas
+            ? <h2 className="font-display text-lg font-semibold text-[var(--color-text-primary)]">Comisiones</h2>
+            : <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Comisiones</h1>}
           <p className="text-sm text-[var(--color-text-muted)]">
             {canSeeAll ? "Comisiones de todos los asesores." : "Tus comisiones por ventas cerradas."}
           </p>

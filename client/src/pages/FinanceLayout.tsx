@@ -2,7 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeftRight, Banknote, CalendarCheck, ChartColumn, CreditCard, FileText, History, Home, Landmark,
-  Receipt, Repeat, TrendingUp, Truck, Users, Wrench,
+  HandCoins, Receipt, Repeat, TrendingUp, Truck, Users, Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -30,6 +30,7 @@ const GRUPOS: Array<{ label: string | null; items: Item[] }> = [
       { to: "proveedores", label: "Proveedores", icon: Truck },
       { to: "instaladores", label: "Instaladores", icon: Wrench },
       { to: "costos-fijos", label: "Costos fijos", icon: Repeat },
+      { to: "comisiones", label: "Comisiones", icon: HandCoins },
     ],
   },
   {

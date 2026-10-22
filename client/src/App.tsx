@@ -415,6 +415,14 @@ export function App() {
               (todos los instaladores + gestión); el tercerizado entra por el
               menú de su cuenta y solo ve lo suyo. */}
           <Route path="instaladores" element={<PagosInstalador />} />
+          <Route
+            path="comisiones"
+            element={
+              <PermissionRoute module="COMISIONES" action="VIEW">
+                <ComisionesAsesor enFinanzas />
+              </PermissionRoute>
+            }
+          />
           <Route path="facturacion" element={<FinanceFacturacionTab />} />
           <Route path="flujo" element={<FinanceCashflowTab />} />
           <Route path="resultados" element={<FinanceResultsTab />} />

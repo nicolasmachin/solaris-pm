@@ -57,11 +57,11 @@ export async function paraHacerHoy(): Promise<ItemHoy[]> {
   const fijos = await prisma.financeMovement.count({
     where: { deletedAt: null, fixedCostId: { not: null }, tipoMovimiento: TipoMovimiento.GASTO, pagado: false, fecha: { lte: hoy }, status: { not: FinanceMovementStatus.PREVISTO } },
   });
-  add({ clave: "fijos", grupo: "Compras", texto: "costos fijos vencidos sin pagar", cantidad: fijos, link: "/finanzas/inicio", gravedad: "VENCIDO" });
+  add({ clave: "fijos", grupo: "Compras", texto: "costos fijos vencidos sin pagar", cantidad: fijos, link: "/finanzas/costos-fijos", gravedad: "VENCIDO" });
   const instaladores = await prisma.installerPayment.count({ where: { deletedAt: null, status: { in: [InstallerPaymentStatus.PENDIENTE, InstallerPaymentStatus.PARCIAL] } } });
   add({ clave: "instaladores", grupo: "Compras", texto: "pagos a instaladores pendientes", cantidad: instaladores, link: "/finanzas/instaladores", gravedad: "AVISO" });
   const comisiones = await prisma.commission.count({ where: { status: CommissionStatus.PENDIENTE } });
-  add({ clave: "comisiones", grupo: "Compras", texto: "comisiones de asesores sin pagar", cantidad: comisiones, link: "/finanzas/inicio", gravedad: "AVISO" });
+  add({ clave: "comisiones", grupo: "Compras", texto: "comisiones de asesores sin pagar", cantidad: comisiones, link: "/finanzas/comisiones", gravedad: "AVISO" });
 
   // Proveedores de cuenta corriente sin comparar con su estado de cuenta hace más de 30 días.
   const cc = await prisma.supplier.findMany({
@@ -74,10 +74,10 @@ export async function paraHacerHoy(): Promise<ItemHoy[]> {
   // ── Bancos ─────────────────────────────────────────────────────────────────
   const faltaCargar = cuentasBanco.reduce((n, c) => n + c.pendientes.length, 0);
   add({ clave: "banco", grupo: "Bancos", texto: "movimientos del banco sin cargar en Voltia PM", cantidad: faltaCargar, link: "/finanzas/banco", gravedad: "HOY" });
-  add({ clave: "sin_banco", grupo: "Bancos", texto: "movimientos cargados que el banco no muestra", cantidad: conciliar.sinBanco.length, link: "/finanzas/inicio", gravedad: "HOY" });
+  add({ clave: "sin_banco", grupo: "Bancos", texto: "movimientos cargados que el banco no muestra", cantidad: conciliar.sinBanco.length, link: "/finanzas/inicio#por-conciliar", gravedad: "HOY" });
   const sinLeer = cuentasBanco.filter((c) => !c.bancoLeidoEn || ahora.getTime() - new Date(c.bancoLeidoEn).getTime() > HORAS_SIN_LECTURA * 3_600_000).length;
   add({ clave: "lector", grupo: "Bancos", texto: "cuentas que el lector del banco no leyó en el último día", cantidad: sinLeer, link: "/finanzas/banco", gravedad: "AVISO" });
-  add({ clave: "duplicados", grupo: "Bancos", texto: "posibles gastos cargados dos veces", cantidad: conciliar.duplicados.length, link: "/finanzas/inicio", gravedad: "HOY" });
+  add({ clave: "duplicados", grupo: "Bancos", texto: "posibles gastos cargados dos veces", cantidad: conciliar.duplicados.length, link: "/finanzas/inicio#por-conciliar", gravedad: "HOY" });
   const tarjetaSinDecidir = await prisma.financeMovement.count({
     where: {
       deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, account: { tipo: AccountType.TARJETA },

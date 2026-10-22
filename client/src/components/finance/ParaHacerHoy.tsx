@@ -34,7 +34,11 @@ export function ParaHacerHoy() {
             const Icono = e.icono;
             return (
               <li key={i.clave}>
-                <Link to={i.link} className="flex items-center gap-3 py-2 text-sm hover:bg-[var(--color-bg-card-hover)] -mx-2 px-2 rounded-lg">
+                <Link
+                  to={i.link}
+                  // Los que se resuelven en el mismo Inicio llevan a "Por conciliar", más abajo.
+                  onClick={() => { if (i.link.includes('#')) document.getElementById(i.link.split('#')[1])?.scrollIntoView({ behavior: 'smooth' }); }}
+                  className="flex items-center gap-3 py-2 text-sm hover:bg-[var(--color-bg-card-hover)] -mx-2 px-2 rounded-lg">
                   <Icono className={`h-4 w-4 shrink-0 ${e.cls}`} aria-label={e.label} />
                   <span className="w-8 shrink-0 text-right font-semibold tabular-nums text-[var(--color-text-primary)]">{i.cantidad}</span>
                   <span className="flex-1 text-[var(--color-text-secondary)]">{i.texto}</span>

@@ -31,6 +31,13 @@ export const LATEST_RELEASE: Release = {
       items: [
         "El menú de Finanzas pasa a la izquierda, ordenado en grupos con un ícono por pantalla; junto a Inicio, cuántas cosas hay para hoy.",
         "En el celular, el menú es un desplegable.",
+        "Comisiones se suma al menú de Finanzas, dentro de Compras.",
+      ],
+    },
+    {
+      title: "Arreglos",
+      items: [
+        "En «Para hacer hoy», los avisos de comisiones y de costos fijos vencidos ahora abren su pantalla; los que se resuelven en el Inicio bajan hasta «Por conciliar».",
       ],
     },
   ],

@@ -18,7 +18,7 @@ export function PorConciliar() {
     && data.banco.every((b) => b.faltaCargar === 0);
 
   return (
-    <div className="space-y-3">
+    <div id="por-conciliar" className="scroll-mt-4 space-y-3">
       <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Por conciliar</h2>
       {nada && <p className="text-sm text-emerald-300">Todo conciliado: las facturas, los movimientos y el banco se encuentran.</p>}
 

@@ -30,13 +30,16 @@ entreverada.
 |---|---|
 | — | **Inicio** (`inicio`, entrada por defecto) |
 | Ventas | Cobros (`cobros`), Facturación (`facturacion`) |
-| Compras | Facturas (`facturas-proveedores`), Proveedores (`proveedores`), Instaladores (`instaladores`), Costos fijos (`costos-fijos`) |
+| Compras | Facturas (`facturas-proveedores`), Proveedores (`proveedores`), Instaladores (`instaladores`), Costos fijos (`costos-fijos`), Comisiones (`comisiones`) |
 | Bancos | Banco (`banco`), Tarjetas (`tarjetas`), Movimientos (`movimientos`), Cuentas (`cuentas`) |
 | Informes | Flujo (`flujo`), Resultados (`resultados`), Cierre (`cierre`), Historial (`historial`) |
 
 Las fichas (`/finanzas/proveedores/:id`, `/finanzas/cobros/:id`) viven fuera
 del layout de pestañas. Todo el layout pide `FINANZAS:VIEW`
-(`<PermissionRoute>` en `App.tsx`).
+(`<PermissionRoute>` en `App.tsx`). **Comisiones** es la misma pantalla que
+`/comisiones` del menú general (`ComisionesAsesor` con `enFinanzas`, que saca el
+margen y baja el título); además pide `COMISIONES:VIEW`, que es lo que piden sus
+endpoints.
 
 ### Reglas y decisiones
 
@@ -86,6 +89,11 @@ solas en los últimos 7 días, proveedores pasados del límite, pagos a
 instaladores y comisiones pendientes, proveedores de cuenta corriente sin
 conciliar hace más de 30 días, cuentas que el lector del banco no leyó en 30
 horas, adelantos por descontar). Lo vencido va primero.
+Cada ítem lleva a la pantalla donde se resuelve (comisiones → `comisiones`,
+costos fijos vencidos → `costos-fijos`). Los que se resuelven en el mismo Inicio
+(movimientos que el banco no muestra, posibles duplicados) llevan a
+`inicio#por-conciliar` y `ParaHacerHoy.tsx` baja hasta ese cuadro: un link al
+Inicio sin ancla no hacía nada visible, porque ya se estaba ahí.
 
 - **Número en el menú:** `Topbar.tsx` → `FinanzasNavLink` pide
   `GET /finance/para-hacer-hoy/total` (cuenta vencidos + hoy, no los avisos);

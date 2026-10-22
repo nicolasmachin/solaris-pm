@@ -8,6 +8,11 @@
 
 - El menú de Finanzas pasa a la izquierda, ordenado en grupos (Ventas, Compras, Bancos, Informes) con un ícono por pantalla, en lugar de la fila larga de pestañas. Junto a Inicio se ve cuántas cosas hay para hacer hoy.
 - En el celular, el menú es un desplegable.
+- **Comisiones** se suma al menú de Finanzas, dentro de Compras.
+
+#### Arreglos
+
+- En «Para hacer hoy», los avisos de comisiones sin pagar y de costos fijos vencidos llevaban al mismo Inicio y no pasaba nada: ahora abren Comisiones y Costos fijos. Los que se resuelven en el Inicio bajan hasta «Por conciliar».
 
 ## v13.0
 
