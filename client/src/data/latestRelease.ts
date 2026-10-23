@@ -52,6 +52,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Ver qué movimientos tienen factura",
+      items: [
+        "En Movimientos, una columna dice si cada gasto tiene factura (electrónica, adjunta, solo número o sin factura), con un filtro para ver solo los que no tienen.",
+      ],
+    },
+    {
       title: "Las facturas recibidas sugieren el gasto ya cargado",
       items: [
         "En las facturas por revisar se ven los gastos ya cargados más parecidos, también los cargados sin proveedor, con el porqué. Un toque y quedan vinculados.",

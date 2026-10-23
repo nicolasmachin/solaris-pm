@@ -14,7 +14,7 @@ import {
   isPaymentRow,
   patchMovement,
 } from "../api/finance.api";
-import type { FinanceListItem, FinanceMovement } from "../types/finance.types";
+import type { FacturaFila, FinanceListItem, FinanceMovement } from "../types/finance.types";
 import { getDeudasAbiertas } from "../api/payments.api";
 import { ResponsiveTable, type Column } from "../components/ui/ResponsiveTable";
 import { Sheet } from "../components/ui/Sheet";
@@ -114,6 +114,8 @@ export function FinanceMovementsTab() {
   const [anio, setAnio] = useState<number>(defaultAnio);
   const [tipo, setTipo] = useState<"" | TipoMovimiento>("");
   const [search, setSearch] = useState("");
+  // "" = todos; "SIN" = gastos sin factura; "CON" = con factura (electrónica o adjunta).
+  const [conFactura, setConFactura] = useState<"" | "SIN" | "CON">("");
   const [showForm, setShowForm] = useState(searchParams.get("new") === "1");
   const [showTransfer, setShowTransfer] = useState(false);
   const [prefill, setPrefill] = useState<NewMovementPrefill | null>(() => readPrefill(searchParams));
@@ -158,8 +160,15 @@ export function FinanceMovementsTab() {
   // proyecto, código del proyecto, cuenta o monto.
   const items = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return allItems;
-    return allItems.filter((it) => {
+    const porFactura = conFactura
+      ? allItems.filter((it) => {
+          const f = it.factura;
+          if (!f) return false;
+          return conFactura === "SIN" ? f.estado === "SIN" || f.estado === "NUMERO" : f.estado === "ELECTRONICA" || f.estado === "ADJUNTO";
+        })
+      : allItems;
+    if (!q) return porFactura;
+    return porFactura.filter((it) => {
       const desc = it.descripcion?.toLowerCase() ?? "";
       const montoStr = String(Math.abs(it.monto));
       if (desc.includes(q)) return true;
@@ -177,7 +186,7 @@ export function FinanceMovementsTab() {
       }
       return false;
     });
-  }, [allItems, search, accountNameById]);
+  }, [allItems, search, accountNameById, conFactura]);
 
   const qcRoot = useQueryClient();
   const [editingMovement, setEditingMovement] = useState<FinanceMovement | null>(null);
@@ -256,6 +265,11 @@ export function FinanceMovementsTab() {
       },
     },
     {
+      key: "factura",
+      label: "Factura",
+      render: (it) => <FacturaBadge f={it.factura} />,
+    },
+    {
       key: "monto",
       label: "Monto",
       align: "right",
@@ -263,10 +277,19 @@ export function FinanceMovementsTab() {
       className: "tabular-nums",
       render: (it) => {
         if (isPaymentRow(it)) {
+          // Desde una cuenta de otra moneda: lo que salió de la cuenta, y debajo lo que pagó de la deuda.
+          const otra = it.montoCuenta != null && it.account?.moneda;
           return (
-            <span className="font-semibold text-red-400">
-              {it.monto < 0 ? "+" : "-"}
-              {fmtCurrency(Math.abs(it.monto), it.moneda)}
+            <span className="flex flex-col items-end">
+              <span className="font-semibold text-red-400">
+                {it.monto < 0 ? "+" : "-"}
+                {otra ? fmtCurrency(Math.abs(it.montoCuenta!), it.account!.moneda) : fmtCurrency(Math.abs(it.monto), it.moneda)}
+              </span>
+              {otra && (
+                <span className="text-[10px] font-normal text-[var(--color-text-muted)]">
+                  paga {fmtCurrency(Math.abs(it.monto), it.moneda)} a {it.tipoCambio}
+                </span>
+              )}
             </span>
           );
         }
@@ -395,6 +418,16 @@ export function FinanceMovementsTab() {
             <option value="">Todos los tipos</option>
             <option value="INGRESO">Ingresos</option>
             <option value="GASTO">Gastos</option>
+          </select>
+          <select
+            value={conFactura}
+            onChange={(e) => setConFactura(e.target.value as "" | "SIN" | "CON")}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            title="Solo gastos: lo que no es una compra (transferencias, ajustes, lo personal) no lleva factura"
+          >
+            <option value="">Con y sin factura</option>
+            <option value="SIN">Gastos sin factura</option>
+            <option value="CON">Gastos con factura</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -1195,5 +1228,24 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </span>
       {children}
     </label>
+  );
+}
+
+// Si el gasto tiene factura: la electrónica (de Biller) o un adjunto cuentan;
+// solo el número cargado a mano avisa en ámbar; sin nada, en rojo.
+function FacturaBadge({ f }: { f: FacturaFila | null | undefined }) {
+  if (!f) return <span className="text-[11px] text-[var(--color-text-muted)]">—</span>;
+  const estilo: Record<FacturaFila["estado"], { label: string; cls: string; title: string }> = {
+    ELECTRONICA: { label: "Electrónica", cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30", title: "Vinculada a la factura electrónica que trajo Biller" },
+    ADJUNTO: { label: "Adjunta", cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30", title: "Tiene el comprobante adjunto" },
+    NUMERO: { label: "Solo número", cls: "bg-amber-500/15 text-amber-300 border-amber-500/30", title: "Tiene el número cargado a mano, pero no la factura" },
+    SIN: { label: "Sin factura", cls: "bg-red-500/15 text-red-300 border-red-500/30", title: "No tiene factura vinculada" },
+  };
+  const e = estilo[f.estado];
+  return (
+    <span className="flex flex-col gap-0.5" title={e.title}>
+      <span className={`w-fit rounded border px-1.5 py-0.5 text-[9px] font-mono uppercase ${e.cls}`}>{e.label}</span>
+      {f.texto && <span className="text-[10px] text-[var(--color-text-muted)]">{f.texto}</span>}
+    </span>
   );
 }

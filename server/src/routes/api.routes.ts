@@ -15414,6 +15414,37 @@ export async function registerApiRoutes(app: FastifyInstance) {
       archivoAdjuntoUrl: z.string().nullable().optional(),
     }).strict();
 
+    // ─── Columna "Factura" de Movimientos ───────────────────────────────────
+    // Un gasto tiene factura si tiene vinculada la electrónica (la que trae
+    // Biller), un comprobante adjunto o al menos el número cargado a mano. Lo
+    // que no es una compra (transferencias, ajustes, lo personal) no lleva.
+    const CATEGORIAS_SIN_FACTURA = new Set<CategoriaPrincipal>([
+      CategoriaPrincipal.TRANSFERENCIA, CategoriaPrincipal.AJUSTE_CONCILIACION,
+      CategoriaPrincipal.CUENTA_SOCIO, CategoriaPrincipal.ADELANTO_PERSONAL,
+    ]);
+    type GastoConFactura = {
+      tipoMovimiento: TipoMovimiento; categoriaPrincipal: CategoriaPrincipal;
+      invoiceNumber: string | null; archivoAdjuntoUrl: string | null;
+      facturaRecibida: { serie: string; numero: number; tipoCfe: number } | null;
+      comprobantes: Array<{ id: string }>;
+    };
+    type FacturaFila = { estado: "ELECTRONICA" | "ADJUNTO" | "NUMERO" | "SIN"; texto: string | null };
+    function facturaDeGasto(m: GastoConFactura): FacturaFila | null {
+      if (m.tipoMovimiento !== TipoMovimiento.GASTO || CATEGORIAS_SIN_FACTURA.has(m.categoriaPrincipal)) return null;
+      if (m.facturaRecibida) return { estado: "ELECTRONICA", texto: `${m.facturaRecibida.serie}-${m.facturaRecibida.numero}` };
+      if (m.comprobantes.length || m.archivoAdjuntoUrl) return { estado: "ADJUNTO", texto: m.invoiceNumber };
+      if (m.invoiceNumber) return { estado: "NUMERO", texto: m.invoiceNumber };
+      return { estado: "SIN", texto: null };
+    }
+    function facturaDePago(movs: Array<GastoConFactura | null>): FacturaFila {
+      const fs = movs.filter((m): m is GastoConFactura => !!m).map(facturaDeGasto).filter((f): f is FacturaFila => !!f);
+      if (!fs.length) return { estado: "SIN", texto: "sin aplicar a facturas" };
+      const orden = ["SIN", "NUMERO", "ADJUNTO", "ELECTRONICA"] as const;
+      // El peor de los que paga: si una deuda no tiene factura, el pago tampoco del todo.
+      const peor = fs.reduce((a, f) => (orden.indexOf(f.estado) < orden.indexOf(a.estado) ? f : a));
+      return { estado: peor.estado, texto: fs.length > 1 ? `${fs.length} facturas` : peor.texto };
+    }
+
     app.get("/finance/movements", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const query = z.object({
         mes: z.coerce.number().int().min(1).max(12).optional(),
@@ -15493,6 +15524,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
               include: { payment: { select: { id: true, deletedAt: true } } },
               where: { payment: { deletedAt: null } },
             },
+            // Para la columna "Factura": la electrónica vinculada o un comprobante adjunto.
+            facturaRecibida: { select: { id: true, serie: true, numero: true, tipoCfe: true } },
+            comprobantes: { select: { id: true }, take: 1 },
           },
           orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
         }),
@@ -15528,7 +15562,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
                 supplier: { select: { id: true, nombre: true } },
                 account: { select: { id: true, nombre: true, moneda: true } },
                 applications: {
-                  include: { movement: { select: { id: true, descripcion: true, monto: true, moneda: true } } },
+                  include: { movement: { select: {
+                    id: true, descripcion: true, monto: true, moneda: true, tipoMovimiento: true, categoriaPrincipal: true,
+                    invoiceNumber: true, archivoAdjuntoUrl: true,
+                    facturaRecibida: { select: { id: true, serie: true, numero: true, tipoCfe: true } },
+                    comprobantes: { select: { id: true }, take: 1 },
+                  } } },
                 },
               },
               orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
@@ -15539,7 +15578,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
                 supplier: { select: { id: true, nombre: true } },
                 account: { select: { id: true, nombre: true, moneda: true } },
                 applications: {
-                  include: { movement: { select: { id: true, descripcion: true, monto: true, moneda: true } } },
+                  include: { movement: { select: {
+                    id: true, descripcion: true, monto: true, moneda: true, tipoMovimiento: true, categoriaPrincipal: true,
+                    invoiceNumber: true, archivoAdjuntoUrl: true,
+                    facturaRecibida: { select: { id: true, serie: true, numero: true, tipoCfe: true } },
+                    comprobantes: { select: { id: true }, take: 1 },
+                  } } },
                 },
               },
             }),
@@ -15760,6 +15804,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             tieneApp,
             pagadoViaPayment,
             paymentIdsAsociados,
+            factura: facturaDeGasto(m),
             saldoAcumuladoUSD: saldoMap.get(`MOVEMENT:${m.id}`) ?? 0,
             saldoEsReal: real,
             fechaEfectiva: fechaEfectivaMap.get(`MOVEMENT:${m.id}`) ?? serializeDateOnly(m.fecha),
@@ -15797,6 +15842,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
             supplier: p.supplier,
             accountId: p.accountId,
             account: p.account,
+            // Un pago tiene factura si las deudas que paga la tienen.
+            factura: facturaDePago(p.applications.map((a) => a.movement)),
+            montoCuenta: p.montoCuenta != null ? Number(p.montoCuenta) : null,
+            tipoCambio: p.tipoCambio != null ? Number(p.tipoCambio) : null,
             applications: p.applications.map((a) => ({
               id: a.id,
               movementId: a.movementId,

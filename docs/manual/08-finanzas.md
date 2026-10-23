@@ -893,6 +893,16 @@ gasto suelto al lado de una factura que sigue abierta.
   Abajo, la lista de proveedores.
 - **Pagarle a un proveedor**: **Registrar pago** en su ficha
   (`/finanzas/proveedores/:id`). El pago se aplica a sus facturas.
+- **Columna Factura en Movimientos**: `GET /finance/movements` devuelve
+  `factura` por fila (`facturaDeGasto()` / `facturaDePago()` en
+  `api.routes.ts`): `ELECTRONICA` (tiene `facturaRecibida`), `ADJUNTO`
+  (`comprobantes` o `archivoAdjuntoUrl`), `NUMERO` (solo `invoiceNumber`), `SIN`;
+  null para ingresos y categorías que no son compra (TRANSFERENCIA,
+  AJUSTE_CONCILIACION, CUENTA_SOCIO, ADELANTO_PERSONAL). Un pago toma el peor
+  estado de los gastos que paga. El filtro "Gastos sin factura" (SIN + NUMERO) /
+  "con factura" se aplica en el navegador. Las filas de pago traen además
+  `montoCuenta`/`tipoCambio` y, si vienen, el monto se muestra en la moneda de la
+  cuenta.
 - En **Nuevo movimiento** (Movimientos) la categoría **"Pago proveedor" ya no
   se ofrece al crear** (`FinanceMovementsTab.tsx` →
   `categoriasDisponibles`). Si se elige un proveedor que tiene deuda abierta en

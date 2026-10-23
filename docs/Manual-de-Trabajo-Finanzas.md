@@ -1236,6 +1236,20 @@ previstos, facturas a pagar, comisiones sin pagar) no está acá: está en
 **Pendientes**, en el Inicio (5.1). Arriba se ven el **saldo actual en pesos** y
 el **saldo actual en dólares**.
 
+**Si cada gasto tiene factura.** La columna **Factura** dice, para cada gasto:
+**Electrónica** (vinculada a la factura que trajo la facturación electrónica,
+con su número), **Adjunta** (tiene el comprobante adjunto), **Solo número** (se
+cargó el número a mano pero no hay factura) o **Sin factura**. Un pago a
+proveedor muestra el peor estado de las facturas que paga («2 facturas», o «sin
+aplicar a facturas» si no se aplicó a ninguna). Lo que no es una compra
+(transferencias, ajustes, lo personal) y los ingresos muestran una raya. El
+filtro **«Gastos sin factura»** deja solo los que no tienen factura o tienen
+solo el número; **«Gastos con factura»**, los demás. Para conseguirle la factura
+a un gasto, se busca en Facturas → por revisar: si llegó, aparece sugerido ahí.
+
+Un pago hecho **desde una cuenta de otra moneda** muestra lo que salió de la
+cuenta, y debajo «paga … a …» con lo que bajó de la deuda y la cotización.
+
 **«Nuevo movimiento»** carga algo que ya ocurrió: al guardarlo queda como
 pagado. El formulario no tiene campo de estado. Pide:
 
@@ -1720,7 +1734,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.20 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM avisa cuándo un cliente está listo para cobrar y cuándo una cuota venció. Cobros muestra al entrar solo lo que falta cobrar, con el filtro nuevo «Listos para cobrar». Nueva tabla de cuándo queda lista cada cuota y cómo entran en el flujo de fondos. Lo que se le factura a cada cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo); Facturación muestra por separado presupuesto, a facturar, facturado y lo que falta, y al emitir se propone lo que falta facturar. Palabra nueva en el glosario: «A facturar». La lista de facturas recibidas se puede filtrar por proveedor, tipo, fecha y número. Un pago a proveedor se puede hacer desde una cuenta de otra moneda, con la cotización del día. «Arrancar cuenta» también cierra lo que quedaba a favor por pagos viejos. En las facturas por revisar, Voltia PM sugiere los gastos ya cargados más parecidos (también los cargados sin proveedor), con el porqué. |
+| 0.20 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM avisa cuándo un cliente está listo para cobrar y cuándo una cuota venció. Cobros muestra al entrar solo lo que falta cobrar, con el filtro nuevo «Listos para cobrar». Nueva tabla de cuándo queda lista cada cuota y cómo entran en el flujo de fondos. Lo que se le factura a cada cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo); Facturación muestra por separado presupuesto, a facturar, facturado y lo que falta, y al emitir se propone lo que falta facturar. Palabra nueva en el glosario: «A facturar». La lista de facturas recibidas se puede filtrar por proveedor, tipo, fecha y número. Un pago a proveedor se puede hacer desde una cuenta de otra moneda, con la cotización del día. «Arrancar cuenta» también cierra lo que quedaba a favor por pagos viejos. En las facturas por revisar, Voltia PM sugiere los gastos ya cargados más parecidos (también los cargados sin proveedor), con el porqué. En Movimientos, la columna Factura y el filtro de gastos sin factura. |
 | 0.19 | 22 de octubre de 2026 | El menú de Finanzas pasa a la izquierda, con las pantallas agrupadas; en el celular es un desplegable. Comisiones se suma al grupo Compras. Cada aviso de «Para hacer hoy» lleva a la pantalla donde se resuelve. |
 | 0.18 | 21 de octubre de 2026 | Se agrega «Para hacer hoy»: la lista con todo lo pendiente de Finanzas arriba del Inicio, el mail de cada mañana y el número junto a Finanzas en el menú. |
 | 0.17 | 21 de octubre de 2026 | Se reordenan las herramientas según el menú nuevo de Finanzas: Inicio, Ventas, Compras, Bancos e Informes. Nuevas pantallas: Inicio (posición, lo que falta conciliar y pendientes), Banco, Tarjetas y Cierre. Cuentas por pagar pasa a estar arriba de Proveedores, y la bandeja de facturas recibidas, arriba de Facturas. Las facturas de proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana; las facturas llegan cada media hora. Las notas de crédito de proveedores se descuentan de la deuda desde la misma lista. Una factura se carga por un solo formulario y a un proveedor se le paga solo con «Registrar pago». Nuevos ajustes de deuda (no son plata) y «Arrancar cuenta» con el estado de cuenta: borrón y cuenta nueva con cada proveedor. Lo personal (cuenta del socio y adelantos a descontar del sueldo) no es gasto de Voltia. Conciliar una cuenta con diferencia pide el motivo. Nuevo cierre de mes, con su lista de control y el archivo para la contadora, y la rendición de tarjetas en el procedimiento mensual. Las transferencias entre cuentas y los ajustes dejan de contar en el estado de resultados. Aviso «hay cobro sin factura» en Facturación. Nuevos casos en «Cuando algo sale mal» y palabras nuevas en el glosario. |

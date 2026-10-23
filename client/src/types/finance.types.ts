@@ -156,6 +156,8 @@ export interface FinanceMovement {
   pagadoViaPayment?: boolean;
   /** IDs de los Payments cuyas applications cubren este movement. */
   paymentIdsAsociados?: string[];
+  /** Si el gasto tiene factura (null = no lleva: ingreso, transferencia, ajuste, personal). */
+  factura?: FacturaFila | null;
   id: string;
   fecha: string;
   anio: number;
@@ -210,8 +212,19 @@ export interface FinanceMovement {
 
 /** Fila tipo PAYMENT en la lista unificada de /finance/movements. Es un Payment
  *  serializado para coexistir con FinanceMovement en la misma lista. */
+/** Factura de un gasto: la electrónica vinculada, un adjunto, solo el número o ninguna. */
+export interface FacturaFila {
+  estado: 'ELECTRONICA' | 'ADJUNTO' | 'NUMERO' | 'SIN';
+  texto: string | null;
+}
+
 export interface PaymentRow {
   _type: 'PAYMENT';
+  /** El peor estado de factura de las deudas que paga. */
+  factura?: FacturaFila | null;
+  /** Pagado desde una cuenta de otra moneda: lo que salió de la cuenta y la cotización. */
+  montoCuenta?: number | null;
+  tipoCambio?: number | null;
   id: string;
   fecha: string;
   fechaEfectiva: string;
