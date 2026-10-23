@@ -7,7 +7,7 @@
 // persona decida. Solo se proponen gastos sin factura vinculada, del mismo
 // proveedor de la factura o cargados sin proveedor.
 
-import { Moneda, TipoMovimiento, type FinanceMovementStatus } from "@prisma/client";
+import { CategoriaPrincipal, Moneda, TipoMovimiento, type FinanceMovementStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { toDateOnlyString } from "../../utils/dates.js";
@@ -137,6 +137,8 @@ export async function sugerirGastos(facturas: Factura[]): Promise<Map<string, Ga
         deletedAt: null,
         tipoMovimiento: TipoMovimiento.GASTO,
         facturaRecibida: null,
+        // Lo que no es una compra no tiene factura de proveedor.
+        categoriaPrincipal: { notIn: [CategoriaPrincipal.TRANSFERENCIA, CategoriaPrincipal.AJUSTE_CONCILIACION] },
         OR: [
           // Del mismo proveedor: cualquier fecha (el número puede coincidir).
           ...(proveedores.length ? [{ supplierId: { in: proveedores } }] : []),

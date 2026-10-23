@@ -5599,6 +5599,10 @@ model FacturaRecibida {
   cargadaSola       Boolean               @default(false)
   // Nota de crédito confirmada: el ajuste (pago sin plata) que bajó la deuda.
   ajusteId          String?               @unique
+  // "Ya está contemplada": revisada sin crear deuda ni gasto (entró en el saldo
+  // con que se arrancó la cuenta, la pagó otra empresa…). Sigue en el libro de
+  // compras, a diferencia de una descartada.
+  notaRegistro      String?
   motivoDescarte    String?
   supplierId        String?
   supplier          Supplier?             @relation(fields: [supplierId], references: [id])

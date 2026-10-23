@@ -33,10 +33,15 @@
 - En **Facturación** cada obra muestra por separado el **presupuesto** (lo que paga el cliente, con IVA), lo **que hay que facturarle** (con IVA y, abajo, sin IVA), lo **ya facturado** y lo que **falta facturar**. Las obras de antes que tenían una nota de facturación quedan «A definir», con un botón para cargar el monto.
 - Al emitir la factura, el monto que se propone es **lo que falta facturar de lo acordado**, y se muestra lo acordado y lo ya facturado.
 
+#### Facturas que no van como deuda: «Ya está registrada»
+
+- En las facturas por revisar, un botón nuevo para las que no van como deuda: elegir a mano el gasto ya cargado al que corresponde, crear desde ahí el gasto ya pagado (compra de contado que nadie cargó) o marcarla «ya contemplada» con el motivo. A diferencia de descartar, las tres siguen en el archivo de compras para la contadora.
+
 #### Ver qué movimientos tienen factura
 
 - En Finanzas → Movimientos, una columna nueva dice si cada gasto tiene factura: electrónica, adjunta, solo el número o sin factura. Un filtro deja ver solo los gastos sin factura.
 - Un pago hecho desde una cuenta de otra moneda se muestra con lo que salió de la cuenta.
+- Las facturas de proveedor que se pagaron con «Registrar pago» se marcan «Factura a pagar», con el monto en gris: son la deuda, no una salida de plata (esa es la fila del pago).
 
 #### Las facturas recibidas sugieren el gasto ya cargado
 

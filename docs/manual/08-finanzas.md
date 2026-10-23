@@ -673,7 +673,15 @@ facturas que le emiten a Voltia se traen solas de la facturación electrónica
   monto exacto / sin IVA / en la otra moneda con la última cotización (±2,5 %)
   / parecido, días de diferencia, proveedor y palabras de la descripción o del
   rubro; mínimo 55, hasta 3; vincular admite otra moneda y le pone al gasto el
-  proveedor de la factura), descartar con motivo,
+  proveedor de la factura), **«Ya está registrada»** (`YaRegistradaModal.tsx`:
+  `GET /finance/facturas-recibidas/:id/gastos?buscar=` para elegir el gasto a
+  mano —sin factura, mismo proveedor o sin proveedor, ±90 días, sin
+  transferencias ni ajustes—; `POST …/crear-gasto` crea el GASTO PAGADO con la
+  factura vinculada, convertido si la cuenta es de otra moneda; `POST
+  …/contemplada` deja la factura CONFIRMADA sin movimiento con
+  `notaRegistro`, que `…/reabrir` puede devolver a PENDIENTE; las tres quedan
+  en el libro de compras del cierre, que solo excluye las DESCARTADAS),
+  descartar con motivo,
   **¿De qué proveedor es?**, crear el proveedor, ver el PDF. Las que pasaron
   solas a deuda llevan la marca **"entró sola"**.
 - **Abajo, el registro** de todas las facturas, con filtros.

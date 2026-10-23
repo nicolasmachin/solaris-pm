@@ -67,6 +67,8 @@ export interface FacturaRecibida {
   pdf: 'GUARDADO' | 'EN_BILLER' | 'NO';
   estado: EstadoFacturaRecibida;
   motivoDescarte: string | null;
+  /** "Ya está contemplada": revisada sin deuda ni gasto, con este motivo. */
+  notaRegistro?: string | null;
   supplier: { id: string; nombre: string } | null;
   movement: { id: string; descripcion: string; status: string } | null;
   /** Gastos ya cargados que se le parecen, del más probable al menos. */
@@ -103,6 +105,25 @@ export const vincularFacturaRecibida = (id: string, movementId: string) =>
 
 export const descartarFacturaRecibida = (id: string, motivo: string) =>
   apiClient.post(`/api/finance/facturas-recibidas/${id}/descartar`, { motivo }).then((r) => r.data);
+
+// "Ya está registrada": vincular a un gasto elegido a mano, crear el gasto pagado
+// o marcarla "ya contemplada" (sin deuda ni gasto).
+export interface GastoParaVincular {
+  id: string; descripcion: string; monto: number; moneda: Moneda; fecha: string | null; status: string;
+  sinProveedor: boolean; cuenta: string | null; obra: string | null;
+}
+export const buscarGastosParaFactura = (id: string, buscar?: string) =>
+  apiClient
+    .get<{ gastos: GastoParaVincular[] }>(`/api/finance/facturas-recibidas/${id}/gastos`, { params: buscar ? { buscar } : {} })
+    .then((r) => r.data.gastos);
+
+export const crearGastoDesdeFactura = (id: string, body: {
+  accountId: string; fecha: string; categoriaPrincipal: 'VARIABLE' | 'FIJO' | 'PROYECTO_SALIDA' | 'COMPRA_STOCK' | 'OTRO';
+  projectId?: string | null; descripcion?: string; tipoCambio?: number;
+}) => apiClient.post<{ ok: true; movementId: string }>(`/api/finance/facturas-recibidas/${id}/crear-gasto`, body).then((r) => r.data);
+
+export const marcarFacturaContemplada = (id: string, motivo: string) =>
+  apiClient.post(`/api/finance/facturas-recibidas/${id}/contemplada`, { motivo }).then((r) => r.data);
 
 export const reabrirFacturaRecibida = (id: string) =>
   apiClient.post(`/api/finance/facturas-recibidas/${id}/reabrir`).then((r) => r.data);

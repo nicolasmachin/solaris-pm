@@ -52,6 +52,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Facturas que no van como deuda",
+      items: [
+        "«Ya está registrada»: elegir a mano el gasto al que corresponde, crear el gasto pagado desde la factura o marcarla ya contemplada.",
+      ],
+    },
+    {
       title: "Ver qué movimientos tienen factura",
       items: [
         "En Movimientos, una columna dice si cada gasto tiene factura (electrónica, adjunta, solo número o sin factura), con un filtro para ver solo los que no tienen.",

@@ -233,9 +233,24 @@ export function FinanceMovementsTab() {
             </>
           );
         }
+        // Factura de proveedor pagada con "Registrar pago": es la deuda, no una
+        // salida de plata (esa es la fila del pago). Se marca para no confundirla.
+        const esDeuda = !!it.tieneApp;
         return (
           <>
-            <p className="text-[var(--color-text-primary)]">{it.descripcion}</p>
+            <p className="text-[var(--color-text-primary)]">
+              {it.descripcion}
+              {esDeuda && (
+                <span className="ml-2 rounded border border-[var(--color-border)] px-1.5 py-0.5 align-middle text-[9px] font-mono uppercase text-[var(--color-text-muted)]">
+                  Factura a pagar
+                </span>
+              )}
+            </p>
+            {esDeuda && (
+              <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                No es salida de plata: lo que salió está en {it.pagadoViaPayment ? "su pago" : "sus pagos"} («Pago a …»). No se cuenta dos veces.
+              </p>
+            )}
             {it.project && (
               <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">{it.project.clientName}</p>
             )}
@@ -290,6 +305,17 @@ export function FinanceMovementsTab() {
                   paga {fmtCurrency(Math.abs(it.monto), it.moneda)} a {it.tipoCambio}
                 </span>
               )}
+            </span>
+          );
+        }
+        if (it.tieneApp) {
+          // La deuda: en gris y sin signo, porque no mueve el saldo.
+          return (
+            <span className="flex flex-col items-end">
+              <span className="text-[var(--color-text-muted)]">{fmtCurrency(it.monto, it.moneda)}</span>
+              <span className="text-[10px] text-[var(--color-text-muted)]">
+                {it.pagadoViaPayment ? "pagada" : `falta ${fmtCurrency(it.saldoPendiente ?? 0, it.moneda)}`}
+              </span>
             </span>
           );
         }

@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
+import { YaRegistradaModal } from '../components/finance/YaRegistradaModal';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
@@ -222,6 +223,7 @@ function FilaRecibida({ f, canEdit, proveedores }: {
     const nombre = window.prompt(`Nombre del proveedor con RUT ${f.rutEmisor}:`, f.razonSocialEmisor ?? '');
     if (nombre !== null) alta.mutate(nombre.trim() || undefined);
   }
+  const [registrando, setRegistrando] = useState(false);
   const ocupado = asignar.isPending || alta.isPending || confirmar.isPending || vincular.isPending || descartar.isPending || reabrir.isPending;
 
   function pedirMotivo() {
@@ -257,9 +259,16 @@ function FilaRecibida({ f, canEdit, proveedores }: {
         )}
       </td>
       <td className="px-3 py-2">
-        {f.estado === 'CONFIRMADA' && (
+        {registrando && <YaRegistradaModal f={f} onClose={() => setRegistrando(false)} onDone={invalidar} />}
+        {f.estado === 'CONFIRMADA' && f.notaRegistro && !f.movement && (
+          <div className="text-[12px] text-[var(--color-text-secondary)]">
+            Ya contemplada: {f.notaRegistro}
+            {canEdit && <button className={klass(btn, 'ml-2')} disabled={ocupado} onClick={() => reabrir.mutate()}>Volver a la bandeja</button>}
+          </div>
+        )}
+        {f.estado === 'CONFIRMADA' && !(f.notaRegistro && !f.movement) && (
           <span className="text-[12px] text-green-400">
-            Deuda{f.movement ? `: ${f.movement.descripcion}` : ''}
+            {f.movement?.status === 'PAGADO' ? 'Pagada' : 'Deuda'}{f.movement ? `: ${f.movement.descripcion}` : ''}
             {f.cargadaSola && <span className="ml-1 text-[11px] text-sky-300" title="Proveedor de cuenta corriente: pasó sola a deuda. Se revisa una vez por semana.">· entró sola</span>}
           </span>
         )}
@@ -301,6 +310,12 @@ function FilaRecibida({ f, canEdit, proveedores }: {
               {!f.supplier && (
                 <button className={btn} disabled={ocupado} onClick={darDeAlta} title="Crea el proveedor con este RUT">
                   Dar de alta proveedor
+                </button>
+              )}
+              {!f.esNotaCredito && (
+                <button className={btn} disabled={ocupado} onClick={() => setRegistrando(true)}
+                  title="No va como deuda: es de un gasto ya cargado, se crea el gasto pagado o ya está contemplada">
+                  Ya está registrada
                 </button>
               )}
               <button className={btn} disabled={ocupado} onClick={pedirMotivo}>

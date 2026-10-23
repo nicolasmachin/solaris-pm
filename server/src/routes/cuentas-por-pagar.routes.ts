@@ -54,6 +54,7 @@ import {
 import { deleteStoredFile, getStoredFilePath, saveBufferAsAttachment, saveUploadedFile } from "../services/file-storage.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { parseDateOnly, toDateOnlyString, todayUtc } from "../utils/dates.js";
+import { assertFechaAbierta } from "../services/finance/cierre-mes.service.js";
 import { AppError, badRequest, notFound, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
@@ -117,6 +118,7 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
           estado: f.estado,
           cargadaSola: f.cargadaSola,
           motivoDescarte: f.motivoDescarte,
+          notaRegistro: f.notaRegistro,
           supplier: f.supplier ? { id: f.supplier.id, nombre: f.supplier.nombre } : null,
           movement: f.movement,
           candidatas: candidatasPorFila.get(f.id) ?? [],
@@ -166,6 +168,7 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
       vencimiento: string | null;
       estadoBandeja: EstadoFacturaRecibida | null;
       motivoDescarte: string | null;
+      notaRegistro?: string | null;
       estadoPago: FinanceMovementStatus | null;
       enDgi: boolean;
       enMail: boolean;
@@ -221,6 +224,7 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
           ),
           estadoBandeja: f.estado,
           motivoDescarte: f.motivoDescarte,
+          notaRegistro: f.notaRegistro,
           estadoPago: f.movement?.status ?? null,
           enDgi: f.enDgi,
           enMail: f.enMail,
@@ -641,18 +645,170 @@ export async function registerCuentasPorPagarRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
+  // ── "Ya está registrada": una factura que no va como deuda ─────────────────
+  // Tres caminos: vincularla a un gasto que se elige a mano (buscador), crear
+  // desde acá el gasto ya pagado (compra de contado que nadie cargó) o marcarla
+  // "ya contemplada" con su motivo (entró en el saldo de arranque, la pagó otra
+  // empresa…). A diferencia de descartar, las tres siguen en el libro de compras.
+
+  // Buscador de gastos para vincular a mano: sin factura vinculada, del
+  // proveedor de la factura o sin proveedor, a ±90 días.
+  app.get("/finance/facturas-recibidas/:id/gastos", editar, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { buscar } = z.object({ buscar: z.string().trim().max(100).optional() }).parse(request.query);
+    const f = await cargarPendiente(id);
+    const dias = 90 * 86_400_000;
+    const q = buscar?.trim();
+    const montoQ = q ? Number(q.replace(/\./g, "").replace(",", ".")) : NaN;
+    const gastos = await prisma.financeMovement.findMany({
+      where: {
+        deletedAt: null,
+        tipoMovimiento: TipoMovimiento.GASTO,
+        facturaRecibida: null,
+        // Lo que no es una compra no tiene factura de proveedor.
+        categoriaPrincipal: { notIn: [CategoriaPrincipal.TRANSFERENCIA, CategoriaPrincipal.AJUSTE_CONCILIACION] },
+        OR: [...(f.supplierId ? [{ supplierId: f.supplierId }] : []), { supplierId: null }],
+        fecha: { gte: new Date(f.fechaEmision.getTime() - dias), lte: new Date(f.fechaEmision.getTime() + dias) },
+        ...(q
+          ? { AND: [{ OR: [
+              { descripcion: { contains: q, mode: "insensitive" as const } },
+              ...(Number.isFinite(montoQ) ? [{ monto: { gte: montoQ - 1, lte: montoQ + 1 } }] : []),
+            ] }] }
+          : {}),
+      },
+      select: {
+        id: true, descripcion: true, monto: true, moneda: true, fecha: true, status: true, supplierId: true,
+        account: { select: { nombre: true } }, project: { select: { code: true, clientName: true } },
+      },
+      orderBy: { fecha: "desc" },
+      take: 40,
+    });
+    // Los más cercanos a la fecha de la factura primero.
+    const cerca = (d: Date) => Math.abs(d.getTime() - f.fechaEmision.getTime());
+    return {
+      gastos: gastos
+        .sort((a, b) => cerca(a.fecha) - cerca(b.fecha))
+        .map((g) => ({
+          id: g.id, descripcion: g.descripcion, monto: Number(g.monto), moneda: g.moneda,
+          fecha: toDateOnlyString(g.fecha), status: g.status, sinProveedor: !g.supplierId,
+          cuenta: g.account?.nombre ?? null, obra: g.project ? `${g.project.code} ${g.project.clientName}` : null,
+        })),
+    };
+  });
+
+  // Compra de contado que nadie cargó: se crea el gasto ya pagado, con la
+  // factura vinculada. Si la cuenta es de otra moneda, se convierte con la cotización.
+  app.post("/finance/facturas-recibidas/:id/crear-gasto", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({
+      accountId: z.string().min(1),
+      fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      categoriaPrincipal: z.enum([
+        CategoriaPrincipal.VARIABLE, CategoriaPrincipal.FIJO, CategoriaPrincipal.PROYECTO_SALIDA,
+        CategoriaPrincipal.COMPRA_STOCK, CategoriaPrincipal.OTRO,
+      ]),
+      projectId: z.string().nullable().optional(),
+      descripcion: z.string().trim().max(300).optional(),
+      tipoCambio: z.coerce.number().positive().optional(),
+    }).strict().parse(request.body);
+
+    const f = await cargarPendiente(id);
+    if (esNotaCredito(f.tipoCfe)) throw badRequest("ES_NOTA_CREDITO", "Una nota de crédito no es un gasto.");
+    if (!f.supplierId) throw badRequest("SUPPLIER_REQUIRED", "Elegí primero de qué proveedor es la factura.");
+    const fecha = parseDateOnly(body.fecha);
+    await assertFechaAbierta(fecha);
+    const cuenta = await prisma.account.findFirst({ where: { id: body.accountId, deletedAt: null, activa: true } });
+    if (!cuenta) throw badRequest("ACCOUNT_INVALID", "La cuenta no existe o está inactiva.");
+    let monto = Number(f.total);
+    let tipoCambio: number | null = null;
+    if (cuenta.moneda !== f.moneda) {
+      if (!body.tipoCambio) throw badRequest("TIPO_CAMBIO_REQUIRED", `La factura es en ${f.moneda} y la cuenta en ${cuenta.moneda}: indicá la cotización.`);
+      tipoCambio = body.tipoCambio;
+      monto = cuenta.moneda === "UYU" ? monto * tipoCambio : monto / tipoCambio;
+    }
+    monto = Math.round(monto * 100) / 100;
+
+    const movementId = await prisma.$transaction(async (tx) => {
+      await tomarPendiente(tx, f.id);
+      const s = await resolverProveedor(f.rutEmisor, f.supplierId!, tx);
+      const m = await tx.financeMovement.create({
+        data: {
+          tipoMovimiento: TipoMovimiento.GASTO,
+          categoriaPrincipal: body.projectId ? CategoriaPrincipal.PROYECTO_SALIDA : body.categoriaPrincipal,
+          status: FinanceMovementStatus.PAGADO,
+          sourceType: MovementSourceType.MANUAL,
+          estadoAprobacion: EstadoAprobacion.REGISTRADO,
+          supplierId: s.id,
+          projectId: body.projectId ?? null,
+          accountId: cuenta.id,
+          descripcion: body.descripcion || etiquetaCfe(f.tipoCfe, f.serie, f.numero),
+          monto: new Prisma.Decimal(monto),
+          moneda: cuenta.moneda,
+          ...(tipoCambio ? { tipoCambio: new Prisma.Decimal(tipoCambio) } : {}),
+          fecha,
+          mes: fecha.getUTCMonth() + 1,
+          anio: fecha.getUTCFullYear(),
+          invoiceNumber: `${f.serie}-${f.numero}`,
+          ...(cuenta.moneda === f.moneda ? { montoNeto: f.totalNeto, montoIva: f.totalIva } : {}),
+          pagado: true,
+          impactaFlujo: true,
+          creadoPorId: user.id,
+        },
+      });
+      await tx.facturaRecibida.update({
+        where: { id: f.id },
+        data: { supplierId: s.id, movementId: m.id, resueltaPorId: user.id, resueltaAt: new Date() },
+      });
+      return m.id;
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.factura_recibida,
+      entityId: f.id,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Creó el gasto pagado de la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)} desde ${cuenta.nombre} (${monto} ${cuenta.moneda})`,
+    });
+    return { ok: true, movementId };
+  });
+
+  // Ya contemplada: revisada sin deuda ni gasto, con el motivo.
+  app.post("/finance/facturas-recibidas/:id/contemplada", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { motivo } = z.object({ motivo: z.string().trim().min(5).max(500) }).strict().parse(request.body);
+    const f = await cargarPendiente(id);
+    await prisma.$transaction(async (tx) => {
+      await tomarPendiente(tx, f.id);
+      await tx.facturaRecibida.update({
+        where: { id: f.id },
+        data: { notaRegistro: motivo, resueltaPorId: user.id, resueltaAt: new Date() },
+      });
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.factura_recibida,
+      entityId: f.id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Marcó como ya contemplada (sin deuda ni gasto) la factura recibida ${etiquetaCfe(f.tipoCfe, f.serie, f.numero)}: ${motivo}`,
+    });
+    return { ok: true };
+  });
+
   app.post("/finance/facturas-recibidas/:id/reabrir", editar, async (request) => {
     const user = ensureUser(request);
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const f = await prisma.facturaRecibida.findUnique({ where: { id } });
     if (!f) throw notFound("FACTURA_RECIBIDA_NOT_FOUND", "Factura recibida no encontrada");
-    // Una confirmada tiene su deuda creada: se corrige desde el movimiento, no acá.
-    if (f.estado !== EstadoFacturaRecibida.DESCARTADA) {
-      throw badRequest("SOLO_DESCARTADAS", "Solo se puede volver a la bandeja una factura descartada.");
+    // Una confirmada con deuda o gasto se corrige desde el movimiento, no acá; una
+    // "ya contemplada" (confirmada sin movimiento) sí vuelve.
+    const contemplada = f.estado === EstadoFacturaRecibida.CONFIRMADA && !f.movementId && !f.ajusteId && !!f.notaRegistro;
+    if (f.estado !== EstadoFacturaRecibida.DESCARTADA && !contemplada) {
+      throw badRequest("SOLO_DESCARTADAS", "Solo se puede volver a la bandeja una factura descartada o marcada como ya contemplada.");
     }
     await prisma.facturaRecibida.update({
       where: { id },
-      data: { estado: EstadoFacturaRecibida.PENDIENTE, motivoDescarte: null, resueltaPorId: null, resueltaAt: null },
+      data: { estado: EstadoFacturaRecibida.PENDIENTE, motivoDescarte: null, notaRegistro: null, resueltaPorId: null, resueltaAt: null },
     });
     await createAuditEntry({
       entityType: AuditEntityType.factura_recibida,
