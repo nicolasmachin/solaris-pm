@@ -1,5 +1,13 @@
 # Novedades
 
+## v13.2
+
+### 23 de octubre de 2026
+
+#### Arreglos
+
+- **Calendario:** en las semanas con varias obras y además un mantenimiento, soporte o visita, el último bloque se cortaba y se metía en la semana de abajo. Ahora cada semana toma el alto que necesita y, si no entra todo en pantalla, el mes se desplaza hacia abajo.
+
 ## v13.1
 
 ### 22 de octubre de 2026

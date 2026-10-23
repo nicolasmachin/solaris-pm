@@ -61,6 +61,15 @@ agruparlos por columna: se dibujan en carriles propios **debajo** de las obras,
 dentro del mismo grid de la semana. Así el drag & drop y el resize de obras
 quedan intactos.
 
+**Alto de cada semana en la vista Mes** (`WeekRow` en `Calendar.tsx`): el mínimo
+es `DAY_NUMBER_OFFSET` (26 px, el número del día) + carriles de obras + carriles
+de eventos × `DAY_LANE_MIN_HEIGHT` (22 px). La grilla del mes usa
+`minmax(auto, 1fr)` por semana: reparte el alto disponible, pero ninguna semana
+queda más baja que ese mínimo; si no entra todo, el mes scrollea. Hasta el
+23-oct-2026 el mínimo no sumaba los 26 px y la grilla usaba `minmax(80px, 1fr)`,
+así que una semana con tres obras y un evento se comprimía y el evento invadía
+la semana de abajo.
+
 ### Cómo se distingue cada tipo a simple vista
 
 El calendario ya usaba dos señales y **ninguna se tocó**: el **color de fondo es

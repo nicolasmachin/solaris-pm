@@ -1532,7 +1532,10 @@ function MonthGrid({
           En mobile se renderiza como stack vertical con space-y-1. */}
       <div
         className="space-y-1 md:space-y-0 md:flex-1 md:min-h-0 md:grid md:gap-1 md:overflow-y-auto"
-        style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(80px, 1fr))` }}
+        // minmax(auto, 1fr): cada semana reparte el alto, pero nunca queda más baja
+        // que lo que necesitan sus barras (el minHeight de WeekRow); si no entra,
+        // scrollea el mes en vez de encimar semanas.
+        style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(auto, 1fr))` }}
       >
         {weeks.map((weekStart) => (
           <WeekRow
@@ -1560,6 +1563,8 @@ const DAY_LANE_MIN_HEIGHT = 22;
 // Altura mínima total del track area por semana (para que semanas con
 // pocas barras no colapsen).
 const WEEK_TRACK_AREA_MIN = 80;
+// Espacio arriba de cada semana para el número del día.
+const DAY_NUMBER_OFFSET = 26;
 
 function WeekRow({
   weekStart,
@@ -1630,7 +1635,10 @@ function WeekRow({
   );
 
   const lanesTotales = maxLanes + lanesEventos;
-  const minRowHeight = Math.max(WEEK_TRACK_AREA_MIN, lanesTotales * DAY_LANE_MIN_HEIGHT);
+  // Las barras arrancan a DAY_NUMBER_OFFSET del borde (debajo del número del
+  // día): si no se suma, una semana con varias obras y un evento no entra y el
+  // último bloque invade la semana de abajo.
+  const minRowHeight = Math.max(WEEK_TRACK_AREA_MIN, DAY_NUMBER_OFFSET + lanesTotales * DAY_LANE_MIN_HEIGHT + 4);
 
   // Ancho real de un día: decide si en el bloque de un evento entra el nombre,
   // solo el ícono, o nada. Mismo patrón de medición que la vista anual.
@@ -1652,7 +1660,7 @@ function WeekRow({
   );
 
   return (
-    <div ref={filaRef} className="relative md:h-full md:min-h-0" style={{ minHeight: minRowHeight }}>
+    <div ref={filaRef} className="relative md:h-full" style={{ minHeight: minRowHeight }}>
       {/* Capa de fondo: 7 celdas. Cada celda es droppable y tiene su badge
           con el número del día arriba a la derecha. */}
       <div className="absolute inset-0 grid grid-cols-7 gap-1">
@@ -1681,7 +1689,7 @@ function WeekRow({
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 grid grid-cols-7 gap-1"
         style={{
-          top: 26,
+          top: DAY_NUMBER_OFFSET,
           gridTemplateRows: `repeat(${lanesTotales}, 1fr)`,
         }}
       >

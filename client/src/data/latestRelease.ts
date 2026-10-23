@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.2",
+  date: "23 de octubre de 2026",
+  sections: [
+    {
+      title: "Arreglos",
+      items: [
+        "Calendario: las semanas con varias obras y un evento ya no cortan el último bloque; si no entra todo, el mes se desplaza hacia abajo.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_1: Release = {
   version: "13.1",
   date: "22 de octubre de 2026",
   sections: [
@@ -865,6 +878,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.1",
+    shortDate: "22 oct",
+    highlights: RELEASE_13_1.sections.map((sec) => sec.title),
+  },
   {
     version: "13.0",
     shortDate: "21 oct",
