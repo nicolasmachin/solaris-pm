@@ -154,7 +154,22 @@ export function FinanceMovementsTab() {
     return m;
   }, [accounts]);
 
-  const allItems = useMemo(() => data?.data ?? [], [data]);
+  // Una factura de proveedor ya pagada del todo se muestra dentro de su pago,
+  // no como renglón aparte: así cada salida de plata es un solo renglón. Si
+  // alguno de sus pagos no está en la lista (otro mes), la factura queda visible.
+  const { allItems, facturaById } = useMemo(() => {
+    const raw = data?.data ?? [];
+    const paymentIds = new Set(raw.filter(isPaymentRow).map((p) => p.id));
+    const facturaById = new Map<string, FinanceMovement>();
+    const visibles = raw.filter((it) => {
+      if (!isMovementRow(it) || !it.pagadoViaPayment) return true;
+      const ids = it.paymentIdsAsociados ?? [];
+      if (ids.length === 0 || !ids.every((id) => paymentIds.has(id))) return true;
+      facturaById.set(it.id, it);
+      return false;
+    });
+    return { allItems: visibles, facturaById };
+  }, [data]);
 
   // Búsqueda client-side: matchea por descripción, proveedor, cliente del
   // proyecto, código del proyecto, cuenta o monto.
@@ -183,10 +198,17 @@ export function FinanceMovementsTab() {
         if (it.supplier?.nombre.toLowerCase().includes(q)) return true;
         if (it.account?.nombre.toLowerCase().includes(q)) return true;
         if (it.referencia?.toLowerCase().includes(q)) return true;
+        // Las facturas que paga (escondidas como renglón propio).
+        for (const a of it.applications) {
+          const f = facturaById.get(a.movementId);
+          if (a.movement?.descripcion.toLowerCase().includes(q)) return true;
+          if (f?.project?.clientName.toLowerCase().includes(q)) return true;
+          if (f?.project?.code.toLowerCase().includes(q)) return true;
+        }
       }
       return false;
     });
-  }, [allItems, search, accountNameById, conFactura]);
+  }, [allItems, search, accountNameById, conFactura, facturaById]);
 
   const qcRoot = useQueryClient();
   const [editingMovement, setEditingMovement] = useState<FinanceMovement | null>(null);
@@ -223,6 +245,25 @@ export function FinanceMovementsTab() {
       cardRole: "title",
       render: (it) => {
         if (isPaymentRow(it)) {
+          const facturas = it.applications
+            .map((a) => ({ a, f: facturaById.get(a.movementId) }))
+            .filter((x): x is { a: (typeof it.applications)[number]; f: FinanceMovement } => !!x.f);
+          // Con las facturas absorbidas, el título es el proveedor y debajo va
+          // qué se pagó; el «Auto-pago: …» de la referencia sobra.
+          if (facturas.length > 0) {
+            return (
+              <>
+                <p className="text-[var(--color-text-primary)]">{it.supplier?.nombre ?? "Pago a proveedor"}</p>
+                {facturas.map(({ a, f }) => (
+                  <p key={a.id} className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                    {f.descripcion}
+                    {f.project && ` · ${f.project.clientName}`}
+                    {facturas.length > 1 && ` · ${fmtCurrency(a.montoAplicado, f.moneda)}`}
+                  </p>
+                ))}
+              </>
+            );
+          }
           const desc = it.descripcion || `Pago a ${it.supplier?.nombre ?? "proveedor"}`;
           return (
             <>
