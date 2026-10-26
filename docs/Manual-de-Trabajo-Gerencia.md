@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.25 — 22 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.26 — 26 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -611,6 +611,45 @@ monto; los que no tenían nota se toman como facturación normal.
 Finanzas (factura con eso), y al PGT (es parte de lo que Ventas le pasa a
 Finanzas).
 
+### Los manuales vigentes están en Voltia PM, y cada uno confirma que leyó el suyo
+
+**Qué se decidió.** El Procedimiento General de Trabajo y los manuales de cada
+área se consultan en **Documentación**, dentro de Voltia PM, donde siempre está
+la última versión. Cada persona ve los de su área; el Procedimiento General lo
+ven todos. Cuando sale una versión nueva, le llega un aviso a la gente del área
+y tiene que confirmar que la leyó. Gerencia ve quién la leyó y quién no.
+
+**Por qué.** Un manual que circula como PDF suelto no tiene versión clara:
+cada uno trabaja con el que le llegó. Y si una regla cambia, hay que poder saber
+quién se enteró.
+
+**Desde cuándo rige.** Desde el 26 de octubre de 2026.
+
+**A qué manuales afecta.** A todos los manuales de trabajo y al Procedimiento
+General.
+
+### Los datos del legajo los ven la persona, Gerencia y Finanzas
+
+**Qué se decidió.** Cada persona del equipo tiene su legajo en Voltia PM (**Mi
+legajo**), donde carga sus datos y sus documentos (carné de salud, licencia de
+conducir, cursos) y descarga sus recibos de sueldo. Lo que carga lo revisa
+administración. El legajo completo de todos, con el contrato, el sueldo y las
+notas internas, lo ven solo la Dirección, el Gerente de Finanzas y Finanzas. Los
+instaladores tercerizados tienen un legajo reducido, con lo que se les pide
+antes de subir a un techo: BPS y BSE al día, carné de salud y curso de trabajo
+en altura.
+
+**Por qué.** Son datos sensibles: de salud, de sueldo y bancarios. Los
+necesita quien liquida sueldos y controla vencimientos, nadie más. Y con el
+carné de salud o la licencia vencidos no se puede trabajar: el legajo avisa 30
+días antes, a la persona y a administración.
+
+**Desde cuándo rige.** Desde el 26 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Finanzas (la carga mensual de los recibos y la
+revisión de lo que carga cada uno), al de Operaciones y al del Instalador
+Tercerizado (los papeles al día para trabajar en obra).
+
 ### Lo que comenta Gerencia se ve como de Gerencia
 
 **Qué se decidió.** Cuando Gerencia comenta en Voltia PM, desde cualquier
@@ -876,6 +915,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM y que cada uno confirma la lectura de cada versión nueva; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |
 | 0.25 | 22 de octubre de 2026 | Se registra que las cuotas del plan de pagos se cobran por momento de la obra y no por fecha: la del 50 % desde diez días antes de la obra, la del 30 % con la obra terminada y la del 20 % con la habilitación, y que cada una vence a los diez días de poder cobrarse. Se registra también que lo que se le factura al cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo, guardado sin IVA), y se corrige la decisión de las facturas al cliente, que ya no parte de la cotización. |
 | 0.24 | 22 de octubre de 2026 | Se registra que de cada lead se pregunta y se carga cómo nos conoció, para medir qué canal trae ventas. |
 | 0.23 | 21 de octubre de 2026 | Se registran cinco decisiones de Finanzas: las facturas de los proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana (las demás siguen por revisar); borrón y cuenta nueva con cada proveedor desde que se concilia con su estado de cuenta, cerrando lo viejo con un ajuste que no es plata, y las deudas viejas de la unipersonal con Tiempo al Tiempo como compra de la SAS, con el riesgo fiscal a revisar con la contadora; los gastos personales del socio van a su cuenta y no como sueldo, y los de un empleado autorizados se le descuentan del sueldo; un mes cerrado no se toca y reabrirlo queda registrado con su motivo; una factura de proveedor se carga por un solo lugar y a un proveedor se le paga por un solo camino. |

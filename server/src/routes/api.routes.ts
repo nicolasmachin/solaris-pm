@@ -6020,6 +6020,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // VIEW = entrar a Capacitación (qué áreas ve se define por sección).
     // EDIT = gestionar contenido, ver todas las secciones y el seguimiento.
     { module: Module.CAPACITACION,        actions: [Action.VIEW, Action.EDIT] },
+    // VIEW = leer los documentos de su rol y confirmar la lectura. EDIT = publicar,
+    // ver todos y ver quién leyó cada versión.
+    { module: Module.DOCUMENTACION,       actions: [Action.VIEW, Action.EDIT] },
+    // VIEW = "Mi legajo" (solo lo propio). EDIT = los legajos de todos, con
+    // sueldos, contratos y datos de salud.
+    { module: Module.RRHH,                actions: [Action.VIEW, Action.EDIT] },
     { module: Module.USUARIOS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.CONFIGURACION,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];

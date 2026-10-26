@@ -1,5 +1,32 @@
 # Novedades
 
+## v13.3
+
+### 26 de octubre de 2026
+
+#### Documentación: los manuales del equipo, siempre en su última versión
+
+- Nueva sección **Documentación**, en el menú de tu usuario. Ahí están el Procedimiento General de Trabajo y los manuales de trabajo de cada área, en PDF, para leer en pantalla o descargar.
+- Cada persona ve los documentos de su área. El Procedimiento General lo ven todos.
+- Siempre se muestra la **versión vigente**, con desde cuándo rige y qué cambió. Las versiones anteriores quedan en el historial.
+- Los manuales se actualizan solos: cada vez que se publica una versión nueva, aparece en Documentación sin cargar nada a mano y llega un aviso a la campanita.
+- Cuando un documento lo pide, abajo hay un botón **«Confirmo que leí la versión»**. Arriba se ve cuántos quedan por leer.
+- Administración puede subir otros documentos (reglamentos, formularios), elegir qué roles los ven y ver quién leyó cada versión.
+
+#### Mi legajo y Recursos Humanos
+
+- Nueva sección **Mi legajo**, en el menú de tu usuario: tus datos (contacto, a quién avisar en una emergencia, mutualista, cuenta para el sueldo, talles de ropa y calzado), tus recibos de sueldo para descargar y tus documentos.
+- Podés cargar vos mismo el carné de salud, la licencia de conducir, la cédula, cursos y constancias, también con una foto desde el celular. Si el documento vence, poné la fecha: Voltia PM te avisa 30 días antes y el día que vence.
+- Lo que cargás queda **pendiente** hasta que administración lo revisa. Si hay que volver a subirlo, te llega el motivo.
+- Arriba ves qué te falta cargar y qué está por vencer.
+- Los instaladores tercerizados tienen su legajo reducido: sin recibos, y con lo que se les pide antes de subir a un techo (BPS y BSE al día, carné de salud y curso de trabajo en altura).
+- Para gerencia y finanzas, la sección **Recursos Humanos**: el legajo completo de cada persona (ingreso, cargo, contrato, sueldo, notas internas), validar lo que carga cada uno, el tablero de vencimientos y la **carga de recibos en lote** (se eligen todos los recibos del mes y a cada uno le llega el suyo, con aviso).
+- Los datos de salud y de sueldo los ve solo la persona y quien gestiona Recursos Humanos. Cada vez que alguien abre un documento de otra persona, queda registrado.
+
+#### Movimientos más claros
+
+- En **Finanzas → Movimientos**, una factura de proveedor que ya está pagada se ve dentro de su pago, en un solo renglón: el proveedor arriba, y debajo qué se compró y para qué cliente. Antes aparecían dos renglones por cada compra.
+
 ## v13.2
 
 ### 23 de octubre de 2026

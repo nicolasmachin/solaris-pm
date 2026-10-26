@@ -58,6 +58,18 @@ export const NOTIFICATION_TYPE_META: Record<
     label: "Comentario en capacitación",
     description: "Alguien comentó en un video de Capacitación en el que participaste o que cargaste vos.",
   },
+  documento_nueva_version: {
+    label: "Versión nueva de un manual",
+    description: "Se publicó una versión nueva de un documento de tu área en Documentación.",
+  },
+  legajo_vencimiento: {
+    label: "Vencimientos del legajo",
+    description: "Un documento de tu legajo (o, si gestionás Recursos Humanos, del de alguien del equipo) vence en 30 días o venció.",
+  },
+  legajo_documento: {
+    label: "Novedades del legajo",
+    description: "Un recibo nuevo, un documento validado o rechazado, o —si gestionás Recursos Humanos— algo cargado que espera validación.",
+  },
   seguro_granizo_por_vencer: {
     label: "Plan de granizo por vencer",
     description: "Falta un mes o menos para que venza el Plan de Protección contra Granizo de un Generador y la anualidad siguiente todavía no se cobró.",

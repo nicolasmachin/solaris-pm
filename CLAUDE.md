@@ -343,6 +343,15 @@ cada cambio. **El canvas y el PDF se regeneran solo cuando Nicolás lo pide**
 cerrar un cambio que tocó un manual, se avisa en una línea que su canvas quedó
 atrasado respecto del `.md`.
 
+**Al regenerar un PDF, se publica en Documentación** (la intranet de Voltia PM,
+desde el 26-oct-2026): `node docs/publicar-manual.mjs <slug> <pdf>`. Copia el PDF
+a `server/manuales/` y anota la versión y qué cambió; el server lo publica solo
+en el deploy siguiente y avisa a la gente del área. **Los PDF de los manuales ya
+no van en `docs/`**: viven en `server/manuales/`, que viaja en la imagen del
+server. Un manual nuevo (el del Instalador Tercerizado, Ingeniería…) se suma como
+entrada de `server/manuales/manuales.json` cuando tenga su primer PDF. Detalle en
+`docs/manual/16-documentacion.md`.
+
 Están escritos **en tercera persona, hablándole al rol y no al lector**, y en
 criollo: "el asesor carga", "Experiencia Solar avisa", "se entra desde
 Proyectos" — nunca "entrás", "cargás", "tu trabajo". Los rótulos van igual:

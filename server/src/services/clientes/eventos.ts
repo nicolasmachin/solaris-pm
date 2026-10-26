@@ -70,6 +70,8 @@ export const EVENTOS: Record<AuditAction, EventoDef> = {
   // percibe como avance concreto. Estaba como auditoría, así que no llegaba al
   // historial ni encendía la señal de novedad.
   [AuditAction.file_uploaded]: { visibilidad: "novedad", etiqueta: "Se cargó un archivo" },
+  // Solo legajos de RRHH: nunca es una novedad del cliente.
+  [AuditAction.file_downloaded]: { visibilidad: "auditoria" },
   // comment_added NO va como novedad: el comentario ya llega al historial por su
   // propia fuente (la tabla de comentarios, con su texto y su autor). Dejarlo acá
   // duplicaba cada comentario con un "Agregó un comentario en el proyecto X".

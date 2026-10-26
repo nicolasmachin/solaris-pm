@@ -156,6 +156,8 @@ enum AuditEntityType {
   bank_movement
   cfe_emitido
   cierre_mes
+  documento_intranet
+  legajo
 }
 
 enum AuditAction {
@@ -164,6 +166,8 @@ enum AuditAction {
   deleted
   status_changed
   file_uploaded
+  // Alguien que no es el dueño abrió un archivo sensible (legajos de RRHH).
+  file_downloaded
   stage_advanced
   // Una etapa que estaba completa (o en curso) vuelve atrás porque se reabrió
   // una subetapa. Se separa de `stage_advanced` para que el historial distinga
@@ -232,6 +236,13 @@ enum NotificationType {
   // No es una notificación in-app: marca qué roles reciben por correo el resumen
   // diario del recorrido de Experiencia Solar (ver services/digest/experiencia-digest.service.ts).
   resumen_experiencia
+  // Documentación: hay una versión nueva de un documento que el rol tiene que leer.
+  documento_nueva_version
+  // RRHH: un documento del legajo vence pronto o venció.
+  legajo_vencimiento
+  // RRHH: novedades del legajo (recibo nuevo, documento validado o rechazado,
+  // o —para RRHH— un documento cargado por el empleado que espera validación).
+  legajo_documento
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
@@ -302,6 +313,7 @@ model Role {
   users                 User[]
   permissions           Permission[]
   capacitacionSecciones CapacitacionSeccionRol[]
+  documentos            DocumentoRol[]
 
   @@map("roles")
 }
@@ -334,6 +346,12 @@ enum Module {
   // al módulo; qué áreas ve cada rol se define por sección (CapacitacionSeccionRol).
   // EDIT = gestionar contenido y ver todas las secciones y el seguimiento.
   CAPACITACION
+  // Documentación (intranet): manuales, procedimientos y reglamentos con
+  // versiones. VIEW = leer lo de su rol; EDIT = gestionar y ver quién leyó.
+  DOCUMENTACION
+  // Recursos Humanos. VIEW = "Mi legajo" (lo propio). EDIT = los legajos de
+  // todos, con sueldos y contratos: solo gerencia y administración.
+  RRHH
 }
 
 enum Moneda {
@@ -650,6 +668,11 @@ model User {
   cfesEmitidos                   CfeEmitido[]                   @relation("CfeEmitidoPor")
   capacitacionDocumentosSubidos  CapacitacionDocumento[]        @relation("CapacitacionDocumentoUploadedBy")
   capacitacionVistas             CapacitacionVista[]
+  documentosVersionesPublicadas  DocumentoVersion[]             @relation("DocumentoVersionPublicadaPor")
+  documentosLecturas             DocumentoLectura[]
+  legajo                         Legajo?                        @relation("LegajoUsuario")
+  legajoDocumentosSubidos        LegajoDocumento[]              @relation("LegajoDocumentoSubidoPor")
+  legajoDocumentosValidados      LegajoDocumento[]              @relation("LegajoDocumentoValidadoPor")
   passwordTemporary              Boolean                        @default(false)
   deletedAt                      DateTime?                      @db.Timestamptz(6)
   createdAt                      DateTime                       @default(now()) @db.Timestamptz(6)
@@ -5872,4 +5895,213 @@ model TarjetaTitular {
 
   @@index([accountId])
   @@map("tarjeta_titulares")
+}
+
+// ─── Documentación (intranet) ────────────────────────────────────────────────
+// Manuales, procedimientos y reglamentos de uso interno, con historial de
+// versiones. Los manuales del equipo se publican solos al desplegar: el server
+// lee `server/manuales/manuales.json` al arrancar y crea una versión nueva cada
+// vez que cambia el PDF (ver services/documentacion/sincronizar-manuales.ts).
+
+enum DocumentoOrigen {
+  // Lo publica el deploy desde `server/manuales/`. Se identifica por `slug`.
+  MANUAL_SINCRONIZADO
+  // Lo sube alguien desde la pantalla de gestión.
+  SUBIDO
+}
+
+model Documento {
+  id          String          @id @default(cuid())
+  // Solo los sincronizados: la clave del manifiesto ("manual-ventas").
+  slug        String?         @unique
+  titulo      String
+  descripcion String?
+  // Agrupador visible: "Procedimientos", "Manuales de trabajo", "Reglamentos"…
+  categoria   String
+  origen      DocumentoOrigen @default(SUBIDO)
+  // Si es true, cada versión nueva le pide a su gente que confirme la lectura.
+  requiereLectura Boolean     @default(false)
+  orden       Int             @default(0)
+  // Inactivo = solo lo ve quien gestiona.
+  activo      Boolean         @default(true)
+  deletedAt   DateTime?       @db.Timestamptz(6)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+
+  roles     DocumentoRol[]
+  versiones DocumentoVersion[]
+
+  @@index([categoria, orden])
+  @@map("documentos")
+}
+
+// Qué roles ven cada documento. Sin filas = nadie salvo quien gestiona.
+model DocumentoRol {
+  id          String    @id @default(cuid())
+  documentoId String
+  documento   Documento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  roleId      String
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([documentoId, roleId])
+  @@index([roleId])
+  @@map("documento_roles")
+}
+
+// Cada archivo publicado. La vigente es la más nueva (`createdAt`); las
+// anteriores quedan para consulta y no se borran.
+model DocumentoVersion {
+  id             String    @id @default(cuid())
+  documentoId    String
+  documento      Documento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  // Como figura en la cabecera del manual ("1.4"). Texto: hay "0.20" y "3.0".
+  version        String
+  // Desde cuándo rige, según la cabecera del manual.
+  vigenteDesde   DateTime? @db.Date
+  // Qué cambió (la entrada del registro de cambios del manual).
+  notas          String?
+  filename       String
+  storedFilename String
+  mimeType       String
+  sizeBytes      Int
+  url            String
+  // Hash del archivo: el sincronizador publica solo si cambió.
+  sha256         String
+  // null = la publicó el deploy.
+  publicadoPorId String?
+  publicadoPor   User?     @relation("DocumentoVersionPublicadaPor", fields: [publicadoPorId], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  lecturas DocumentoLectura[]
+
+  @@index([documentoId, createdAt])
+  @@map("documento_versiones")
+}
+
+// "Leí esta versión". Una por persona y versión.
+model DocumentoLectura {
+  id        String           @id @default(cuid())
+  versionId String
+  version   DocumentoVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leidoAt   DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@unique([versionId, userId])
+  @@index([userId])
+  @@map("documento_lecturas")
+}
+
+// ─── Recursos Humanos ────────────────────────────────────────────────────────
+// Un legajo por persona. Datos sensibles (salud, sueldo, cuenta bancaria): los
+// ve la persona y quien tenga RRHH:EDIT, nadie más. Las tablas están en la lista
+// prohibida del asistente de IA (ai-sql-validator.ts).
+
+enum VinculoLaboral {
+  DEPENDIENTE
+  // Instalador tercerizado: legajo reducido, sin recibos ni datos de contrato.
+  TERCERIZADO
+}
+
+model Legajo {
+  id      String         @id @default(cuid())
+  userId  String         @unique
+  user    User           @relation("LegajoUsuario", fields: [userId], references: [id], onDelete: Cascade)
+  vinculo VinculoLaboral @default(DEPENDIENTE)
+
+  // ── Datos personales: los carga la persona ──
+  cedula                 String?
+  fechaNacimiento        DateTime? @db.Date
+  direccion              String?
+  telefonoPersonal       String?
+  emailPersonal          String?
+  emergenciaNombre       String?
+  emergenciaTelefono     String?
+  emergenciaVinculo      String?
+  mutualista             String?
+  emergenciaMovil        String?
+  // Opcionales a propósito: dato de salud.
+  grupoSanguineo         String?
+  alergias               String?
+  banco                  String?
+  cuentaBancaria         String?
+  talleRopa              String?
+  talleCalzado           String?
+  licenciaConducirCategoria String?
+
+  // ── Datos de la empresa: solo RRHH:EDIT los ve y los edita ──
+  fechaIngreso  DateTime? @db.Date
+  fechaEgreso   DateTime? @db.Date
+  cargo         String?
+  tipoContrato  String?
+  categoria     String?
+  sueldoNominal Decimal?  @db.Decimal(12, 2)
+  sueldoMoneda  Moneda    @default(UYU)
+  notasInternas String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  documentos LegajoDocumento[]
+
+  @@map("legajos")
+}
+
+enum LegajoDocumentoTipo {
+  RECIBO_SUELDO
+  CONTRATO
+  CARNE_SALUD
+  LICENCIA_CONDUCIR
+  CEDULA
+  CURSO_ALTURA
+  PRIMEROS_AUXILIOS
+  HABILITACION_ELECTRICA
+  ANTECEDENTES
+  CONSTANCIA_DOMICILIO
+  BPS
+  BSE
+  ENTREGA_EPP
+  AMONESTACION
+  OTRO
+}
+
+enum LegajoDocumentoEstado {
+  // Lo cargó la persona y RRHH todavía no lo revisó.
+  PENDIENTE
+  VALIDADO
+  RECHAZADO
+}
+
+model LegajoDocumento {
+  id             String                @id @default(cuid())
+  legajoId       String
+  legajo         Legajo                @relation(fields: [legajoId], references: [id], onDelete: Cascade)
+  tipo           LegajoDocumentoTipo
+  titulo         String
+  // Recibos: el mes que liquida, "2026-10".
+  periodo        String?
+  vencimiento    DateTime?             @db.Date
+  estado         LegajoDocumentoEstado @default(VALIDADO)
+  motivoRechazo  String?
+  // true = no lo ve la persona (notas o constancias solo para la gerencia).
+  soloInterno    Boolean               @default(false)
+  filename       String
+  storedFilename String
+  mimeType       String
+  sizeBytes      Int
+  url            String
+  subidoPorId    String
+  subidoPor      User                  @relation("LegajoDocumentoSubidoPor", fields: [subidoPorId], references: [id], onDelete: Restrict)
+  validadoPorId  String?
+  validadoPor    User?                 @relation("LegajoDocumentoValidadoPor", fields: [validadoPorId], references: [id], onDelete: SetNull)
+  validadoAt     DateTime?             @db.Timestamptz(6)
+  // Cuándo la persona lo descargó por primera vez (recibos).
+  vistoAt        DateTime?             @db.Timestamptz(6)
+  deletedAt      DateTime?             @db.Timestamptz(6)
+  createdAt      DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime              @updatedAt @db.Timestamptz(6)
+
+  @@index([legajoId, tipo])
+  @@index([vencimiento])
+  @@map("legajo_documentos")
 }

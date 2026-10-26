@@ -21,6 +21,8 @@ import { startReporteSemanalJob } from "./services/reporteSemanal/reporte-semana
 import { startReporteMensualJob } from "./services/reporteSemanal/reporte-mensual.job.js";
 import { startDailyDigestJob } from "./services/digest/daily-digest.job.js";
 import { startNovedadesJob } from "./services/novedades/novedades-email.job.js";
+import { sincronizarManuales } from "./services/documentacion/sincronizar-manuales.js";
+import { startVencimientosLegajoJob } from "./services/rrhh/vencimientos.job.js";
 import { recoverPendingProjectVideos } from "./services/project-video.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
@@ -110,6 +112,7 @@ async function start() {
   startPlanGranizoJob();
   startBillerRecibidosJob();
   startBillerCfeEmitidosJob();
+  startVencimientosLegajoJob();
 
   // La cola de compresión de videos vive en memoria: un reinicio la vacía. Sin
   // esto, un video subido justo antes de un deploy quedaría "procesando" para
@@ -117,6 +120,10 @@ async function start() {
   recoverPendingProjectVideos().catch((err) =>
     console.error("[startup] recoverPendingProjectVideos falló:", err),
   );
+
+  // Manuales del equipo: publica en Documentación los PDF que cambiaron desde
+  // el último deploy (ver services/documentacion/sincronizar-manuales.ts).
+  sincronizarManuales().catch((err) => console.error("[startup] sincronizarManuales falló:", err));
 
   // Startup check: notify admins if no goals for current quarter
   checkGoalsConfigured().catch((err) => console.error("[startup] checkGoalsConfigured failed:", err));

@@ -48,6 +48,7 @@
     "save": "bash scripts/save.sh",
     "test:cover-overlay": "node --import tsx --test src/services/proposal/coverOverlay.test.ts",
     "test:capacitacion": "node --import tsx --test src/services/capacitacion/capacitacion.service.test.ts",
+    "test:documentacion-rrhh": "node --import tsx --test src/services/documentacion/sincronizar-manuales.test.ts src/services/rrhh/rrhh.service.test.ts",
     "test:initial-draft": "node --import tsx --test src/services/proposal/initial-draft.test.ts",
     "test:suministros": "node --import tsx --test src/services/suministros.service.test.ts src/services/ute-sync.suministros.test.ts",
     "test:mcp-obra": "node --import tsx --test src/routes/mcp/tools/obra.logic.test.ts"

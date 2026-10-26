@@ -129,8 +129,14 @@ hacerlo a mano. Para sacarlo desde acá:
 ```bash
 docker compose cp docs/manual-posventa-pdf/pdf.mjs server:/app/pdf.mjs
 docker compose exec -T -w /app server node pdf.mjs paginas/project /tmp/manual.pdf
-docker compose cp server:/tmp/manual.pdf docs/Manual-Posventa-Experiencia-Solar-vX.Y.pdf
+docker compose cp server:/tmp/manual.pdf /tmp/manual-posventa.pdf
+node docs/publicar-manual.mjs manual-posventa /tmp/manual-posventa.pdf
 ```
+
+El último paso lo publica en **Documentación** (la intranet de Voltia PM): copia
+el PDF a `server/manuales/` y anota qué cambió, sacado del registro de cambios
+del `.md`. Con el commit y el próximo deploy queda vigente y le llega el aviso a
+la gente del área. Ver `docs/manual/16-documentacion.md`.
 
 Toma el orden de `canvas.json` y saltea (avisando) las hojas que no estén en la
 carpeta.

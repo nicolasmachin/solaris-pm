@@ -35,6 +35,17 @@ const CapacitacionPlayer = lazy(() =>
 const CapacitacionGestion = lazy(() =>
   import("./modules/capacitacion/CapacitacionGestion").then((m) => ({ default: m.CapacitacionGestion })),
 );
+const DocumentacionHome = lazy(() =>
+  import("./modules/documentacion/DocumentacionHome").then((m) => ({ default: m.DocumentacionHome })),
+);
+const DocumentoDetalle = lazy(() =>
+  import("./modules/documentacion/DocumentoDetalle").then((m) => ({ default: m.DocumentoDetalle })),
+);
+const MiLegajo = lazy(() => import("./modules/rrhh/MiLegajo").then((m) => ({ default: m.MiLegajo })));
+const RrhhHome = lazy(() => import("./modules/rrhh/RrhhHome").then((m) => ({ default: m.RrhhHome })));
+const LegajoDetalle = lazy(() =>
+  import("./modules/rrhh/LegajoDetalle").then((m) => ({ default: m.LegajoDetalle })),
+);
 const ViajeSaoPaulo = lazy(() =>
   import("./pages/ViajeSaoPaulo").then((module) => ({ default: module.ViajeSaoPaulo })),
 );
@@ -342,6 +353,50 @@ export function App() {
           element={
             <PermissionRoute module="CAPACITACION" action="VIEW">
               <CapacitacionSeccion />
+            </PermissionRoute>
+          }
+        />
+        {/* Documentación (intranet): VIEW lee lo de su rol; EDIT publica y ve
+            quién leyó. Qué documentos ve cada rol se define por documento. */}
+        <Route
+          path="/documentacion"
+          element={
+            <PermissionRoute module="DOCUMENTACION" action="VIEW">
+              <DocumentacionHome />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/documentacion/:id"
+          element={
+            <PermissionRoute module="DOCUMENTACION" action="VIEW">
+              <DocumentoDetalle />
+            </PermissionRoute>
+          }
+        />
+        {/* Recursos Humanos: VIEW = Mi legajo (lo propio); EDIT = los legajos
+            de todos, con sueldos, contratos y datos de salud. */}
+        <Route
+          path="/mi-legajo"
+          element={
+            <PermissionRoute module="RRHH" action="VIEW">
+              <MiLegajo />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/rrhh"
+          element={
+            <PermissionRoute module="RRHH" action="EDIT">
+              <RrhhHome />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/rrhh/legajos/:userId"
+          element={
+            <PermissionRoute module="RRHH" action="EDIT">
+              <LegajoDetalle />
             </PermissionRoute>
           }
         />

@@ -23,6 +23,35 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.3",
+  date: "26 de octubre de 2026",
+  sections: [
+    {
+      title: "Documentación: los manuales del equipo, siempre en su última versión",
+      items: [
+        "Nueva sección Documentación (menú de tu usuario): el Procedimiento General de Trabajo y los manuales de cada área, en PDF.",
+        "Siempre la versión vigente, con qué cambió; las anteriores quedan en el historial.",
+        "Se actualizan solos con cada versión nueva, con aviso en la campanita y botón para confirmar la lectura.",
+      ],
+    },
+    {
+      title: "Mi legajo y Recursos Humanos",
+      items: [
+        "Mi legajo: tus datos, tus recibos de sueldo y tus documentos (carné de salud, licencia, cursos), con aviso antes de que venzan.",
+        "Lo que cargás lo revisa administración; si hay que volver a subirlo, te llega el motivo.",
+        "Para gerencia y finanzas: legajos completos, tablero de vencimientos y carga de recibos del mes en lote.",
+      ],
+    },
+    {
+      title: "Movimientos más claros",
+      items: [
+        "Una factura de proveedor ya pagada se ve dentro de su pago, en un solo renglón.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_2: Release = {
   version: "13.2",
   date: "23 de octubre de 2026",
   sections: [
@@ -878,6 +907,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.2",
+    shortDate: "23 oct",
+    highlights: RELEASE_13_2.sections.map((sec) => sec.title),
+  },
   {
     version: "13.1",
     shortDate: "22 oct",

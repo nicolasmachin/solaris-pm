@@ -48,7 +48,10 @@ export type NotificationType =
   | "capacitacion_comentario"
   | "seguro_granizo_por_vencer"
   | "seguro_granizo_impago"
-  | "seguro_granizo_danio_plazo";
+  | "seguro_granizo_danio_plazo"
+  | "documento_nueva_version"
+  | "legajo_vencimiento"
+  | "legajo_documento";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

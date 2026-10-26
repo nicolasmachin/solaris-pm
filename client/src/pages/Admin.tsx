@@ -504,6 +504,8 @@ const MODULE_LABELS: Record<string, string> = {
   COMISIONES: "Comisiones",
   PAGOS_INSTALADOR: "Pagos a instaladores",
   CAPACITACION: "Capacitación",
+  DOCUMENTACION: "Documentación (intranet)",
+  RRHH: "Recursos Humanos",
   METRICAS: "Métricas",
   CONFIGURACION: "Configuración",
   USUARIOS: "Usuarios",

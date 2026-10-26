@@ -306,6 +306,30 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                   Capacitación
                 </button>
               </CanAccess>
+              <CanAccess module="DOCUMENTACION" action="VIEW">
+                <button
+                  onClick={() => { setUserMenuOpen(false); navigate("/documentacion"); }}
+                  className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                >
+                  Documentación
+                </button>
+              </CanAccess>
+              <CanAccess module="RRHH" action="VIEW">
+                <button
+                  onClick={() => { setUserMenuOpen(false); navigate("/mi-legajo"); }}
+                  className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                >
+                  Mi legajo
+                </button>
+              </CanAccess>
+              <CanAccess module="RRHH" action="EDIT">
+                <button
+                  onClick={() => { setUserMenuOpen(false); navigate("/rrhh"); }}
+                  className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                >
+                  Recursos Humanos
+                </button>
+              </CanAccess>
               {canTravel && (
                 <button
                   onClick={() => { setUserMenuOpen(false); navigate("/viaje-sao-paulo"); }}

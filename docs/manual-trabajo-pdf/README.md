@@ -54,6 +54,14 @@ Se copian a `/tmp` del contenedor y no a `/app`, porque `/app` es la carpeta
 Para publicar: las 40 hojas y `canvas.json` en una sola llamada de la
 herramienta de Artifacts, con `root` en la carpeta generada.
 
+**Y en Documentación de Voltia PM:** con el PDF exportado,
+`node docs/publicar-manual.mjs <slug> <pdf>` (slugs: `procedimiento-general`,
+`manual-ventas`, `manual-operaciones`; la lista está en
+`server/manuales/manuales.json`). Lo copia a `server/manuales/` con la versión y
+qué cambió; el próximo deploy lo publica y avisa a la gente del área. Un manual
+nuevo se suma primero como entrada de `manuales.json`. Ver
+`docs/manual/16-documentacion.md`.
+
 ## Manual de Ventas (`MANUAL=ventas`)
 
 Sin partes ni portadillas: los capítulos van seguidos. La sección sin número
