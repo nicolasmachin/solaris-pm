@@ -15,7 +15,7 @@ const mapaAssets = JSON.parse(fs.readFileSync(process.env.MAPA_ASSETS || "/app/a
 
 const browser = await puppeteer.launch({
   headless: true,
-  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--allow-file-access-from-files"],
+  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--disable-crash-reporter", "--disable-breakpad", "--allow-file-access-from-files"],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });

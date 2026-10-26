@@ -47,7 +47,7 @@ async function arrancar() {
   const [h, p] = FRONT.split(":");
   const proxy = net.createServer((c) => { const a = net.connect(Number(p), h, () => c.pipe(a).pipe(c)); a.on("error", () => c.destroy()); c.on("error", () => a.destroy()); });
   await new Promise((r) => proxy.listen(5173, "127.0.0.1", r));
-  const browser = await puppeteer.launch({ headless: true, args: ["--allow-file-access-from-files", "--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
+  const browser = await puppeteer.launch({ headless: true, args: ["--allow-file-access-from-files", "--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--disable-crash-reporter", "--disable-breakpad"] });
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 2 });
   await page.goto("http://127.0.0.1:5173/login", { waitUntil: "networkidle2", timeout: 60000 });

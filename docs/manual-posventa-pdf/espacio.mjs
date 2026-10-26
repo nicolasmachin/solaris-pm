@@ -24,7 +24,7 @@ fs.mkdirSync(tmp, { recursive: true });
 
 const browser = await puppeteer.launch({
   headless: true,
-  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--allow-file-access-from-files"],
+  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--disable-crash-reporter", "--disable-breakpad", "--allow-file-access-from-files"],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 794, height: 1123 });
@@ -66,10 +66,25 @@ for (const f of archivos) {
       const b = el.getBoundingClientRect();
       if (b.height || b.width) fondo = Math.max(fondo, b.bottom - tope.top);
     }
-    return { alto: Math.round(root.scrollHeight), fondo: Math.round(fondo), libre: Math.round(libre) };
+    // Tampoco alcanza con eso: el marco es una columna flex de alto fijo, y un
+    // recuadro con `overflow: hidden` se encoge para que entre y recorta su
+    // propio contenido sin salirse de la hoja (pasó el 26-oct-2026: la última
+    // línea de una lista quedó tapada y la hoja medía "ok").
+    let recorte = 0;
+    for (const el of root.querySelectorAll("*")) {
+      const ov = getComputedStyle(el).overflowY;
+      if (ov !== "visible" && el.scrollHeight > el.clientHeight + 1) {
+        recorte = Math.max(recorte, el.scrollHeight - el.clientHeight);
+      }
+    }
+    return { alto: Math.round(root.scrollHeight), fondo: Math.round(fondo), libre: Math.round(libre), recorte };
   });
   const seSale = r.alto > 1123 || r.fondo > 1123;
-  const estado = seSale ? `SE PASA (contenido hasta ${r.fondo})` : "ok";
+  const estado = seSale
+    ? `SE PASA (contenido hasta ${r.fondo})`
+    : r.recorte
+      ? `RECORTA ${r.recorte}px`
+      : "ok";
   console.log(`${String(r.alto).padStart(5)} ${estado.padEnd(8)} libre:${String(r.libre).padStart(4)}px  ${f}`);
 }
 await browser.close();

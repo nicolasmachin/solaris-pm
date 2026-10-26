@@ -9,9 +9,8 @@
 - Nueva sección **Documentación**, en el menú de tu usuario. Ahí están el Procedimiento General de Trabajo y los manuales de trabajo de cada área, en PDF, para leer en pantalla o descargar.
 - Cada persona ve los documentos de su área. El Procedimiento General lo ven todos.
 - Siempre se muestra la **versión vigente**, con desde cuándo rige y qué cambió. Las versiones anteriores quedan en el historial.
-- Los manuales se actualizan solos: cada vez que se publica una versión nueva, aparece en Documentación sin cargar nada a mano y llega un aviso a la campanita.
-- Cuando un documento lo pide, abajo hay un botón **«Confirmo que leí la versión»**. Arriba se ve cuántos quedan por leer.
-- Administración puede subir otros documentos (reglamentos, formularios), elegir qué roles los ven y ver quién leyó cada versión.
+- Los manuales se actualizan solos: cada versión nueva aparece en Documentación sin cargar nada a mano. No se manda ningún aviso: los manuales cambian seguido y cada uno los consulta ahí cuando los necesita.
+- Administración puede subir otros documentos (reglamentos, formularios) y elegir qué roles los ven. Si un documento lo amerita (un reglamento, por ejemplo), puede pedir que cada uno confirme que lo leyó y ver quién lo hizo.
 
 #### Mi legajo y Recursos Humanos
 
@@ -22,6 +21,20 @@
 - Los instaladores tercerizados tienen su legajo reducido: sin recibos, y con lo que se les pide antes de subir a un techo (BPS y BSE al día, carné de salud y curso de trabajo en altura).
 - Para gerencia y finanzas, la sección **Recursos Humanos**: el legajo completo de cada persona (ingreso, cargo, contrato, sueldo, notas internas), validar lo que carga cada uno, el tablero de vencimientos y la **carga de recibos en lote** (se eligen todos los recibos del mes y a cada uno le llega el suyo, con aviso).
 - Los datos de salud y de sueldo los ve solo la persona y quien gestiona Recursos Humanos. Cada vez que alguien abre un documento de otra persona, queda registrado.
+
+#### Licencias
+
+- En **Mi legajo** se ven los días de licencia: los que te corresponden, los que ya tomaste, los pedidos y los **disponibles**.
+- Desde ahí se **pide licencia**: tipo (anual, enfermedad, estudio, paternidad, duelo…), desde y hasta. Los días se cuentan solos, de lunes a viernes sin feriados, y administración los confirma al aprobar. Mientras no se responde, el pedido se puede retirar.
+- Lo pedido ya se descuenta de los disponibles, para que no se pida dos veces lo mismo. Solo la licencia anual descuenta; las demás quedan registradas.
+- En **Recursos Humanos**, la pestaña **Licencias** muestra los pedidos para responder, quién está de licencia o sale en los próximos 30 días y el saldo de cada persona.
+- En el legajo de cada persona se cargan los días que le corresponden por año (con una sugerencia según su antigüedad), se aprueban o rechazan los pedidos y se registran licencias ya acordadas.
+
+#### Entrega de materiales con firma
+
+- Al entregarle a alguien ropa de trabajo, equipos de protección o herramientas, se registra en su legajo qué se le dio.
+- La persona lo **firma en la pantalla** de su celular desde Mi legajo, o en persona en el dispositivo de quien entrega.
+- Al firmar se arma sola la **constancia en PDF** (qué se entregó, cuándo, quién entregó y la firma), y queda guardada en el legajo.
 
 #### Movimientos más claros
 

@@ -11,6 +11,7 @@ Uso:
 """
 
 import json
+import re
 import os
 import sys
 
@@ -178,8 +179,13 @@ TEMAS_FAQ = [
       "<strong>recién con el crédito aprobado</strong>. Por eso conviene que vaya adelantando lo que le pide el "
       "banco: es lo que más atrasa estas obras.",
       "Para decirle cuánto le falta, mirá la pestaña <strong>Cobros</strong> de su ficha: ahí está qué pagó y "
-      "qué queda previsto."],
-     "los montos y las fechas se sacan del <strong>plan de pagos</strong> del proyecto, no de memoria. Si no "
+      "qué queda previsto.",
+      "<strong>Las cuotas no tienen fecha</strong>: cada una se cobra en un momento de la obra. La del 50 % "
+      "queda lista 10 días antes del primer día de obra; la del 30 %, con la obra terminada; la del 20 %, con la "
+      "habilitación de UTE. En Cobros cada una dice si está <strong>Lista para cobrar</strong>, "
+      "<strong>Vencida</strong> (10 días sin cobrarla) o <strong>Prevista</strong>. Al cliente se le dice cuándo "
+      "paga por lo que pasa en su obra, no por una fecha."],
+     "los montos y los momentos de cobro se sacan del <strong>plan de pagos</strong> del proyecto, no de memoria. Si no "
      "está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más "
      "cuesta arreglar.<span style=\"display: block; height: 7px\"></span><strong>Cuando el cliente paga</strong>, Experiencia Solar lo marca en la "
      "pestaña <strong>Cobros</strong> con <strong>Marcar pagado</strong>, confirmando <strong>la fecha en que "
@@ -194,10 +200,12 @@ TEMAS_FAQ = [
      "\"¿dónde veo cómo va?\", \"¿cómo entro?\", \"no tengo usuario\", \"¿qué es la app?\"",
      ["Son <strong>dos cosas distintas</strong>, y conviene explicarlo así desde el principio, con esos dos "
       "nombres siempre:",
-      "<strong>El portal de Voltia:</strong> el seguimiento del trámite, las encuestas, los tickets, y donde "
-      "carga su fecha de corte y su tarifa.",
+      "<strong>El portal de Voltia:</strong> el seguimiento del trámite, las encuestas, los tickets, los videos "
+      "que se le mandaron, y donde carga su fecha de corte y su tarifa. En <em>Mis reportes solares</em> ve "
+      "además <strong>su generación y su consumo</strong>: la curva del día, los días, los meses y los años "
+      "(en Huawei, por ahora, sin la curva del día).",
       "<strong>La aplicación de tu inversor:</strong> la generación en tiempo real, el histórico y el consumo. "
-      "Es de la marca del inversor, no de Voltia."],
+      "Es de la marca del inversor, no de Voltia. Sigue sirviendo, pero ya no hace falta para ver cómo va."],
      "el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el "
      "cliente cambia la contraseña al entrar. Para la aplicación del inversor se le manda el link de descarga "
      "y las credenciales; si no tiene usuario, lo creás siguiendo el video instructivo.",
@@ -248,7 +256,8 @@ TEMAS_FAQ = [
       "con sol, es normal no llegar a la potencia nominal</strong>: los 6 kWp son en condiciones ideales, no un "
       "piso de cada día.",
       "Lo que más convence es mostrarle <strong>la curva de potencia de un día soleado de ese mes</strong>: ve "
-      "que el sistema anda y entiende por qué no llega al número."],
+      "que el sistema anda y entiende por qué no llega al número. Está en su ficha, en <strong>Generación y "
+      "consumo → Hora</strong>, yendo con las flechas al día que se quiera (y él la ve igual en su portal)."],
      "se contesta <strong>con números, no con opiniones</strong>. Un \"está bien, es normal\" sin datos se lee "
      "como que no lo miraste.",
      "si el mes está <strong>más de 20 % por debajo</strong> de lo esperado, a Operaciones."),
@@ -284,7 +293,10 @@ TEMAS_FAQ = [
       "escenarios a propósito</strong>, para que vea la diferencia con sus propios números.",
       "<strong>Con paneles suele convenir la simple.</strong> En la doble horario la generación cae siempre en el "
       "horario barato, así que siempre vende barato. En la simple, como baja el consumo, se pasa menos de los "
-      "escalones y vende un poco más caro."],
+      "escalones y vende un poco más caro.",
+      "<strong>Un comercio o una empresa</strong> con tarifa General Simple no la encuentra en el portal: la carga "
+      "Experiencia Solar en la configuración del reporte, marcándolo como empresa. A una empresa el reporte le "
+      "muestra solo su tarifa."],
      "<strong>no cambiar en caliente</strong>: esperar varios meses de datos reales antes de recomendar un "
      "cambio.",
      None),
@@ -314,7 +326,8 @@ TEMAS_FAQ = [
       "Preguntale si <strong>cambió la contraseña del wifi o el router</strong>: es la causa más común.",
       "Cuando se resuelve, enseñale a hacerlo solo: es de las consultas que más se repiten y que menos hace "
       "falta que pasen por Voltia."],
-     "mandale el <strong>video de reconexión de su marca</strong> para que lo haga solo, si se anima. Si no, que "
+     "mandale el <strong>video de reconexión de su marca</strong> para que lo haga solo, si se anima, con "
+     "<strong>Enlace para el cliente</strong>: así le queda en la pestaña Videos del portal. Si no, que "
      "abra un ticket de soporte desde el portal de Voltia.",
      "si la luz no está verde, pasa al tema 17."),
 
@@ -396,6 +409,27 @@ EXISTENTES = {
 }
 
 
+def registro_del_md():
+    """Las filas del anexo «Registro de cambios» del .md: [versión, fecha, qué cambió]."""
+    md = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                           "Manual-Posventa-Experiencia-Solar.md"), encoding="utf-8").read()
+    anexo = re.split(r"^##\s+Anexo\s+·\s+Registro de cambios", md, flags=re.M)[1]
+    filas = []
+    for linea in anexo.splitlines():
+        c = [x.strip() for x in linea.strip().strip("|").split("|")]
+        if len(c) == 3 and c[0] and not c[0].startswith("-") and c[0].lower() != "versión":
+            filas.append([c[0], c[1], md_a_html(c[2])])
+        elif filas and not linea.strip().startswith("|") and linea.strip().startswith("#"):
+            break
+    return filas
+
+
+def md_a_html(t):
+    """Lo mínimo de markdown que aparece en el registro: negritas, cursivas y comillas."""
+    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
+    return re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"<em>\1</em>", t)
+
+
 def construir():
     """Devuelve la lista completa del manual: (archivo, título, html o None)."""
     P = []          # (archivo, titulo_board, html | None para las existentes)
@@ -425,7 +459,7 @@ def construir():
             ["SI SOS…", "LEÉ SÍ O SÍ", "CONSULTÁ CUANDO LO NECESITES"],
             [["Experiencia Solar", "Todo", "—"],
              ["Capataz / Operaciones", "1, 4, 5 (obra), 13", "12 (Voltia PM)"],
-             ["Comercial", "1, 4, 5.1 (bienvenida), 13", "—"],
+             ["Comercial", "1, 4, 5.1 (la presentación del referente), 13", "—"],
              ["Ingeniería", "4, 13", "12"],
              ["Tramitación UTE", "4, 6, 13", "—"],
              ["Gerencia / Administración", "1, 8, 13, 14", "Todo"]],
@@ -499,21 +533,35 @@ def construir():
             [["Comercial", "Lo que le prometió al cliente en la venta: plazos, alcance, condiciones especiales",
               "Comentarios del lead y del proyecto"],
              ["Ingeniería", "Cambios de alcance o de diseño que el cliente tiene que saber",
-              "Comentarios del proyecto"],
+              "<strong>Comentarios y archivos</strong> de su espacio de Ingeniería"],
              ["Capataz / Operaciones", "<strong>Todo intercambio con el cliente en la obra</strong> y cualquier "
               "incidente: algo que se rompió, un pedido, una queja al pasar",
               "Comentario en la etapa, <strong>desde el celular</strong>"],
              ["Tramitación UTE", "Novedades del trámite que cambian el plazo prometido",
-              "Comentarios del proyecto"],
-             ["Experiencia Solar", "Cada contacto con el cliente: el canal y qué se dijo",
-              "El formulario del historial"],
-             ["Finanzas", "Los cobros que entran y las facturas que se emiten",
-              "Finanzas — <strong>aparecen solos</strong>"]],
+              "<strong>Comentarios y archivos</strong> del trámite, en Trámites UTE"],
+             ["Experiencia Solar", "Cada contacto con el cliente: el canal y qué se dijo. Y lo que no es un "
+              "contacto (una nota interna, una captura que mandó el cliente)",
+              "El formulario del historial; las notas y los archivos, en <strong>Comentarios y archivos</strong>, "
+              "al pie de la ficha"],
+             ["Finanzas", "Los cobros que entran, las facturas que se emiten y lo que se acordó con el cliente "
+              "sobre los pagos",
+              "Los cobros <strong>aparecen solos</strong>; lo demás, en <strong>Comentarios y archivos</strong> "
+              "del cobro"]],
             anchos=[150, None, 190], margen=22)
+        + parrafo("Todo llega al <strong>historial de la ficha</strong>, con el área y de dónde salió; los "
+                  "archivos se abren desde ahí. Y al revés: lo que Experiencia Solar registra como contacto lo "
+                  "ven las demás áreas en el proyecto, en la pestaña <strong>Contacto con el cliente</strong>. "
+                  "Lo que comenta o registra <strong>Gerencia</strong> aparece con el rótulo "
+                  "<strong>GERENCIA</strong>, no con el del área de la pantalla.", margen=16, tamano=14)
         + aviso("<strong>Todo se registra, aunque sean dos líneas.</strong> Un comentario de dos líneas desde el "
                 "celular en la obra vale infinitamente más que un informe prolijo que nunca se llega a escribir.",
-                "ojo", margen=22)
-        + subtitulo("Lo que aparece solo, sin que nadie lo escriba", margen=18, tamano=19)
+                "ojo", margen=22),
+        p))
+
+    nueva("QueRegistra2.dc.html", "8b · Lo que aparece solo", lambda p: pagina(
+        "Lo que aparece solo",
+        kicker("CAPÍTULO 4 · SIGUE")
+        + subtitulo("Lo que aparece solo, sin que nadie lo escriba", margen=10, tamano=24)
         + numerados([
             "<strong>Los avances de etapa</strong> y los hitos del trámite UTE.",
             "<strong>Los documentos emitidos</strong>: propuestas, contratos, reportes.",
@@ -534,30 +582,35 @@ def construir():
         p, foto=IMG.PORTADILLA_E1))
 
     nueva("E1Bienvenida.dc.html", "10 · Bienvenida", lambda p: paso(
-        "ETAPA 1 · PASO 1", "SIN PLAZO FORMAL", "Bienvenida y presentación",
+        "ETAPA 1 · PASO 1", "1 DÍA HÁBIL", "Bienvenida y presentación",
         "El primer mensaje después de firmar. Presenta a Experiencia Solar y explica el recorrido.",
-        [ficha([("CUÁNDO", "Al cerrar la venta, apenas se convierte el cliente potencial en proyecto"),
-                ("QUIÉN", "<strong>El vendedor que cerró</strong> — es quien tiene la relación"),
-                ("PLAZO", "Sin plazo formal, pero <strong>antes de cualquier otro contacto</strong>"),
-                ("EN LA APP", "Ficha del cliente → Pasos → E1 → \"Bienvenida y presentación\""),
+        [ficha([("CUÁNDO", "Después de que el asesor le presentó al referente, como última tarea del "
+                           "onboarding de venta"),
+                ("QUIÉN", "Experiencia Solar: <strong>el referente del cliente</strong>"),
+                ("PLAZO", "<strong>1 día hábil</strong> desde que el asesor cierra el onboarding, y "
+                          "<strong>antes de cualquier otro contacto</strong>"),
+                ("EN VOLTIA PM", "Ficha del cliente → Pasos → E1 → \"Bienvenida y presentación\""),
                 ("QUÉ DECIR", "Plantilla <strong>\"Bienvenida y presentación\"</strong>")]),
-         aviso("<strong>Por qué la manda el vendedor y no Experiencia Solar:</strong> el cliente ya lo "
-               "conoce. Si el primer mensaje después de firmar viene de alguien que nunca vio, arranca en "
-               "frío. La bienvenida <strong>presenta</strong> a Experiencia Solar; no la reemplaza.",
+         aviso("<strong>Antes, el asesor presenta al referente.</strong> La última tarea del onboarding de "
+               "venta es que el asesor le presente al cliente a quien va a ser su referente, con el mensaje que "
+               "copia desde el panel del lead. El cliente ya conoce al asesor: así la bienvenida es la "
+               "continuación de una relación, no un contacto frío. Experiencia Solar no la manda hasta que el "
+               "asesor hizo la presentación.",
                "clave"),
          cita("bienvenida"),
          aviso("<strong>Sin este paso, todo lo demás arranca mal.</strong> Es la que explica que no va a "
                "haber contacto semanal y por qué. Si no se manda, el cliente espera un ritmo que nunca va "
                "a llegar.", "ojo")],
-        p, plazo_rojo=False))
+        p))
 
     nueva("E1Expectativa.dc.html", "11 · Conversación de expectativa", lambda p: paso(
-        "ETAPA 1 · PASO 2", "OBLIGATORIA", "Conversación de expectativa inicial",
+        "ETAPA 1 · PASO 2", "3 DÍAS HÁBILES", "Conversación de expectativa inicial",
         "El paso más importante de toda la etapa, y el que más se saltea.",
         [ficha([("CUÁNDO", "Junto con la bienvenida o inmediatamente después"),
                 ("QUIÉN", "Experiencia Solar"),
-                ("PLAZO", "Sin plazo formal — pero es <strong>obligatoria</strong>"),
-                ("EN LA APP", "Ficha del cliente → E1 → \"Conversación de expectativa inicial\"")]),
+                ("PLAZO", "<strong>3 días hábiles</strong> desde que el asesor cierra el onboarding. Es "
+                          "<strong>obligatoria</strong>"),
+                ("EN VOLTIA PM", "Ficha del cliente → E1 → \"Conversación de expectativa inicial\"")]),
          subtitulo("Hay que cubrir, explícitamente:", margen=20, tamano=18),
          numerados(["<strong>El recorrido completo</strong>, etapa por etapa.",
                     "<strong>Cuánto demora cada una</strong>, con números reales, no optimistas.",
@@ -566,50 +619,69 @@ def construir():
                     "<strong>instalado pero apagado, con precinto</strong>.",
                     "<strong>Que no va a haber contacto de rutina, pero sí en cada hito.</strong>"],
                    margen=14),
-         aviso("<strong>Es una conversación, no un mensaje.</strong> Idealmente por teléfono: que el "
-               "cliente pueda <strong>repetir con sus palabras</strong> cuánto va a demorar y por qué.",
+         aviso("<strong>Es una conversación, no un mensaje suelto.</strong> Se hace por "
+               "<strong>WhatsApp</strong>, el canal de siempre: se le mandan los cuatro temas y se espera que "
+               "responda, hasta que pueda <strong>repetir con sus palabras</strong> cuánto va a demorar y por "
+               "qué. No hace falta llamarlo; si prefiere hablar, se habla y se registra igual.",
                "clave", margen=18),
          aviso("<strong>En uno de los mensajes que siguen</strong>, mandale un ejemplo de la notificación "
                "que UTE le manda al aprobar la consulta: <strong>parece un pedido de aumento de "
                "potencia</strong> y, si no la espera, lo asusta.", "ojo", margen=18),
          aviso("Después se registra en el historial qué se le dijo: si meses después reclama que \"nadie "
                "le avisó\", la ficha tiene que poder responderlo.", "clave", margen=14)],
-        p, plazo_rojo=False))
+        p))
 
     nueva("E1Portal.dc.html", "12 · Acceso al portal", lambda p: paso(
-        "ETAPA 1 · PASO 3", "SIN PLAZO", "Envío del acceso al portal",
+        "ETAPA 1 · PASO 3", "2 DÍAS HÁBILES", "Envío del acceso al portal",
         "El paso que más rinde hacer temprano y el que más cuesta recuperar después.",
         [ficha([("CUÁNDO", "Apenas se crea el proyecto"),
                 ("QUIÉN", "Experiencia Solar"),
-                ("PLAZO", "Sin plazo, pero queda pendiente hasta que se haga"),
-                ("EN LA APP", "El ícono de crear usuario en el propio paso, o la columna de acceso del listado"),
+                ("PLAZO", "<strong>2 días hábiles</strong> desde que el asesor cierra el onboarding. "
+                          "<strong>Se da por hecho solo</strong> cuando se le crea el usuario del portal"),
+                ("EN VOLTIA PM", "El ícono de crear usuario en el propio paso, <strong>Crear acceso al "
+                                 "portal</strong> arriba en la ficha, o la columna de acceso del listado"),
                 ("QUÉ DECIR", "Plantilla <strong>\"Acceso al portal\"</strong>, que sale con el usuario y la "
                               "contraseña reales")]),
-         parrafo("<strong>Cómo se crea:</strong> con el ícono del propio paso. La contraseña por defecto es "
+         parrafo("<strong>Cómo se crea:</strong> con el ícono del propio paso o con <strong>Crear acceso al "
+                 "portal</strong> en la ficha. La contraseña por defecto es "
                  "<strong>12345678</strong> y el sistema pide cambiarla al entrar; la plantilla sale con el "
                  "usuario y la contraseña ya adentro.", margen=18),
          aviso("Si el cliente <strong>ya tenía acceso</strong>, la plantilla trae su usuario pero deja la "
-               "contraseña en blanco: no se puede recuperar. Para mandársela hay que resetearla con el "
-               "botón de reenviar.", "ojo", margen=16),
+               "contraseña en blanco: no se puede recuperar. Para mandársela hay que resetearla con "
+               "<strong>Reenviar acceso</strong>, arriba en la ficha. Al lado están <strong>Copiar enlace del "
+               "portal</strong> y <strong>Ver como el cliente</strong>, que abre su portal tal como lo ve él.",
+               "ojo", margen=16),
          parrafo("<strong>Si no tiene mail, igual se le crea el acceso</strong>: se usa su cédula o un usuario "
                  "con su nombre (<em>maria.fernandez</em>), que la pantalla muestra para dictárselo. Sin mail "
                  "no puede recuperar la contraseña solo.", margen=14, tamano=14),
-         parrafo("<strong>Qué gana el cliente:</strong> ve el avance, la documentación y sus reportes, y "
-                 "<strong>puede abrirnos un reclamo por ahí</strong> en vez de por WhatsApp.",
-                 margen=16, tamano=14),
-         cita("portal"),
-         aviso("<strong>Este paso arrastra a varios más.</strong> Sin acceso al portal el cliente no puede "
-               "abrir tickets ni responder encuestas. Al que se le pasó, nadie se lo crea seis meses "
-               "más tarde.", "duro", margen=18)],
-        p, plazo_rojo=False))
+         parrafo("<strong>Si se olvida la contraseña y tiene mail</strong>, no hace falta resetearla: en la "
+                 "entrada del portal toca <strong>Entrar con un código por mail</strong> y entra con un código "
+                 "de 6 números, que vence a los 10 minutos. La sesión dura mientras lo use: pide entrar de "
+                 "nuevo recién después de 10 días sin abrirlo.", margen=12, tamano=14),
+         ],
+        p))
+
+    nueva("E1Portal2.dc.html", "12a · Acceso al portal (sigue)", lambda p: pagina(
+        "Envío del acceso al portal",
+        kicker("ETAPA 1 · PASO 3 · SIGUE")
+        + titulo("Envío del acceso al portal", tamano=30)
+        + parrafo("<strong>Qué gana el cliente:</strong> ve el avance, la documentación y sus reportes, y "
+                  "<strong>puede abrirnos un reclamo por ahí</strong> en vez de por WhatsApp.",
+                  margen=18, tamano=15)
+        + cita("portal", margen=18)
+        + aviso("<strong>Este paso arrastra a varios más.</strong> Sin acceso al portal el cliente no puede "
+                "abrir tickets ni responder encuestas. Al que se le pasó, nadie se lo crea seis meses "
+                "más tarde.", "duro", margen=20),
+        p))
 
     nueva("E1Contrato.dc.html", "12b · Contrato firmado", lambda p: paso(
-        "ETAPA 1 · PASO 4", "SIN PLAZO FORMAL", "Contrato firmado, recabado y archivado",
+        "ETAPA 1 · PASO 4", "5 DÍAS HÁBILES", "Contrato firmado, recabado y archivado",
         "Va al principio, no al final.",
         [ficha([("CUÁNDO", "Apenas el asesor manda el contrato"),
                 ("QUIÉN", "El asesor que cerró la venta hace el intercambio; Experiencia Solar controla que "
                           "quede archivado"),
-                ("PLAZO", "Sin plazo formal, pero queda pendiente hasta que esté"),
+                ("PLAZO", "<strong>5 días hábiles</strong> desde que el asesor cierra el onboarding. "
+                          "<strong>Se da por hecho solo</strong> cuando se sube el contrato firmado"),
                 ("EN VOLTIA PM", "Ficha del cliente → <strong>E1</strong> → <em>\"Contrato firmado por las dos "
                                  "partes, recabado y archivado\"</em>")]),
          parrafo("<strong>El problema que resuelve:</strong> antes el contrato se mandaba y nadie lo recababa "
@@ -624,7 +696,7 @@ def construir():
                "esté <strong>archivado en la ficha del proyecto</strong>, no en el correo de quien lo recibió. "
                "Si no está, se lo pide al asesor. Un contrato firmado que vive en la bandeja de entrada de "
                "una persona no existe para la empresa.", "duro", margen=18)],
-        p, plazo_rojo=False))
+        p))
 
     nueva("E1Capataz.dc.html", "13 · Presentación del capataz", lambda p: pagina(
         "Presentación del capataz",
@@ -632,6 +704,7 @@ def construir():
         + titulo("Presentación del capataz", tamano=34)
         + ficha([("CUÁNDO", "Al arrancar la obra, o junto con la fecha confirmada"),
                  ("QUIÉN", "Experiencia Solar"),
+                 ("PLAZO", "<strong>2 días hábiles</strong> desde que se confirma la fecha de obra"),
                  ("QUÉ DECIR", "Plantilla <strong>\"Presentación del capataz\"</strong>")], margen=20)
         + cita("capataz", margen=16)
         + aviso("<strong>Con el alcance explícito</strong>: obra con él, todo lo demás conmigo. Sin esa "
@@ -682,9 +755,9 @@ def construir():
 
     existente("ReglaAgenda.dc.html", "15 · Regla dura: si no está agendado")
 
-    nueva("E1Visita.dc.html", "16 · Visita y encuesta de obra", lambda p: pagina(
-        "Visita a la propiedad · Aviso de encuesta",
-        kicker("ETAPA 1 · PASOS 8 Y 10")
+    nueva("E1Visita.dc.html", "16 · Visita a la propiedad", lambda p: pagina(
+        "Visita a la propiedad",
+        kicker("ETAPA 1 · PASO 8")
         + titulo("Aviso de visita a la propiedad", tamano=34)
         + ficha([("CUÁNDO", "<strong>Antes de cualquier visita</strong>: materiales, relevamiento o equipo"),
                  ("QUIÉN", "Quien agenda la visita, coordinado con Experiencia Solar"),
@@ -694,11 +767,16 @@ def construir():
                 "duro", margen=16)
         + parrafo("<strong>Se pide confirmación del cliente</strong>, no se le informa y punto: hay que "
                   "saber si va a haber alguien y si el acceso está disponible.", margen=16)
-        + cita("visita", margen=16)
-        + f'  <div style="margin-top: 32px; padding-top: 28px; border-top: 2px solid {BORDE}"></div>\n'
-        + titulo("Aviso de la encuesta de obra", tamano=30)
+        + cita("visita", margen=16),
+        p))
+
+    nueva("E1Encuesta.dc.html", "16a · Encuesta de obra", lambda p: pagina(
+        "Aviso de la encuesta de obra",
+        kicker("ETAPA 1 · PASO 10")
+        + titulo("Aviso de la encuesta de obra", tamano=34)
         + ficha([("CUÁNDO", "Después del aviso de obra terminada, como <strong>contacto propio</strong>"),
-                 ("QUIÉN", "Experiencia Solar")], margen=16)
+                 ("QUIÉN", "Experiencia Solar"),
+                 ("PLAZO", "<strong>2 días hábiles</strong> desde que el sistema genera la encuesta")], margen=16)
         + parrafo("<strong>La encuesta la genera el sistema solo</strong>, pero <strong>no le avisa al "
                   "cliente que la tiene</strong>. Por eso el paso no es \"encuesta enviada\" sino "
                   "\"le avisé al cliente que la tiene\".", margen=14)
@@ -708,11 +786,12 @@ def construir():
         p))
 
     nueva("E1ObraTerminada.dc.html", "17 · Obra terminada", lambda p: paso(
-        "ETAPA 1 · PASO 9", "EL MISMO DÍA", "Aviso de obra terminada y qué sigue",
+        "ETAPA 1 · PASO 9", "1 DÍA HÁBIL", "Aviso de obra terminada y qué sigue",
         "El mensaje que cierra la obra y abre la espera. Va antes que la encuesta.",
         [ficha([("CUÁNDO", "El mismo día que termina la instalación"),
                 ("QUIÉN", "Experiencia Solar"),
-                ("EN LA APP", "Ficha del cliente → E1 → \"Aviso de obra terminada y qué sigue\""),
+                ("PLAZO", "<strong>1 día hábil</strong> desde que se cierra la etapa de obra"),
+                ("EN VOLTIA PM", "Ficha del cliente → E1 → \"Aviso de obra terminada y qué sigue\""),
                 ("QUÉ DECIR", "Plantilla <strong>\"Obra terminada y qué sigue\"</strong>")]),
          subtitulo("Tres cosas que no pueden faltar", margen=26, tamano=19),
          numerados(["Que <strong>terminó</strong> la instalación.",
@@ -757,7 +836,8 @@ def construir():
         + f'  <div style="margin-top: 32px; padding-top: 28px; border-top: 2px solid {BORDE}"></div>\n'
         + titulo("Aviso de la encuesta de habilitación", tamano=32)
         + parrafo("Contacto propio, unos días después de que encendió. Misma regla que la de obra: "
-                  "<strong>nunca pegada a otro mensaje</strong>.", margen=16)
+                  "<strong>nunca pegada a otro mensaje</strong>. Plazo: <strong>2 días hábiles</strong> desde "
+                  "que el sistema genera la encuesta.", margen=16)
         + cita("encuesta_habilitacion", margen=16)
         + parrafo("En la ficha, el <strong>trámite UTE</strong> se despliega con todos sus hitos, y es "
                   "<strong>la misma vista que el cliente ve en su portal</strong>: si pregunta en qué anda, "
@@ -777,16 +857,24 @@ def construir():
          "Alta en reportes mensuales", "Recorrido por el portal"],
         p, foto=IMG.PORTADILLA_E3))
 
-    nueva("E3Capacitacion.dc.html", "22 · Capacitación y acceso al inversor", lambda p: pagina(
-        "Capacitación · Acceso al inversor",
-        kicker("ETAPA 3 · PASOS 1 Y 2")
+    nueva("E3Capacitacion.dc.html", "22 · Capacitación", lambda p: pagina(
+        "Capacitación",
+        kicker("ETAPA 3 · PASO 1")
         + titulo("Capacitación: material y videos", tamano=34)
         + ficha([("PLAZO", "15 días hábiles"),
                  ("QUÉ DECIR", "Plantilla <strong>\"Material de capacitación\"</strong>")], margen=20)
         + cita("capacitacion", margen=16)
         + aviso("<strong>No es una llamada: es el envío del material.</strong> El paso se tilda cuando se "
                 "mandó, no cuando el cliente lo miró.", "clave", margen=16)
-        + f'  <div style="margin-top: 34px; padding-top: 30px; border-top: 2px solid {BORDE}"></div>\n'
+        + aviso("<strong>Los videos se mandan con el enlace del portal, no sueltos.</strong> Se abre el video "
+                "en Voltia PM (menú del usuario → Capacitación) y se usa <strong>Enlace para el "
+                "cliente</strong>: lo abre dentro de su portal, en la pestaña Videos, donde le quedan "
+                "guardados. Vale para cualquier video que se le mande después.", "ojo", margen=14),
+        p))
+
+    nueva("E3Inversor.dc.html", "22a · Acceso al inversor", lambda p: pagina(
+        "Acceso a la plataforma del inversor",
+        kicker("ETAPA 3 · PASO 2")
         + titulo("Acceso a la plataforma del inversor", tamano=34)
         + ficha([("PLAZO", "15 días hábiles"),
                  ("QUÉ DECIR", "Plantilla <strong>\"Acceso a la plataforma del inversor\"</strong>")],
@@ -803,14 +891,17 @@ def construir():
         "ETAPA 3 · PASO 3", "15 DÍAS HÁBILES", "Alta en reportes mensuales",
         "El único correo automático que el cliente va a recibir de nosotros en 25 años. Vale la pena "
         "decírselo así: no es spam, es su resumen mensual.",
-        [ficha([("PLAZO", "15 días hábiles"),
+        [ficha([("PLAZO", "15 días hábiles. <strong>Se da por hecho solo</strong> cuando el reporte queda "
+                          "habilitado y con alguien a quien mandárselo"),
                 ("QUIÉN", "Experiencia Solar"),
                 ("QUÉ DECIR", "Plantilla <strong>\"Alta en los reportes mensuales\"</strong>")]),
          subtitulo("Cuándo le llega", margen=20, tamano=19),
          parrafo("No es a fin de mes: <strong>cada generador tiene su fecha de corte</strong>, el día en que "
-                 "UTE le cierra la factura, y su reporte sale cuando le toca a él. En la pantalla de "
-                 "Reportes, el botón <strong>Enviar pendientes</strong> manda los que están en fecha. Por "
-                 "eso no hay un día del mes en que salgan todos juntos.", margen=10),
+                 "UTE le cierra la factura, y su reporte sale cuando le toca a él. <strong>Voltia PM los manda "
+                 "solo, todos los días a las 10</strong>: cada reporte sale el primer día después de que se "
+                 "generó, sin revisión previa. <strong>Enviar pendientes</strong> sigue estando para lo que no "
+                 "puede esperar, y <strong>Traer datos</strong>, dentro del reporte de un cliente, le pide los "
+                 "datos solo a él (reemplaza lo cargado a mano; por eso pide confirmación).", margen=10),
          subtitulo("El reporte dice qué días cubre", margen=22, tamano=19),
          parrafo("Arriba de todo aparece el período exacto —del tal al tal, tantos días—, porque un ciclo de "
                  "UTE no arranca el 1 ni termina el 30. Es lo que le permite al cliente comparar contra su "
@@ -827,13 +918,15 @@ def construir():
         "El paso que convierte el portal de \"una cosa que me mandaron\" en una herramienta que va a usar.",
         [ficha([("PLAZO", "15 días hábiles"),
                 ("QUIÉN", "Experiencia Solar"),
-                ("QUÉ MOSTRAR", "Tickets, encuestas, reportes y documentación")]),
+                ("QUÉ MOSTRAR", "Tickets, encuestas, reportes, documentación y videos")]),
          subtitulo("Qué conviene que sepa usar", margen=26, tamano=19),
          numerados(["<strong>Abrir un reclamo</strong> desde el portal, en vez de mandarlo por WhatsApp a "
                     "quien tenga a mano.",
                     "<strong>Ver sus reportes</strong> de generación, todos, sin depender del correo.",
                     "<strong>Responder las encuestas</strong> que le van a ir llegando.",
-                    "<strong>Buscar su documentación</strong>: contrato, planos, constancias del trámite."],
+                    "<strong>Buscar su documentación</strong>: contrato, planos, constancias del trámite.",
+                    "<strong>La pestaña Videos</strong>: los que ya se le mandaron. Es el primer lugar donde "
+                    "buscar antes de escribir por una duda de uso."],
                    margen=14),
          aviso("El reclamo por el portal es el que más nos conviene a los dos: <strong>queda registrado, se "
                "mide y nadie tiene que acordarse</strong>. Un reclamo por WhatsApp le llega a una persona; "
@@ -885,13 +978,24 @@ def construir():
           f'      </div>\n'
           f'      <p style="margin: 8px 0 0; font-size: 14.5px; line-height: 1.5; color: {TEXTO}">'
           f'Les debemos el contacto del período de su etapa.</p>\n'
+          f'    </div>\n'
+          f'    <div style="padding: 18px 20px; background: #fdf8ec; border-radius: 10px">\n'
+          f'      <div style="display: flex; justify-content: space-between; align-items: baseline">\n'
+          f'        <span style="font-family: {SANS}; font-size: 18px; font-weight: 700; color: #8a5a00">'
+          f'4 · Para contactar hoy</span>\n'
+          f'        <span style="font-family: {SANS}; font-size: 12px; color: #8a5a00">por etapa</span>\n'
+          f'      </div>\n'
+          f'      <p style="margin: 8px 0 0; font-size: 14.5px; line-height: 1.5; color: {TEXTO}">'
+          f'Hoy se les cumple la cadencia: es el día de margen, "toca hoy", en amarillo. Escribiéndoles hoy '
+          f'siguen al día; si no, mañana pasan a Fuera de cadencia, en rojo. Los días son hábiles: no cuentan '
+          f'feriados no laborables, Carnaval ni Turismo.</p>\n'
           f'    </div>\n  </div>\n'
         + aviso("<strong>Los tres números no se suman.</strong> El asunto dice \"2 pendientes · 12 novedades · "
                 "85 fuera de cadencia\". Antes venía un total único que asustaba y, peor, escondía las dos o "
                 "tres cosas que de verdad hay que hacer hoy entre setenta que pueden esperar.", "clave",
                 margen=22)
         + aviso("<strong>Un cliente aparece una sola vez.</strong> Si tiene novedad va en Novedades aunque "
-                "además esté fuera de cadencia: llamarlo por la novedad salda las dos cosas, y ahí mismo se "
+                "además esté fuera de cadencia: escribirle por la novedad salda las dos cosas, y ahí mismo se "
                 "le marcan los días sin contacto.", "ojo", margen=18)
         + parrafo("Quién lo recibe se configura por rol en <strong>Administración → Resumen diario</strong>, "
                   "opción \"Recorrido de Experiencia Solar\". Si alguien no lo recibe, es porque su rol no "
@@ -912,8 +1016,8 @@ def construir():
         + subtitulo("Qué hacés acá, en orden", margen=26)
         + numerados(["<strong>Leés</strong> el historial de arriba, que es lo que pasó desde la última vez.",
                      "<strong>Escribís</strong>, con la plantilla de la etapa si hay una que sirva.",
-                     "<strong>Registrás el contacto.</strong> Si copiaste una plantilla ya viene tildado; si "
-                     "hablaste por teléfono, lo cargás a mano. <strong>Esto es lo que mueve las "
+                     "<strong>Registrás el contacto.</strong> Si mandaste una plantilla ya queda registrado y "
+                     "el paso hecho; si hablaste por teléfono, lo cargás a mano. <strong>Esto es lo que mueve las "
                      "señales</strong>: sin registro, para el sistema no pasó nada.",
                      "<strong>Tildás el paso</strong> que acabás de hacer."], margen=14)
         + aviso("<strong>\"Completar los N\" es para ponerse al día con lo que realmente se hizo</strong>, no "
@@ -937,10 +1041,14 @@ def construir():
                      "sistema no puede saber —la fecha, el motivo, el plazo, el nombre del capataz— queda "
                      "marcado a la vista, y abajo dice qué falta completar. Un hueco sin llenar se nota al "
                      "leer; uno inventado por el sistema se manda mal.",
-                     "<strong>El texto se edita antes de copiar.</strong> Son un piso de tono y de "
+                     "<strong>El texto se edita antes de mandarlo.</strong> Son un piso de tono y de "
                      "información, no un molde. Lo que no se puede perder es lo que el hito exige.",
-                     "<strong>Al copiar queda registrado el contacto</strong> en el historial (se puede "
-                     "destildar). Es la diferencia entre que el historial refleje la relación o quede vacío."],
+                     "<strong>Se manda con un botón.</strong> <strong>Abrir en WhatsApp</strong> abre el chat "
+                     "del cliente con el mensaje escrito; <strong>Copiar mensaje</strong> queda para pegarlo en "
+                     "otro lado (sin un teléfono válido, solo se puede copiar).",
+                     "<strong>Al mandarlo queda registrado el contacto y el paso queda hecho</strong> (se puede "
+                     "destildar): no hace falta volver a tildarlo. Es la diferencia entre un historial que "
+                     "refleja la relación y uno vacío."],
                     margen=16)
         + subtitulo("Los catorce", margen=28, tamano=20)
         + f'  <p style="margin: 12px 0 0; font-size: 14.5px; line-height: 1.8; color: {TEXTO}">'
@@ -966,7 +1074,8 @@ def construir():
           f'La solución puede demorar; el cliente nunca queda sin respuesta.</strong></p>\n  </div>\n'
         + subtitulo("Por dónde entran", margen=30)
         + tabla(["VÍA", "QUÉ PASA"],
-                [["Portal del cliente", "Queda registrado, notifica a Experiencia Solar y "
+                [["Portal del cliente", "Queda registrado, <strong>avisa a Experiencia Solar en el momento</strong> "
+                  "en la campanita de Voltia PM y "
                   "<strong>aparece en el correo de la mañana</strong> si no se respondió"],
                  ["WhatsApp", "Es por donde entra la mayoría hoy. <strong>No queda registrado solo</strong>: "
                   "hay que abrirlo como ticket o al menos registrarlo en el historial"]],
@@ -1036,16 +1145,29 @@ def construir():
                   "vence</strong>. Es una decisión: que agende solo visitas sin que nadie las confirme choca "
                   "con <strong>si no está agendado, no vamos</strong>. La iniciativa es de Voltia; la "
                   "confirmación, del cliente.", margen=10)
-        + subtitulo("Monitoreo diario", margen=26)
+        + aviso("<strong>Este es el capítulo más corto y el que cubre más tiempo.</strong> Las etapas 1 a 3 "
+                "cubren unos meses; esto cubre los 25 años que siguen. Es donde hay más para construir.",
+                "clave", margen=22),
+        p))
+
+    nueva("Monitoreo.dc.html", "32a · Monitoreo diario", lambda p: pagina(
+        "Monitoreo diario",
+        kicker("CAPÍTULO 12 · SIGUE")
+        + titulo("Monitoreo diario", tamano=34)
         + parrafo("El sistema revisa todos los días que las plantas estén generando. Es lo que permite "
                   "prometerle al cliente que <strong>si su planta deja de generar nos enteramos "
                   "nosotros</strong>.", margen=10)
         + aviso("Y la promesa tiene una consecuencia: <strong>cuando el monitoreo detecta una falla, se "
                 "contacta al cliente antes de que llame él</strong>. Si el primero en enterarse de la luz "
                 "roja es el cliente, el monitoreo no sirvió.", "duro", margen=18)
-        + aviso("<strong>Este es el capítulo más corto y el que cubre más tiempo.</strong> Las etapas 1 a 3 "
-                "cubren unos meses; esto cubre los 25 años que siguen. Es donde hay más para construir.",
-                "clave", margen=16),
+        + parrafo("También avisa cuando <strong>el medidor quedó al revés o mal conectado</strong> (la planta "
+                  "figura exportando más de lo que generó): desde afuera parece sana, pero sus reportes salen "
+                  "mal. Ese aviso va a Operaciones.", margen=14, tamano=14)
+        + parrafo("<strong>Analizar una planta desde el chat.</strong> En el chat de Claude conectado a Voltia "
+                  "PM se pregunta en palabras comunes (<em>\"¿cómo viene la planta de…?\"</em>) y muestra la "
+                  "generación día por día contra las demás plantas, la forma del día y el inversor y el "
+                  "medidor en el momento. Sirve para contestarle al cliente con datos y darle a Operaciones "
+                  "una pista antes de una visita: es una pista, no un diagnóstico.", margen=12, tamano=14),
         p))
 
     nueva("PlanGranizo.dc.html", "32b · Plan de Protección contra Granizo", lambda p: pagina(
@@ -1150,7 +1272,8 @@ def construir():
                   "lo llama Voltia PM."],
                  ["E1 / E2 / E3", "Las tres etapas del recorrido del cliente. <strong>No son las etapas del "
                   "proyecto.</strong>"],
-                 ["Cadencia", "Los días hábiles sin contacto a partir de los cuales un cliente se marca. "
+                 ["Cadencia", "Los días hábiles sin contacto a partir de los cuales un cliente se marca, con un "
+                  "día de margen (\"toca hoy\"). "
                   "E1 y E2: 5; E3 no tiene. <strong>Es una alarma interna, no una promesa al cliente.</strong>"],
                  ["Paso", "Un hito de acompañamiento del recorrido. Algunos tienen plazo. "
                   "<strong>Vencer no bloquea.</strong>"],
@@ -1296,8 +1419,9 @@ def construir():
             bajada="Así se ve la etapa 2 en la ficha de alguien que ya tiene la obra hecha y espera a UTE. "
                    "El paso resaltado es el que tiene <strong>plazo en horas</strong>.",
             url=IMG.PASOS_E2,
-            epigrafe="La alerta se apaga <strong>tildando el paso</strong>. Destildarlo la vuelve a encender, y "
-                     "queda registrado quién lo marcó y cuándo.")),
+            epigrafe="La alerta se apaga sola al <strong>mandar la plantilla</strong> \"Ya podés encender\" o al "
+                     "registrar el contacto de aviso de habilitación. También se puede tildar el paso; "
+                     "destildarlo la vuelve a encender.")),
         ("AnexoPantallaPlantillas.dc.html", "Anexo F · Los mensajes modelo", dict(
             titulo="Los mensajes modelo",
             bajada="El texto ya escrito para cada paso. Se elige a la izquierda, se lee a la derecha y se "
@@ -1317,15 +1441,16 @@ def construir():
         ("AnexoPantallaPortal.dc.html", "Anexo F · El portal del cliente", dict(
             titulo="El portal, como lo ve el cliente",
             bajada="Conviene conocerlo de memoria: es lo que el cliente tiene abierto cuando escribe. Desde "
-                   "el listado se puede abrir <strong>en modo cliente</strong> para ver su pantalla tal cual.",
+                   "el listado (el ojito) o desde la ficha (<strong>Ver como el cliente</strong>) se abre su "
+                   "pantalla tal cual.",
             url=IMG.PORTAL_CLIENTE,
             epigrafe="El cliente ve el avance del trámite, sus reportes, sus tickets y las encuestas. "
                      "<strong>No ve</strong> el historial interno ni los comentarios del equipo.")),
         ("AnexoPantallaReportes.dc.html", "Anexo F · Los reportes mensuales", dict(
             titulo="Los reportes mensuales",
             bajada="El tablero desde donde salen los reportes de generación. Cada generador tiene su fecha de "
-                   "corte, así que no salen todos el mismo día: <strong>Enviar pendientes</strong> manda los "
-                   "que están en fecha.",
+                   "corte, así que no salen todos el mismo día. Voltia PM los manda solo a las 10; "
+                   "<strong>Enviar pendientes</strong> queda para lo que no puede esperar.",
             url=IMG.REPORTES_FV,
             epigrafe="Los tres botones numerados marcan el orden: traer los datos, generar el PDF y recién "
                      "ahí enviar.")),
@@ -1347,40 +1472,29 @@ def construir():
         nueva(archivo, titulo_board, lambda p, a=args: pagina_captura(numero=p, **a))
 
     # Registro de cambios: una entrada por versión, la más nueva arriba. Sale del
-    # anexo del mismo nombre del .md.
-    nueva("AnexoRegistro.dc.html", "Anexo · Registro de cambios", lambda p: pagina(
-        "Anexo · Registro de cambios",
-        kicker("ANEXO")
-        + titulo("Registro de cambios")
-        + bajada("Qué se agregó o se modificó en cada versión del manual, la más nueva arriba.")
-        + tabla(["VERSIÓN", "FECHA", "QUÉ SE AGREGÓ O MODIFICÓ"],
-                [["1.19", "11 de octubre de 2026",
-                  "El contrato lo intercambia el asesor y Voltia firma último, con firma digital; Experiencia "
-                  "Solar controla que quede archivado. Al vender, el asesor le da al cliente solo una estimación "
-                  "de obra por quincena, que no es una fecha."],
-                 ["1.18", "10 de octubre de 2026",
-                  "Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas "
-                  "vencidas lo hace Experiencia Solar hasta que pase al área de Administración."],
-                 ["1.17", "9 de octubre de 2026",
-                  "Mover una fecha de obra confirmada es la excepción y cada cambio rinde cuentas. Si la mueve "
-                  "un pedido del cliente, Experiencia Solar lo deja escrito en el motivo; al cliente se le "
-                  "explica sin nombrar áreas."],
-                 ["1.16", "8 de octubre de 2026",
-                  "Los mantenimientos y las visitas de soporte los hace Operaciones; Experiencia Solar los "
-                  "coordina con el cliente."],
-                 ["1.15", "5 de octubre de 2026",
-                  "Al cliente la fecha de obra se le dice una sola vez, cuando está confirmada: la fecha "
-                  "tentativa es interna y no se le comunica."],
-                 ["1.14", "2 de octubre de 2026",
-                  "El Plan de Protección puede incluir vandalismo, al mismo precio."],
-                 ["1.13", "30 de septiembre de 2026",
-                  "Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la "
-                  "Regla de Oro arranca con la última. Se corrige la cadencia del glosario (5 días hábiles en "
-                  "E1 y E2; E3 sin cadencia). Se agrega este registro."],
-                 ["1.12 y anteriores", "hasta el 28 de septiembre de 2026",
-                  "No hay registro detallado de cada versión."]],
-                anchos=[110, 150, None], margen=26),
-        p))
+    # anexo del mismo nombre del .md (antes estaba copiado a mano acá y quedó
+    # atrasado). Se reparte en hojas por largo del texto; la medición confirma.
+    filas = registro_del_md()
+    grupos, actual, usado = [], [], 0
+    for f in filas:
+        peso = 90 + len(f[2])  # el alto de una fila crece con su texto
+        if actual and usado + peso > (2300 if not grupos else 2750):
+            grupos.append(actual)
+            actual, usado = [], 0
+        actual.append(f)
+        usado += peso
+    if actual:
+        grupos.append(actual)
+    for k, grupo in enumerate(grupos):
+        def hacer(p, grupo=grupo, k=k):
+            cabeza = (kicker("ANEXO") + titulo("Registro de cambios")
+                      + bajada("Qué se agregó o se modificó en cada versión del manual, la más nueva arriba.")
+                      if k == 0 else kicker("ANEXO · REGISTRO DE CAMBIOS · CONTINÚA"))
+            return pagina("Anexo · Registro de cambios", cabeza + tabla(
+                ["VERSIÓN", "FECHA", "QUÉ SE AGREGÓ O MODIFICÓ"], grupo,
+                anchos=[90, 130, None], margen=26 if k == 0 else 18), p)
+        nueva(f"AnexoRegistro{'' if k == 0 else f'_{k + 1}'}.dc.html",
+              "Anexo · Registro de cambios" + ("" if k == 0 else " (sigue)"), hacer)
 
     # La hoja de cierre está maquetada a mano, como la portada: la foto va a
     # sangre y no lleva el pie de las páginas de contenido.
@@ -1401,6 +1515,19 @@ if __name__ == "__main__":
             with open(os.path.join(carpeta, archivo), "w", encoding="utf-8") as f:
                 f.write(html)
             escritas += 1
+        else:
+            # Una hoja a mano: se copia de paginas-a-mano/ con el número del pie
+            # corregido (el último <span>NN</span> de la hoja). Portada y cierre
+            # no llevan número.
+            origen = os.path.join(os.path.dirname(os.path.abspath(__file__)), "paginas-a-mano", archivo)
+            if os.path.exists(origen):
+                src = open(origen, encoding="utf-8").read()
+                nums = list(re.finditer(r"<span>(\d{1,3})</span>", src))
+                if nums:
+                    m = nums[-1]
+                    src = src[:m.start()] + f"<span>{i + 1}</span>" + src[m.end():]
+                with open(os.path.join(carpeta, archivo), "w", encoding="utf-8") as f:
+                    f.write(src)
         col, fila = i % 6, i // 6
         boards[archivo] = {"x": col * (ANCHO + 80), "y": fila * (ALTO + 120),
                            "w": ANCHO, "h": ALTO, "title": titulo_board, "paper": "a4"}

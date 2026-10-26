@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { listRolesAsignables } from "../../api/documentacion.api";
@@ -54,5 +55,43 @@ export function RolesCheckboxes({ value, onChange }: { value: string[]; onChange
         <p className="text-[11px] text-amber-400">Sin roles, solo lo ve quien gestiona Documentación.</p>
       )}
     </div>
+  );
+}
+
+/**
+ * Texto largo recortado a unas líneas, con «Ver más / Ver menos». El botón
+ * aparece solo si el texto de verdad no entra.
+ */
+export function TextoRecortado({ texto, lineas = 4, className = "" }: { texto: string; lineas?: number; className?: string }) {
+  const [abierto, setAbierto] = useState(false);
+  const [cortado, setCortado] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el && !abierto) setCortado(el.scrollHeight > el.clientHeight + 1);
+  }, [texto, abierto]);
+  return (
+    <span className={className}>
+      <span
+        ref={ref}
+        className="block"
+        style={
+          abierto
+            ? undefined
+            : { display: "-webkit-box", WebkitLineClamp: lineas, WebkitBoxOrient: "vertical", overflow: "hidden" }
+        }
+      >
+        {texto}
+      </span>
+      {(cortado || abierto) && (
+        <button
+          type="button"
+          onClick={() => setAbierto((v) => !v)}
+          className="mt-0.5 text-[11px] font-medium text-[var(--color-accent)] hover:underline"
+        >
+          {abierto ? "Ver menos" : "Ver más"}
+        </button>
+      )}
+    </span>
   );
 }

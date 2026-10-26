@@ -3,8 +3,9 @@
 // Los PDF publicados viven en `server/manuales/` (dentro de la imagen del
 // server) junto con `manuales.json`, que dice qué es cada uno. Al arrancar —o
 // sea, en cada deploy— se compara el hash de cada PDF con el de su última
-// versión publicada; si cambió, se publica una versión nueva y se avisa a los
-// roles del manual. Si no cambió, no pasa nada: arrancar dos veces no duplica.
+// versión publicada; si cambió, se publica una versión nueva. No se avisa a
+// nadie: los manuales cambian casi a diario y la gente los busca cuando los
+// necesita. Si no cambió, no pasa nada: arrancar dos veces no duplica.
 //
 // El número de versión se lee de la portada del PDF ("Versión 1.4 · del
 // 22/10/26"), que es lo que el lector ve impreso; el del manifiesto queda como
@@ -23,7 +24,6 @@ import { PDFParse } from "pdf-parse";
 
 import { prisma } from "../../lib/prisma.js";
 import { saveBufferAsAttachment } from "../file-storage.service.js";
-import { avisarNuevaVersion } from "./documentacion.service.js";
 
 export const DIR_MANUALES = path.resolve(process.cwd(), "manuales");
 
@@ -92,7 +92,6 @@ async function sincronizarUno(e: EntradaManifiesto, log: (m: string) => void) {
     where: { slug: e.slug },
     select: { id: true, versiones: { orderBy: { createdAt: "desc" }, take: 1, select: { sha256: true, version: true } } },
   });
-  const ultima = doc?.versiones[0];
   // Ese PDF ya se publicó alguna vez: no se republica. Contra cualquier versión
   // y no solo la última, para que una corrección subida a mano no la pise el
   // deploy siguiente con el PDF viejo del repo.
@@ -135,11 +134,7 @@ async function sincronizarUno(e: EntradaManifiesto, log: (m: string) => void) {
   });
   await prisma.documento.update({ where: { id: doc.id }, data: { updatedAt: new Date() } });
 
-  // Avisa solo cuando hay una versión de verdad nueva. No avisa la primera carga
-  // de un manual (es el estreno de la sección, no un cambio), ni un PDF rehecho
-  // con el mismo número (un ajuste de maquetado).
-  const avisados = !ultima || ultima.version === version ? 0 : await avisarNuevaVersion(doc.id, version, null);
-  log(`${e.slug}: publicada la versión ${version}${avisados ? ` (aviso a ${avisados} personas)` : ""}.`);
+  log(`${e.slug}: publicada la versión ${version}.`);
 }
 
 export async function sincronizarManuales(log: (m: string) => void = (m) => console.log(`[manuales] ${m}`)) {

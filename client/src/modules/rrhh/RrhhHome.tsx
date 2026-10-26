@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import { CheckCircle2, Search, Upload, XCircle } from "lucide-react";
 
 import {
   VINCULO_LABEL,
+  getTableroLicencias,
+  resolverLicencia,
+  type LicenciaConPersona,
   listLegajos,
   listVencimientos,
   uploadDocumentoLegajo,
@@ -13,9 +17,10 @@ import {
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Spinner } from "../../components/ui/Spinner";
+import { LicenciaFila, ResolverLicenciaSheet } from "./licenciasUi";
 import { ChipsAlertas, cardClass, errorMsg, fmtFecha, fmtPeriodo, inputClass, periodoAnterior } from "./rrhhUi";
 
-type Pestana = "personas" | "vencimientos" | "recibos";
+type Pestana = "personas" | "vencimientos" | "licencias" | "recibos";
 
 // Recursos Humanos, mirada de gestión (RRHH:EDIT): todas las personas, sus
 // vencimientos y la carga de recibos del mes.
@@ -32,18 +37,19 @@ export function RrhhHome() {
         </p>
       </div>
 
-      <div className="inline-flex overflow-hidden rounded-lg border border-[var(--color-border)] text-sm">
+      <div className="inline-flex max-w-full overflow-x-auto rounded-lg border border-[var(--color-border)] text-sm">
         {(
           [
             ["personas", "Personas"],
             ["vencimientos", "Vencimientos"],
+            ["licencias", "Licencias"],
             ["recibos", "Cargar recibos"],
           ] as const
         ).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setPestana(k)}
-            className={`px-4 py-2 transition-colors ${
+            className={`whitespace-nowrap px-4 py-2 transition-colors ${
               pestana === k
                 ? "bg-[var(--color-accent)] font-semibold text-gray-900"
                 : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
@@ -62,6 +68,8 @@ export function RrhhHome() {
         <Personas legajos={legajos} />
       ) : pestana === "vencimientos" ? (
         <Vencimientos />
+      ) : pestana === "licencias" ? (
+        <Licencias />
       ) : (
         <CargarRecibos legajos={legajos} />
       )}
@@ -218,6 +226,120 @@ function Vencimientos() {
           </div>
         </button>
       ))}
+    </div>
+  );
+}
+
+// ─── Licencias ──────────────────────────────────────────────────────────────
+
+function Licencias() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["rrhh", "licencias-tablero"], queryFn: getTableroLicencias });
+  const [resolviendo, setResolviendo] = useState<LicenciaConPersona | null>(null);
+
+  const resolver = useMutation({
+    mutationFn: (d: { aprobar: boolean; motivo?: string; dias?: number }) => resolverLicencia(resolviendo!.id, d),
+    onSuccess: (_r, v) => {
+      toast.success(v.aprobar ? "Licencia aprobada: se le avisó" : "Pedido no aprobado: se le avisó el motivo");
+      setResolviendo(null);
+      qc.invalidateQueries({ queryKey: ["rrhh"] });
+    },
+    onError: (e) => toast.error(errorMsg(e, "No se pudo responder")),
+  });
+
+  if (isLoading || !data) return <Spinner />;
+
+  return (
+    <div className="space-y-5">
+      {data.sinResponder.length > 0 && (
+        <section className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4">
+          <h2 className="mb-1 text-sm font-semibold text-blue-400">Pedidos sin responder</h2>
+          {data.sinResponder.map((l) => (
+            <LicenciaFila
+              key={l.id}
+              l={l}
+              nombre={l.nombre}
+              acciones={
+                <button
+                  onClick={() => setResolviendo(l)}
+                  className="inline-flex items-center gap-1 rounded border border-green-500/40 px-2 py-1 text-xs text-green-400 hover:bg-green-500/15"
+                >
+                  <CheckCircle2 size={12} /> Responder
+                </button>
+              }
+            />
+          ))}
+        </section>
+      )}
+
+      <section className={`${cardClass} p-4`}>
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+          De licencia o por salir
+        </h2>
+        <p className="mb-2 text-[11px] text-[var(--color-text-muted)]">Licencias aprobadas de hoy a los próximos 30 días.</p>
+        {data.proximas.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-muted)]">Nadie está de licencia ni sale en los próximos 30 días.</p>
+        ) : (
+          data.proximas.map((l) => <LicenciaFila key={l.id} l={l} nombre={l.nombre} />)
+        )}
+      </section>
+
+      <section className={`${cardClass} overflow-hidden`}>
+        <h2 className="px-4 pt-4 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+          Saldo de licencia anual
+        </h2>
+        {data.personas.length === 0 ? (
+          <p className="p-4 text-sm text-[var(--color-text-muted)]">No hay personal en relación de dependencia con legajo.</p>
+        ) : (
+          <table className="mt-2 w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th className="px-4 py-2 font-medium">Persona</th>
+                <th className="px-2 py-2 text-right font-medium">Generados</th>
+                <th className="hidden px-2 py-2 text-right font-medium sm:table-cell">Tomados</th>
+                <th className="hidden px-2 py-2 text-right font-medium sm:table-cell">Pedidos</th>
+                <th className="px-4 py-2 text-right font-medium">Disponibles</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.personas.map((p) => (
+                <tr
+                  key={p.userId}
+                  onClick={() => navigate(`/rrhh/legajos/${p.userId}`)}
+                  className="cursor-pointer border-b border-[var(--color-border)] last:border-b-0 hover:bg-[var(--color-bg-card-hover)]"
+                >
+                  <td className="px-4 py-2.5 text-[var(--color-text-primary)]">{p.nombre}</td>
+                  <td className="px-2 py-2.5 text-right tabular-nums text-[var(--color-text-secondary)]">
+                    {p.saldo.generados || <span className="text-[11px] text-[var(--color-text-muted)]">sin cargar</span>}
+                  </td>
+                  <td className="hidden px-2 py-2.5 text-right tabular-nums text-[var(--color-text-secondary)] sm:table-cell">
+                    {p.saldo.tomados}
+                  </td>
+                  <td className="hidden px-2 py-2.5 text-right tabular-nums text-[var(--color-text-secondary)] sm:table-cell">
+                    {p.saldo.pedidos}
+                  </td>
+                  <td
+                    className={`px-4 py-2.5 text-right font-semibold tabular-nums ${
+                      p.saldo.disponibles < 0 ? "text-red-400" : "text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    {p.saldo.disponibles}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <ResolverLicenciaSheet
+        licencia={resolviendo}
+        nombre={resolviendo?.nombre}
+        enviando={resolver.isPending}
+        onClose={() => setResolviendo(null)}
+        onResolver={(d) => resolver.mutate(d)}
+      />
     </div>
   );
 }

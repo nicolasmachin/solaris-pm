@@ -34,7 +34,7 @@ await new Promise((r) => proxy.listen(5173, "127.0.0.1", r));
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await puppeteer.launch({
   headless: true,
-  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--disable-crash-reporter", "--disable-breakpad"],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 2 });

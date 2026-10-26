@@ -72,6 +72,59 @@ avisa a la persona y a quienes gestionan RRHH dos veces por documento: al entrar
 en los 30 días y al vencer (`legajo_vencimiento`, con `uniqueKey` por documento,
 hito y destinatario). No avisa por gente con fecha de egreso.
 
+### Licencias
+
+`services/rrhh/licencias.service.ts`. Solo para el vínculo `DEPENDIENTE`.
+
+| Tabla | Qué guarda |
+|---|---|
+| `licencia_contingentes` | Días de licencia anual generados por año (`anio` = el año en que se generan; se gozan al siguiente). Uno por persona y año. Los carga RRHH |
+| `licencias` | Tipo, desde, hasta, **días que cuenta**, nota, estado (`SOLICITADA`, `APROBADA`, `RECHAZADA`, `CANCELADA`), quién pidió y quién resolvió |
+
+**Saldo** (`calcularSaldo()`): generados = suma de contingentes; tomados =
+licencias `ANUAL` aprobadas; pedidos = `ANUAL` sin responder; **disponibles =
+generados − tomados − pedidos**. Lo pedido se descuenta enseguida, para que no
+se pida dos veces lo mismo. Las demás licencias (enfermedad, estudio, duelo…)
+no descuentan: quedan registradas.
+
+**Días.** Al pedir, se cuentan solos de lunes a viernes sin feriados
+(`contarDiasHabiles()`, con `esFeriado()` de `utils/business-days.ts`, que
+incluye Carnaval y Turismo porque Voltia no trabaja esos días). La persona no
+elige el número; RRHH lo puede corregir al aprobar o después. **Cómo se cuentan
+legalmente los días de licencia no está verificado**: el número que manda es el
+que confirma administración.
+
+**Contingente sugerido** (`contingenteSugerido()`): 20 días por año; si entró
+ese año, proporcional a los meses; desde el 5.º año de antigüedad, un día más
+cada 4 años (5 → 21, 9 → 22, 13 → 23). Es una ayuda para cargar, no un cálculo
+legal cerrado: la pantalla pide confirmarlo con la contadora.
+
+Flujo: la persona pide (aviso a RRHH) → RRHH aprueba (puede corregir días) o
+rechaza con motivo obligatorio (aviso a la persona). RRHH también registra
+licencias ya acordadas, que entran aprobadas, y puede corregir o anular
+cualquiera (anular = `CANCELADA`, no se borra). El tablero (`tableroLicencias()`)
+muestra pedidos sin responder, quién está de licencia o sale en 30 días y el
+saldo de cada uno.
+
+### Entregas de materiales con firma
+
+`services/rrhh/entregas.service.ts`, tabla `entregas_materiales`: fecha,
+`items` (JSON: descripción, cantidad, detalle), observaciones, estado
+(`PENDIENTE_FIRMA`, `FIRMADA`, `ANULADA`), quién entregó, firma y constancia.
+
+1. RRHH registra la entrega (aviso a la persona).
+2. Firma **la persona desde su Mi legajo**, o **quien gestiona RRHH en su
+   dispositivo con la persona delante** (`firmaPresencial`). La firma se dibuja
+   en pantalla y llega como PNG en base64 (se valida que sea PNG y pese menos de
+   1 MB; la ruta acepta hasta 2 MB de cuerpo).
+3. Al firmar se guarda el PNG, se arma la **constancia en PDF** con PDFKit (logo,
+   tabla de materiales, «Declaro haber recibido los materiales detallados en
+   esta constancia.», la firma, y al pie cuándo y cómo se firmó) y entra al
+   legajo como documento `ENTREGA_EPP` validado (`documentoId`).
+
+Una entrega firmada no se edita: si hubo un error se anula y se registra otra;
+la constancia ya emitida queda en el legajo.
+
 ### Privacidad
 
 Son datos sensibles (salud, sueldo, cuenta bancaria; la ley 18.331 de
@@ -87,7 +140,7 @@ protección de datos personales trata como sensibles los de salud). Por eso:
   auditoría (`file_downloaded`, entidad `legajo`).
 - La auditoría de ediciones guarda **los nombres de los campos, no los
   valores**: el sueldo no se copia al historial.
-- `legajos` y `legajo_documentos` están en la lista de tablas prohibidas del
+- `legajos`, `legajo_documentos`, `licencias`, `licencia_contingentes` y `entregas_materiales` están en la lista de tablas prohibidas del
   asistente de IA (`ai-sql-validator.ts`), y el usuario de Postgres del
   asistente no recibe permisos sobre tablas nuevas.
 
@@ -118,13 +171,17 @@ Sembrados por la migración `20261026163700_documentacion_rrhh_permisos`.
 - **Fecha de egreso cargada:** aparece atenuado y sin avisos de vencimiento.
 - **Recibo en lote con un archivo que no coincide con nadie:** queda sin persona
   y no se sube hasta que se elija.
-- **Pendiente:** licencias (vacaciones) con aprobación y entrega de equipos de
-  protección con firma, que se propusieron como siguiente etapa.
+- **Licencia que cruza dos años:** cuenta entera contra el saldo total; el
+  saldo no se separa por año.
+- **Tercerizado:** no tiene licencias (el servidor rechaza el pedido); sí puede
+  recibir entregas de materiales.
 
 ## Archivos
 
 - `server/src/services/rrhh/rrhh.service.ts`
 - `server/src/services/rrhh/vencimientos.job.ts`
+- `server/src/services/rrhh/licencias.service.ts`
+- `server/src/services/rrhh/entregas.service.ts`
 - `server/src/routes/rrhh.routes.ts`
 - `server/src/utils/token-descarga.ts`
 - `client/src/modules/rrhh/`, `client/src/api/rrhh.api.ts`

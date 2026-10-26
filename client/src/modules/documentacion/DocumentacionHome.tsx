@@ -130,7 +130,11 @@ function TarjetaDocumento({ doc }: { doc: DocumentoItem }) {
             <span className="rounded bg-[var(--color-border)] px-1.5 py-0.5 font-mono text-[var(--color-text-secondary)]">
               v{doc.vigente.version}
             </span>
-            <span>vigente desde {fmtFecha(doc.vigente.vigenteDesde ?? doc.vigente.createdAt)}</span>
+            <span>
+              {doc.vigente.vigenteDesde
+                ? `vigente desde ${fmtFecha(doc.vigente.vigenteDesde)}`
+                : `publicado el ${fmtFecha(doc.vigente.createdAt)}`}
+            </span>
           </>
         ) : (
           <span>Sin versiones publicadas</span>

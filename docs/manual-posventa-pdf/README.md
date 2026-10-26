@@ -36,7 +36,6 @@ motor de los PDF de propuestas y las fuentes reales:
 
 ```bash
 python3 docs/manual-posventa-pdf/contenido.py docs/manual-posventa-pdf/paginas
-cp docs/manual-posventa-pdf/paginas-a-mano/*.dc.html docs/manual-posventa-pdf/paginas/project/
 docker compose cp docs/manual-posventa-pdf/paginas server:/app/paginas
 docker compose cp docs/manual-posventa-pdf/imagenes server:/app/imagenes
 docker compose cp docs/manual-posventa-pdf/espacio.mjs server:/app/espacio.mjs
@@ -135,13 +134,47 @@ node docs/publicar-manual.mjs manual-posventa /tmp/manual-posventa.pdf
 
 El último paso lo publica en **Documentación** (la intranet de Voltia PM): copia
 el PDF a `server/manuales/` y anota qué cambió, sacado del registro de cambios
-del `.md`. Con el commit y el próximo deploy queda vigente y le llega el aviso a
-la gente del área. Ver `docs/manual/16-documentacion.md`.
+del `.md`. Con el commit y el próximo deploy queda vigente (no se le avisa a
+nadie: la gente lo busca ahí cuando lo necesita). Ver
+`docs/manual/16-documentacion.md`.
+
+El título del PDF (el que muestran los visores) es el del canvas; `TITULO=...`
+lo fuerza.
+
+**Chromium en la VPS de desarrollo:** todos los `.mjs` que lanzan Chromium
+llevan `--no-zygote`, `--disable-crash-reporter` y `--disable-breakpad`. Sin eso, en el contenedor `server` de la VPS de desarrollo
+Chromium se cuelga al arrancar y puppeteer corta a los 30 s con *"Timed out …
+waiting for the WS endpoint"* (verificado el 26-oct-2026).
 
 Toma el orden de `canvas.json` y saltea (avisando) las hojas que no estén en la
 carpeta.
 
 ## Por qué doce páginas están escritas a mano
+
+`contenido.py` las copia de `paginas-a-mano/` a la carpeta de salida con **el
+número del pie corregido** según su lugar en el orden (desde el 26-oct-2026; antes
+había que copiarlas a mano y el número quedaba fijo, así que una hoja nueva
+corría todos los de después). No hace falta copiarlas aparte.
+
+**El registro de cambios sale del `.md`** (`registro_del_md()`), repartido en
+las hojas que hagan falta: ya no se copia a mano.
+
+**El texto de las demás hojas sí está transcripto en `contenido.py`**, resumido
+para la página. Cuando el `.md` cambia hay que trasladar el cambio acá a mano:
+el 26-oct-2026 se pasaron de la 1.19 a la 1.32 (la bienvenida la manda
+Experiencia Solar, los plazos de cada paso, el código por mail del portal, los
+videos con enlace del portal, los reportes que salen solos, Abrir en WhatsApp,
+el día de margen de la cadencia, el monitoreo del medidor y el análisis desde el
+chat, las cuotas por momento de la obra, Generación y consumo, General Simple).
+Para encontrar qué falta: `git diff <commit de la última regeneración> --
+docs/Manual-Posventa-Experiencia-Solar.md`.
+
+**Medir los temas del Anexo E**: `medir-temas.mjs` pide un JSON de temas y una
+carpeta con `fonts-local.css` que no están en el repo. Lo que se usó el
+26-oct-2026: volcar `tema(..., primero=True)` de cada uno de `TEMAS_FAQ` con el
+`<link>` de Google Fonts de `generar.FUENTES` y medir cada uno en una columna de
+794 px con 72 px de margen; da exactamente lo mismo que las alturas viejas en los
+temas que no cambiaron.
 
 Las que tienen diseño propio —la portada, el cierre, las reglas duras, el
 recorrido en tres etapas, las dos señales— no salen de una plantilla y se

@@ -18,7 +18,7 @@ import { EmptyState } from "../../components/ui/EmptyState";
 import { Sheet } from "../../components/ui/Sheet";
 import { Spinner } from "../../components/ui/Spinner";
 import { usePermission } from "../../hooks/usePermission";
-import { RolesCheckboxes, fmtFecha, fmtPeso, inputClass, labelClass, mensajeError } from "./documentacionUi";
+import { RolesCheckboxes, TextoRecortado, fmtFecha, fmtPeso, inputClass, labelClass, mensajeError } from "./documentacionUi";
 
 // Un documento: la versión vigente para leer en pantalla, la confirmación de
 // lectura, el historial de versiones y —para quien gestiona— quién leyó,
@@ -134,13 +134,14 @@ export function DocumentoDetalle() {
                 <span className="font-mono font-semibold">Versión {vigente.version}</span>
                 <span className="text-[var(--color-text-muted)]">
                   {" "}
-                  · vigente desde {fmtFecha(vigente.vigenteDesde ?? vigente.createdAt)}
+                  · {vigente.vigenteDesde ? `vigente desde ${fmtFecha(vigente.vigenteDesde)}` : `publicado el ${fmtFecha(vigente.createdAt)}`}
                 </span>
               </p>
               {vigente.notas && (
-                <p className="text-xs text-[var(--color-text-secondary)]">
-                  <span className="font-medium">Qué cambió:</span> {vigente.notas}
-                </p>
+                <div className="text-xs text-[var(--color-text-secondary)]">
+                  <span className="font-medium">Qué cambió:</span>
+                  <TextoRecortado texto={vigente.notas} lineas={4} />
+                </div>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -222,7 +223,7 @@ export function DocumentoDetalle() {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">
-                    <span className="line-clamp-3">{v.notas ?? "—"}</span>
+                    {v.notas ? <TextoRecortado texto={v.notas} lineas={3} /> : "—"}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 text-right">
                     <a

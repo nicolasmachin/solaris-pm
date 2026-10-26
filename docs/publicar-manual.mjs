@@ -27,7 +27,7 @@ const rutaManifiesto = path.join(dirManuales, "manuales.json");
 const args = process.argv.slice(2);
 const iVersion = args.indexOf("--version");
 const versionForzada = iVersion >= 0 ? args[iVersion + 1] : null;
-const [slug, pdf] = args.filter((_, i) => i !== iVersion && i !== iVersion + 1);
+const [slug, pdf] = iVersion >= 0 ? args.filter((_, i) => i !== iVersion && i !== iVersion + 1) : args;
 
 const manifiesto = JSON.parse(fs.readFileSync(rutaManifiesto, "utf8"));
 if (!slug || !pdf) {

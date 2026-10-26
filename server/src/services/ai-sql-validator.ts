@@ -35,6 +35,9 @@ const FORBIDDEN_TABLES = [
   // RRHH: sueldos, datos de salud y cuentas bancarias.
   "legajos",
   "legajo_documentos",
+  "licencias",
+  "licencia_contingentes",
+  "entregas_materiales",
   "_prisma_migrations",
   // No accesibles aunque no sean estrictamente sensibles
   "permissions",

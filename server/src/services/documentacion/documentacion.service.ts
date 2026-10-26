@@ -6,19 +6,22 @@
 // La versión vigente es siempre la más nueva; las anteriores quedan para
 // consulta. Los manuales del equipo llegan solos con el deploy: ver
 // sincronizar-manuales.ts.
+//
+// No se avisa a nadie cuando sale una versión nueva (decisión de Nicolás del
+// 26/10/2026): los manuales se actualizan casi a diario y el aviso sería ruido.
+// La gente sabe dónde están y los busca cuando los necesita.
 
 import { createHash } from "node:crypto";
 import fsPromises from "node:fs/promises";
 
 import type { MultipartFile } from "@fastify/multipart";
-import { Action, DocumentoOrigen, Module, NotificationType, Prisma } from "@prisma/client";
+import { Action, DocumentoOrigen, Module, Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { hasPermission } from "../../middleware/authorize.middleware.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { firmarTokenDescarga } from "../../utils/token-descarga.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../file-storage.service.js";
-import { createNotification } from "../notification.service.js";
 
 export type DocUser = { id: string; role: string };
 
@@ -295,7 +298,6 @@ export async function crearDocumento(file: MultipartFile, datos: DatosDocumento 
     },
     select: { id: true, titulo: true },
   });
-  await avisarNuevaVersion(doc.id, datos.version, userId);
   return doc;
 }
 
@@ -320,7 +322,6 @@ export async function subirVersion(documentoId: string, file: MultipartFile, dat
     select: { id: true, version: true },
   });
   await prisma.documento.update({ where: { id: documentoId }, data: { updatedAt: new Date() } });
-  await avisarNuevaVersion(documentoId, datos.version, userId);
   return { ...v, titulo: doc.titulo };
 }
 
@@ -366,35 +367,4 @@ export async function borrarDocumento(id: string) {
   await prisma.documento.update({ where: { id }, data: { deletedAt: new Date() } });
   for (const v of versiones) await deleteStoredFile(v.url);
   return doc;
-}
-
-// ─── Avisos ─────────────────────────────────────────────────────────────────
-
-/**
- * Notificación a la gente de los roles del documento. Si pide lectura, el aviso
- * lo dice; si no, es solo informativo. Quien la publicó no se avisa a sí mismo.
- */
-export async function avisarNuevaVersion(documentoId: string, version: string, autorId: string | null) {
-  const doc = await prisma.documento.findUnique({
-    where: { id: documentoId },
-    select: { titulo: true, activo: true, requiereLectura: true, roles: { select: { roleId: true } } },
-  });
-  if (!doc || !doc.activo || doc.roles.length === 0) return 0;
-  const usuarios = await prisma.user.findMany({
-    where: { deletedAt: null, roleId: { in: doc.roles.map((r) => r.roleId) }, ...(autorId ? { id: { not: autorId } } : {}) },
-    select: { id: true },
-  });
-  for (const u of usuarios) {
-    await createNotification({
-      userId: u.id,
-      type: NotificationType.documento_nueva_version,
-      title: `${doc.titulo}: versión ${version}`,
-      message: doc.requiereLectura
-        ? "Hay una versión nueva. Leela y confirmá la lectura en Documentación."
-        : "Hay una versión nueva disponible en Documentación.",
-      link: `/documentacion/${documentoId}`,
-      uniqueKey: `doc-version:${documentoId}:${version}:${u.id}`,
-    }).catch(() => undefined);
-  }
-  return usuarios.length;
 }

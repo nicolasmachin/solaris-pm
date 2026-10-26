@@ -611,17 +611,17 @@ monto; los que no tenían nota se toman como facturación normal.
 Finanzas (factura con eso), y al PGT (es parte de lo que Ventas le pasa a
 Finanzas).
 
-### Los manuales vigentes están en Voltia PM, y cada uno confirma que leyó el suyo
+### Los manuales vigentes están en Voltia PM, y se consultan ahí
 
 **Qué se decidió.** El Procedimiento General de Trabajo y los manuales de cada
 área se consultan en **Documentación**, dentro de Voltia PM, donde siempre está
 la última versión. Cada persona ve los de su área; el Procedimiento General lo
-ven todos. Cuando sale una versión nueva, le llega un aviso a la gente del área
-y tiene que confirmar que la leyó. Gerencia ve quién la leyó y quién no.
+ven todos. Cuando sale una versión nueva **no se le avisa a nadie** ni se pide
+confirmar la lectura: cada uno sabe dónde están y los busca cuando los necesita.
 
 **Por qué.** Un manual que circula como PDF suelto no tiene versión clara:
-cada uno trabaja con el que le llegó. Y si una regla cambia, hay que poder saber
-quién se enteró.
+cada uno trabaja con el que le llegó. Y los manuales se corrigen casi todos los
+días: un aviso por cada cambio sería un mensaje diario que nadie lee.
 
 **Desde cuándo rige.** Desde el 26 de octubre de 2026.
 
@@ -649,6 +649,27 @@ días antes, a la persona y a administración.
 **A qué manuales afecta.** Al de Finanzas (la carga mensual de los recibos y la
 revisión de lo que carga cada uno), al de Operaciones y al del Instalador
 Tercerizado (los papeles al día para trabajar en obra).
+
+### La licencia se pide y se controla en Voltia PM, y lo que se entrega se firma
+
+**Qué se decidió.** Cada persona en relación de dependencia ve en Mi legajo
+cuántos días de licencia le corresponden, cuántos tomó y cuántos le quedan, y
+la pide desde ahí. Administración la aprueba o la rechaza con su motivo. Lo
+pedido se descuenta enseguida. Los días que corresponden por año los carga
+administración, confirmados con la contadora.
+
+La ropa de trabajo, los equipos de protección y las herramientas que se le
+entregan a alguien se registran en su legajo y la persona firma en la pantalla
+que los recibió. La constancia queda guardada.
+
+**Por qué.** Sin un registro único, el saldo de licencia se discute de memoria.
+Y sin constancia firmada no se puede probar qué se entregó: ni para reponerlo,
+ni ante un accidente.
+
+**Desde cuándo rige.** Desde el 26 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Finanzas (los días de licencia y la aprobación)
+y al de Operaciones (la entrega de equipos de protección a la cuadrilla).
 
 ### Lo que comenta Gerencia se ve como de Gerencia
 
@@ -915,7 +936,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM y que cada uno confirma la lectura de cada versión nueva; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |
+| 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM, sin avisos ni confirmación de lectura en cada versión nueva; que la licencia se pide y se controla en Voltia PM y que lo que se entrega se firma; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |
 | 0.25 | 22 de octubre de 2026 | Se registra que las cuotas del plan de pagos se cobran por momento de la obra y no por fecha: la del 50 % desde diez días antes de la obra, la del 30 % con la obra terminada y la del 20 % con la habilitación, y que cada una vence a los diez días de poder cobrarse. Se registra también que lo que se le factura al cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo, guardado sin IVA), y se corrige la decisión de las facturas al cliente, que ya no parte de la cotización. |
 | 0.24 | 22 de octubre de 2026 | Se registra que de cada lead se pregunta y se carga cómo nos conoció, para medir qué canal trae ventas. |
 | 0.23 | 21 de octubre de 2026 | Se registran cinco decisiones de Finanzas: las facturas de los proveedores de cuenta corriente entran solas a la deuda y se revisan una vez por semana (las demás siguen por revisar); borrón y cuenta nueva con cada proveedor desde que se concilia con su estado de cuenta, cerrando lo viejo con un ajuste que no es plata, y las deudas viejas de la unipersonal con Tiempo al Tiempo como compra de la SAS, con el riesgo fiscal a revisar con la contadora; los gastos personales del socio van a su cuenta y no como sueldo, y los de un empleado autorizados se le descuentan del sueldo; un mes cerrado no se toca y reabrirlo queda registrado con su motivo; una factura de proveedor se carga por un solo lugar y a un proveedor se le paga por un solo camino. |

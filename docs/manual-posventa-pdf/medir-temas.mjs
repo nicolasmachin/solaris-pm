@@ -3,7 +3,7 @@ import fs from "node:fs";
 import puppeteer from "puppeteer";
 const temas = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const fuentes = process.argv[3];
-const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--allow-file-access-from-files"] });
+const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--disable-crash-reporter", "--disable-breakpad", "--allow-file-access-from-files"] });
 const page = await browser.newPage();
 await page.setViewport({ width: 794, height: 1123 });
 const cuerpo = Object.entries(temas).map(([n, html]) => `<div id="t${n}">${html}</div>`).join("");

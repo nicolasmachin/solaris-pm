@@ -33,6 +33,7 @@ import {
   errorMsg,
   inputClass,
 } from "./rrhhUi";
+import { BloqueEntregas, BloqueLicencias } from "./LegajoLicenciasEntregas";
 
 // Legajo completo de una persona, visto por gerencia y administración
 // (RRHH:EDIT): datos de la empresa (sueldo, contrato), datos personales y todos
@@ -180,6 +181,10 @@ export function LegajoDetalle() {
           resto.map((d) => <DocumentoFila key={d.id} doc={d} acciones={acciones(d)} />)
         )}
       </Seccion>
+
+      {legajo.vinculo === "DEPENDIENTE" && <BloqueLicencias userId={userId} />}
+
+      <BloqueEntregas userId={userId} nombre={usuario.nombre} />
 
       <Seccion titulo="Datos de la empresa">
         <DatosEmpresaForm legajo={legajo} guardando={guardar.isPending} onGuardar={(c) => guardar.mutate(c)} />

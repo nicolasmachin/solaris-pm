@@ -3434,6 +3434,15 @@ def construir():
         for k_item, (bid, t, c) in enumerate(items):
             html = BLOQUES[bid]
             h = alto(bid, html)
+            # Una captura con su lista va en un solo bloque, que no se parte. Si
+            # ni en una hoja vacía entra, se achica la captura lo justo: si no,
+            # el marco recorta el final de la lista sin avisar (pasó en Ventas
+            # el 26-oct-2026). El tope de 200 px deja la pantalla legible.
+            lugar_vacia = CAPACIDAD - alto(f"{clave}_co", cabeza2) - 6
+            if h > lugar_vacia and "max-height: 360px" in html:
+                nuevo = max(200, 360 - (h - lugar_vacia) - 8)
+                html = html.replace("max-height: 360px", f"max-height: {nuevo}px", 1)
+                h -= 360 - nuevo
             junto = lo_que_sigue(k_item)
             if t == "tabla" and "cab" in ALTURAS.get(bid, {}) and usado + h > CAPACIDAD:
                 cab, filas = c

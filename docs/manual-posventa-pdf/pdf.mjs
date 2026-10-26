@@ -30,7 +30,10 @@ const hojas = orden.map((f) => {
   return `<div class="hoja">${cuerpo}</div>`;
 });
 
-const html = `<!doctype html><html><head><meta charset="utf-8">${helmet}
+// El título del documento es el que muestran los visores de PDF (sin esto decía
+// "manual-completo.html"). TITULO lo fuerza; si no, el título del canvas.
+const titulo = (process.env.TITULO || canvas.title || "Manual de Voltia").replace(/[<&]/g, "");
+const html = `<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>${helmet}
 <style>
   @page { size: 794px 1123px; margin: 0; }
   html, body { margin: 0; padding: 0; }
@@ -42,7 +45,7 @@ fs.writeFileSync("/tmp/manual-completo.html", html);
 
 const browser = await puppeteer.launch({
   headless: true,
-  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--allow-file-access-from-files"],
+  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--disable-crash-reporter", "--disable-breakpad", "--allow-file-access-from-files"],
 });
 const page = await browser.newPage();
 await page.goto("file:///tmp/manual-completo.html", { waitUntil: "networkidle2", timeout: 120000 });

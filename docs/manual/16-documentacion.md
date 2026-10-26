@@ -64,9 +64,14 @@ Al arrancar el server (`index.ts` → `sincronizarManuales()`), por cada entrada
    saca la versión y la fecha de «Versión 1.4 · del 22/10/26». Si no la
    encuentra, usa `version` del manifiesto. La portada manda porque es lo que el
    lector ve impreso.
-3. Guarda el PDF en el storage (`documentacion/`), crea la versión con las notas
-   del manifiesto para ese número, y avisa por la campanita a los usuarios de
-   los roles del documento (`documento_nueva_version`).
+3. Guarda el PDF en el storage (`documentacion/`) y crea la versión con las
+   notas del manifiesto para ese número.
+
+**No se avisa a nadie** cuando sale una versión nueva, ni de un manual
+sincronizado ni de un documento subido a mano (decisión de Nicolás del
+26/10/2026): los manuales cambian casi a diario y un aviso por cada cambio sería
+ruido. Cada uno sabe dónde están y los consulta cuando los necesita. El tipo de
+notificación `documento_nueva_version` quedó en la base sin uso.
 
 La primera vez que aparece un slug crea el documento con el título, la categoría
 y los roles del manifiesto. **Después mandan los que se ajusten desde la app**:
@@ -108,10 +113,10 @@ ajustan desde la matriz de permisos.
   volvería a crear): se desactiva, o se lo saca de `manuales.json`. Sí se le
   puede subir una versión a mano para una corrección urgente; el próximo deploy
   no la pisa mientras el PDF de `server/manuales/` no cambie.
-- **Un PDF rehecho con el mismo número de versión** (un ajuste de maquetado)
-  queda en el historial pero no vuelve a avisar.
-- **La primera carga de un manual no avisa**: es el estreno del documento en la
-  sección, no un cambio. Igual queda *Pendiente de leer* si pide lectura.
+- **Los manuales sincronizados no piden confirmación de lectura** (en el
+  manifiesto, `requiereLectura: false`): con cambios casi diarios, quedarían
+  pendientes todos los días. La opción queda para documentos que lo ameriten,
+  como un reglamento, y se prende desde *Editar*.
 - **Un PDF que ya se publicó alguna vez no se republica**, aunque después se haya
   subido otra versión a mano: el deploy compara contra todas las versiones, no
   solo la última.

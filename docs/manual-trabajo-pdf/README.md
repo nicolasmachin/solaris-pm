@@ -3,7 +3,8 @@
 El manual de `docs/Manual-de-Trabajo-Voltia.md` puesto en páginas A4 para leer e
 imprimir. Vive como canvas de Claude Design, igual que el de Posventa:
 
-**https://claude.ai/artifact/AQc6JnCMKB4hZoL9A1W4i5**
+**https://claude.ai/artifact/AQc6JnCMKB4hZoL9A1W4i5** (hoy es el canvas del
+Procedimiento General de Trabajo, `MANUAL=pgt`)
 
 Son 40 artboards A4 (794×1123 px) en orden de lectura; el PDF sale del menú de
 exportar del canvas ("All artboards") o con `pdf.mjs` (abajo). El canvas es
@@ -58,7 +59,7 @@ herramienta de Artifacts, con `root` en la carpeta generada.
 `node docs/publicar-manual.mjs <slug> <pdf>` (slugs: `procedimiento-general`,
 `manual-ventas`, `manual-operaciones`; la lista está en
 `server/manuales/manuales.json`). Lo copia a `server/manuales/` con la versión y
-qué cambió; el próximo deploy lo publica y avisa a la gente del área. Un manual
+qué cambió; el próximo deploy lo publica (sin avisarle a nadie). Un manual
 nuevo se suma primero como entrada de `manuales.json`. Ver
 `docs/manual/16-documentacion.md`.
 
@@ -84,7 +85,11 @@ la azotea, de `docs/Fotos/4d27a792…`): se cambia en `contenido.py` con
 `IMG.PORTADA` cuando `MANUAL=ventas`, para que no salga igual que el PGT. El cierre también es
 propio (`cierre-ventas.jpg`, techo de chapa). Operaciones tiene su portada
 (`portada-operaciones.jpg`, estructura a suelo en obra), puesta directo con la
-dirección de su canvas. Fotos de `docs/Fotos/` que no usa ningún manual: ninguna.
+dirección de su canvas.
+
+Canvas de Operaciones (`MANUAL=operaciones`): **https://claude.ai/artifact/ET8z2nwZrceyWVcHNWGbgi**
+(95 hojas al 26-oct-2026). Sus imágenes ya salen con las direcciones de ese canvas
+(`assets-operaciones.json`), así que no lleva `REMAP_ASSETS`. Fotos de `docs/Fotos/` que no usa ningún manual: ninguna.
 
 **Los cuadros siguen el criterio del de Operaciones** (pedido del 12-oct-2026):
 primero la captura y después lo que la explica (`foto_primero`), las capturas

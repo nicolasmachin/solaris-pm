@@ -31,7 +31,7 @@ export const LATEST_RELEASE: Release = {
       items: [
         "Nueva sección Documentación (menú de tu usuario): el Procedimiento General de Trabajo y los manuales de cada área, en PDF.",
         "Siempre la versión vigente, con qué cambió; las anteriores quedan en el historial.",
-        "Se actualizan solos con cada versión nueva, con aviso en la campanita y botón para confirmar la lectura.",
+        "Se actualizan solos con cada versión nueva, sin mandar avisos: cada uno los consulta ahí cuando los necesita.",
       ],
     },
     {
@@ -40,6 +40,20 @@ export const LATEST_RELEASE: Release = {
         "Mi legajo: tus datos, tus recibos de sueldo y tus documentos (carné de salud, licencia, cursos), con aviso antes de que venzan.",
         "Lo que cargás lo revisa administración; si hay que volver a subirlo, te llega el motivo.",
         "Para gerencia y finanzas: legajos completos, tablero de vencimientos y carga de recibos del mes en lote.",
+      ],
+    },
+    {
+      title: "Licencias",
+      items: [
+        "En Mi legajo: los días que te corresponden, los tomados y los disponibles, y el botón para pedir licencia.",
+        "Recursos Humanos responde los pedidos y ve quién está de licencia o sale en los próximos 30 días.",
+      ],
+    },
+    {
+      title: "Entrega de materiales con firma",
+      items: [
+        "Ropa de trabajo, equipos de protección y herramientas: se registra qué se entregó y la persona lo firma en la pantalla.",
+        "La constancia en PDF queda sola en el legajo.",
       ],
     },
     {

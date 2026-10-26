@@ -5,12 +5,14 @@
 
 import fs from "node:fs";
 
-import { Action, LegajoDocumentoTipo, Module, VinculoLaboral } from "@prisma/client";
+import { Action, LegajoDocumentoTipo, LicenciaTipo, Module, VinculoLaboral } from "@prisma/client";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
+import * as entregas from "../services/rrhh/entregas.service.js";
+import * as lic from "../services/rrhh/licencias.service.js";
 import * as rrhh from "../services/rrhh/rrhh.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { badRequest } from "../utils/errors.js";
@@ -69,6 +71,27 @@ const datosSubida = z.object({
   soloInterno: z.preprocess((v) => v === true || v === "true" || v === "1", z.boolean()).optional(),
 });
 
+const datosLicencia = z.object({
+  tipo: z.nativeEnum(LicenciaTipo),
+  desde: fecha,
+  hasta: fecha,
+  nota: z.string().trim().max(500).nullish(),
+});
+const dias = z.number().int().min(0).max(366);
+const itemsEntrega = z
+  .array(
+    z.object({
+      descripcion: z.string().trim().min(1).max(120),
+      cantidad: z.number().int().min(1).max(1000),
+      detalle: z.string().trim().max(200).nullish(),
+    }),
+  )
+  .min(1)
+  .max(50);
+// La firma viaja como PNG en base64: pesa poco, pero más que el límite por defecto.
+const firmaBody = z.object({ firma: z.string().startsWith("data:image/png;base64,").max(1_500_000) });
+const LIMITE_FIRMA = 2 * 1024 * 1024;
+
 const ver = { preHandler: authorize(Module.RRHH, Action.VIEW) };
 const gestionar = { preHandler: authorize(Module.RRHH, Action.EDIT) };
 
@@ -115,6 +138,31 @@ export async function registerRrhhRoutes(app: FastifyInstance) {
       const { id } = idParam.parse(request.params);
       await rrhh.borrarMiDocumento(ensureUser(request), id);
       return reply.code(204).send();
+    });
+
+    // Licencias propias: saldo, historial y pedidos.
+    app.get("/mi-legajo/licencias", ver, async (request) => lic.misLicencias(ensureUser(request)));
+
+    app.post("/mi-legajo/licencias", ver, async (request, reply) => {
+      const datos = datosLicencia.parse(request.body);
+      reply.code(201);
+      return lic.solicitarLicencia(ensureUser(request), datos);
+    });
+
+    app.post("/mi-legajo/licencias/:id/cancelar", ver, async (request, reply) => {
+      const { id } = idParam.parse(request.params);
+      await lic.cancelarMiLicencia(ensureUser(request), id);
+      return reply.code(204).send();
+    });
+
+    // Entregas de materiales propias y su firma.
+    app.get("/mi-legajo/entregas", ver, async (request) => entregas.misEntregas(ensureUser(request)));
+
+    app.post("/rrhh/entregas/:id/firma", { ...ver, bodyLimit: LIMITE_FIRMA }, async (request) => {
+      // VIEW alcanza: el service deja firmar a la dueña o a quien gestiona RRHH.
+      const { id } = idParam.parse(request.params);
+      const { firma } = firmaBody.parse(request.body);
+      return entregas.firmarEntrega(id, firma, ensureUser(request));
     });
 
     // ─── Gestión ────────────────────────────────────────────────────────────
@@ -174,6 +222,82 @@ export async function registerRrhhRoutes(app: FastifyInstance) {
     app.delete("/rrhh/documentos/:id", gestionar, async (request, reply) => {
       const { id } = idParam.parse(request.params);
       await rrhh.borrarDocumento(id, ensureUser(request));
+      return reply.code(204).send();
+    });
+
+    // ─── Licencias (gestión) ────────────────────────────────────────────────
+
+    app.get("/rrhh/licencias", gestionar, async () => lic.tableroLicencias());
+
+    app.get("/rrhh/legajos/:userId/licencias", gestionar, async (request) => {
+      const { userId } = userIdParam.parse(request.params);
+      const legajo = await rrhh.asegurarLegajo(userId);
+      return lic.licenciasDeLegajo(legajo.id);
+    });
+
+    app.post("/rrhh/legajos/:userId/licencias", gestionar, async (request, reply) => {
+      const { userId } = userIdParam.parse(request.params);
+      const datos = datosLicencia.extend({ dias: dias.optional() }).parse(request.body);
+      reply.code(201);
+      return lic.registrarLicencia(userId, datos, ensureUser(request));
+    });
+
+    app.post("/rrhh/licencias/:id/resolver", gestionar, async (request) => {
+      const { id } = idParam.parse(request.params);
+      const body = z
+        .object({ aprobar: z.boolean(), motivo: z.string().trim().max(500).nullish(), dias: dias.optional() })
+        .parse(request.body);
+      return lic.resolverLicencia(id, body, ensureUser(request));
+    });
+
+    app.patch("/rrhh/licencias/:id", gestionar, async (request) => {
+      const { id } = idParam.parse(request.params);
+      const body = datosLicencia.partial().extend({ dias: dias.optional() }).parse(request.body);
+      return lic.editarLicencia(id, body, ensureUser(request));
+    });
+
+    app.post("/rrhh/licencias/:id/anular", gestionar, async (request, reply) => {
+      const { id } = idParam.parse(request.params);
+      await lic.anularLicencia(id, ensureUser(request));
+      return reply.code(204).send();
+    });
+
+    app.put("/rrhh/legajos/:userId/contingentes", gestionar, async (request) => {
+      const { userId } = userIdParam.parse(request.params);
+      const body = z
+        .object({ anio: z.number().int().min(2000).max(2100), dias, nota: z.string().trim().max(300).nullish() })
+        .parse(request.body);
+      return lic.guardarContingente(userId, body, ensureUser(request));
+    });
+
+    app.delete("/rrhh/contingentes/:id", gestionar, async (request, reply) => {
+      const { id } = idParam.parse(request.params);
+      await lic.borrarContingente(id, ensureUser(request));
+      return reply.code(204).send();
+    });
+
+    // ─── Entregas de materiales (gestión) ───────────────────────────────────
+
+    app.get("/rrhh/entregas/sugeridos", gestionar, async () => entregas.ITEMS_SUGERIDOS);
+
+    app.get("/rrhh/legajos/:userId/entregas", gestionar, async (request) => {
+      const { userId } = userIdParam.parse(request.params);
+      const legajo = await rrhh.asegurarLegajo(userId);
+      return entregas.entregasDeLegajo(legajo.id);
+    });
+
+    app.post("/rrhh/legajos/:userId/entregas", gestionar, async (request, reply) => {
+      const { userId } = userIdParam.parse(request.params);
+      const body = z
+        .object({ fecha, items: itemsEntrega, observaciones: z.string().trim().max(1000).nullish() })
+        .parse(request.body);
+      reply.code(201);
+      return entregas.registrarEntrega(userId, body, ensureUser(request));
+    });
+
+    app.post("/rrhh/entregas/:id/anular", gestionar, async (request, reply) => {
+      const { id } = idParam.parse(request.params);
+      await entregas.anularEntrega(id, ensureUser(request));
       return reply.code(204).send();
     });
   });

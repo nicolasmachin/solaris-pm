@@ -51,7 +51,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 14 | [Capacitación](14-capacitacion.md) | Videos (Bunny Stream) y documentos por área, permisos por sección, progreso y seguimiento; videos para clientes en el portal | ✅ Completo |
 | 15 | [WhatsApp](15-whatsapp.md) | Cloud API de Meta: webhook, envío, plantillas, Administración → WhatsApp | 🟡 Parcial (base para la revisión de Meta; sin números reales conectados) |
 | 16 | [Documentación (intranet)](16-documentacion.md) | Manuales y procedimientos con versiones, publicación automática en cada deploy, confirmación de lectura | ✅ Completo |
-| 17 | [Recursos Humanos](17-rrhh.md) | Mi legajo, legajos completos, validación de documentos, vencimientos, recibos en lote, privacidad | ✅ Completo |
+| 17 | [Recursos Humanos](17-rrhh.md) | Mi legajo, legajos completos, validación de documentos, vencimientos, recibos en lote, licencias y saldo, entregas de materiales con firma, privacidad | ✅ Completo |
 
 Los capítulos pendientes existen con su esqueleto y se completan a medida que se
 trabaja sobre cada módulo. Un capítulo marcado ⬜ **no significa que la

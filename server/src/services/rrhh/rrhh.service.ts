@@ -173,7 +173,7 @@ export function estadoVencimiento(vencimiento: Date | null, hoyIso?: string) {
   return "VIGENTE" as const;
 }
 
-async function usuariosGestores() {
+export async function usuariosGestores() {
   const permisos = await prisma.permission.findMany({
     where: { module: Module.RRHH, action: Action.EDIT },
     select: { roleId: true },
@@ -185,7 +185,7 @@ async function usuariosGestores() {
 }
 
 /** El legajo de una persona; se crea vacío la primera vez que se lo busca. */
-async function asegurarLegajo(userId: string) {
+export async function asegurarLegajo(userId: string) {
   const existente = await prisma.legajo.findUnique({ where: { userId } });
   if (existente) return existente;
   const user = await prisma.user.findFirst({

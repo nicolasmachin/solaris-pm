@@ -673,6 +673,9 @@ model User {
   legajo                         Legajo?                        @relation("LegajoUsuario")
   legajoDocumentosSubidos        LegajoDocumento[]              @relation("LegajoDocumentoSubidoPor")
   legajoDocumentosValidados      LegajoDocumento[]              @relation("LegajoDocumentoValidadoPor")
+  licenciasSolicitadas           Licencia[]                     @relation("LicenciaSolicitadaPor")
+  licenciasResueltas             Licencia[]                     @relation("LicenciaResueltaPor")
+  entregasRealizadas             EntregaMateriales[]            @relation("EntregaEntregadaPor")
   passwordTemporary              Boolean                        @default(false)
   deletedAt                      DateTime?                      @db.Timestamptz(6)
   createdAt                      DateTime                       @default(now()) @db.Timestamptz(6)
@@ -6042,7 +6045,10 @@ model Legajo {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
-  documentos LegajoDocumento[]
+  documentos  LegajoDocumento[]
+  licencias   Licencia[]
+  contingentes LicenciaContingente[]
+  entregas    EntregaMateriales[]
 
   @@map("legajos")
 }
@@ -6104,4 +6110,109 @@ model LegajoDocumento {
   @@index([legajoId, tipo])
   @@index([vencimiento])
   @@map("legajo_documentos")
+}
+
+// ─── Licencias ───────────────────────────────────────────────────────────────
+// Solo la anual descuenta del contingente; las demás (enfermedad, estudio…)
+// quedan registradas para saber quién faltó y por qué.
+
+enum LicenciaTipo {
+  ANUAL
+  ENFERMEDAD
+  ESTUDIO
+  PATERNIDAD
+  MATERNIDAD
+  DUELO
+  MATRIMONIO
+  DONACION_SANGRE
+  SIN_GOCE
+  OTRA
+}
+
+enum LicenciaEstado {
+  // La pidió la persona y espera respuesta.
+  SOLICITADA
+  APROBADA
+  RECHAZADA
+  // La retiró quien la pidió, o RRHH la anuló.
+  CANCELADA
+}
+
+model Licencia {
+  id            String         @id @default(cuid())
+  legajoId      String
+  legajo        Legajo         @relation(fields: [legajoId], references: [id], onDelete: Cascade)
+  tipo          LicenciaTipo
+  desde         DateTime       @db.Date
+  hasta         DateTime       @db.Date
+  // Los días que cuenta. Se propone (lunes a viernes sin feriados) y RRHH lo
+  // puede corregir: es el número que descuenta del contingente.
+  dias          Int
+  nota          String?
+  estado        LicenciaEstado @default(SOLICITADA)
+  motivoRechazo String?
+  solicitadaPorId String
+  solicitadaPor User           @relation("LicenciaSolicitadaPor", fields: [solicitadaPorId], references: [id], onDelete: Restrict)
+  resueltaPorId String?
+  resueltaPor   User?          @relation("LicenciaResueltaPor", fields: [resueltaPorId], references: [id], onDelete: SetNull)
+  resueltaAt    DateTime?      @db.Timestamptz(6)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+
+  @@index([legajoId, desde])
+  @@index([estado])
+  @@map("licencias")
+}
+
+// Días de licencia anual que le corresponden a una persona por año. `anio` es
+// el año en que se generaron (se gozan al año siguiente). El saldo es la suma
+// de los contingentes menos las licencias anuales aprobadas.
+model LicenciaContingente {
+  id        String   @id @default(cuid())
+  legajoId  String
+  legajo    Legajo   @relation(fields: [legajoId], references: [id], onDelete: Cascade)
+  anio      Int
+  dias      Int
+  nota      String?
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([legajoId, anio])
+  @@map("licencia_contingentes")
+}
+
+// ─── Entrega de materiales con firma ─────────────────────────────────────────
+// Ropa de trabajo, equipos de protección, herramientas: RRHH registra qué se
+// entregó y la persona firma en la pantalla que lo recibió. Al firmar se arma
+// la constancia en PDF y queda en el legajo como documento ENTREGA_EPP.
+
+enum EntregaEstado {
+  PENDIENTE_FIRMA
+  FIRMADA
+  ANULADA
+}
+
+model EntregaMateriales {
+  id             String        @id @default(cuid())
+  legajoId       String
+  legajo         Legajo        @relation(fields: [legajoId], references: [id], onDelete: Cascade)
+  fecha          DateTime      @db.Date
+  // [{ descripcion, cantidad, detalle? }]
+  items          Json
+  observaciones  String?
+  estado         EntregaEstado @default(PENDIENTE_FIRMA)
+  entregadoPorId String
+  entregadoPor   User          @relation("EntregaEntregadaPor", fields: [entregadoPorId], references: [id], onDelete: Restrict)
+  // Firma dibujada (PNG) y constancia (PDF), en el storage.
+  firmaUrl       String?
+  firmadaAt      DateTime?     @db.Timestamptz(6)
+  // true = firmó en el dispositivo de quien entregó, en persona.
+  firmaPresencial Boolean      @default(false)
+  // La constancia que queda en el legajo.
+  documentoId    String?       @unique
+  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
+
+  @@index([legajoId, fecha])
+  @@map("entregas_materiales")
 }
