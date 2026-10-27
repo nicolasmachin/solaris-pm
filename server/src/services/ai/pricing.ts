@@ -44,6 +44,18 @@ const PRECIO_WHISPER_POR_MINUTO: Record<string, number> = {
   "whisper-1": 0.006,
 };
 
+/**
+ * Voz de OpenAI (gpt-4o-mini-tts): cobra por tokens de audio, que la API no
+ * devuelve. OpenAI lo estima en ~0,015 USD por minuto; un minuto hablado son
+ * ~900 caracteres, así que se cuenta a 15 USD por millón de caracteres (lo
+ * mismo que tts-1), redondeando para arriba.
+ */
+const PRECIO_VOZ_POR_MILLON_CARACTERES = 15;
+
+export function costoVoz(caracteres: number): number {
+  return (caracteres * PRECIO_VOZ_POR_MILLON_CARACTERES) / 1_000_000;
+}
+
 export type UsoTokens = {
   input: number;
   output: number;

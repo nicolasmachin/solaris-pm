@@ -1,10 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { matchPath, useLocation, useSearchParams } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 
 import { useAuthStore } from "../../store/auth.store";
-import type { ContextoAsistente } from "../../api/asistente.api";
-import { AsistentePanel, type EntradaChat } from "./AsistentePanel";
+import { leerConversacionAsistente, type ContextoAsistente } from "../../api/asistente.api";
+import { AsistentePanel, entradasDeConversacion, type EntradaChat } from "./AsistentePanel";
+
+/** Panel abierto y conversación en curso: sobreviven a recargar la página (F5). */
+const SS_ABIERTO = "asistente-abierto";
+const SS_CONVERSACION = "asistente-conversacion";
+
+function leerSS(clave: string) {
+  try {
+    return sessionStorage.getItem(clave);
+  } catch {
+    return null;
+  }
+}
+
+function guardarSS(clave: string, valor: string | null) {
+  try {
+    if (valor === null) sessionStorage.removeItem(clave);
+    else sessionStorage.setItem(clave, valor);
+  } catch {
+    /* sin storage: se pierde al recargar, nada más */
+  }
+}
 
 /** Pantallas donde hay un proyecto abierto: el asistente lo toma como "este cliente". */
 const RUTAS_PROYECTO = [
@@ -32,14 +53,26 @@ function useContextoPantalla(): ContextoAsistente {
  * que es justo cuando más sirve; debajo del popup de traspasos (z-60), que es
  * obligatorio. Lo ven todos los usuarios internos.
  * La conversación vive acá (no en el panel) para que cerrar y volver a abrir
- * el panel no la borre.
+ * el panel no la borre, y como está en el layout sigue al cambiar de pantalla.
  */
 export function AsistenteBoton() {
   const { user } = useAuthStore();
-  const [abierto, setAbierto] = useState(false);
+  const [abierto, setAbierto] = useState(() => leerSS(SS_ABIERTO) === "1");
   const [entradas, setEntradas] = useState<EntradaChat[]>([]);
-  const [conversacionId, setConversacionId] = useState<string | null>(null);
+  const [conversacionId, setConversacionId] = useState<string | null>(() => leerSS(SS_CONVERSACION));
   const contexto = useContextoPantalla();
+
+  useEffect(() => guardarSS(SS_ABIERTO, abierto ? "1" : null), [abierto]);
+  useEffect(() => guardarSS(SS_CONVERSACION, conversacionId), [conversacionId]);
+
+  // Después de recargar: traer la conversación que estaba abierta.
+  useEffect(() => {
+    const id = leerSS(SS_CONVERSACION);
+    if (!id) return;
+    leerConversacionAsistente(id)
+      .then((c) => setEntradas((actuales) => (actuales.length ? actuales : entradasDeConversacion(c.mensajes))))
+      .catch(() => setConversacionId(null));
+  }, []);
 
   if (!user || user.role === "CLIENT") return null;
 

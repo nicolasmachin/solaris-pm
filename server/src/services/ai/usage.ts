@@ -13,7 +13,7 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "../../lib/prisma.js";
-import { costoAnthropic, costoWhisper } from "./pricing.js";
+import { costoAnthropic, costoVoz, costoWhisper } from "./pricing.js";
 
 /** Las funciones de Voltia PM que usan IA. Se guarda como texto: sumar una no pide migración. */
 export const AI_FEATURES = {
@@ -21,6 +21,7 @@ export const AI_FEATURES = {
   asistente_chat: "Asistente del equipo",
   asistente_perfil: "Asistente: notas sobre cada usuario",
   asistente_audio: "Asistente: mensajes de voz",
+  asistente_voz: "Asistente: lectura en voz alta",
   efp: "Proyecto Final de Ingeniería",
   visita_informe: "Informe de visita técnica",
   visita_audio: "Transcripción de audios de visita",
@@ -118,6 +119,31 @@ export function recordWhisperUsage(args: {
     model: args.model,
     audioSeconds: segundos,
     costUsd: args.ok ? costoWhisper(args.model, segundos) : 0,
+    durationMs: args.durationMs,
+    ok: args.ok,
+    error: args.error?.slice(0, 500) ?? null,
+    userId: args.ctx?.userId ?? null,
+    projectId: args.ctx?.projectId ?? null,
+    entityId: args.ctx?.entityId ?? null,
+  });
+}
+
+/** Texto pasado a voz (OpenAI TTS): la API no informa uso, se estima por caracteres. */
+export function recordVozUsage(args: {
+  model: string;
+  feature: AIFeature;
+  caracteres: number;
+  ok: boolean;
+  durationMs: number;
+  error?: string;
+  ctx?: AIUsageCtx;
+}): void {
+  registrar({
+    feature: args.feature,
+    provider: "openai",
+    model: args.model,
+    tokensInput: args.caracteres,
+    costUsd: args.ok ? costoVoz(args.caracteres) : 0,
     durationMs: args.durationMs,
     ok: args.ok,
     error: args.error?.slice(0, 500) ?? null,

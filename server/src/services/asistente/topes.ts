@@ -9,7 +9,7 @@
 import { prisma } from "../../lib/prisma.js";
 
 /** Lo que cuenta para los topes: el chat y las notas por usuario. */
-const FEATURES_ASISTENTE = ["asistente_chat", "asistente_perfil"];
+const FEATURES_ASISTENTE = ["asistente_chat", "asistente_perfil", "asistente_audio", "asistente_voz"];
 
 function numeroEnv(nombre: string, porDefecto: number): number {
   const v = Number(process.env[nombre]);

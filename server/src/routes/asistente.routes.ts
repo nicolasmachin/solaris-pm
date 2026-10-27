@@ -36,6 +36,7 @@ import {
   prepararConversacion,
 } from "../services/asistente/historial.service.js";
 import { chequearTopes, gastoActual, topes } from "../services/asistente/topes.js";
+import { MAX_CARACTERES_VOZ, textoAVoz, vozHabilitada } from "../services/asistente/voz.service.js";
 import { isWhisperEnabled, transcribeAudio } from "../services/whisper.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { badRequest, forbidden, notFound } from "../utils/errors.js";
@@ -130,6 +131,16 @@ export async function registerAsistenteRoutes(app: FastifyInstance) {
       } finally {
         await fs.promises.unlink(tmp).catch(() => undefined);
       }
+    });
+
+    app.post("/asistente/voz", async (request, reply) => {
+      const user = usuarioInterno(request);
+      if (!vozHabilitada()) throw badRequest("SIN_VOZ", "La lectura en voz alta no está configurada");
+      const { texto } = z.object({ texto: z.string().trim().min(1).max(MAX_CARACTERES_VOZ) }).parse(request.body);
+      const bloqueo = await chequearTopes(user.id);
+      if (bloqueo) return reply.status(429).send({ error: bloqueo });
+      const audio = await textoAVoz(texto, { userId: user.id });
+      return reply.header("Content-Type", "audio/mpeg").header("Cache-Control", "no-store").send(audio);
     });
 
     app.post("/asistente/chat", async (request, reply) => {

@@ -33,8 +33,10 @@ import {
   listarConversacionesAsistente,
   subirAdjuntoAsistente,
   transcribirAudioAsistente,
+  vozAsistente,
   type AdjuntoAsistente,
   type ContextoAsistente,
+  type MensajeGuardado,
   type ModeloAsistente,
 } from "../../api/asistente.api";
 
@@ -42,6 +44,15 @@ export type EntradaChat =
   | { tipo: "usuario"; texto: string; adjuntos: AdjuntoAsistente[] }
   | { tipo: "asistente"; texto: string; modeloNombre: string; herramientas: string[] }
   | { tipo: "error"; texto: string };
+
+/** Una conversación guardada, como la muestra el panel. */
+export function entradasDeConversacion(mensajes: MensajeGuardado[]): EntradaChat[] {
+  return mensajes.map((m): EntradaChat =>
+    m.role === "user"
+      ? { tipo: "usuario", texto: m.content, adjuntos: m.adjuntos }
+      : { tipo: "asistente", texto: m.content, modeloNombre: m.modelo ?? "", herramientas: m.herramientas },
+  );
+}
 
 const MODELOS: Array<{ clave: ModeloAsistente; nombre: string; ayuda: string }> = [
   { clave: "auto", nombre: "Automático", ayuda: "Sonnet, y Opus para documentos, listados de preguntas o respuestas a clientes" },
@@ -117,13 +128,24 @@ function textoParaLeer(md: string) {
     .trim();
 }
 
-function vozEspanol(): SpeechSynthesisVoice | null {
-  const voces = window.speechSynthesis?.getVoices() ?? [];
-  for (const lang of ["es-UY", "es-AR", "es-419", "es-US", "es-MX", "es-ES"]) {
-    const v = voces.find((x) => x.lang.replace("_", "-") === lang);
-    if (v) return v;
+/**
+ * Pedazos para pedir la voz: el primero corto, para que empiece a sonar
+ * enseguida; los demás más largos, que se generan mientras suena el anterior.
+ */
+function pedazosParaLeer(texto: string): string[] {
+  const oraciones = texto.match(/[^.!?]+[.!?]*/g) ?? [];
+  const pedazos: string[] = [];
+  let actual = "";
+  for (const o of oraciones) {
+    const tope = pedazos.length === 0 ? 200 : 1500;
+    if (actual && actual.length + o.length > tope) {
+      pedazos.push(actual.trim());
+      actual = "";
+    }
+    actual += o;
   }
-  return voces.find((x) => x.lang.toLowerCase().startsWith("es")) ?? null;
+  if (actual.trim()) pedazos.push(actual.trim());
+  return pedazos.map((p) => p.slice(0, 3900));
 }
 
 function ChipAdjunto({ nombre, mime, onClick, onQuitar, cargando, error }: {
@@ -195,6 +217,9 @@ export function AsistentePanel({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const grabadora = useRef<MediaRecorder | null>(null);
   const contadorArrastre = useRef(0);
+  /** Lectura en curso: el audio que suena y un número para cortar las que quedaron viejas. */
+  const lectura = useRef<{ n: number; audio: HTMLAudioElement | null }>({ n: 0, audio: null });
+  const panelRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
 
   const { data: estado } = useQuery({ queryKey: ["asistente-estado"], queryFn: getEstadoAsistente });
@@ -211,7 +236,8 @@ export function AsistentePanel({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // Solo si el foco está en el panel: Escape en la página cierra lo de la página.
+      if (e.key === "Escape" && panelRef.current?.contains(document.activeElement)) onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -220,7 +246,7 @@ export function AsistentePanel({
   // Al cerrar el panel: cortar la lectura y la grabación.
   useEffect(() => {
     return () => {
-      window.speechSynthesis?.cancel();
+      cortarLectura();
       grabadora.current?.stream.getTracks().forEach((t) => t.stop());
     };
   }, []);
@@ -245,13 +271,7 @@ export function AsistentePanel({
     try {
       const c = await leerConversacionAsistente(id);
       setConversacionId(c.id);
-      setEntradas(
-        c.mensajes.map((m): EntradaChat =>
-          m.role === "user"
-            ? { tipo: "usuario", texto: m.content, adjuntos: m.adjuntos }
-            : { tipo: "asistente", texto: m.content, modeloNombre: m.modelo ?? "", herramientas: m.herramientas },
-        ),
-      );
+      setEntradas(entradasDeConversacion(c.mensajes));
       setVerHistorial(false);
     } catch {
       toast.error("No se pudo abrir la conversación");
@@ -335,28 +355,51 @@ export function AsistentePanel({
     }
   }
 
-  function escuchar(i: number, md: string) {
-    const synth = window.speechSynthesis;
-    if (!synth) {
-      toast.error("Este navegador no puede leer en voz alta");
-      return;
-    }
-    synth.cancel();
+  function cortarLectura() {
+    lectura.current.n += 1;
+    lectura.current.audio?.pause();
+    lectura.current.audio = null;
+  }
+
+  async function escuchar(i: number, md: string) {
+    cortarLectura();
     if (leyendo === i) {
       setLeyendo(null);
       return;
     }
-    // De a oraciones: algunos navegadores cortan las lecturas largas.
-    const oraciones = textoParaLeer(md).match(/[^.!?]+[.!?]*/g) ?? [];
-    const voz = vozEspanol();
-    oraciones.forEach((o, n) => {
-      const u = new SpeechSynthesisUtterance(o.trim());
-      u.lang = voz?.lang ?? "es-UY";
-      if (voz) u.voice = voz;
-      if (n === oraciones.length - 1) u.onend = () => setLeyendo((x) => (x === i ? null : x));
-      synth.speak(u);
-    });
+    const n = lectura.current.n;
+    const vigente = () => lectura.current.n === n;
     setLeyendo(i);
+    try {
+      const pedazos = pedazosParaLeer(textoParaLeer(md));
+      let siguiente = pedazos.length ? vozAsistente(pedazos[0]) : null;
+      for (let k = 0; k < pedazos.length && siguiente; k++) {
+        const blob = await siguiente;
+        // Mientras suena este, ya se pide el próximo.
+        siguiente = k + 1 < pedazos.length ? vozAsistente(pedazos[k + 1]) : null;
+        if (!vigente()) return;
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        lectura.current.audio = audio;
+        try {
+          await new Promise<void>((resolve, reject) => {
+            audio.onended = () => resolve();
+            audio.onpause = () => resolve();
+            audio.onerror = () => reject(new Error("audio"));
+            audio.play().catch(reject);
+          });
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+        if (!vigente()) return;
+      }
+    } catch (err) {
+      if (vigente()) toast.error(errorDeApi(err) ?? "No se pudo leer en voz alta");
+    }
+    if (vigente()) {
+      lectura.current.audio = null;
+      setLeyendo((x) => (x === i ? null : x));
+    }
   }
 
   // ─── Envío ───────────────────────────────────────────────────────────────
@@ -444,14 +487,12 @@ export function AsistentePanel({
   );
 
   return (
-    <div
-      className="fixed inset-0 z-[56] flex justify-end bg-black/30"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    // Sin fondo oscuro ni cierre al tocar afuera: el panel queda abierto mientras
+    // se navega por Voltia PM, y solo se cierra con la X.
+    <div className="pointer-events-none fixed inset-0 z-[56] flex justify-end">
       <div
-        className={`relative flex h-full w-full bg-[var(--color-bg-app)] shadow-2xl ${
+        ref={panelRef}
+        className={`pointer-events-auto relative flex h-full w-full bg-[var(--color-bg-app)] shadow-2xl ${
           grande ? "" : "max-w-2xl border-l border-[var(--color-border)]"
         }`}
         onDragEnter={(e) => {
@@ -591,7 +632,7 @@ export function AsistentePanel({
                             <Copy className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={() => escuchar(i, e.texto)}
+                            onClick={() => void escuchar(i, e.texto)}
                             title={leyendo === i ? "Dejar de leer" : "Escuchar"}
                             className={`${botonIcono} ${leyendo === i ? "text-violet-500" : ""}`}
                           >

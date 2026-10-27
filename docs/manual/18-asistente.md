@@ -20,7 +20,13 @@ clientes sería otro proyecto.
 - **Entrada:** botón violeta con destellos, abajo a la derecha, en todas las
   pantallas internas. Lo ven todos los roles menos `CLIENT`, y queda por encima
   de las ventanas grandes (el panel del lead), para poder abrirlo con un lead
-  abierto. Abre un panel lateral; cerrarlo no corta la conversación.
+  abierto. Abre un panel lateral **sin fondo oscuro**: la pantalla de atrás se
+  sigue usando y el panel queda abierto al cambiar de pantalla; solo se cierra
+  con la X (o Escape con el foco en el panel). Cerrarlo no corta la
+  conversación, y si se recarga la página (F5) vuelve a abrirse con la misma
+  conversación (se recuerda en `sessionStorage` de esa pestaña:
+  `asistente-abierto`, `asistente-conversacion`). En celular el panel ocupa
+  toda la pantalla, así que para navegar hay que cerrarlo.
 - **Formato tipo Claude:** los mensajes propios en burbuja a la derecha, las
   respuestas como texto a la izquierda; abajo, una caja con el clip y el
   micrófono a la izquierda y el modelo y Enviar a la derecha. El botón de
@@ -34,8 +40,10 @@ clientes sería otro proyecto.
   como etiquetas que abren el archivo.
 - **Micrófono:** graba, se toca el cuadrado para terminar, y el audio se pasa a
   texto en la caja para corregirlo antes de mandarlo. El audio no se guarda.
-- **Escuchar:** el parlante de cada respuesta la lee en voz alta con la voz del
-  navegador o del celular (sin costo; la calidad depende del dispositivo).
+- **Escuchar:** el parlante de cada respuesta la lee en voz alta con una voz
+  natural de OpenAI, en rioplatense de Uruguay. Arranca en uno o dos segundos y
+  se corta tocando el parlante de nuevo. Tiene costo: unos 2 centavos de dólar
+  por minuto leído, y cuenta para los topes.
 - **Conversaciones guardadas:** el reloj del encabezado muestra las
   conversaciones anteriores de quien está logueado (las últimas 50) para
   retomarlas o borrarlas; el **+** arranca una nueva. Cada persona ve solo las
@@ -97,9 +105,16 @@ clientes sería otro proyecto.
 - **Voz:** `POST /api/asistente/transcribir` recibe el audio (webm, o mp4 en
   iPhone), lo escribe en un temporal, lo transcribe con Whisper
   (`transcribeAudio()`, función `asistente_audio` en `ai_usage`) y lo borra. La
-  lectura en voz alta es `speechSynthesis` del navegador: prefiere una voz
-  es-UY, después es-AR, es-419, y cualquier español; lee de a oraciones y sin
-  los símbolos de Markdown ni las marcas ✅⚠️❓.
+  lectura en voz alta es `POST /api/asistente/voz` (`voz.service.ts` →
+  `textoAVoz()`): OpenAI `gpt-4o-mini-tts`, voz `coral`, con indicaciones de
+  español rioplatense con voseo (OpenAI no tiene voces por país: el acento sale
+  de las indicaciones). Devuelve mp3. El panel saca los símbolos de Markdown y
+  las marcas ✅⚠️❓ y pide la voz **de a pedazos**: el primero de ~200
+  caracteres, para que suene enseguida, y los demás de ~1500, cada uno pedido
+  mientras suena el anterior. La API no informa el uso: se registra como
+  `asistente_voz` en `ai_usage` estimando 15 USD por millón de caracteres
+  (`costoVoz()`). Se reemplazó a la voz del navegador (`speechSynthesis`), que
+  sonaba robótica y lenta.
 - **Notas por persona** (`asistente_perfiles`, modelo `AsistentePerfil`): un
   texto corto (máx. 150 palabras, en viñetas) con en qué trabaja, qué suele
   pedir, cómo le gusta que le respondan y qué clientes o temas sigue. Cada 6
@@ -135,7 +150,8 @@ clientes sería otro proyecto.
   regla fija, no una consulta previa a otro modelo. Esfuerzo `medium` en los
   tres.
 - **Gasto:** cada llamada pasa por `createMessage()` con la función
-  `asistente_chat` (y las notas, `asistente_perfil`) y el usuario, así que queda
+  `asistente_chat` (y las notas, `asistente_perfil`; los audios,
+  `asistente_audio`; la voz, `asistente_voz`) y el usuario, así que queda
   en `ai_usage` como todo lo demás.
 - **Topes** (`topes.ts`), sobre lo registrado en `ai_usage`: por usuario y por
   día en hora de Uruguay (`ASISTENTE_TOPE_DIARIO_USD`, por defecto 5) y para todo

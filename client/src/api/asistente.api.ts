@@ -87,3 +87,7 @@ export const transcribirAudioAsistente = (audio: Blob, nombre: string) => {
     .post<{ texto: string }>("/api/asistente/transcribir", form, { headers: { "Content-Type": "multipart/form-data" } })
     .then((r) => r.data);
 };
+
+/** La respuesta en voz alta (mp3), de a un pedazo de texto. */
+export const vozAsistente = (texto: string) =>
+  apiClient.post<Blob>("/api/asistente/voz", { texto }, { responseType: "blob" }).then((r) => r.data);

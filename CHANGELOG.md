@@ -11,6 +11,7 @@
 - Elegís el modelo: **Automático** (recomendado: usa uno más potente cuando el pedido es grande), o uno fijo. Cada respuesta se puede copiar con un clic.
 - Podés **adjuntar fotos, PDF, Excel y Word**: con el clip, arrastrándolos al chat o pegando una captura. Sirve para que analice una factura, el display de un inversor o el listado de preguntas de un cliente.
 - **Micrófono**: le hablás, se pasa a texto y lo mandás. Y cada respuesta tiene un botón para **escucharla en voz alta**.
+- El chat **queda abierto mientras navegás** por Voltia PM (y aunque recargues la página), así seguís la conversación mirando un lead o un proyecto.
 - El chat se parece al de Claude, y se puede agrandar a pantalla completa con la lista de conversaciones al costado.
 - **Tus conversaciones quedan guardadas**: desde el reloj del panel retomás o borrás las anteriores. Solo las ves vos.
 - El asistente te habla por tu nombre y **va aprendiendo cómo te gusta trabajar** (respuestas cortas o largas, qué temas y clientes seguís) a medida que lo usás.
