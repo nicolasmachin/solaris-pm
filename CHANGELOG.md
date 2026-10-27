@@ -1,5 +1,18 @@
 # Novedades
 
+## v13.4
+
+### 27 de octubre de 2026
+
+#### Diagnosticar una planta desde el chat, a fondo
+- Desde el chat de Claude conectado a Voltia PM se puede pedir **el detalle del inversor cada 5 minutos** de un día o de varios: cuánto da cada entrada de paneles, la tensión de la red, la temperatura y los códigos de falla. Con un Excel para bajar, que además queda en los documentos de la obra.
+- Avisa solo lo que se ve raro: una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), cortes de comunicación con la hora exacta y tensión de red alta.
+- Por ahora, inversores Growatt de la línea MIN.
+
+#### Plantas sin vincular y tickets desde el chat
+- El chat muestra las **plantas de monitoreo que no están asociadas a ningún cliente**, sugiere a cuál corresponden por el nombre y, con tu confirmación, las vincula. Una planta sin vincular no entra en el monitoreo diario ni en los reportes.
+- También puede **abrir un ticket de soporte** con una nota interna para el equipo (que el cliente no ve) y pasárselo a Operaciones o a Ingeniería.
+
 ## v13.3
 
 ### 26 de octubre de 2026

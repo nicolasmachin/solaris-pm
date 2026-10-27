@@ -1,5 +1,128 @@
 # Novedades
 
+## v13.4
+
+### 27 de octubre de 2026
+
+#### Diagnosticar una planta desde el chat, a fondo
+- Desde el chat de Claude conectado a Voltia PM se puede pedir **el detalle del inversor cada 5 minutos** de un día o de varios: cuánto da cada entrada de paneles, la tensión de la red, la temperatura y los códigos de falla. Con un Excel para bajar, que además queda en los documentos de la obra.
+- Avisa solo lo que se ve raro: una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), cortes de comunicación con la hora exacta y tensión de red alta.
+- Por ahora, inversores Growatt de la línea MIN.
+
+#### Plantas sin vincular y tickets desde el chat
+- El chat muestra las **plantas de monitoreo que no están asociadas a ningún cliente**, sugiere a cuál corresponden por el nombre y, con tu confirmación, las vincula. Una planta sin vincular no entra en el monitoreo diario ni en los reportes.
+- También puede **abrir un ticket de soporte** con una nota interna para el equipo (que el cliente no ve) y pasárselo a Operaciones o a Ingeniería.
+
+## v13.3
+
+### 26 de octubre de 2026
+
+#### Documentación: los manuales del equipo, siempre en su última versión
+
+- Nueva sección **Documentación**, en el menú de tu usuario. Ahí están el Procedimiento General de Trabajo y los manuales de trabajo de cada área, en PDF, para leer en pantalla o descargar.
+- Cada persona ve los documentos de su área. El Procedimiento General lo ven todos.
+- Siempre se muestra la **versión vigente**, con desde cuándo rige y qué cambió. Las versiones anteriores quedan en el historial.
+- Los manuales se actualizan solos: cada versión nueva aparece en Documentación sin cargar nada a mano. No se manda ningún aviso: los manuales cambian seguido y cada uno los consulta ahí cuando los necesita.
+- Administración puede subir otros documentos (reglamentos, formularios) y elegir qué roles los ven. Si un documento lo amerita (un reglamento, por ejemplo), puede pedir que cada uno confirme que lo leyó y ver quién lo hizo.
+
+#### Mi legajo y Recursos Humanos
+
+- Nueva sección **Mi legajo**, en el menú de tu usuario: tus datos (contacto, a quién avisar en una emergencia, mutualista, cuenta para el sueldo, talles de ropa y calzado), tus recibos de sueldo para descargar y tus documentos.
+- Podés cargar vos mismo el carné de salud, la licencia de conducir, la cédula, cursos y constancias, también con una foto desde el celular. Si el documento vence, poné la fecha: Voltia PM te avisa 30 días antes y el día que vence.
+- Lo que cargás queda **pendiente** hasta que administración lo revisa. Si hay que volver a subirlo, te llega el motivo.
+- Arriba ves qué te falta cargar y qué está por vencer.
+- Los instaladores tercerizados tienen su legajo reducido: sin recibos, y con lo que se les pide antes de subir a un techo (BPS y BSE al día, carné de salud y curso de trabajo en altura).
+- Para gerencia y finanzas, la sección **Recursos Humanos**: el legajo completo de cada persona (ingreso, cargo, contrato, sueldo, notas internas), validar lo que carga cada uno, el tablero de vencimientos y la **carga de recibos en lote** (se eligen todos los recibos del mes y a cada uno le llega el suyo, con aviso).
+- Los datos de salud y de sueldo los ve solo la persona y quien gestiona Recursos Humanos. Cada vez que alguien abre un documento de otra persona, queda registrado.
+
+#### Licencias
+
+- En **Mi legajo** se ven los días de licencia: los que te corresponden, los que ya tomaste, los pedidos y los **disponibles**.
+- Desde ahí se **pide licencia**: tipo (anual, enfermedad, estudio, paternidad, duelo…), desde y hasta. Los días se cuentan solos, de lunes a viernes sin feriados, y administración los confirma al aprobar. Mientras no se responde, el pedido se puede retirar.
+- Lo pedido ya se descuenta de los disponibles, para que no se pida dos veces lo mismo. Solo la licencia anual descuenta; las demás quedan registradas.
+- En **Recursos Humanos**, la pestaña **Licencias** muestra los pedidos para responder, quién está de licencia o sale en los próximos 30 días y el saldo de cada persona.
+- En el legajo de cada persona se cargan los días que le corresponden por año (con una sugerencia según su antigüedad), se aprueban o rechazan los pedidos y se registran licencias ya acordadas.
+
+#### Entrega de materiales con firma
+
+- Al entregarle a alguien ropa de trabajo, equipos de protección o herramientas, se registra en su legajo qué se le dio.
+- La persona lo **firma en la pantalla** de su celular desde Mi legajo, o en persona en el dispositivo de quien entrega.
+- Al firmar se arma sola la **constancia en PDF** (qué se entregó, cuándo, quién entregó y la firma), y queda guardada en el legajo.
+
+#### Movimientos más claros
+
+- En **Finanzas → Movimientos**, una factura de proveedor que ya está pagada se ve dentro de su pago, en un solo renglón: el proveedor arriba, y debajo qué se compró y para qué cliente. Antes aparecían dos renglones por cada compra.
+
+## v13.2
+
+### 23 de octubre de 2026
+
+#### Arreglos
+
+- **Calendario:** en las semanas con varias obras y además un mantenimiento, soporte o visita, el último bloque se cortaba y se metía en la semana de abajo. Ahora cada semana toma el alto que necesita y, si no entra todo en pantalla, el mes se desplaza hacia abajo.
+
+## v13.1
+
+### 22 de octubre de 2026
+
+#### Finanzas con menú lateral
+
+- El menú de Finanzas pasa a la izquierda, ordenado en grupos (Ventas, Compras, Bancos, Informes) con un ícono por pantalla, en lugar de la fila larga de pestañas. Junto a Inicio se ve cuántas cosas hay para hacer hoy.
+- En el celular, el menú es un desplegable.
+- **Comisiones** se suma al menú de Finanzas, dentro de Compras.
+
+#### Ventas: cómo nos conoció cada cliente
+
+- Al crear un lead hay que contestar **¿Cómo nos conoció?**: anuncio en Instagram o Facebook, redes sin anuncio, recomendación, Google o la web, LinkedIn, inteligencia artificial, ya es cliente, marca aliada u otro. Al lado se puede aclarar quién lo recomendó, qué marca o qué anuncio; con «Otro», la aclaración es obligatoria.
+- Se puede completar o corregir desde el panel del lead. Los leads cargados antes quedan sin dato, para completarlos si el cliente lo cuenta.
+- Desde el chat de Claude se puede cargar al crear o editar un lead, y pedir cuántos leads, propuestas y ventas trajo cada canal en un período, con el monto vendido.
+
+#### Cobros que avisan solos cuándo cobrar
+
+- Las cuotas del plan de pagos ya no tienen fecha: se cobran cuando llega su momento de la obra. El plan de siempre queda en **Seña**, **Cuota 1 · previo a la obra**, **Cuota 2 · obra finalizada** y **Cuota 3 · habilitación finalizada**, y la fecha se completa al cobrar.
+- Cada cuota queda **lista para cobrar** sola: la seña desde que se arma el plan, la cuota 1 diez días antes del primer día de obra agendado (si la obra se reagenda, se corre), la 2 cuando se da por terminada la obra y la 3 cuando se finaliza la habilitación de UTE. Si pasan diez días sin cobrarla, queda **vencida**.
+- Para lo que se acuerda distinto con el cliente, cada cuota se puede poner **en una fecha fija**, como antes.
+- En **Cobros**, un aviso arriba dice cuántos clientes están listos para cobrar, con el botón «Ver solo esos», y en la lista llevan la marca «Listo para cobrar» o «Cuota vencida». Al entrar ya no aparecen los clientes que pagaron todo: se ven eligiendo «Todos, también los completos».
+- Los clientes listos para cobrar aparecen también en «Para hacer hoy» y en el mail de cada mañana de Finanzas.
+- En el flujo de fondos, las cuotas de obras todavía sin agendar van en un cuadro aparte, «Cobros sin fecha».
+
+#### Qué se le factura a cada cliente
+
+- Al ganar un lead y crear el proyecto, el asesor tiene que decir **qué se le factura**: tilda **«Facturación normal»** (se factura todo el presupuesto) o carga el monto a facturar y el motivo (un descuento, una parte que financia el banco, a nombre de su empresa…). Sin eso no se crea el proyecto.
+- El monto se puede escribir **sin IVA, con IVA o como porcentaje del presupuesto** (por ejemplo 50): al llenar uno, los otros dos se calculan solos. Con monto 0, el proyecto queda como que no lleva factura.
+- Lo mismo se puede corregir desde la ficha del proyecto, donde reemplaza a «Lleva factura».
+- En **Facturación** cada obra muestra por separado el **presupuesto** (lo que paga el cliente, con IVA), lo **que hay que facturarle** (con IVA y, abajo, sin IVA), lo **ya facturado** y lo que **falta facturar**. Las obras de antes que tenían una nota de facturación quedan «A definir», con un botón para cargar el monto.
+- Al emitir la factura, el monto que se propone es **lo que falta facturar de lo acordado**, y se muestra lo acordado y lo ya facturado.
+
+#### Facturas que no van como deuda: «Ya está registrada»
+
+- En las facturas por revisar, un botón nuevo para las que no van como deuda: elegir a mano el gasto ya cargado al que corresponde, crear desde ahí el gasto ya pagado (compra de contado que nadie cargó) o marcarla «ya contemplada» con el motivo. A diferencia de descartar, las tres siguen en el archivo de compras para la contadora.
+
+#### Ver qué movimientos tienen factura
+
+- En Finanzas → Movimientos, una columna nueva dice si cada gasto tiene factura: electrónica, adjunta, solo el número o sin factura. Un filtro deja ver solo los gastos sin factura.
+- Un pago hecho desde una cuenta de otra moneda se muestra con lo que salió de la cuenta.
+- Las facturas de proveedor que se pagaron con «Registrar pago» se marcan «Factura a pagar», con el monto en gris: son la deuda, no una salida de plata (esa es la fila del pago).
+
+#### Las facturas recibidas sugieren el gasto ya cargado
+
+- En las facturas por revisar, Voltia PM muestra los gastos ya cargados que más se parecen a cada factura —también los cargados sin proveedor, como el combustible—, del más probable al menos y con el porqué (mismo monto, a 2 días, la descripción nombra al proveedor…). Un toque y quedan vinculados. Si no sugiere ninguno, esa compra no se cargó.
+
+#### Pagar a un proveedor desde una cuenta de otra moneda
+
+- Una deuda en pesos se puede pagar desde una cuenta en dólares, y al revés. Se elige la cuenta, se confirma la cotización (viene la del día) y se ve cuánto sale de la cuenta. La deuda baja en su moneda y el saldo de la cuenta baja en la suya.
+
+#### Filtros en las facturas recibidas
+
+- En Finanzas → Facturas, la lista de facturas recibidas se puede filtrar por proveedor (también los que todavía no están dados de alta), por tipo (facturas o notas de crédito), por fecha y buscando por número, RUT o razón social.
+
+#### Arreglos
+
+- «Arrancar cuenta» con un proveedor ahora deja también en cero lo que había quedado a favor por pagos viejos; antes quedaba y se iba a descontar de la próxima factura. Para un proveedor ya arrancado, volver a arrancar la cuenta lo corrige.
+
+- En «Para hacer hoy», los avisos de comisiones sin pagar y de costos fijos vencidos llevaban al mismo Inicio y no pasaba nada: ahora abren Comisiones y Costos fijos. Los que se resuelven en el Inicio bajan hasta «Por conciliar».
+- Al emitir una factura con un porcentaje, el monto sin IVA con decimales se leía mal y la factura salía 100 veces más grande (50 % daba 5.000 en vez de 50). Ahora se lee bien. No llegó a emitirse ninguna factura con el error.
+
 ## v13.0
 
 ### 21 de octubre de 2026

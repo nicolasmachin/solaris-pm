@@ -36,6 +36,7 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 | `BILLER_TOKEN` | token de la API de Biller (facturación electrónica). Trae las facturas que nos emiten los proveedores a Finanzas → Cuentas por pagar. Vacío = el job no corre y la bandeja avisa que no está configurada |
 | `BILLER_URL` | `https://biller.uy` en producción (default del compose de prod); `https://test.biller.uy` es la cuenta de prueba |
 | `BILLER_SUCURSAL` | ID de la sucursal de Voltia en Biller productivo (Ajustes → Sucursales). Sin esto no se emiten facturas a clientes. En test es la 889 |
+| `GROWATT_WEB_USER` / `GROWATT_WEB_PASS` | usuario y contraseña de la **web** de Growatt (server.growatt.com, cuenta de Voltia). Los usa la herramienta `historial_inversor` del conector MCP para traer el detalle cada 5 minutos por string. Sin esto la herramienta avisa que falta configurarla. **Secreto** |
 | `BANCO_LECTOR_TOKEN` | token con el que el lector del banco manda sus lecturas a `POST /api/banco/lectura`. Sin esto la ruta responde 404 |
 | `CRON_BILLER_RECIBIDOS` | opcional; por defecto `*/30 * * * *` (facturas de proveedores cada media hora) |
 | `WHATSAPP_TOKEN` | token permanente del usuario del sistema `voltia-pm` de Meta (permisos de mensajes y de administración de WhatsApp). **Secreto** |

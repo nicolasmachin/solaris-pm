@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.8 · del 22/10/26
+**Voltia · Uruguay** · Versión 1.9 · del 27/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -100,12 +100,17 @@ Después de la obra, Operaciones vuelve a la casa del cliente por dos motivos di
 - **Día por día:** cuánto generó, cuánto exportó, cuánto consumió la casa y cuánto compró a UTE, comparado con lo que rindieron las demás plantas de Voltia ese mismo día. Si un día fue nublado, bajan todas; si baja solo esta, el problema es de la planta.
 - **Hora por hora** de un día: ahí se ven las sombras (cortes que se repiten a la misma hora todos los días) y los cortes del inversor.
 - **Ahora mismo:** el inversor, cada string con su voltaje y su corriente, cada fase, y lo que marca el medidor.
+- **El detalle cada 5 minutos** de uno o varios días (por ahora, inversores Growatt de la línea MIN): cuánto da cada entrada de paneles del inversor, la tensión de la red, la temperatura y los códigos de falla, con un Excel para bajar. Es lo que permite ver, por ejemplo, que una entrada no tiene nada conectado y que **dos grupos de paneles (strings) quedaron enchufados en la misma entrada**: el inversor recorta lo que pasa del máximo de esa entrada y se pierde generación. También muestra la hora exacta en que el equipo dejó de comunicar.
 
 Hay dos cosas que **son imposibles** y que Claude marca solas, porque delatan un error de conexión: que la planta **exporte más de lo que genera**, o que **exporte de noche**. Las dos quieren decir que el medidor quedó **al revés o mal conectado** (los transformadores de corriente dados vuelta o puestos en otra fase). El monitoreo diario también lo avisa.
 
 Lo que Claude deduce se toma como una **pista para revisar en el lugar**, no como un diagnóstico cerrado: una lectura suelta puede engañar, y lo que se ve desde afuera no reemplaza mirar el tablero. Si con la pista alcanza para resolver algo a distancia (por ejemplo, invertir la lectura del medidor desde la aplicación del inversor), se resuelve y se confirma después mirando los datos de nuevo: de noche, sin sol, todas las fases tienen que marcar compra.
 
-Para usarlo hace falta tener en Voltia PM el permiso de ver Experiencia Solar; se le pide al gerente de Operaciones.
+Si el cliente **no tiene la planta asociada** en Voltia PM (el chat dice que no hay datos de monitoreo), se le pide que busque la planta sin vincular: muestra las que no están asociadas a ningún cliente, sugiere a cuál corresponde por el nombre y, con la confirmación de quien pregunta, la vincula. Desde ese momento entra en el monitoreo diario.
+
+Cuando el diagnóstico pide ir, el chat también **abre el ticket de soporte** y se lo pasa a Operaciones. El título y la descripción del ticket **los ve el cliente** en el portal de Voltia, así que van en palabras para él; las mediciones y lo que hay que revisar en el lugar van en la **nota interna**, que solo ve el equipo. La visita la coordina Experiencia Solar con el cliente, como siempre.
+
+Para usarlo hace falta tener en Voltia PM el permiso de ver Experiencia Solar (y, para vincular plantas, el de editarla; para los tickets, el de crearlos); se le pide al gerente de Operaciones.
 
 ## 3 · Del proyecto a la obra: plazos
 
@@ -1106,6 +1111,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.9 | 27 de octubre de 2026 | Desde el chat de Claude se puede ver el detalle cada 5 minutos del inversor (cada entrada de paneles, la red, las fallas y la hora en que dejó de comunicar), buscar y vincular una planta que no está asociada a ningún cliente, y abrir el ticket de soporte con una nota interna que el cliente no ve. |
 | 1.8 | 22 de octubre de 2026 | Se agrega que agendar la obra y cerrar la etapa de Ejecución de Obra le avisan a Finanzas cuándo cobrar: la cuota del 50 % queda lista 10 días antes del primer día de obra, y la del 30 % al cerrar la etapa. |
 | 1.7 | 21 de octubre de 2026 | Se agrega «El chat de Claude» en las herramientas: el calendario de obras con los días libres de cada cuadrilla, los entregables de una obra y qué falta, los tickets y los mantenimientos que vienen, el informe del capataz, los datos técnicos de la obra, y cómo cambiar el estado de una subetapa desde el chat, que solo se hace cuando se confirma. |
 | 1.6 | 21 de octubre de 2026 | Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM antes de ir a una visita de soporte: generación día por día comparada con las demás plantas, hora por hora y el inversor y el medidor en el momento. Lo imposible (exportar más de lo que se genera, exportar de noche) delata un medidor mal conectado, y el monitoreo diario también lo avisa. |

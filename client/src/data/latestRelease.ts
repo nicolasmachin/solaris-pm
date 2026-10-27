@@ -23,6 +23,27 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.4",
+  date: "27 de octubre de 2026",
+  sections: [
+    {
+      title: "Diagnosticar una planta desde el chat, a fondo",
+      items: [
+        "Desde el chat de Claude conectado a Voltia PM se puede pedir el detalle del inversor cada 5 minutos: cada entrada de paneles, la red, la temperatura y las fallas, con un Excel para bajar.",
+        "Avisa solo lo que se ve raro: una entrada sin nada conectado, dos grupos de paneles en la misma entrada, cortes de comunicación y tensión de red alta.",
+      ],
+    },
+    {
+      title: "Plantas sin vincular y tickets desde el chat",
+      items: [
+        "El chat muestra las plantas de monitoreo que no están asociadas a ningún cliente, sugiere a cuál corresponden y las vincula.",
+        "También abre un ticket de soporte, con una nota interna para el equipo, y lo pasa a Operaciones.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_3: Release = {
   version: "13.3",
   date: "26 de octubre de 2026",
   sections: [
@@ -921,6 +942,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.3",
+    shortDate: "26 oct",
+    highlights: RELEASE_13_3.sections.map((sec) => sec.title),
+  },
   {
     version: "13.2",
     shortDate: "23 oct",

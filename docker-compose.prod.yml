@@ -71,6 +71,10 @@ services:
       # fotovoltaicos y el monitoreo diario de plantas fallan con
       # GROWATT_NOT_CONFIGURED en cada planta.
       GROWATT_API_TOKEN: ${GROWATT_API_TOKEN:-}
+      # Usuario de la WEB de Growatt (server.growatt.com): el historial cada 5 min
+      # por string (herramienta historial_inversor del MCP). La Open API no lo da.
+      GROWATT_WEB_USER: ${GROWATT_WEB_USER:-}
+      GROWATT_WEB_PASS: ${GROWATT_WEB_PASS:-}
       # Cuenta propia de Growatt. El token alcanza también plantas de otra
       # empresa instaladora (87 de las 152 visibles); con esto sólo se traen y
       # se guardan las nuestras, y no se gastan llamadas en las ajenas.

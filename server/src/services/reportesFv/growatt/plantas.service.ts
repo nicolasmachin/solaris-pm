@@ -9,7 +9,7 @@ import { notFound } from "../../../utils/errors.js";
 import { detallePlanta, growattDormir, growattPausaMs, listarPlantas } from "./client.js";
 
 /** Normaliza un nombre para comparar (sin tildes, minúsculas, sin "~"/espacios). */
-function normalizar(v: string): string {
+export function normalizar(v: string): string {
   return v
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")

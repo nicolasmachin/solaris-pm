@@ -66,6 +66,10 @@ services:
       # control). Vacío = sin copia.
       REPORTES_FV_BCC: ${REPORTES_FV_BCC:-}
       GROWATT_API_TOKEN: ${GROWATT_API_TOKEN:-}
+      # Usuario de la WEB de Growatt (server.growatt.com): el historial cada 5 min
+      # por string (herramienta historial_inversor del MCP). La Open API no lo da.
+      GROWATT_WEB_USER: ${GROWATT_WEB_USER:-}
+      GROWATT_WEB_PASS: ${GROWATT_WEB_PASS:-}
       # Huawei FusionSolar (Northbound API) — usuario voltia_api
       HUAWEI_API_USER: ${HUAWEI_API_USER:-}
       HUAWEI_API_PASSWORD: ${HUAWEI_API_PASSWORD:-}

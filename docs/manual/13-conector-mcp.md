@@ -324,12 +324,24 @@ conexión.
 | `estado_en_vivo` | `EXPERIENCIA_CLIENTES:VIEW` | El momento actual. **Huawei**: `getDevList` + `getDevRealKpi` del inversor (tipo 1: potencia, voltaje y corriente por fase, cada `pvN`, temperatura) y del medidor (tipo 47: potencia por fase, convención **positivo = exporta**). Compara fase por fase: si el medidor exporta por una fase más que lo que el inversor le manda (+10 % y 300 W), avisa transformador dado vuelta o en otra fase; sin sol, cualquier fase exportando también. **Growatt**: `tlx_last_data` crudo (`growattPostCrudo()`), solo inversores MIN/TLX (tipo 7); strings, fases, y medidor en total (Growatt no lo da por fase). Muestra además lo que dice el último unifilar (paneles, strings, inversor) para comparar con lo que se ve. |
 | `incidencias_plantas` | `EXPERIENCIA_CLIENTES:VIEW` | `listarIncidencias()`: por defecto las abiertas de toda la cartera; con `project_id`, el historial de la planta. |
 
+Además, en `tools/plantas-gestion.ts`:
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `historial_inversor` | `EXPERIENCIA_CLIENTES:VIEW` | El "History Data" del inversor Growatt MIN/TLX cada ~5 minutos (hasta 14 días): tensión y corriente de cada entrada (PV1…PV4), potencia, red, temperatura, códigos. Sale de la **web** de Growatt, no de la Open API (ver abajo). Analiza con `analizarHistorial()` (`growatt/historial-analisis.ts`, pura, `npm run test:growatt-historial`): entrada sin tensión mientras otra produce, corriente clavada en el máximo (con otra entrada vacía = dos strings en paralelo), huecos y corte de comunicación al final, recortes, fallas, red ≥ 250 V, pico bajo contra los kWp. Con `excel: true` arma un `.xlsx` con exceljs, lo guarda como archivo del proyecto (`toolSource: "growatt-historial"`) y devuelve un enlace de descarga. |
+| `plantas_sin_vincular` | `EXPERIENCIA_CLIENTES:VIEW` (`EDIT` con `sincronizar`) | Plantas Growatt y Huawei sin proyecto, con el proyecto más parecido por nombre buscando entre **todos** los proyectos (la sugerencia del panel, `listarPlantasConSugerencias()`, solo mira los ya habilitados y se perdía las obras nuevas). `sincronizar: true` llama antes a `sincronizarPlantas()` y `sincronizarPlantasHuawei()`. |
+| `vincular_planta` | `EXPERIENCIA_CLIENTES:EDIT` | Vincula con `vincularPlanta()` / `vincularPlantaHuawei()`, las mismas funciones que el panel. Sin `confirmar: true` es vista previa. Si el proyecto ya tiene otra planta de esa marca, no la pisa salvo `reemplazar: true` (y entonces desvincula la anterior). |
+
 **El permiso es el del panel de Monitoreo**, no `OPERACIONES:VIEW`: ese lo
 tienen también el instalador tercerizado, el capataz y los asesores, y estas
 herramientas muestran datos de todos los clientes. Al 21-oct-2026 el rol
 `OPERACIONES` **no** tiene `EXPERIENCIA_CLIENTES:VIEW` en producción: para que
 el equipo de Operaciones las use hay que dárselo desde Admin → Roles (abre
 también las pantallas de Experiencia Solar en lectura).
+
+**La web de Growatt sin navegador** (`growatt/web.client.ts`). La web no tiene API documentada, pero sus páginas llaman endpoints simples: `POST /login` con `account` y `passwordCrc` (MD5 con los `0` de las posiciones pares cambiados por `c`, `hashPasswordGrowatt()`), que deja la sesión en cookies, y `POST /device/getTLXHistory` (`tlxSn`, `startDate`, `endDate`, `start` = número de página; 80 registros por página, del más nuevo al más viejo, `haveNext`). Se descubrió mirando qué hace la página con Playwright (skill `historico` en la VPS de desarrollo). Necesita `GROWATT_WEB_USER` y `GROWATT_WEB_PASS`; la sesión se renueva cada 30 min y, si una página vuelve rechazada, se reintenta una vez con login nuevo. Solo MIN/TLX: MAX y SPH usan otra ventana de la web, no explorada. Si Growatt cambia la página, esto se rompe.
+
+**Crear tickets desde el chat** (`tools/soporte.ts`, `crear_ticket_soporte`): `TICKETS:CREATE`; la nota interna pide `TICKETS:COMMENT` o `EDIT`, y derivar pide `TICKETS:EDIT`, igual que las rutas. Usa `crearTicket()`, `agregarComentario(esInterno)` y `derivarTicket()`. **El cliente ve en el portal el título y la descripción de todos los tickets de su proyecto** (`GET /client/tickets`), por eso la descripción de la herramienta le pide al modelo dejar lo técnico en la nota interna. Muestra los tickets ya abiertos del proyecto en la vista previa para no duplicar.
 
 **Limitaciones que sorprenden:**
 

@@ -21,6 +21,8 @@ import { registerObraTools } from "./tools/obra.js";
 import { registerOperacionesTools } from "./tools/operaciones.js";
 import { registerPendientesTools } from "./tools/pendientes.js";
 import { registerPlantasTools } from "./tools/plantas.js";
+import { registerPlantasGestionTools } from "./tools/plantas-gestion.js";
+import { registerSoporteTools } from "./tools/soporte.js";
 import { registerPropuestaTools } from "./tools/propuesta.js";
 import { registerProyectosTools } from "./tools/proyectos.js";
 import { registerVentasTools } from "./tools/ventas.js";
@@ -51,8 +53,12 @@ Reglas de uso:
   generacion_planta (días y comparación con la cartera) → curva_horaria (forma
   del día) → estado_en_vivo (inversor, strings y medidor ahora). Lo que es
   físicamente imposible (exportar más de lo que se genera, exportar de noche)
-  apunta a un medidor mal conectado. Decir siempre qué es dato y qué es
-  deducción.`;
+  apunta a un medidor mal conectado. Para el detalle por string cada 5
+  minutos (entradas vacías, strings en paralelo, cortes de comunicación):
+  historial_inversor. Decir siempre qué es dato y qué es deducción.
+- Si un cliente no tiene planta: plantas_sin_vincular → confirmar con el
+  usuario → vincular_planta. Para mandar a alguien a revisar:
+  crear_ticket_soporte (lo técnico en la nota interna, no en la descripción).`;
 }
 
 export function buildMcpServer(user: McpUser): McpServer {
@@ -75,6 +81,8 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerObraTools(server, user);
   registerExperienciaSolarTools(server, user);
   registerPlantasTools(server, user);
+  registerPlantasGestionTools(server, user);
+  registerSoporteTools(server, user);
   registerFinanzasTools(server, user);
   registerMetricasTools(server, user);
 

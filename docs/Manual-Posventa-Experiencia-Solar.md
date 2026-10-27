@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.32 · del 22/10/26
+**Voltia · Uruguay** · Versión 1.33 · del 27/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1196,6 +1196,16 @@ pregunta "¿por qué genera menos?" con datos, y para pasarle a Operaciones una
 pista concreta antes de agendar una visita de soporte. Lo que Claude deduce es una
 pista, no un diagnóstico: el que revisa en el lugar es Operaciones.
 
+El chat también trae **el detalle del inversor cada 5 minutos** (por ahora, Growatt
+de la línea MIN), con un Excel para bajar: muestra cuánto da cada entrada de
+paneles y la hora exacta en que el equipo dejó de comunicar. Si el cliente no
+tiene la planta asociada en Voltia PM, el chat la **busca entre las plantas sin
+vincular y la vincula**, con la confirmación de quien pregunta. Y cuando hay que
+mandar a alguien, **abre el ticket de soporte** y lo pasa a Operaciones: el
+título y la descripción los ve el cliente en el portal de Voltia, así que van en
+palabras para él; lo técnico va en la nota interna. Experiencia Solar coordina
+la visita con el cliente.
+
 ### 12.1 · El Plan de Protección contra Granizo
 
 Por USD 12 por panel por año, IVA incluido, si el granizo le rompe paneles al
@@ -1979,6 +1989,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el detalle del inversor cada 5 minutos, buscar y vincular una planta que no está asociada a ningún cliente, y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |
 | 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |
 | 1.30 | 19 de octubre de 2026 | Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
