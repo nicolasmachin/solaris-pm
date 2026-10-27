@@ -17,6 +17,7 @@ import { z } from "zod";
 import { prisma } from "../../../lib/prisma.js";
 import { obtenerCurvaDia, hoyUy } from "../../../services/reportesFv/energia/curva.service.js";
 import { growattPostCrudo } from "../../../services/reportesFv/growatt/client.js";
+import { historialInversor, webConfigurada, type RegistroInversor } from "../../../services/reportesFv/growatt/web.client.js";
 import { huaweiPausa, pedir as pedirHuawei } from "../../../services/reportesFv/huawei/client.js";
 import { DIAGNOSTICO_LABEL } from "../../../services/reportesFv/monitor/diagnostico.js";
 import { dateADia, diaADate, esDiaValido, sumarDias, type Dia } from "../../../services/reportesFv/monitor/dias.js";
@@ -529,10 +530,13 @@ async function vivoGrowatt(pl: PlantaDelProyecto) {
     select: { deviceSn: true, tipo: true, model: true },
   });
   const tlx = devices.filter((d) => d.tipo === 7);
-  if (!tlx.length) {
+  // Los MAX no tienen lectura en vivo en la Open API: se toma el último
+  // registro del historial de hoy de la web (cada ~5 minutos).
+  const max = webConfigurada() ? devices.filter((d) => d.tipo === 4) : [];
+  if (!tlx.length && !max.length) {
     const tipos = [...new Set(devices.map((d) => d.tipo))].join(", ") || "ninguno";
     return texto(
-      `${pl.cliente}: la lectura en vivo por esta vía solo está para inversores Growatt MIN/TLX y esta planta no tiene ninguno (tipos de equipo: ${tipos}). ` +
+      `${pl.cliente}: la lectura en vivo por esta vía solo está para inversores Growatt MIN/TLX y MAX, y esta planta no tiene ninguno (tipos de equipo: ${tipos}). ` +
         `Usar curva_horaria para el día de hoy.`,
     );
   }
@@ -585,6 +589,46 @@ async function vivoGrowatt(pl: PlantaDelProyecto) {
       ]) +
         (fases.length ? "\nSalida por fase:\n" + fases.join("\n") : "") +
         (strings.length ? "\nStrings (entradas de paneles):\n" + strings.join("\n") : ""),
+    );
+  }
+  for (const d of max) {
+    let ult: RegistroInversor | undefined;
+    try {
+      ult = (await historialInversor(d.deviceSn, 4, hoyUy(), hoyUy())).at(-1);
+    } catch (e) {
+      bloques.push(`Inversor ${d.deviceSn}: no se pudo leer (${e instanceof Error ? e.message : e}).`);
+      continue;
+    }
+    if (!ult) {
+      bloques.push(`Inversor ${d.deviceSn}${d.model ? ` (${d.model})` : ""}: hoy todavía no mandó ningún dato (de noche es normal).`);
+      continue;
+    }
+    const entradas = ult.vpv
+      .map((v, k) => ({ k, v: v ?? 0, i: ult!.ipv[k] ?? 0 }))
+      .filter((x) => x.v > 0.5 || x.i > 0.1)
+      .map((x) => `PV${x.k + 1}: ${r1(x.v)} V · ${r1(x.i)} A`);
+    const strs = ult.iString.map((c, k) => ({ k, c: c ?? 0 })).filter((x) => x.c > 0.05).map((x) => `S${x.k + 1}: ${r1(x.c)} A`);
+    const conTension = ult.vpv.some((v) => (v ?? 0) > 150);
+    if (ult.status === 3) {
+      avisos.push(
+        `El inversor ${d.deviceSn} está EN FALLA (código ${ult.faultType ?? "?"})${conTension ? " con los paneles con tensión: hay sol y no genera" : ""}. ` +
+          "Ver alarmas_planta para el nombre del código e historial_inversor para desde cuándo.",
+      );
+    }
+    bloques.push(
+      campos([
+        ["Inversor", `${d.deviceSn}${d.model ? ` (${d.model})` : ""} — MAX/MID/MAC`],
+        ["Último dato", `${ult.time} (hora de la planta; llega cada ~5 minutos)`],
+        ["Estado", ult.status === 1 ? "generando" : ult.status === 3 ? `en falla (código ${ult.faultType ?? "?"})` : ult.status === 0 ? "en espera" : String(ult.status)],
+        ["Potencia", `${Math.round(ult.pac ?? 0)} W (de los paneles: ${Math.round(ult.ppv ?? 0)} W)`],
+        ["Generado hoy", `${r1(ult.eacToday ?? 0)} kWh`],
+        ["Red", `${r1(ult.vac1 ?? 0)} V · ${r1(ult.fac ?? 0)} Hz`],
+        ["Temperatura", ult.temp1 != null ? `${r1(ult.temp1)} °C` : null],
+        ["Aislamiento (pvIso)", ult.pvIso ? `${ult.pvIso} kΩ` : null],
+        ["Corriente de fuga", ult.gfci != null ? `${ult.gfci} mA` : null],
+      ]) +
+        (entradas.length ? "\nEntradas de paneles:\n" + entradas.join("\n") : "") +
+        (strs.length ? "\nStrings:\n" + strs.join("\n") : ""),
     );
   }
   bloques.push(avisos.length ? "⚠️ AVISOS\n" + avisos.map((a) => `- ${a}`).join("\n") : "Sin incoherencias en esta lectura.");

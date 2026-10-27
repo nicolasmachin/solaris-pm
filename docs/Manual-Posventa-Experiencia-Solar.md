@@ -1196,9 +1196,14 @@ pregunta "¿por qué genera menos?" con datos, y para pasarle a Operaciones una
 pista concreta antes de agendar una visita de soporte. Lo que Claude deduce es una
 pista, no un diagnóstico: el que revisa en el lugar es Operaciones.
 
-El chat también trae **el detalle del inversor cada 5 minutos** (por ahora, Growatt
-de la línea MIN), con un Excel para bajar: muestra cuánto da cada entrada de
-paneles y la hora exacta en que el equipo dejó de comunicar. Si el cliente no
+El chat también trae, en los inversores Growatt, **el registro de alarmas** del
+inversor (qué fallas tuvo en los últimos meses, cuántas veces y qué días) y **el
+detalle cada 5 minutos**, con un Excel para bajar: muestra las horas en que el
+inversor estuvo en falla habiendo sol, cuánto da cada entrada de paneles, el
+aislamiento de los paneles y la hora exacta en que el equipo dejó de comunicar.
+Con eso se explica, por ejemplo, el cliente que dice "arranca tarde a la mañana":
+el inversor se queda en falla por **aislamiento bajo** hasta que se seca el
+rocío. Si el cliente no
 tiene la planta asociada en Voltia PM, el chat la **busca entre las plantas sin
 vincular y la vincula**, con la confirmación de quien pregunta. (Cada 15 días
 Voltia PM asocia sola las plantas que se llaman exactamente igual que un cliente;
@@ -1991,7 +1996,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el detalle del inversor cada 5 minutos, buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
+| 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |
 | 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |
 | 1.30 | 19 de octubre de 2026 | Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |

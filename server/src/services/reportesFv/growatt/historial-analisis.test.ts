@@ -3,19 +3,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { analizarHistorial } from "./historial-analisis.js";
-import type { RegistroTlx } from "./web.client.js";
+import type { RegistroInversor } from "./web.client.js";
 
-function reg(time: string, v1: number, i1: number, v2: number, i2: number, extra: Partial<RegistroTlx> = {}): RegistroTlx {
+function reg(time: string, v1: number, i1: number, v2: number, i2: number, extra: Partial<RegistroInversor> = {}): RegistroInversor {
   return {
     time, status: 1, ppv: v1 * i1 + v2 * i2, pac: (v1 * i1 + v2 * i2) * 0.97,
-    vpv: [v1, v2, 0, 0], ipv: [i1, i2, 0, 0], ppvN: [v1 * i1, v2 * i2, 0, 0],
-    vac1: 230, fac: 50, temp1: 35, eacToday: 0, etoGridToday: 0, etoUserToday: 0, elocalLoadToday: 0,
+    vpv: [v1, v2, 0, 0], ipv: [i1, i2, 0, 0], ppvN: [v1 * i1, v2 * i2, 0, 0], iString: [],
+    pvIso: null, gfci: null, vac1: 230, fac: 50, temp1: 35, eacToday: 0, etoGridToday: 0, etoUserToday: 0, elocalLoadToday: 0,
     pacToGrid: 0, pacToUser: 0, pacToLocalLoad: 0, faultType: 0, warnCode: 0, deratingMode: 0, realOPPercent: 0,
     ...extra,
   };
 }
-function dia(d: string, f: (h: number) => [number, number, number, number]): RegistroTlx[] {
-  const out: RegistroTlx[] = [];
+function dia(d: string, f: (h: number) => [number, number, number, number]): RegistroInversor[] {
+  const out: RegistroInversor[] = [];
   for (let m = 9 * 60; m <= 16 * 60; m += 5) {
     const hh = String(Math.floor(m / 60)).padStart(2, "0"), mm = String(m % 60).padStart(2, "0");
     out.push(reg(`${d} ${hh}:${mm}:00`, ...f(m / 60)));
@@ -55,4 +55,33 @@ test("la noche no es un hueco; un día cortado sí", () => {
   assert.equal(analizarHistorial([...d1, ...d2]).huecos.length, 0);
   const cortado = [...d1.filter((r) => r.time < "2026-10-25 13:05"), ...d2.filter((r) => r.time > "2026-10-26 16:00")];
   assert.equal(analizarHistorial(cortado).huecos.length, 1);
+});
+
+test("caso Martín González: en falla toda la mañana por aislamiento bajo", () => {
+  const rs: RegistroInversor[] = [];
+  for (let m = 6 * 60; m <= 17 * 60; m += 5) {
+    const hh = String(Math.floor(m / 60)).padStart(2, "0"), mm = String(m % 60).padStart(2, "0");
+    const t = `2026-10-25 ${hh}:${mm}:00`;
+    const manana = m < 12 * 60;
+    rs.push(
+      manana
+        ? reg(t, 350, 0, 340, 0, { status: 3, faultType: 203, pvIso: 80, ppv: 0, pac: 0, iString: [0, 0, 0] })
+        : reg(t, 320, 14, 310, 7, { pvIso: 129, iString: [7, 7, 0] }),
+    );
+  }
+  const a = analizarHistorial(rs, { hoy: "2026-10-27" });
+  assert.equal(a.fallaConSol.length, 1);
+  assert.equal(a.fallaConSol[0].desde, "06:00");
+  assert.deepEqual(a.fallaConSol[0].codigos, [203]);
+  assert.ok(a.avisos.some((x) => /EN FALLA/.test(x)));
+  assert.ok(a.avisos.some((x) => /AISLAMIENTO BAJO/.test(x)));
+  // El string 3 nunca tuvo corriente: no se lista (no hay nada conectado ahí).
+  assert.deepEqual(a.strings.map((x) => x.string), [1, 2]);
+});
+
+test("un string sin corriente mientras los demás producen", () => {
+  const rs = dia("2026-10-20", () => [300, 10, 300, 10]).map((r) => ({ ...r, iString: [5, 5, 0.1] }));
+  rs[0].iString = [5, 5, 5]; // el 3 existe: alguna vez tuvo corriente
+  const a = analizarHistorial(rs, { hoy: "2026-10-27" });
+  assert.ok(a.avisos.some((x) => /string 3 quedó sin corriente/.test(x)));
 });

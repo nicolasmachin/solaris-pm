@@ -138,6 +138,17 @@ clientes sería otro proyecto.
   no publica propuestas). Una herramienta nueva de lectura del conector aparece
   sola en el chat. La allowlist de emails del conector (`MCP_ALLOWED_EMAILS`)
   **no** aplica acá: cualquier usuario interno usa el chat.
+  Ojo: el asistente **no recibe las instrucciones del servidor MCP** (el texto
+  de `instructions()` en `routes/mcp/server.ts`), solo las definiciones de las
+  herramientas. Lo que tiene que saber de cómo combinarlas va en
+  `instrucciones()` de `chat.service.ts`. Ahí está el **recorrido del análisis
+  técnico de una planta**: ante "genera poco", "arranca tarde", un código o un
+  reclamo, mira los datos antes de opinar, en orden `generacion_planta` →
+  `curva_horaria` → `alarmas_planta` → `historial_inversor` (los días que
+  marcaron los pasos anteriores) → `estado_en_vivo`, y cierra con qué pasa, por
+  qué puede pasar, qué se revisa en el lugar y la energía perdida. Probado el
+  27-oct con "Martín González dice que su instalación arranca tarde": usó las
+  cinco solas y llegó al aislamiento bajo (unos 20 centavos con Sonnet).
 - **Prompt y caché.** Orden: herramientas (ordenadas por nombre) →
   instrucciones → base [punto de caché] → contexto (fecha, quién pregunta, lead
   o proyecto abierto con su nombre y código) → conversación [segundo punto de

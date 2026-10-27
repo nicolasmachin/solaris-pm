@@ -53,9 +53,11 @@ Reglas de uso:
   generacion_planta (días y comparación con la cartera) → curva_horaria (forma
   del día) → estado_en_vivo (inversor, strings y medidor ahora). Lo que es
   físicamente imposible (exportar más de lo que se genera, exportar de noche)
-  apunta a un medidor mal conectado. Para el detalle por string cada 5
-  minutos (entradas vacías, strings en paralelo, cortes de comunicación):
-  historial_inversor. Decir siempre qué es dato y qué es deducción.
+  apunta a un medidor mal conectado. En los Growatt, alarmas_planta (qué
+  fallas tuvo, de meses) e historial_inversor (cada 5 minutos: en falla con
+  sol, aislamiento bajo, entradas vacías, strings en paralelo o caídos,
+  cortes de comunicación). Mirar los datos antes de opinar. Decir siempre qué
+  es dato y qué es deducción.
 - Si un cliente no tiene planta: plantas_sin_vincular → confirmar con el
   usuario → vincular_planta. Para mandar a alguien a revisar:
   crear_ticket_soporte (lo técnico en la nota interna, no en la descripción).`;

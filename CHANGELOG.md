@@ -22,8 +22,9 @@
 
 #### Diagnosticar una planta desde el chat, a fondo
 - Desde el chat de Claude conectado a Voltia PM se puede pedir **el detalle del inversor cada 5 minutos** de un día o de varios: cuánto da cada entrada de paneles, la tensión de la red, la temperatura y los códigos de falla. Con un Excel para bajar, que además queda en los documentos de la obra.
-- Avisa solo lo que se ve raro: una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), cortes de comunicación con la hora exacta y tensión de red alta.
-- Por ahora, inversores Growatt de la línea MIN.
+- Avisa solo lo que se ve raro: horas en que el inversor estuvo en falla habiendo sol, **aislamiento bajo** de los paneles (el caso típico del que "arranca tarde a la mañana"), una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), un grupo de paneles caído, cortes de comunicación con la hora exacta y tensión de red alta.
+- También trae **el registro de alarmas** del inversor de los últimos meses: qué fallas tuvo, cuántas veces, qué días y qué recomienda el fabricante.
+- Sirve para **todos los inversores Growatt**, los chicos (línea MIN) y los grandes (línea MAX), y lo usa también el **Asistente Voltia**: ante una consulta técnica de un cliente, revisa solo la generación, las alarmas y el detalle antes de contestar.
 
 #### Las plantas nuevas se asocian solas a su cliente
 - Cada 15 días Voltia PM revisa las plantas de Growatt y Huawei, y las que se llaman igual que un cliente quedan asociadas solas: entran al monitoreo diario y a los reportes sin que nadie tenga que hacerlo a mano.

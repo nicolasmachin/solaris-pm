@@ -3,8 +3,9 @@
 // estaba vinculada, vincularla, y bajar el detalle cada 5 minutos del inversor
 // (el "History Data" de la web de Growatt) para diagnosticar.
 //
-// historial_inversor usa la WEB de Growatt (growatt/web.client.ts), no la Open
-// API: es la única fuente con los datos por string cada 5 minutos.
+// historial_inversor y alarmas_planta usan la WEB de Growatt
+// (growatt/web.client.ts), no la Open API: es la única fuente con los datos por
+// entrada y por string cada 5 minutos y con el registro de alarmas.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Action, FileAttachmentTipo, Module } from "@prisma/client";
@@ -21,7 +22,15 @@ import {
   sincronizarPlantas,
   vincularPlanta,
 } from "../../../services/reportesFv/growatt/plantas.service.js";
-import { historialTlx, webConfigurada, type RegistroTlx } from "../../../services/reportesFv/growatt/web.client.js";
+import {
+  alarmasPlanta,
+  historialInversor,
+  tipoConHistorial,
+  webConfigurada,
+  type AlarmaGrowatt,
+  type RegistroInversor,
+  type TipoInversorWeb,
+} from "../../../services/reportesFv/growatt/web.client.js";
 import { sincronizarPlantasHuawei, vincularPlantaHuawei } from "../../../services/reportesFv/huawei/plantas.service.js";
 import { hoyUy } from "../../../services/reportesFv/energia/curva.service.js";
 import { esDiaValido, diasEntre } from "../../../services/reportesFv/monitor/dias.js";
@@ -212,13 +221,15 @@ export function registerPlantasGestionTools(server: McpServer, user: McpUser) {
     {
       title: "Historial del inversor cada 5 minutos (Growatt)",
       description:
-        "Trae el 'History Data' del inversor Growatt de un proyecto: cada ~5 minutos, la tensión y " +
-        "corriente de cada entrada de paneles (PV1, PV2…), la potencia, la red, la temperatura y los " +
-        "códigos de falla. Es la herramienta para diagnosticar a fondo: entradas sin nada conectado, " +
-        "dos strings en la misma entrada (corriente clavada en el máximo), cortes de comunicación " +
-        "(el último dato antes del corte), sobretensión de red. Devuelve el análisis, el detalle por " +
-        "hora y, con `excel: true`, un enlace para bajar todos los registros en Excel. Hasta 14 días. " +
-        "Solo inversores Growatt MIN/TLX.",
+        "Trae el 'History Data' del inversor Growatt de un proyecto: cada ~5 minutos, el estado (generando / en falla), " +
+        "la tensión y corriente de cada entrada de paneles (PV1, PV2…), la corriente de cada string (en los MAX), " +
+        "la resistencia de aislamiento (pvIso) y la corriente de fuga, la potencia, la red, la temperatura y los " +
+        "códigos de falla; y además el registro de alarmas de la planta en esas fechas (código, nombre y solución " +
+        "que sugiere Growatt). Es LA herramienta para diagnosticar a fondo: horas en falla con sol, aislamiento bajo " +
+        "(arranca tarde a la mañana), entradas sin nada conectado, dos strings en la misma entrada, strings caídos, " +
+        "cortes de comunicación, sobretensión de red. Devuelve el análisis, el detalle por hora y, con `excel: true`, " +
+        "un enlace para bajar todos los registros en Excel. Hasta 14 días. Todos los inversores Growatt de Voltia " +
+        "(MIN/TLX y MAX/MID/MAC).",
       inputSchema: {
         project_id: z.string().min(1),
         desde: diaSchema.describe("AAAA-MM-DD"),
@@ -232,37 +243,34 @@ export function registerPlantasGestionTools(server: McpServer, user: McpUser) {
       const fin = hasta ?? desde;
       if (fin < desde) return texto("La fecha 'hasta' es anterior a 'desde'.");
       if (diasEntre(desde, fin) > 13) return texto("Son hasta 14 días por consulta.");
-      if (!webConfigurada()) return texto("Falta configurar en el servidor el usuario de la web de Growatt (GROWATT_WEB_USER / GROWATT_WEB_PASS). Avisar a quien administra Voltia PM.");
+      if (!webConfigurada()) return texto(FALTA_WEB);
 
-      const p = await prisma.project.findFirst({
-        where: { id: project_id, deletedAt: null },
-        select: {
-          clientName: true,
-          capacityKwp: true,
-          growattPlant: { select: { plantId: true, name: true, ignorada: true, devices: { select: { deviceSn: true, tipo: true } } } },
-        },
-      });
-      if (!p) return texto(`No encontré el proyecto ${project_id}.`);
-      if (!p.growattPlant || p.growattPlant.ignorada) {
-        return texto(`${p.clientName} no tiene una planta Growatt vinculada. Buscarla con plantas_sin_vincular y vincularla con vincular_planta.`);
-      }
-      let inversores = p.growattPlant.devices.filter((d) => d.tipo === 7).map((d) => d.deviceSn);
+      const p = await plantaDeProyecto(project_id);
+      if (typeof p === "string") return texto(p);
+      let inversores = p.growattPlant.devices
+        .filter((d) => tipoConHistorial(d.tipo))
+        .map((d) => ({ sn: d.deviceSn, tipo: d.tipo as TipoInversorWeb }));
       if (!inversores.length) {
         try {
-          inversores = (await listarDispositivos(p.growattPlant.plantId.toString())).filter((d) => d.tipo === 7).map((d) => d.deviceSn);
+          inversores = (await listarDispositivos(p.growattPlant.plantId.toString()))
+            .filter((d) => tipoConHistorial(d.tipo))
+            .map((d) => ({ sn: d.deviceSn, tipo: d.tipo as TipoInversorWeb }));
         } catch {
           /* se informa abajo */
         }
       }
-      if (!inversores.length) return texto(`${p.clientName}: no encontré inversores MIN/TLX en la planta (otros modelos todavía no están soportados por esta vía).`);
+      if (!inversores.length) {
+        const tipos = [...new Set(p.growattPlant.devices.map((d) => d.tipo))].join(", ") || "ninguno";
+        return texto(`${p.clientName}: no encontré inversores Growatt MIN/TLX ni MAX en la planta (tipos de equipo: ${tipos}).`);
+      }
 
       const kwp = p.capacityKwp ? Number(p.capacityKwp) : null;
       const bloques: string[] = [`${p.clientName} — historial del ${desde}${fin !== desde ? ` al ${fin}` : ""} (web de Growatt, hora de Uruguay)`];
-      const todos: Array<{ sn: string; rs: RegistroTlx[] }> = [];
-      for (const sn of inversores) {
-        let rs: RegistroTlx[];
+      const todos: Array<{ sn: string; rs: RegistroInversor[] }> = [];
+      for (const { sn, tipo } of inversores) {
+        let rs: RegistroInversor[];
         try {
-          rs = await historialTlx(sn, desde, fin);
+          rs = await historialInversor(sn, tipo, desde, fin);
         } catch (e) {
           bloques.push(`Inversor ${sn}: no se pudo leer (${e instanceof Error ? e.message : e}).`);
           continue;
@@ -275,24 +283,38 @@ export function registerPlantasGestionTools(server: McpServer, user: McpUser) {
         const a = analizarHistorial(rs, { kwp: inversores.length === 1 ? kwp : null, hasta: fin, hoy: hoyUy() });
         const u = a.ultimoRegistro!;
         bloques.push(
-          `INVERSOR ${sn}\n` +
+          `INVERSOR ${sn} (${tipo === 4 ? "MAX/MID/MAC" : "MIN/TLX"})\n` +
             campos([
               ["Registros", `${a.registros} (${Object.entries(a.porDia).map(([d, n]) => `${d.slice(8, 10)}/${d.slice(5, 7)}: ${n}`).join(", ")})`],
               ["Primero / último", `${a.primero} / ${a.ultimo}`],
               ["Pico de salida", `${a.pacMax} W`],
               ["Tensión de red máxima", a.vacMax != null ? `${a.vacMax} V` : null],
               [
+                "Aislamiento (pvIso)",
+                a.aislamiento
+                  ? [
+                      a.aislamiento.minEnFalla != null ? `en falla ${a.aislamiento.minEnFalla}–${a.aislamiento.maxEnFalla} kΩ` : null,
+                      a.aislamiento.minGenerando != null ? `generando ≥ ${a.aislamiento.minGenerando} kΩ` : null,
+                    ].filter(Boolean).join(" · ")
+                  : null,
+              ],
+              ["Corriente de fuga máx.", a.gfciMax ? `${a.gfciMax} mA` : null],
+              [
                 "Último registro",
                 `${u.time}: ${r1(u.pac)} W, estado ${u.status}, falla ${u.faultType ?? 0}, advertencia ${u.warnCode ?? 0}, ${r1(u.temp1)} °C, red ${r1(u.vac1)} V / ${r1(u.fac)} Hz`,
               ],
             ]) +
             "\nEntradas de paneles (máximos del período):\n" +
-            a.entradas.map((e) => `PV${e.entrada}: ${e.vMax} V · ${e.iMax} A · ${e.energiaKwh} kWh`).join("\n"),
+            a.entradas.map((e) => `PV${e.entrada}: ${e.vMax} V · ${e.iMax} A · ${e.energiaKwh} kWh`).join("\n") +
+            (a.strings.length
+              ? "\nStrings (corriente máxima · % del tiempo sin corriente mientras los demás producían):\n" +
+                a.strings.map((x) => `S${x.string}: ${x.iMax} A · ${x.pctSinCorriente} %`).join("\n")
+              : ""),
         );
         bloques.push(a.avisos.length ? "⚠️ AVISOS\n" + a.avisos.map((x) => `- ${x}`).join("\n") : "Sin anomalías detectadas.");
 
         // Detalle por hora (promedio), compacto.
-        const horas = new Map<string, RegistroTlx[]>();
+        const horas = new Map<string, RegistroInversor[]>();
         for (const r of rs) {
           const k = r.time.slice(0, 13);
           horas.set(k, [...(horas.get(k) ?? []), r]);
@@ -301,36 +323,57 @@ export function registerPlantasGestionTools(server: McpServer, user: McpUser) {
           const v = xs.filter((x): x is number => x != null);
           return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
         };
-        const nIn = a.entradas.length;
+        const conIso = a.aislamiento != null;
         bloques.push(
-          "POR HORA (promedios): hora · Pac W · " + a.entradas.map((e) => `PV${e.entrada} V/A`).join(" · ") + " · red V\n" +
+          "POR HORA (promedios): hora · Pac W · registros en falla · " +
+            a.entradas.map((e) => `PV${e.entrada} V/A`).join(" · ") +
+            " · red V" +
+            (conIso ? " · pvIso kΩ" : "") +
+            "\n" +
             [...horas.entries()]
-              .map(([k, xs]) =>
-                `${k.slice(8, 10)}/${k.slice(5, 7)} ${k.slice(11, 13)}h · ${r1(prom(xs.map((x) => x.pac)))} · ` +
-                a.entradas.slice(0, nIn).map((e) => `${r1(prom(xs.map((x) => x.vpv[e.entrada - 1])))}/${r1(prom(xs.map((x) => x.ipv[e.entrada - 1])))}`).join(" · ") +
-                ` · ${r1(prom(xs.map((x) => x.vac1)))}`,
+              .map(
+                ([k, xs]) =>
+                  `${k.slice(8, 10)}/${k.slice(5, 7)} ${k.slice(11, 13)}h · ${r1(prom(xs.map((x) => x.pac)))} · ${xs.filter((x) => x.status === 3).length}/${xs.length} · ` +
+                  a.entradas.map((e) => `${r1(prom(xs.map((x) => x.vpv[e.entrada - 1] ?? null)))}/${r1(prom(xs.map((x) => x.ipv[e.entrada - 1] ?? null)))}`).join(" · ") +
+                  ` · ${r1(prom(xs.map((x) => x.vac1)))}` +
+                  (conIso ? ` · ${r1(prom(xs.map((x) => x.pvIso)))}` : ""),
               )
               .join("\n"),
         );
+      }
+
+      try {
+        const alarmas = await alarmasPlanta(p.growattPlant.plantId.toString(), desde, fin);
+        bloques.push(textoAlarmas(alarmas));
+      } catch (e) {
+        bloques.push(`REGISTRO DE ALARMAS: no se pudo leer (${e instanceof Error ? e.message : e}).`);
       }
 
       if (excel && todos.some((t) => t.rs.length)) {
         const wb = new ExcelJS.Workbook();
         for (const { sn, rs } of todos) {
           const ws = wb.addWorksheet(sn.slice(0, 31));
+          // Solo las entradas y strings que alguna vez tuvieron algo.
+          const usadas = (xs: (n: RegistroInversor) => (number | null)[]) =>
+            [...Array(Math.max(0, ...rs.map((r) => xs(r).length))).keys()].filter((i) => rs.some((r) => (xs(r)[i] ?? 0) > 0.5));
+          const entradas = usadas((r) => r.vpv);
+          const strs = usadas((r) => r.iString);
           ws.columns = [
             { header: "Hora", key: "time", width: 20 },
-            { header: "Estado", key: "status" },
+            { header: "Estado (1 genera, 3 falla)", key: "status" },
             { header: "Ppv (W)", key: "ppv" },
             { header: "Pac (W)", key: "pac" },
-            ...[1, 2, 3, 4].flatMap((i) => [
-              { header: `Vpv${i} (V)`, key: `vpv${i}` },
-              { header: `Ipv${i} (A)`, key: `ipv${i}` },
-              { header: `Ppv${i} (W)`, key: `ppv${i}` },
+            ...entradas.flatMap((i) => [
+              { header: `Vpv${i + 1} (V)`, key: `vpv${i}` },
+              { header: `Ipv${i + 1} (A)`, key: `ipv${i}` },
+              { header: `Ppv${i + 1} (W)`, key: `ppv${i}` },
             ]),
+            ...strs.map((i) => ({ header: `String ${i + 1} (A)`, key: `str${i}` })),
             { header: "Red (V)", key: "vac1" },
             { header: "Frecuencia (Hz)", key: "fac" },
             { header: "Temp. inversor (°C)", key: "temp1" },
+            { header: "Aislamiento pvIso (kΩ)", key: "pvIso" },
+            { header: "Fuga GFCI (mA)", key: "gfci" },
             { header: "Generado hoy (kWh)", key: "eacToday" },
             { header: "Exportado hoy (kWh)", key: "etoGridToday" },
             { header: "Comprado hoy (kWh)", key: "etoUserToday" },
@@ -346,7 +389,8 @@ export function registerPlantasGestionTools(server: McpServer, user: McpUser) {
           for (const r of rs) {
             ws.addRow({
               ...r,
-              ...Object.fromEntries([1, 2, 3, 4].flatMap((i) => [[`vpv${i}`, r.vpv[i - 1]], [`ipv${i}`, r.ipv[i - 1]], [`ppv${i}`, r.ppvN[i - 1]]])),
+              ...Object.fromEntries(entradas.flatMap((i) => [[`vpv${i}`, r.vpv[i]], [`ipv${i}`, r.ipv[i]], [`ppv${i}`, r.ppvN[i]]])),
+              ...Object.fromEntries(strs.map((i) => [`str${i}`, r.iString[i]])),
             });
           }
           ws.getRow(1).font = { bold: true };
@@ -373,11 +417,86 @@ export function registerPlantasGestionTools(server: McpServer, user: McpUser) {
       }
 
       bloques.push(
-        "Cómo leerlo: una entrada en ~0 V mientras otra produce no tiene nada conectado. Una entrada clavada en su " +
-          "corriente máxima está recortando. Si el último registro es de un día pasado a media tarde, el datalogger dejó " +
-          "de comunicar ahí. Lo que se deduce es una pista para revisar en el lugar.",
+        "Cómo leerlo: estado 3 con tensión en las entradas = en falla con sol, energía perdida. Una entrada en ~0 V " +
+          "mientras otra produce no tiene nada conectado. Una entrada clavada en su corriente máxima está recortando. " +
+          "Si el último registro es de un día pasado a media tarde, el datalogger dejó de comunicar ahí. Lo que se " +
+          "deduce es una pista para revisar en el lugar.",
       );
       return texto(...bloques);
     },
   );
+
+  // ─── Alarmas de la planta (web de Growatt) ───────────────────────────────
+  server.registerTool(
+    "alarmas_planta",
+    {
+      title: "Registro de alarmas del inversor (Growatt)",
+      description:
+        "El 'Registro de fallos de la planta' de la web de Growatt para un proyecto: cada alarma con fecha y hora, " +
+        "código (ej. Error 203), nombre (ej. PV Isolation Low) y la solución que sugiere Growatt, agrupadas por " +
+        "código y por día. Sirve para ver de un vistazo qué fallas tuvo un cliente en meses (hasta 12), cuántas " +
+        "veces y desde cuándo; para el detalle minuto a minuto de un día, historial_inversor.",
+      inputSchema: {
+        project_id: z.string().min(1),
+        desde: diaSchema.describe("AAAA-MM-DD"),
+        hasta: diaSchema.optional().describe("AAAA-MM-DD (por defecto, hoy)"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ project_id, desde, hasta }) => {
+      await requirePermission(user, Module.EXPERIENCIA_CLIENTES, Action.VIEW);
+      const fin = hasta ?? hoyUy();
+      if (fin < desde) return texto("La fecha 'hasta' es anterior a 'desde'.");
+      if (diasEntre(desde, fin) > 366) return texto("Son hasta 12 meses por consulta.");
+      if (!webConfigurada()) return texto(FALTA_WEB);
+      const p = await plantaDeProyecto(project_id);
+      if (typeof p === "string") return texto(p);
+      const alarmas = await alarmasPlanta(p.growattPlant.plantId.toString(), desde, fin);
+      return texto(`${p.clientName} — alarmas del ${desde} al ${fin} (web de Growatt, hora de Uruguay)`, textoAlarmas(alarmas, true));
+    },
+  );
+}
+
+const FALTA_WEB =
+  "Falta configurar en el servidor el usuario de la web de Growatt (GROWATT_WEB_USER / GROWATT_WEB_PASS). Avisar a quien administra Voltia PM.";
+
+/** El proyecto con su planta Growatt vinculada, o el texto que explica por qué no. */
+async function plantaDeProyecto(projectId: string) {
+  const p = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: {
+      clientName: true,
+      capacityKwp: true,
+      growattPlant: { select: { plantId: true, name: true, ignorada: true, devices: { select: { deviceSn: true, tipo: true } } } },
+    },
+  });
+  if (!p) return `No encontré el proyecto ${projectId}.`;
+  if (!p.growattPlant || p.growattPlant.ignorada) {
+    return `${p.clientName} no tiene una planta Growatt vinculada. Buscarla con plantas_sin_vincular y vincularla con vincular_planta.`;
+  }
+  return { ...p, growattPlant: p.growattPlant };
+}
+
+/** Las alarmas agrupadas por código, con los días y, si se pide, la lista completa. */
+function textoAlarmas(alarmas: AlarmaGrowatt[], completo = false): string {
+  if (!alarmas.length) return "REGISTRO DE ALARMAS: ninguna en esas fechas.";
+  const grupos = new Map<string, AlarmaGrowatt[]>();
+  for (const a of alarmas) {
+    const k = `${a.codigo} — ${a.nombre}`;
+    grupos.set(k, [...(grupos.get(k) ?? []), a]);
+  }
+  const partes = [`REGISTRO DE ALARMAS (${alarmas.length})`];
+  for (const [k, xs] of grupos) {
+    const dias = [...new Set(xs.map((x) => x.time.slice(0, 10)))];
+    partes.push(
+      `${k}: ${xs.length} vez/veces en ${dias.length} día(s), del ${xs[0].time} al ${xs.at(-1)!.time}` +
+        (xs[0].modelo ? ` · equipo ${xs[0].sn} (${xs[0].modelo})` : "") +
+        `\n  Días: ${dias.map((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`).join(", ")}` +
+        (xs[0].solucion ? `\n  Solución que sugiere Growatt: ${xs[0].solucion}` : ""),
+    );
+  }
+  if (completo && alarmas.length <= 200) {
+    partes.push("DETALLE\n" + alarmas.map((a) => `${a.time} · ${a.sn} · ${a.codigo} ${a.nombre}`).join("\n"));
+  }
+  return partes.join("\n");
 }

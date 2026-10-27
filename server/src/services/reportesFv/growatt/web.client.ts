@@ -12,10 +12,20 @@
 //   POST /device/getTLXHistory  tlxSn, startDate, endDate, start = número de
 //                               página (0, 1, …). 80 registros por página, del
 //                               más nuevo al más viejo, con `haveNext`.
+//   POST /device/getMAXHistory  igual, con maxSn. Trae además las tensiones de
+//                               las tres fases, la corriente de cada string,
+//                               la resistencia de aislamiento (pvIso) y la
+//                               corriente de fuga (gfci).
+//   POST /log/getNewPlantFaultLog  plantId, date (AAAA-MM con type=2: el mes),
+//                               toPageNum (desde 1), deviceSn "" (todos),
+//                               deviceFlag 0. El "Registro de fallos de la
+//                               planta": código, nombre y solución sugerida.
 //
-// Sólo inversores MIN/TLX (tipo 7). Verificado el 27-oct-2026 con Gustavo
-// Vallegra (ZJP2G3900R). Es una API no documentada: si Growatt la cambia, esto
-// se rompe y hay que volver a mirar qué hace la página.
+// Inversores MIN/TLX (tipo 7) y MAX/MID/MAC (tipo 4), que son todos los
+// Growatt de la cartera. Verificado el 27-oct-2026 con Gustavo Vallegra
+// (ZJP2G3900R, TLX) y Martín González (JRR1EXR00E, MID 12KTL3-XL2). Es una API
+// no documentada: si Growatt la cambia, esto se rompe y hay que volver a mirar
+// qué hace la página.
 
 import crypto from "node:crypto";
 
@@ -86,20 +96,28 @@ async function asegurarSesion() {
   if (!sesionDesde || Date.now() - sesionDesde > SESION_MS) await login();
 }
 
-/** Un registro del History Data de un inversor MIN/TLX (cada ~5 minutos). */
-export interface RegistroTlx {
+/** Un registro del History Data de un inversor (cada ~5 minutos). */
+export interface RegistroInversor {
   /** "AAAA-MM-DD HH:MM:SS", hora de la planta (Uruguay). */
   time: string;
+  /** 0 en espera, 1 generando, 3 en falla. */
   status: number | null;
   ppv: number | null;
   pac: number | null;
-  /** Por entrada (PV1..PV4): tensión V, corriente A, potencia W. */
+  /** Por entrada (PV1, PV2…; 4 en los MIN, hasta 16 en los MAX): tensión V, corriente A, potencia W. */
   vpv: (number | null)[];
   ipv: (number | null)[];
   ppvN: (number | null)[];
+  /** Corriente de cada string (solo MAX; vacío en los MIN). */
+  iString: (number | null)[];
+  /** Tensión de red: la de fase, o la de línea en redes de 230 V sin neutro. */
   vac1: number | null;
   fac: number | null;
   temp1: number | null;
+  /** Resistencia de aislamiento de los paneles a tierra (kΩ), si el equipo la informa. */
+  pvIso: number | null;
+  /** Corriente de fuga (mA), si el equipo la informa. */
+  gfci: number | null;
   eacToday: number | null;
   etoGridToday: number | null;
   etoUserToday: number | null;
@@ -113,24 +131,53 @@ export interface RegistroTlx {
   realOPPercent: number | null;
 }
 
+export type TipoInversorWeb = 4 | 7;
+
+const HISTORIAL: Record<TipoInversorWeb, { ruta: string; campo: string }> = {
+  7: { ruta: "/device/getTLXHistory", campo: "tlxSn" },
+  4: { ruta: "/device/getMAXHistory", campo: "maxSn" },
+};
+
+export function tipoConHistorial(tipo: number): tipo is TipoInversorWeb {
+  return tipo in HISTORIAL;
+}
+
 const num = (v: unknown): number | null => {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 };
 
-function mapear(d: Record<string, unknown>): RegistroTlx {
+/** Los valores `${prefijo}1`, `${prefijo}2`… que traiga el registro. */
+function serie(d: Record<string, unknown>, prefijo: string, hasta: number) {
+  const out: (number | null)[] = [];
+  for (let i = 1; i <= hasta && `${prefijo}${i}` in d; i++) out.push(num(d[`${prefijo}${i}`]));
+  return out;
+}
+
+function mapear(d: Record<string, unknown>): RegistroInversor {
+  // Los MAX traen las tres fases (vacr/s/t) y las de línea (vacRs/St/Tr). En
+  // una red de 230 V sin neutro la "de fase" da ~133 V: ahí vale la de línea.
+  let vac1 = num(d.vac1);
+  if (vac1 == null && ("vacr" in d || "vacRs" in d)) {
+    const max = (xs: unknown[]) => Math.max(0, ...xs.map(num).filter((x): x is number => x != null));
+    const fase = max([d.vacr, d.vacs, d.vact]);
+    vac1 = fase > 180 ? fase : max([d.vacRs, d.vacSt, d.vacTr]) || null;
+  }
   return {
     time: String(d.time ?? ""),
     status: num(d.status),
     ppv: num(d.ppv),
     pac: num(d.pac),
-    vpv: [1, 2, 3, 4].map((i) => num(d[`vpv${i}`])),
-    ipv: [1, 2, 3, 4].map((i) => num(d[`ipv${i}`])),
-    ppvN: [1, 2, 3, 4].map((i) => num(d[`ppv${i}`])),
-    vac1: num(d.vac1),
+    vpv: serie(d, "vpv", 16),
+    ipv: serie(d, "ipv", 16),
+    ppvN: serie(d, "ppv", 16),
+    iString: serie(d, "currentString", 32),
+    vac1,
     fac: num(d.fac),
-    temp1: num(d.temp1),
+    temp1: num(d.temp1 ?? d.temperature),
+    pvIso: num(d.pvIso),
+    gfci: num(d.gfci),
     eacToday: num(d.eacToday),
     etoGridToday: num(d.etoGridToday),
     etoUserToday: num(d.etoUserToday),
@@ -145,31 +192,82 @@ function mapear(d: Record<string, unknown>): RegistroTlx {
   };
 }
 
-/**
- * History Data de un inversor MIN/TLX entre dos días (inclusive), ordenado del
- * más viejo al más nuevo. Corta a las 60 páginas (~4.800 registros, unos 30
- * días de luz) para no quedarse colgado si la web responde algo raro.
- */
-export async function historialTlx(tlxSn: string, desde: string, hasta: string): Promise<RegistroTlx[]> {
+/** Respuesta de la web; si no vino bien, se reintenta una vez con login nuevo. */
+async function pedir<T>(ruta: string, form: Record<string, string>, error: string): Promise<T> {
   await asegurarSesion();
-  const out: RegistroTlx[] = [];
-  for (let pagina = 0, reintento = false; pagina < 60; ) {
-    const r = await post("/device/getTLXHistory", { tlxSn, startDate: desde, endDate: hasta, start: String(pagina) });
-    const j = (await r.json().catch(() => null)) as
-      | { result?: number; obj?: { datas?: Record<string, unknown>[]; haveNext?: boolean } }
-      | null;
-    if (!j || j.result !== 1 || !j.obj) {
-      // Sesión vencida o rechazada: se reintenta una vez con login nuevo.
-      if (!reintento) {
-        reintento = true;
-        await login();
-        continue;
-      }
-      throw new AppError(502, "GROWATT_WEB_HISTORIAL", "La web de Growatt no devolvió el historial.");
-    }
-    out.push(...(j.obj.datas ?? []).map(mapear));
-    if (!j.obj.haveNext) break;
-    pagina++;
+  for (let intento = 0; ; intento++) {
+    const r = await post(ruta, form);
+    const j = (await r.json().catch(() => null)) as { result?: number; obj?: T } | null;
+    if (j && j.result === 1 && j.obj) return j.obj;
+    if (intento > 0) throw new AppError(502, "GROWATT_WEB", error);
+    await login();
+  }
+}
+
+/**
+ * History Data de un inversor MIN/TLX o MAX entre dos días (inclusive),
+ * ordenado del más viejo al más nuevo. Corta a las 60 páginas (~4.800
+ * registros, unos 30 días de luz) para no quedarse colgado si la web responde
+ * algo raro.
+ */
+export async function historialInversor(sn: string, tipo: TipoInversorWeb, desde: string, hasta: string): Promise<RegistroInversor[]> {
+  const { ruta, campo } = HISTORIAL[tipo];
+  const out: RegistroInversor[] = [];
+  for (let pagina = 0; pagina < 60; pagina++) {
+    const obj = await pedir<{ datas?: Record<string, unknown>[]; haveNext?: boolean }>(
+      ruta,
+      { [campo]: sn, startDate: desde, endDate: hasta, start: String(pagina) },
+      "La web de Growatt no devolvió el historial.",
+    );
+    out.push(...(obj.datas ?? []).map(mapear));
+    if (!obj.haveNext) break;
   }
   return out.filter((x) => x.time).sort((a, b) => a.time.localeCompare(b.time));
+}
+
+/** Una alarma del "Registro de fallos de la planta" de la web. */
+export interface AlarmaGrowatt {
+  /** "AAAA-MM-DD HH:MM:SS", hora de la planta. */
+  time: string;
+  sn: string;
+  modelo: string | null;
+  /** Ej. "Error 203(00)". */
+  codigo: string;
+  /** Ej. "PV Isolation Low". */
+  nombre: string;
+  /** Lo que sugiere Growatt (en inglés). */
+  solucion: string | null;
+}
+
+/** Las alarmas de una planta entre dos días (inclusive), de la más vieja a la más nueva. */
+export async function alarmasPlanta(plantId: string, desde: string, hasta: string): Promise<AlarmaGrowatt[]> {
+  const meses: string[] = [];
+  for (let m = desde.slice(0, 7); m <= hasta.slice(0, 7); ) {
+    meses.push(m);
+    const [a, mm] = m.split("-").map(Number);
+    m = mm === 12 ? `${a + 1}-01` : `${a}-${String(mm + 1).padStart(2, "0")}`;
+  }
+  const out: AlarmaGrowatt[] = [];
+  for (const mes of meses) {
+    for (let pagina = 1, paginas = 1; pagina <= paginas && pagina <= 30; pagina++) {
+      const obj = await pedir<{ pages?: number; datas?: Record<string, unknown>[] }>(
+        "/log/getNewPlantFaultLog",
+        { plantId, date: mes, type: "2", toPageNum: String(pagina), deviceSn: "", deviceFlag: "0" },
+        "La web de Growatt no devolvió el registro de alarmas.",
+      );
+      paginas = obj.pages ?? 1;
+      for (const d of obj.datas ?? []) {
+        out.push({
+          time: String(d.time ?? ""),
+          sn: String(d.sn ?? d.deviceSn ?? ""),
+          modelo: d.deviceModelName ? String(d.deviceModelName) : null,
+          codigo: String(d.eventId ?? ""),
+          nombre: String(d.eventName ?? ""),
+          solucion: d.eventSolution || d.solution ? String(d.eventSolution || d.solution) : null,
+        });
+      }
+    }
+  }
+  const fin = `${hasta} 23:59:59`;
+  return out.filter((a) => a.time >= desde && a.time <= fin).sort((a, b) => a.time.localeCompare(b.time));
 }

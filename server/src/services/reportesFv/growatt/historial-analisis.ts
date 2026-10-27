@@ -4,12 +4,14 @@
 // encontrar a mano: una entrada sin nada conectado (≈0 V todo el día mientras
 // otra produce), una entrada clavada en su corriente máxima (dos strings en
 // paralelo en la misma entrada), huecos de comunicación y el último registro
-// antes de un corte.
+// antes de un corte. Y lo del caso Martín González (MAX, oct-2026): el
+// inversor en falla toda la mañana con los paneles con tensión, por aislamiento
+// bajo, y arrancando recién cuando la resistencia de aislamiento sube.
 
-import type { RegistroTlx } from "./web.client.js";
+import type { RegistroInversor } from "./web.client.js";
 
 export interface ResumenEntrada {
-  entrada: number; // 1..4
+  entrada: number; // 1..16
   vMax: number;
   iMax: number;
   energiaKwh: number;
@@ -29,13 +31,23 @@ export interface AnalisisHistorial {
   avisos: string[];
   pacMax: number;
   vacMax: number | null;
-  ultimoRegistro: RegistroTlx | null;
+  ultimoRegistro: RegistroInversor | null;
+  /** Por día: tiempo en falla con los paneles con tensión (sol), sin generar. */
+  fallaConSol: Array<{ dia: string; horas: number; desde: string; hasta: string; codigos: number[] }>;
+  /** Resistencia de aislamiento (kΩ) en falla y generando, si el equipo la informa. */
+  aislamiento: { minEnFalla: number | null; maxEnFalla: number | null; minGenerando: number | null } | null;
+  /** Corriente máxima de cada string (solo MAX) y en qué % del tiempo con sol quedó en ~0 mientras los demás producían. */
+  strings: Array<{ string: number; iMax: number; pctSinCorriente: number }>;
+  gfciMax: number | null;
 }
+
+/** Growatt: status 3 = falla. Con algún string arriba de 150 V es de día. */
+const enFallaConSol = (r: RegistroInversor) => r.status === 3 && Math.max(0, ...r.vpv.map((v) => v ?? 0)) > 150;
 
 const minutos = (a: string, b: string) => (new Date(b.replace(" ", "T")).getTime() - new Date(a.replace(" ", "T")).getTime()) / 60000;
 
 export function analizarHistorial(
-  rs: RegistroTlx[],
+  rs: RegistroInversor[],
   opts: { kwp?: number | null; hasta?: string; hoy?: string } = {},
 ): AnalisisHistorial {
   const porDia: Record<string, number> = {};
@@ -55,7 +67,8 @@ export function analizarHistorial(
 
   const conSol = rs.filter((r) => (r.ppv ?? 0) > 300);
   const entradas: ResumenEntrada[] = [];
-  for (let e = 0; e < 4; e++) {
+  const nEntradas = Math.max(0, ...rs.map((r) => r.vpv.length));
+  for (let e = 0; e < nEntradas; e++) {
     const vs = rs.map((r) => r.vpv[e] ?? 0);
     const is = rs.map((r) => r.ipv[e] ?? 0);
     const vMax = Math.max(0, ...vs);
@@ -117,6 +130,69 @@ export function analizarHistorial(
   if (ult && opts.hoy && ult.slice(0, 10) < opts.hoy && ult.slice(11, 13) < "17" && (!opts.hasta || ult.slice(0, 10) <= opts.hasta)) {
     avisos.push(`El último dato es del ${ult} y después no hay más en el rango pedido: el datalogger dejó de comunicar ese día a esa hora.`);
   }
+  // Falla con sol: el inversor tiene tensión de paneles pero no genera.
+  const fallaConSol: AnalisisHistorial["fallaConSol"] = [];
+  for (const dia of Object.keys(porDia)) {
+    const xs = rs.filter((r) => r.time.startsWith(dia) && enFallaConSol(r));
+    if (!xs.length) continue;
+    fallaConSol.push({
+      dia,
+      horas: Math.round((xs.length * 5) / 6) / 10,
+      desde: xs[0].time.slice(11, 16),
+      hasta: xs.at(-1)!.time.slice(11, 16),
+      codigos: [...new Set(xs.map((r) => r.faultType ?? 0).filter((c) => c !== 0))],
+    });
+  }
+  if (fallaConSol.length) {
+    const total = fallaConSol.reduce((s, f) => s + f.horas, 0);
+    avisos.push(
+      `El inversor estuvo EN FALLA con los paneles con tensión (había sol y no generó) ${Math.round(total * 10) / 10} h en ${fallaConSol.length} día(s): ` +
+        fallaConSol.map((f) => `${f.dia.slice(8, 10)}/${f.dia.slice(5, 7)} de ${f.desde} a ${f.hasta} (${f.horas} h${f.codigos.length ? `, código ${f.codigos.join("/")}` : ""})`).join("; ") +
+        ". Es energía perdida.",
+    );
+  }
+
+  const isoDe = (xs: RegistroInversor[]) => xs.map((r) => r.pvIso).filter((x): x is number => x != null && x > 0);
+  const isoFalla = isoDe(rs.filter(enFallaConSol));
+  const isoGen = isoDe(rs.filter((r) => r.status === 1 && (r.pac ?? 0) > 0));
+  const aislamiento =
+    isoFalla.length || isoGen.length
+      ? {
+          minEnFalla: isoFalla.length ? Math.min(...isoFalla) : null,
+          maxEnFalla: isoFalla.length ? Math.max(...isoFalla) : null,
+          minGenerando: isoGen.length ? Math.min(...isoGen) : null,
+        }
+      : null;
+  if (aislamiento?.maxEnFalla != null && aislamiento.minGenerando != null && aislamiento.maxEnFalla < aislamiento.minGenerando) {
+    avisos.push(
+      `Mientras estuvo en falla, la resistencia de aislamiento de los paneles (pvIso) estuvo entre ${aislamiento.minEnFalla} y ${aislamiento.maxEnFalla} kΩ, ` +
+        `y generó recién con ${aislamiento.minGenerando} kΩ o más: la falla es por AISLAMIENTO BAJO (fuga de los paneles o del cableado de continua a tierra). ` +
+        `Suele empeorar con humedad o rocío y mejorar al secarse, por eso arranca tarde. Se busca midiendo el aislamiento string por string.`,
+    );
+  }
+
+  // Strings (MAX): uno en ~0 mientras los demás producen.
+  const nStrings = Math.max(0, ...rs.map((r) => r.iString.length));
+  const strings: AnalisisHistorial["strings"] = [];
+  for (let k = 0; k < nStrings; k++) {
+    const iMax = Math.max(0, ...rs.map((r) => r.iString[k] ?? 0));
+    if (iMax < 0.5) continue; // no hay string conectado ahí
+    const conSolStr = rs.filter((r) => r.iString.some((x, j) => j !== k && (x ?? 0) > 3));
+    const sinCorriente = conSolStr.filter((r) => (r.iString[k] ?? 0) < 0.3).length;
+    strings.push({
+      string: k + 1,
+      iMax: Math.round(iMax * 10) / 10,
+      pctSinCorriente: conSolStr.length ? Math.round((sinCorriente / conSolStr.length) * 100) : 0,
+    });
+  }
+  for (const st of strings) {
+    if (st.pctSinCorriente >= 30) {
+      avisos.push(`El string ${st.string} quedó sin corriente en el ${st.pctSinCorriente} % de los registros en que los demás producían más de 3 A: revisar fusible, conector o cable de ese string.`);
+    }
+  }
+  const gfcis = rs.map((r) => r.gfci).filter((x): x is number => x != null);
+  const gfciMax = gfcis.length ? Math.max(...gfcis) : null;
+
   const pacMax = rs.length ? Math.max(...rs.map((r) => r.pac ?? 0)) : 0;
   if (opts.kwp && pacMax > 0 && pacMax < opts.kwp * 1000 * 0.65 && conSol.length > 50) {
     avisos.push(`El pico de salida fue ${Math.round(pacMax)} W con ${opts.kwp} kWp instalados (${Math.round((pacMax / (opts.kwp * 1000)) * 100)} %): bajo para un período con días de sol.`);
@@ -133,5 +209,9 @@ export function analizarHistorial(
     pacMax: Math.round(pacMax),
     vacMax,
     ultimoRegistro: rs.at(-1) ?? null,
+    fallaConSol,
+    aislamiento,
+    strings,
+    gfciMax,
   };
 }
