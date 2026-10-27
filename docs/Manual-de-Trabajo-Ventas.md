@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.4 · del 22/10/26
+**Voltia · Uruguay** · Versión 1.5 · del 27/10/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -360,7 +360,7 @@ completada.
 
 | Si elige… | Tiene que… |
 |---|---|
-| **Financiación bancaria** | Generar la **proforma** |
+| **Financiación bancaria** | Tener la **proforma**: generarla en Voltia PM o, si se hizo por fuera, subirla |
 | **Pago directo** | Crear el **plan de pagos** |
 | **Otro** | **Explicar qué se acordó**, en el campo que aparece |
 
@@ -426,7 +426,7 @@ pendiente. No alcanza con mandar la proforma.
 
 **En Voltia PM:** en el proyecto, etapa **Onboarding** → subetapa **«Modalidad de
 pago definida»**. Al elegir financiación bancaria aparecen tres casillas:
-*Proforma generada* (se marca sola cuando la proforma existe), *Proforma enviada
+*Proforma generada* (se marca sola cuando la proforma existe: la generada con el botón **Generar proforma BBVA**, la que se sube con **Subir proforma hecha por fuera** —un PDF o una foto— o la que ya estaba en el lead), *Proforma enviada
 al banco* y *Crédito aprobado*. **El onboarding cierra con la proforma enviada**:
 la aprobación del banco no lo frena. El asesor le sigue la gestión al banco hasta
 que termina, y tilda *Crédito aprobado* cuando sale. Sin crédito aprobado no se
@@ -1118,6 +1118,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.5 | 27 de octubre de 2026 | Con financiación bancaria, la proforma que se hizo por fuera de Voltia PM se puede subir (PDF o foto) y vale igual que una generada para cerrar el onboarding; la que ya estaba en el lead se reconoce sola. No hace falta generar otra solo para avanzar. |
 | 1.4 | 22 de octubre de 2026 | El plan de pagos ya no lleva fechas: cada cuota se cobra en su momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM le avisa a Finanzas cuándo cobrarla. Lo que se pacta distinto se carga en una fecha fija. Las cuotas se llaman «Cuota 1 · previo a la obra», «Cuota 2 · obra finalizada» y «Cuota 3 · habilitación finalizada». Al crear el proyecto, el asesor tiene que contestar **¿Qué se le factura?**: facturación normal (todo el presupuesto) u otro monto con su motivo; el presupuesto se aclara que es con IVA. |
 | 1.3 | 22 de octubre de 2026 | En la primera charla se le pregunta al cliente «¿Cómo nos conociste?» y se carga en el lead: las nueve respuestas posibles y cuándo va cada una. Voltia PM no deja crear un lead sin ese dato, y se puede corregir desde el panel del lead. |
 | 1.2 | 17 de octubre de 2026 | Se aclara que la bienvenida al cliente la manda Experiencia Solar: al asesor le toca presentarle al referente, como última tarea del onboarding. |

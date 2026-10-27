@@ -10,6 +10,14 @@ import type {
 
 const P = "/api";
 
+export type ProformaSubida = {
+  id: string;
+  filename: string;
+  createdAt: string;
+  /** "lead" = viene del lead del que salió el proyecto; no se borra desde acá. */
+  origen: "proyecto" | "lead";
+};
+
 export const proformaApi = {
   getDraft: async (projectId: string): Promise<ProformaDraftResponse | null> => {
     try {
@@ -46,6 +54,25 @@ export const proformaApi = {
 
   discardVersion: async (id: string, reason?: string): Promise<void> => {
     await api.delete(`${P}/proforma/versions/${id}`, { data: reason ? { reason } : {} });
+  },
+
+  /** Proformas subidas a mano (hechas por fuera) y las que vienen del lead. */
+  listSubidas: async (projectId: string): Promise<ProformaSubida[]> => {
+    const { data } = await api.get<{ archivos: ProformaSubida[] }>(`${P}/projects/${projectId}/proforma/subidas`);
+    return data.archivos;
+  },
+
+  subir: async (projectId: string, file: File): Promise<ProformaSubida> => {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await api.post<ProformaSubida>(`${P}/projects/${projectId}/proforma/subidas`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+
+  borrarSubida: async (projectId: string, fileId: string): Promise<void> => {
+    await api.delete(`${P}/projects/${projectId}/proforma/subidas/${fileId}`);
   },
 
   restoreVersion: async (id: string): Promise<void> => {

@@ -1575,6 +1575,46 @@ false`) no ve el detalle. Un cliente que pide la planta de otro recibe 404
   componente); el tooltip muestra el valor real del tramo.
 - El eje de Hora muestra solo las horas con datos, con un mínimo de 8 horas.
 
+## Vinculación automática de plantas (cada 15 días)
+
+Una planta que genera en Growatt o Huawei sin estar vinculada a un proyecto queda
+fuera del monitoreo y de los reportes. Decisión de Nicolás (27-oct-2026): eso no
+puede pasar; lo contrario (un proyecto todavía sin planta) sí.
+
+`vinculacion-automatica.job.ts` → `startVinculacionPlantasJob()` corre los días
+**1 y 16 a las 09:00** de Uruguay (`CRON_PLANTAS_VINCULACION`; se apaga con
+`PLANTAS_VINCULACION_AUTO=false`):
+
+1. Sincroniza los catálogos de Growatt (`sincronizarPlantas()`) y Huawei
+   (`sincronizarPlantasHuawei()`). Si una API falla, sigue con lo que ya hay y lo
+   dice en el mail.
+2. Toma las plantas sin proyecto y no ignoradas, y las empareja con
+   `emparejarPlantas()` (`vinculacion-automatica.ts`) contra **todos** los
+   proyectos no borrados, no solo los habilitados: una obra en curso también
+   puede tener planta.
+3. Vincula sola con `vincularPlanta()` / `vincularPlantaHuawei()` (queda en la
+   auditoría a nombre del primer ADMIN, porque no hay usuario de sistema) solo si
+   se cumplen las tres condiciones: el nombre normalizado (sin tildes,
+   mayúsculas ni espacios de más) es **igual** al del cliente, hay **un solo**
+   proyecto con ese nombre y ese proyecto **no tiene ninguna planta**, de ninguna
+   marca.
+4. Manda un mail a `PLANTAS_VINCULACION_EMAIL` (por defecto
+   `nicolas@voltia.com.uy`) con las que vinculó y las que quedaron sin proyecto,
+   cada una con su motivo. Si no hay nada que contar, no sale mail.
+
+**Por qué tan estricto:** vincular mal es peor que no vincular, porque la planta
+equivocada alimenta los reportes de otro cliente. El caso que lo definió: hay una
+planta Growatt llamada "Álvaro Garcia" que no es la suya (la de él está en
+Huawei); con la regla "sin planta de la misma marca" se la habría vinculado. Un
+nombre parecido pero no igual ("Coviteja 1 (mono)" contra "COVITEJA Mono") y el
+segundo inversor de un mismo cliente ("Gastón de Leon 2") también van al mail:
+`GrowattPlant.projectId` es único, así que un proyecto tiene una sola planta por
+marca.
+
+**Para que una planta deje de aparecer en el mail** hay que vincularla a mano o
+marcarla como ignorada en el modal "Plantas Growatt". El mail se repite cada 15
+días mientras siga sin resolver.
+
 ## Casos borde
 
 - **Planta vinculada en Growatt pero sin proyecto**: no aparece en ninguna ficha.

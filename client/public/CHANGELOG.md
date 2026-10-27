@@ -4,14 +4,36 @@
 
 ### 27 de octubre de 2026
 
+#### Asistente Voltia: preguntale lo que necesites, sin salir de Voltia PM
+- Nuevo **botón violeta abajo a la derecha**, en todas las pantallas, para todo el equipo. Abre un chat que sabe cómo trabaja Voltia (UTE, ahorro, equipos, techos, garantías, pagos, criterios) y que **consulta los datos reales**: leads, propuestas, minutas, proyectos, obras y plantas.
+- Si tenés un lead o un proyecto abierto, el asistente ya sabe de quién hablás: "resumime en qué está este cliente" alcanza.
+- Pegale las preguntas que te mandó un cliente y te arma el borrador de la respuesta, con los datos de su propuesta. Marca qué es dato (✅), qué es deducción suya y hay que revisar (⚠️) y qué tiene que decidir otra persona (❓).
+- Elegís el modelo: **Automático** (recomendado: usa uno más potente cuando el pedido es grande), o uno fijo. Cada respuesta se puede copiar con un clic.
+- Podés **adjuntar fotos, PDF, Excel y Word**: con el clip, arrastrándolos al chat o pegando una captura. Sirve para que analice una factura, el display de un inversor o el listado de preguntas de un cliente.
+- **Micrófono**: le hablás, se pasa a texto y lo mandás. Y cada respuesta tiene un botón para **escucharla en voz alta**.
+- El chat se parece al de Claude, y se puede agrandar a pantalla completa con la lista de conversaciones al costado.
+- **Tus conversaciones quedan guardadas**: desde el reloj del panel retomás o borrás las anteriores. Solo las ves vos.
+- El asistente te habla por tu nombre y **va aprendiendo cómo te gusta trabajar** (respuestas cortas o largas, qué temas y clientes seguís) a medida que lo usás.
+- Por ahora solo consulta: no crea leads, no mueve etapas ni publica propuestas.
+
+#### Gasto de IA por persona
+- En **Administración → Gasto de IA**, nueva tabla con lo que usó cada persona en el mes.
+
 #### Diagnosticar una planta desde el chat, a fondo
 - Desde el chat de Claude conectado a Voltia PM se puede pedir **el detalle del inversor cada 5 minutos** de un día o de varios: cuánto da cada entrada de paneles, la tensión de la red, la temperatura y los códigos de falla. Con un Excel para bajar, que además queda en los documentos de la obra.
 - Avisa solo lo que se ve raro: una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), cortes de comunicación con la hora exacta y tensión de red alta.
 - Por ahora, inversores Growatt de la línea MIN.
 
+#### Las plantas nuevas se asocian solas a su cliente
+- Cada 15 días Voltia PM revisa las plantas de Growatt y Huawei, y las que se llaman igual que un cliente quedan asociadas solas: entran al monitoreo diario y a los reportes sin que nadie tenga que hacerlo a mano.
+- Las que no puede asociar con seguridad (el nombre no coincide exacto, hay dos clientes con ese nombre o el cliente ya tiene otra planta) llegan por mail para revisarlas.
+
 #### Plantas sin vincular y tickets desde el chat
 - El chat muestra las **plantas de monitoreo que no están asociadas a ningún cliente**, sugiere a cuál corresponden por el nombre y, con tu confirmación, las vincula. Una planta sin vincular no entra en el monitoreo diario ni en los reportes.
 - También puede **abrir un ticket de soporte** con una nota interna para el equipo (que el cliente no ve) y pasárselo a Operaciones o a Ingeniería.
+
+#### Arreglos
+- **Onboarding con financiación:** si la proforma se hizo por fuera de Voltia PM, ahora se puede **subir** (PDF o foto) y vale para cerrar el onboarding, sin tener que generar otra. Si ya estaba en el lead, se reconoce sola.
 
 ## v13.3
 

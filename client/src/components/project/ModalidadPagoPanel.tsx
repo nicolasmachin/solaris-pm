@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
+import { getDownloadUrl } from "../../api/files.api";
+import { proformaApi } from "../../api/proforma.api";
 import { getProject, patchProject } from "../../api/projects.api";
 import { PlanPagosModal } from "../finance/PlanPagosModal";
 import { ProformaBuilderModal } from "../proforma/ProformaBuilderModal";
@@ -10,7 +12,7 @@ import { ProformaVersionsList } from "../proforma/ProformaVersionsList";
 type Modalidad = "FINANCIACION_BANCARIA" | "DIRECTO_50_50" | "OTRO";
 
 const OPCIONES: Array<{ valor: Modalidad; titulo: string; pide: string }> = [
-  { valor: "FINANCIACION_BANCARIA", titulo: "Financiación bancaria", pide: "Pide la proforma" },
+  { valor: "FINANCIACION_BANCARIA", titulo: "Financiación bancaria", pide: "Pide la proforma (generada o subida)" },
   { valor: "DIRECTO_50_50", titulo: "Pago directo", pide: "Pide el plan de pagos" },
   { valor: "OTRO", titulo: "Otro", pide: "Pide explicar qué se acordó" },
 ];
@@ -51,6 +53,33 @@ export function ModalidadPagoPanel({ projectId }: { projectId: string }) {
       qc.invalidateQueries({ queryKey: ["stages", projectId] });
     },
     onError: () => toast.error("No se pudo guardar"),
+  });
+
+  // Proformas subidas a mano y las que vienen del lead: valen igual que una
+  // generada para cerrar el Onboarding con financiación.
+  const inputSubida = useRef<HTMLInputElement>(null);
+  const { data: subidas = [] } = useQuery({
+    queryKey: ["proforma-subidas", projectId],
+    queryFn: () => proformaApi.listSubidas(projectId),
+    enabled: modalidad === "FINANCIACION_BANCARIA",
+  });
+  const refrescar = () => {
+    qc.invalidateQueries({ queryKey: ["proforma-subidas", projectId] });
+    qc.invalidateQueries({ queryKey: ["stages", projectId] });
+    qc.invalidateQueries({ queryKey: ["project", projectId] });
+  };
+  const subir = useMutation({
+    mutationFn: (f: File) => proformaApi.subir(projectId, f),
+    onSuccess: () => {
+      toast.success("Proforma subida");
+      refrescar();
+    },
+    onError: () => toast.error("No se pudo subir la proforma (tiene que ser PDF, JPG o PNG)"),
+  });
+  const borrar = useMutation({
+    mutationFn: (fileId: string) => proformaApi.borrarSubida(projectId, fileId),
+    onSuccess: refrescar,
+    onError: () => toast.error("No se pudo borrar"),
   });
 
   if (!project) return null;
@@ -98,6 +127,58 @@ export function ModalidadPagoPanel({ projectId }: { projectId: string }) {
           >
             🏦 Generar proforma BBVA
           </button>
+          <button
+            onClick={() => inputSubida.current?.click()}
+            disabled={subir.isPending}
+            className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+          >
+            {subir.isPending ? "Subiendo…" : "📎 Subir proforma hecha por fuera (PDF o foto)"}
+          </button>
+          <input
+            ref={inputSubida}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) subir.mutate(f);
+              e.target.value = "";
+            }}
+          />
+          {subidas.length > 0 && (
+            <ul className="mb-2 space-y-1">
+              {subidas.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-[var(--color-border)] px-2 py-1.5 text-[11px]"
+                >
+                  <a
+                    href={getDownloadUrl(a.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 truncate text-[var(--color-text-primary)] hover:underline"
+                  >
+                    {a.filename}
+                  </a>
+                  <span className="shrink-0 text-[var(--color-text-muted)]">
+                    {a.origen === "lead" ? "del lead" : "subida"}
+                  </span>
+                  {a.origen === "proyecto" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`¿Borrar la proforma "${a.filename}"?`)) borrar.mutate(a.id);
+                      }}
+                      className="shrink-0 text-[var(--color-text-muted)] hover:text-red-400"
+                      aria-label={`Borrar ${a.filename}`}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
           <ProformaVersionsList projectId={projectId} />
           {proformaOpen && (
             <ProformaBuilderModal projectId={projectId} onClose={() => setProformaOpen(false)} />

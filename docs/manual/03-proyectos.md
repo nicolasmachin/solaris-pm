@@ -83,7 +83,7 @@ si el documento no existe. Al revés, quien produce la evidencia llama a
 | `evidenceKind` | Qué exige | Quién la marca |
 |---|---|---|
 | `ensayo-video` | Un video de ensayo `READY` | `project-video.service.ts` |
-| `proforma` | Una `ProformaVersion` publicada | `proforma-version.service.ts` → `publishVersion()` |
+| `proforma` | Una `ProformaVersion` publicada, **o** un `FileAttachment` del proyecto con `toolSource: "proforma-subida"`, **o** una proforma (`proforma-subida` o `proforma`) en el lead del que salió el proyecto (`lead.convertedToProjectId`) | `publishVersion()`; `POST /projects/:id/proforma/subidas`; el PATCH del proyecto al elegir `FINANCIACION_BANCARIA` |
 | `plan-pagos` | Un cobro previsto manual (mismo criterio que `planPagos.service.ts`) | `createPlanPagos()` |
 | `modalidad-otro` | `Project.modalidadPagoNota` con texto | el PATCH del proyecto |
 
@@ -99,6 +99,34 @@ Cosas que conviene saber:
 - **ADMIN está exento del guard**, igual que en el resto del checklist.
 - Un `evidenceKind` desconocido **no bloquea**: si se retira una evidencia del
   catálogo, esos ítems siguen funcionando como ítems normales.
+
+### La proforma puede ser generada, subida o venir del lead
+
+Desde el 27-oct-2026 `hayProforma()` (`checklist-evidencias.ts`) acepta tres
+fuentes. El caso que lo disparó: Washington Lanfranco, cuya proforma se hizo por
+fuera de Voltia PM, y el onboarding obligaba a generar otra solo para avanzar.
+
+1. Una `ProformaVersion` publicada (la herramienta de siempre).
+2. Una **proforma subida** al proyecto: `FileAttachment` con `toolSource:
+   "proforma-subida"` (`TOOL_SOURCE_PROFORMA_SUBIDA`), `tipo: UPLOAD_MANUAL`.
+   Rutas en `proforma.routes.ts`: `GET/POST /projects/:id/proforma/subidas`
+   (`ONBOARDING:VIEW` / `ONBOARDING:CREATE`, el mismo que generar) y `DELETE
+   /projects/:id/proforma/subidas/:fileId` (`ONBOARDING:EDIT`). Solo PDF, JPG o
+   PNG. Subir llama a `completarPorEvidencia`; borrar —por esa ruta o desde
+   Documentos (`DELETE /files/:fileId`)— llama a `despintarPorEvidencia`.
+3. Una proforma **en el lead** del que salió el proyecto (`toolSource`
+   `proforma-subida` o `proforma` con `leadId` y `lead.convertedToProjectId` =
+   el proyecto). Se busca en el lead y no solo en la copia que hace
+   `copyLeadAttachmentsToProject` al convertir, para que también la vean los
+   proyectos convertidos antes. **Ojo:** al 27-oct-2026 Voltia PM no tiene una
+   herramienta para generar la proforma desde el lead; esta rama queda lista
+   para cuando exista (o para una proforma subida al lead como adjunto con ese
+   `toolSource`). Un adjunto común del lead que sea una proforma **no** cuenta:
+   no hay forma de saber que es una proforma.
+
+Como un ítem se marca solo cuando se crea la evidencia, y la del lead ya existía,
+el PATCH del proyecto llama a `completarPorEvidencia(EVIDENCIA_PROFORMA)` cada
+vez que se elige `FINANCIACION_BANCARIA`.
 
 ### El Onboarding no cierra sin saber cómo paga el cliente
 
@@ -118,7 +146,7 @@ Desde el 9-oct-2026 la regla es una sola, `checklist-evidencias.ts` →
 |---|---|---|
 | (ninguna) | elegir una | `MODALIDAD_PAGO` |
 | `DIRECTO_50_50` | un cobro previsto (`hayPlanDePagos`) **o** cobrado en USD ≥ 99 % del presupuesto | `PLAN_PAGOS` |
-| `FINANCIACION_BANCARIA` | una `ProformaVersion` publicada (no exige el crédito aprobado) | `PROFORMA` |
+| `FINANCIACION_BANCARIA` | una proforma: generada, subida o del lead (ver `hayProforma()`); no exige el crédito aprobado | `PROFORMA` |
 | `OTRO` | `modalidadPagoNota` no vacía | `NOTA_MODALIDAD` |
 
 `assertOnboardingDefinido()` (en `substage-update.service.ts`) la convierte en un **409

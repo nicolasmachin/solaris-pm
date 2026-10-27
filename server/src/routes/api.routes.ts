@@ -2095,6 +2095,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     }
 
+    // Al elegir financiación, si la proforma ya existe (generada, subida o hecha
+    // desde el lead antes de cerrar la venta) su ítem se marca solo: no hay que
+    // generar otra sólo para avanzar la etapa.
+    if (body.modalidadPago === "FINANCIACION_BANCARIA") {
+      await completarPorEvidencia(project.id, EVIDENCIA_PROFORMA, user.id).catch(() => undefined);
+    }
+
     return serializeProject(updatedProject);
   });
 

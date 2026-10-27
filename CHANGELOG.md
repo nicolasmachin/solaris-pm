@@ -24,9 +24,16 @@
 - Avisa solo lo que se ve raro: una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), cortes de comunicación con la hora exacta y tensión de red alta.
 - Por ahora, inversores Growatt de la línea MIN.
 
+#### Las plantas nuevas se asocian solas a su cliente
+- Cada 15 días Voltia PM revisa las plantas de Growatt y Huawei, y las que se llaman igual que un cliente quedan asociadas solas: entran al monitoreo diario y a los reportes sin que nadie tenga que hacerlo a mano.
+- Las que no puede asociar con seguridad (el nombre no coincide exacto, hay dos clientes con ese nombre o el cliente ya tiene otra planta) llegan por mail para revisarlas.
+
 #### Plantas sin vincular y tickets desde el chat
 - El chat muestra las **plantas de monitoreo que no están asociadas a ningún cliente**, sugiere a cuál corresponden por el nombre y, con tu confirmación, las vincula. Una planta sin vincular no entra en el monitoreo diario ni en los reportes.
 - También puede **abrir un ticket de soporte** con una nota interna para el equipo (que el cliente no ve) y pasárselo a Operaciones o a Ingeniería.
+
+#### Arreglos
+- **Onboarding con financiación:** si la proforma se hizo por fuera de Voltia PM, ahora se puede **subir** (PDF o foto) y vale para cerrar el onboarding, sin tener que generar otra. Si ya estaba en el lead, se reconoce sola.
 
 ## v13.3
 
