@@ -12,6 +12,7 @@ import { SidebarContextual, SIDEBAR_ANCHO } from "./SidebarContextual";
 import { useSidebarColapsado } from "../../hooks/useSidebarColapsado";
 import { TraspasoPopup } from "../traspasos/TraspasoPopup";
 import { DefinicionesPendientesModal } from "../project/DefinicionesPendientesModal";
+import { AsistenteBoton } from "../asistente/AsistenteBoton";
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -74,6 +75,7 @@ export function AppLayout() {
       <VersionFooter />
       <TraspasoPopup />
       <DefinicionesPendientesModal />
+      <AsistenteBoton />
     </div>
   );
 }

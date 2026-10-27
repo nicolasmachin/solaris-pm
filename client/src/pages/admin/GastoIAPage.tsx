@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getGastoIA, type FilaGastoIA } from "../../api/ai-usage.api";
@@ -60,6 +60,8 @@ export function TabGastoIA() {
     queryFn: () => getGastoIA(N_MESES),
   });
 
+  const [mesUsuarios, setMesUsuarios] = useState<string | null>(null);
+
   const vista = useMemo(() => {
     if (!data) return null;
     const meses = ultimosMeses(data.desde, N_MESES);
@@ -96,6 +98,7 @@ export function TabGastoIA() {
       porMes,
       porFuncion: [...porFuncion.values()].sort((a, b) => b.total - a.total),
       porModelo: [...porModelo.entries()].sort((a, b) => b[1].costo - a[1].costo),
+      meses,
     };
   }, [data]);
 
@@ -103,6 +106,9 @@ export function TabGastoIA() {
   if (isError || !data || !vista) {
     return <p className="text-sm text-red-500">No se pudo cargar el gasto de IA.</p>;
   }
+
+  const mesU = mesUsuarios ?? vista.mesActual;
+  const usuariosDelMes = data.porUsuario.filter((u) => u.mes === mesU);
 
   const desdeRegistro = data.primerRegistro
     ? new Date(data.primerRegistro).toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })
@@ -217,6 +223,54 @@ export function TabGastoIA() {
                 <td className="px-4 py-2 text-right tabular-nums text-[var(--color-text-secondary)]">{fmtUsd(f.anterior)}</td>
                 <td className="px-4 py-2 text-right tabular-nums text-[var(--color-text-secondary)]">{fmtUsd(f.total)}</td>
                 <td className="px-4 py-2 text-right tabular-nums text-[var(--color-text-secondary)]">{fmtMiles(f.llamadas)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Por usuario</p>
+          <select
+            value={mesU}
+            onChange={(e) => setMesUsuarios(e.target.value)}
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+          >
+            {[...vista.meses].reverse().map((m) => (
+              <option key={m} value={m}>
+                {etiquetaMes(m)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="px-4 pt-1 text-[11px] text-[var(--color-text-muted)]">
+          Lo que usó cada persona en el mes, en todas las funciones. No incluye los procesos automáticos (mail de
+          novedades y otros que no corren a nombre de nadie).
+        </p>
+        <table className="mt-2 w-full text-sm">
+          <thead>
+            <tr className="text-left text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]">
+              <th className="px-4 py-2 font-medium">Usuario</th>
+              <th className="px-4 py-2 text-right font-medium">Asistente</th>
+              <th className="px-4 py-2 text-right font-medium">Total</th>
+              <th className="px-4 py-2 text-right font-medium">Llamadas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {usuariosDelMes.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-6 text-center text-[var(--color-text-muted)]">
+                  Nadie usó IA en este mes.
+                </td>
+              </tr>
+            )}
+            {usuariosDelMes.map((u) => (
+              <tr key={u.userId} className="border-t border-[var(--color-border)]">
+                <td className="px-4 py-2 text-[var(--color-text-primary)]">{u.nombre}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-[var(--color-text-secondary)]">{fmtUsd(u.asistenteUsd)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-[var(--color-text-primary)]">{fmtUsd(u.costUsd)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-[var(--color-text-secondary)]">{fmtMiles(u.llamadas)}</td>
               </tr>
             ))}
           </tbody>

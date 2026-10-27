@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { registerApiRoutes } from "./api.routes.js";
 import { registerAuthRoutes } from "./auth.routes.js";
 import { registerCapacitacionRoutes } from "./capacitacion.routes.js";
+import { registerAsistenteRoutes } from "./asistente.routes.js";
 import { registerDocumentacionRoutes } from "./documentacion.routes.js";
 import { registerRrhhRoutes } from "./rrhh.routes.js";
 import { registerClientesRoutes } from "./clientes.routes.js";
@@ -98,6 +99,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerUteSuministroRoutes, { prefix: "/api" });
   await app.register(registerCapacitacionRoutes, { prefix: "/api" });
   await app.register(registerDocumentacionRoutes, { prefix: "/api" });
+  await app.register(registerAsistenteRoutes, { prefix: "/api" });
   await app.register(registerRrhhRoutes, { prefix: "/api" });
   await app.register(registerSeguroGranizoRoutes, { prefix: "/api" });
   await app.register(registerPlanGranizoDocumentoRoutes, { prefix: "/api" });

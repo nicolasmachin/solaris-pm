@@ -18,6 +18,8 @@ import { costoAnthropic, costoWhisper } from "./pricing.js";
 /** Las funciones de Voltia PM que usan IA. Se guarda como texto: sumar una no pide migración. */
 export const AI_FEATURES = {
   asistente: "Asistente de preguntas",
+  asistente_chat: "Asistente del equipo",
+  asistente_perfil: "Asistente: notas sobre cada usuario",
   efp: "Proyecto Final de Ingeniería",
   visita_informe: "Informe de visita técnica",
   visita_audio: "Transcripción de audios de visita",

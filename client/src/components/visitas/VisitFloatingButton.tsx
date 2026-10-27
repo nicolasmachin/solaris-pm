@@ -142,7 +142,8 @@ export function VisitFloatingButton({ projectId }: { projectId: string }) {
 
   if (!user || !canCreateVisitas) return null;
 
-  const positionClass = user.role === "ADMIN" ? "right-24" : "right-6";
+  // A la derecha está el botón del asistente, que ven todos los usuarios internos.
+  const positionClass = "right-24";
 
   return (
     <>

@@ -1,13 +1,21 @@
 // Endpoints del generador de proforma BBVA (subetapa "Modalidad de pago definida").
 // Prefijo /api. Gate Module.ONBOARDING. Mismo patrón que contract.routes.ts.
 
-import { Action, AuditAction, AuditEntityType, Module, Prisma } from "@prisma/client";
+import { Action, AuditAction, AuditEntityType, FileAttachmentTipo, Module, Prisma } from "@prisma/client";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
+import {
+  completarPorEvidencia,
+  despintarPorEvidencia,
+  EVIDENCIA_PROFORMA,
+  TOOL_SOURCE_PROFORMA_SUBIDA,
+} from "../services/checklist-evidencias.js";
+import { deleteStoredFile, saveUploadedFile } from "../services/file-storage.service.js";
+import { prisma } from "../lib/prisma.js";
 import { buildProformaContext } from "../services/proforma/proforma-context.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { getDraft, upsertDraft } from "../services/proforma/proforma-draft.service.js";
@@ -23,7 +31,7 @@ import {
 import { proformaPdfFilename } from "../services/proforma/filename.js";
 import { proformaDataStorageSchema } from "../services/proforma/schemas/proforma.schema.js";
 import type { ProformaSnapshot } from "../services/proforma/schemas/proforma-snapshot.schema.js";
-import { notFound, unauthorized } from "../utils/errors.js";
+import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -174,6 +182,110 @@ export async function registerProformaRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
       const { id } = idParams.parse(request.params);
       return restoreVersion(id, user.id);
+    },
+  );
+
+  // ─── Proforma subida a mano ───────────────────────────────────────────────
+  // Para la proforma que se hizo por fuera de Voltia PM: se sube el PDF (o la
+  // foto) y vale como respaldo de la financiación igual que una generada.
+  const SUBIDA_EXT = new Set([".pdf", ".jpg", ".jpeg", ".png"]);
+
+  app.get(
+    "/projects/:projectId/proforma/subidas",
+    { preHandler: authorize(Module.ONBOARDING, Action.VIEW) },
+    async (request) => {
+      const { projectId } = projectParams.parse(request.params);
+      const archivos = await prisma.fileAttachment.findMany({
+        where: {
+          deletedAt: null,
+          OR: [
+            { projectId, toolSource: TOOL_SOURCE_PROFORMA_SUBIDA },
+            // Las del lead del que salió el proyecto (subidas o generadas ahí).
+            { lead: { convertedToProjectId: projectId }, toolSource: { in: [TOOL_SOURCE_PROFORMA_SUBIDA, "proforma"] } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, filename: true, createdAt: true, leadId: true, projectId: true },
+      });
+      return {
+        archivos: archivos.map((a) => ({
+          id: a.id,
+          filename: a.filename,
+          createdAt: a.createdAt,
+          origen: a.projectId === projectId ? "proyecto" : "lead",
+        })),
+      };
+    },
+  );
+
+  app.post(
+    "/projects/:projectId/proforma/subidas",
+    { preHandler: authorize(Module.ONBOARDING, Action.CREATE) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const { projectId } = projectParams.parse(request.params);
+      const proyecto = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: { id: true } });
+      if (!proyecto) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const file = await request.file();
+      if (!file) throw badRequest("FILE_REQUIRED", "Falta el archivo de la proforma.");
+      const ext = (file.filename.match(/\.[^.]+$/)?.[0] ?? "").toLowerCase();
+      if (!SUBIDA_EXT.has(ext)) {
+        throw badRequest("INVALID_FILE_TYPE", "La proforma tiene que ser un PDF o una foto (JPG o PNG).");
+      }
+      const subido = await saveUploadedFile(file, projectId);
+      const creado = await prisma.fileAttachment.create({
+        data: {
+          projectId,
+          filename: subido.filename,
+          storedFilename: subido.storedFilename,
+          mimeType: subido.mimeType,
+          sizeBytes: subido.sizeBytes,
+          url: subido.url,
+          tipo: FileAttachmentTipo.UPLOAD_MANUAL,
+          toolSource: TOOL_SOURCE_PROFORMA_SUBIDA,
+          uploadedById: user.id,
+        },
+        select: { id: true, filename: true, createdAt: true },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: creado.id,
+        projectId,
+        userId: user.id,
+        action: AuditAction.file_uploaded,
+        description: `Subió la proforma '${creado.filename}' (hecha por fuera de Voltia PM)`,
+      });
+      // Igual que al generarla: el ítem "Proforma generada" se marca solo.
+      await completarPorEvidencia(projectId, EVIDENCIA_PROFORMA, user.id).catch(() => undefined);
+      return reply.status(201).send({ ...creado, origen: "proyecto" });
+    },
+  );
+
+  app.delete(
+    "/projects/:projectId/proforma/subidas/:fileId",
+    { preHandler: authorize(Module.ONBOARDING, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId, fileId } = z.object({ projectId: z.string().min(1), fileId: z.string().min(1) }).parse(request.params);
+      const archivo = await prisma.fileAttachment.findFirst({
+        where: { id: fileId, projectId, toolSource: TOOL_SOURCE_PROFORMA_SUBIDA, deletedAt: null },
+        select: { id: true, url: true, filename: true },
+      });
+      if (!archivo) throw notFound("PROFORMA_SUBIDA_NOT_FOUND", "No existe esa proforma subida en el proyecto.");
+      await prisma.fileAttachment.update({ where: { id: archivo.id }, data: { deletedAt: new Date() } });
+      await deleteStoredFile(archivo.url);
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: archivo.id,
+        projectId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó la proforma subida '${archivo.filename}'`,
+      });
+      // Si era la única, el ítem vuelve a quedar pendiente.
+      await despintarPorEvidencia(projectId, EVIDENCIA_PROFORMA).catch(() => undefined);
+      return { ok: true };
     },
   );
 }

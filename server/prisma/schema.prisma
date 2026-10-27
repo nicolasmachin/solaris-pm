@@ -6216,3 +6216,48 @@ model EntregaMateriales {
   @@index([legajoId, fecha])
   @@map("entregas_materiales")
 }
+
+// ─── Asistente del equipo ─────────────────────────────────────────────────
+//
+// Conversaciones del chat de IA, una por hilo, a nombre de quien las tuvo.
+// Sin relación con User a propósito (igual que AIUsage): son un registro, y
+// borrar un usuario no tiene por qué romperlas. Solo las ve su dueño.
+model AsistenteConversacion {
+  id        String             @id @default(cuid())
+  userId    String
+  titulo    String
+  mensajes  AsistenteMensaje[]
+  createdAt DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime           @updatedAt @db.Timestamptz(6)
+
+  @@index([userId, updatedAt])
+  @@map("asistente_conversaciones")
+}
+
+model AsistenteMensaje {
+  id             String                @id @default(cuid())
+  conversacionId String
+  conversacion   AsistenteConversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+  /// "user" o "assistant"
+  role           String
+  content        String                @db.Text
+  /// Modelo que respondió (solo en los del asistente)
+  modelo         String?
+  herramientas   String[]              @default([])
+  createdAt      DateTime              @default(now()) @db.Timestamptz(6)
+
+  @@index([conversacionId, createdAt])
+  @@map("asistente_mensajes")
+}
+
+// Lo que el asistente fue aprendiendo de cada persona (cómo le gusta que le
+// respondan, en qué trabaja). Lo escribe la IA resumiendo sus conversaciones
+// cada tanto; va al prompt de cada consulta de esa persona.
+model AsistentePerfil {
+  userId                    String   @id
+  notas                     String   @db.Text
+  mensajesDesdeActualizacion Int     @default(0)
+  updatedAt                 DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("asistente_perfiles")
+}

@@ -38,10 +38,31 @@ type FilaCruda = {
   audio_segundos: string | null;
 };
 
+/** Gasto de un usuario en un mes, sumando todas las funciones de IA. */
+export type FilaGastoUsuario = {
+  mes: string;
+  userId: string;
+  nombre: string;
+  llamadas: number;
+  costUsd: number;
+  /** Parte del costo que es del asistente del equipo. */
+  asistenteUsd: number;
+};
+
+type FilaUsuarioCruda = {
+  mes: string;
+  user_id: string;
+  nombre: string | null;
+  llamadas: bigint;
+  cost_usd: string | null;
+  asistente_usd: string | null;
+};
+
 export async function getGastoIA(meses: number): Promise<{
   desde: string;
   primerRegistro: string | null;
   filas: FilaGastoIA[];
+  porUsuario: FilaGastoUsuario[];
 }> {
   // Primer día del mes, `meses - 1` meses atrás, en hora de Uruguay.
   const filas = await prisma.$queryRaw<FilaCruda[]>`
@@ -63,6 +84,29 @@ export async function getGastoIA(meses: number): Promise<{
     WHERE u."createdAt" AT TIME ZONE 'America/Montevideo' >= desde.inicio_local
     GROUP BY 1, 2, 3, 4
     ORDER BY 1, 2, 4
+  `;
+
+  // Solo las llamadas hechas a nombre de alguien: las de procesos automáticos
+  // (mail de novedades, lectura de facturas en lote) no tienen usuario.
+  const porUsuario = await prisma.$queryRaw<FilaUsuarioCruda[]>`
+    WITH desde AS (
+      SELECT (date_trunc('month', now() AT TIME ZONE 'America/Montevideo')
+              - make_interval(months => ${meses - 1}::int)) AS inicio_local
+    )
+    SELECT
+      to_char(date_trunc('month', u."createdAt" AT TIME ZONE 'America/Montevideo'), 'YYYY-MM') AS mes,
+      u."userId" AS user_id,
+      MAX(us.name) AS nombre,
+      COUNT(*) AS llamadas,
+      SUM(u."costUsd")::text AS cost_usd,
+      SUM(u."costUsd") FILTER (WHERE u.feature IN ('asistente_chat', 'asistente_perfil'))::text AS asistente_usd
+    FROM ai_usage u
+    JOIN desde ON true
+    LEFT JOIN users us ON us.id = u."userId"
+    WHERE u."userId" IS NOT NULL
+      AND u."createdAt" AT TIME ZONE 'America/Montevideo' >= desde.inicio_local
+    GROUP BY 1, 2
+    ORDER BY 1 DESC, SUM(u."costUsd") DESC NULLS LAST
   `;
 
   const [desdeRow] = await prisma.$queryRaw<Array<{ desde: string }>>`
@@ -91,6 +135,14 @@ export async function getGastoIA(meses: number): Promise<{
       tokensInput: Number(f.tokens_input ?? 0),
       tokensOutput: Number(f.tokens_output ?? 0),
       audioSegundos: f.audio_segundos ? Number(f.audio_segundos) : 0,
+    })),
+    porUsuario: porUsuario.map((f) => ({
+      mes: f.mes,
+      userId: f.user_id,
+      nombre: f.nombre ?? "(usuario borrado)",
+      llamadas: Number(f.llamadas),
+      costUsd: f.cost_usd ? Number(f.cost_usd) : 0,
+      asistenteUsd: f.asistente_usd ? Number(f.asistente_usd) : 0,
     })),
   };
 }

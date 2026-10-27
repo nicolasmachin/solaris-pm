@@ -80,6 +80,8 @@ import {
   completarPorEvidencia,
   despintarPorEvidencia,
   EVIDENCIA_MODALIDAD_OTRO,
+  EVIDENCIA_PROFORMA,
+  TOOL_SOURCE_PROFORMA_SUBIDA,
   faltaEvidencia,
   SUBETAPA_MODALIDAD_PAGO,
   definicionesPendientesOnboarding,
@@ -4189,6 +4191,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
       action: AuditAction.deleted,
       description: `Eliminó archivo '${file.filename}'`,
     });
+
+    // Una proforma subida borrada desde Documentos: si era la única, el ítem de
+    // la modalidad de pago vuelve a quedar pendiente.
+    if (file.toolSource === TOOL_SOURCE_PROFORMA_SUBIDA && file.projectId) {
+      await despintarPorEvidencia(file.projectId, EVIDENCIA_PROFORMA).catch(() => undefined);
+    }
 
     return serializeFile(deletedFile);
   });

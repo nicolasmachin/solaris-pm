@@ -104,8 +104,11 @@ el código. No había forma de saber cuánto se gastaba ni en qué.
 
 **Administración → Sistema → Gasto de IA**. Muestra el gasto del mes, el del mes
 anterior y el de los últimos 6 meses, un gráfico por mes, una tabla por función
-(este mes, mes anterior, 6 meses, llamadas) y una por modelo (llamadas, tokens o
-minutos de audio, gasto). Montos en dólares.
+(este mes, mes anterior, 6 meses, llamadas), una **por usuario** (con selector de
+mes: lo que gastó cada persona, separando lo del asistente del equipo) y una por
+modelo (llamadas, tokens o minutos de audio, gasto). Montos en dólares. La tabla
+por usuario solo cuenta llamadas hechas a nombre de alguien: los procesos
+automáticos (mail de novedades y otros sin `userId`) no aparecen ahí.
 
 ### Cómo funciona
 

@@ -52,6 +52,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 15 | [WhatsApp](15-whatsapp.md) | Cloud API de Meta: webhook, envío, plantillas, Administración → WhatsApp | 🟡 Parcial (base para la revisión de Meta; sin números reales conectados) |
 | 16 | [Documentación (intranet)](16-documentacion.md) | Manuales y procedimientos con versiones, publicación automática en cada deploy, confirmación de lectura | ✅ Completo |
 | 17 | [Recursos Humanos](17-rrhh.md) | Mi legajo, legajos completos, validación de documentos, vencimientos, recibos en lote, licencias y saldo, entregas de materiales con firma, privacidad | ✅ Completo |
+| 18 | [Asistente del equipo](18-asistente.md) | Chat con IA dentro de Voltia PM: base de conocimiento, herramientas del conector en solo lectura, modelos, topes de gasto | ✅ Completo |
 
 Los capítulos pendientes existen con su esqueleto y se completan a medida que se
 trabaja sobre cada módulo. Un capítulo marcado ⬜ **no significa que la

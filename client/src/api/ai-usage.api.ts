@@ -15,10 +15,21 @@ export interface FilaGastoIA {
   audioSegundos: number;
 }
 
+export interface FilaGastoUsuario {
+  mes: string;
+  userId: string;
+  nombre: string;
+  llamadas: number;
+  costUsd: number;
+  /** Parte del costo que es del asistente del equipo. */
+  asistenteUsd: number;
+}
+
 export interface GastoIAResponse {
   desde: string;
   primerRegistro: string | null;
   filas: FilaGastoIA[];
+  porUsuario: FilaGastoUsuario[];
 }
 
 export const getGastoIA = (meses = 6) =>

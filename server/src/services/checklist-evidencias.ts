@@ -41,13 +41,37 @@ type Evidencia = {
   falta: string;
 };
 
-/** Una proforma publicada (no descartada) en el proyecto. */
+/**
+ * Proforma subida a mano: la que se hizo por fuera de Voltia PM (caso
+ * Washington Lanfranco, oct-2026). Vale igual que una generada: lo que el banco
+ * necesita es el documento, no la herramienta con que se hizo.
+ */
+export const TOOL_SOURCE_PROFORMA_SUBIDA = "proforma-subida";
+/** El PDF de una proforma generada con la herramienta (copia en Documentos). */
+const TOOL_SOURCE_PROFORMA_GENERADA = "proforma";
+
+/**
+ * Hay proforma si se cumple cualquiera de estas: una versión publicada (no
+ * descartada) generada en el proyecto; una proforma subida al proyecto; o una
+ * proforma (generada o subida) en el lead del que salió el proyecto. La del lead
+ * se busca ahí y no sólo en la copia que se hace al convertir, porque un
+ * proyecto convertido antes de que existiera la copia también tiene que verla.
+ */
 async function hayProforma(projectId: string): Promise<boolean> {
   const version = await prisma.proformaVersion.findFirst({
     where: { projectId, status: "PUBLISHED" },
     select: { id: true },
   });
-  return version !== null;
+  if (version) return true;
+  const archivo = await prisma.fileAttachment.findFirst({
+    where: {
+      deletedAt: null,
+      toolSource: { in: [TOOL_SOURCE_PROFORMA_SUBIDA, TOOL_SOURCE_PROFORMA_GENERADA] },
+      OR: [{ projectId }, { lead: { convertedToProjectId: projectId } }],
+    },
+    select: { id: true },
+  });
+  return archivo !== null;
 }
 
 /**
@@ -88,7 +112,7 @@ const EVIDENCIAS: Record<string, Evidencia> = {
   },
   [EVIDENCIA_PROFORMA]: {
     existe: hayProforma,
-    falta: "Para marcar este ítem hay que generar antes la proforma, con el botón de esta misma subetapa.",
+    falta: "Para marcar este ítem hay que generar o subir antes la proforma, con los botones de esta misma subetapa.",
   },
   [EVIDENCIA_PLAN_PAGOS]: {
     existe: hayPlanDePagos,
@@ -236,7 +260,7 @@ export async function definicionesPendientesOnboarding(
       return [{ codigo: "PLAN_PAGOS", mensaje: "Falta crear el plan de pagos, con la fecha de cada cobro." }];
     case ModalidadPago.FINANCIACION_BANCARIA:
       if (await hayProforma(projectId)) return [];
-      return [{ codigo: "PROFORMA", mensaje: "Falta generar la proforma para el banco." }];
+      return [{ codigo: "PROFORMA", mensaje: "Falta la proforma para el banco: generarla o subirla, si se hizo por fuera." }];
     case ModalidadPago.OTRO:
       if (await hayNotaDeModalidad(projectId)) return [];
       return [{ codigo: "NOTA_MODALIDAD", mensaje: "Falta explicar qué se acordó con el cliente sobre el pago." }];
