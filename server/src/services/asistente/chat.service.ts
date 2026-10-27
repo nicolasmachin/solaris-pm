@@ -66,12 +66,14 @@ export function asistenteHabilitado(): boolean {
 
 /**
  * Modo automático: Sonnet para todo, Opus para el trabajo pesado (un listado
- * largo de preguntas o redactar lo que se le manda a un cliente). Es una regla
+ * largo de preguntas o redactar lo que se le manda a un cliente, o un PDF,
+ * Word o Excel adjunto). Es una regla
  * fija y no una consulta previa a otro modelo: es instantánea, no cuesta y es
  * predecible.
  */
-export function elegirModelo(elegido: ModeloElegido, mensaje: string): keyof typeof MODELOS {
+export function elegirModelo(elegido: ModeloElegido, mensaje: string, conDocumentos = false): keyof typeof MODELOS {
   if (elegido !== "auto") return elegido;
+  if (conDocumentos) return "opus";
   const preguntasNumeradas = (mensaje.match(/^\s*\d+[.)-]\s+/gm) ?? []).length;
   const signosPregunta = (mensaje.match(/\?/g) ?? []).length;
   const pideRedaccion =
@@ -100,6 +102,7 @@ Reglas:
 - Lo marcado [A CONFIRMAR] o [A DECIDIR] no se afirma como política cerrada.
 - Si la base y los datos de Voltia PM no alcanzan, decilo. Es mejor un "no sé, preguntale a X" que un dato inventado.
 - Si te piden algo que cambia datos (crear un lead, mover una etapa, publicar una propuesta), explicá que desde este chat todavía no se puede y que se hace desde la pantalla correspondiente.
+- Si te adjuntan archivos (fotos, PDF, planillas), analizalos y citá de dónde sacás cada dato. En mensajes posteriores los adjuntos anteriores aparecen solo por nombre: si necesitás volver a mirarlos, pedile a la persona que los adjunte de nuevo.
 - Respuestas cortas cuando la pregunta es corta. Usá Markdown (listas, negritas, tablas) cuando ayude a leer.
 
 A continuación está la base de conocimiento de Voltia. Ante contradicciones, manda lo que dice su README.`;
@@ -171,9 +174,12 @@ export async function responder(args: {
   conversacion: MensajeChat[];
   contexto: ContextoPantalla;
   modelo: ModeloElegido;
+  /** Bloques de los archivos adjuntos al último mensaje (van antes de su texto). */
+  adjuntos?: Anthropic.ContentBlockParam[];
+  conDocumentos?: boolean;
 }): Promise<RespuestaChat> {
   const ultimoMensaje = args.conversacion[args.conversacion.length - 1]?.content ?? "";
-  const modelo = elegirModelo(args.modelo, ultimoMensaje);
+  const modelo = elegirModelo(args.modelo, ultimoMensaje, args.conDocumentos);
   const modelId = MODELOS[modelo].id;
 
   const herramientas = await abrirHerramientas(args.user);
@@ -187,6 +193,10 @@ export async function responder(args: {
       { type: "text", text: await textoContexto(args.user, args.contexto) },
     ];
     const mensajes: Anthropic.MessageParam[] = args.conversacion.map((m) => ({ role: m.role, content: m.content }));
+    if (args.adjuntos?.length) {
+      const ultimo = mensajes[mensajes.length - 1];
+      ultimo.content = [...args.adjuntos, { type: "text", text: ultimoMensaje }];
+    }
 
     for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
       // `output_config` (esfuerzo) es más nuevo que los tipos del SDK instalado.

@@ -9,6 +9,9 @@
 - Si tenés un lead o un proyecto abierto, el asistente ya sabe de quién hablás: "resumime en qué está este cliente" alcanza.
 - Pegale las preguntas que te mandó un cliente y te arma el borrador de la respuesta, con los datos de su propuesta. Marca qué es dato (✅), qué es deducción suya y hay que revisar (⚠️) y qué tiene que decidir otra persona (❓).
 - Elegís el modelo: **Automático** (recomendado: usa uno más potente cuando el pedido es grande), o uno fijo. Cada respuesta se puede copiar con un clic.
+- Podés **adjuntar fotos, PDF, Excel y Word**: con el clip, arrastrándolos al chat o pegando una captura. Sirve para que analice una factura, el display de un inversor o el listado de preguntas de un cliente.
+- **Micrófono**: le hablás, se pasa a texto y lo mandás. Y cada respuesta tiene un botón para **escucharla en voz alta**.
+- El chat se parece al de Claude, y se puede agrandar a pantalla completa con la lista de conversaciones al costado.
 - **Tus conversaciones quedan guardadas**: desde el reloj del panel retomás o borrás las anteriores. Solo las ves vos.
 - El asistente te habla por tu nombre y **va aprendiendo cómo te gusta trabajar** (respuestas cortas o largas, qué temas y clientes seguís) a medida que lo usás.
 - Por ahora solo consulta: no crea leads, no mueve etapas ni publica propuestas.

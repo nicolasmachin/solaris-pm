@@ -6244,10 +6244,30 @@ model AsistenteMensaje {
   /// Modelo que respondió (solo en los del asistente)
   modelo         String?
   herramientas   String[]              @default([])
+  adjuntos       AsistenteAdjunto[]
   createdAt      DateTime              @default(now()) @db.Timestamptz(6)
 
   @@index([conversacionId, createdAt])
   @@map("asistente_mensajes")
+}
+
+// Archivos que la persona le pasa al asistente (fotos, PDF, Excel, Word).
+// Se suben antes de mandar el mensaje (quedan sin `mensajeId`) y se atan al
+// mensaje cuando la respuesta se guarda. Viven en storage/asistente/<userId>/.
+model AsistenteAdjunto {
+  id         String            @id @default(cuid())
+  userId     String
+  mensajeId  String?
+  mensaje    AsistenteMensaje? @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  nombre     String
+  mimeType   String
+  ruta       String
+  sizeBytes  Int
+  createdAt  DateTime          @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@index([mensajeId])
+  @@map("asistente_adjuntos")
 }
 
 // Lo que el asistente fue aprendiendo de cada persona (cómo le gusta que le

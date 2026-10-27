@@ -38,7 +38,13 @@ export async function leerConversacion(userId: string, id: string) {
   const mensajes = await prisma.asistenteMensaje.findMany({
     where: { conversacionId: id },
     orderBy: { createdAt: "asc" },
-    select: { role: true, content: true, modelo: true, herramientas: true },
+    select: {
+      role: true,
+      content: true,
+      modelo: true,
+      herramientas: true,
+      adjuntos: { select: { id: true, nombre: true, mimeType: true }, orderBy: { createdAt: "asc" } },
+    },
   });
   return mensajes;
 }
@@ -59,9 +65,16 @@ export async function prepararConversacion(userId: string, conversacionId: strin
       where: { conversacionId },
       orderBy: { createdAt: "desc" },
       take: MAX_MENSAJES_PREVIOS,
-      select: { role: true, content: true },
+      select: { role: true, content: true, adjuntos: { select: { nombre: true } } },
     });
-    const ordenados = previos.reverse() as MensajeChat[];
+    // Los adjuntos viejos viajan solo por nombre: analizarlos de nuevo en cada
+    // mensaje costaría lo mismo que la primera vez.
+    const ordenados: MensajeChat[] = previos.reverse().map((m) => ({
+      role: m.role as MensajeChat["role"],
+      content: m.adjuntos.length
+        ? `${m.content}\n\n[Adjuntó: ${m.adjuntos.map((a) => a.nombre).join(", ")}]`
+        : m.content,
+    }));
     // Tiene que arrancar con un mensaje de la persona.
     while (ordenados.length && ordenados[0].role !== "user") ordenados.shift();
     return { conversacionId, previos: ordenados };
@@ -80,9 +93,10 @@ export async function guardarIntercambio(args: {
   herramientas: string[];
 }) {
   const ahora = Date.now();
-  await prisma.$transaction([
+  const [pregunta] = await prisma.$transaction([
     prisma.asistenteMensaje.create({
       data: { conversacionId: args.conversacionId, role: "user", content: args.pregunta, createdAt: new Date(ahora) },
+      select: { id: true },
     }),
     prisma.asistenteMensaje.create({
       data: {
@@ -96,6 +110,7 @@ export async function guardarIntercambio(args: {
     }),
     prisma.asistenteConversacion.update({ where: { id: args.conversacionId }, data: { updatedAt: new Date() } }),
   ]);
+  return { preguntaId: pregunta.id };
 }
 
 export async function notasDe(userId: string): Promise<string | null> {

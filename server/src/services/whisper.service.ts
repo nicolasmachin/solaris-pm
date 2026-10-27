@@ -6,7 +6,7 @@
 
 import fs from "node:fs";
 import OpenAI from "openai";
-import { recordWhisperUsage, type AIUsageCtx } from "./ai/usage.js";
+import { recordWhisperUsage, type AIFeature, type AIUsageCtx } from "./ai/usage.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const DEFAULT_MODEL = process.env.WHISPER_MODEL ?? "whisper-1";
@@ -40,6 +40,7 @@ export interface TranscriptionResult {
 export async function transcribeAudio(
   absolutePath: string,
   ctx?: AIUsageCtx,
+  feature: AIFeature = "visita_audio",
 ): Promise<TranscriptionResult> {
   if (!isWhisperEnabled()) {
     throw new Error("Whisper deshabilitado (OPENAI_API_KEY faltante)");
@@ -58,6 +59,7 @@ export async function transcribeAudio(
   } catch (err) {
     recordWhisperUsage({
       model: DEFAULT_MODEL,
+      feature,
       segundos: 0,
       ok: false,
       durationMs: Date.now() - t0,
@@ -71,6 +73,7 @@ export async function transcribeAudio(
   const r = result as unknown as { text: string; duration?: number; language?: string };
   recordWhisperUsage({
     model: DEFAULT_MODEL,
+    feature,
     segundos: r.duration,
     ok: true,
     durationMs: Date.now() - t0,

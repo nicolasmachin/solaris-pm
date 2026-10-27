@@ -28,11 +28,18 @@ export interface ConversacionResumen {
   actualizada: string;
 }
 
+export interface AdjuntoAsistente {
+  id: string;
+  nombre: string;
+  mimeType: string;
+}
+
 export interface MensajeGuardado {
   role: "user" | "assistant";
   content: string;
   modelo: string | null;
   herramientas: string[];
+  adjuntos: AdjuntoAsistente[];
 }
 
 export const getEstadoAsistente = () =>
@@ -41,6 +48,7 @@ export const getEstadoAsistente = () =>
 export const chatAsistente = (body: {
   conversacionId: string | null;
   mensaje: string;
+  adjuntoIds: string[];
   modelo: ModeloAsistente;
   contexto: ContextoAsistente;
 }) => apiClient.post<RespuestaAsistente>("/api/asistente/chat", body).then((r) => r.data);
@@ -55,3 +63,27 @@ export const leerConversacionAsistente = (id: string) =>
 
 export const borrarConversacionAsistente = (id: string) =>
   apiClient.delete(`/api/asistente/conversaciones/${id}`).then((r) => r.data);
+
+export const subirAdjuntoAsistente = (archivo: File) => {
+  const form = new FormData();
+  form.append("file", archivo, archivo.name);
+  return apiClient
+    .post<AdjuntoAsistente>("/api/asistente/adjuntos", form, { headers: { "Content-Type": "multipart/form-data" } })
+    .then((r) => r.data);
+};
+
+/** Abre un adjunto en otra pestaña (va con el token, por eso no es un link directo). */
+export const abrirAdjuntoAsistente = async (id: string) => {
+  const r = await apiClient.get<Blob>(`/api/asistente/adjuntos/${id}`, { responseType: "blob" });
+  const url = URL.createObjectURL(r.data);
+  window.open(url, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
+
+export const transcribirAudioAsistente = (audio: Blob, nombre: string) => {
+  const form = new FormData();
+  form.append("file", audio, nombre);
+  return apiClient
+    .post<{ texto: string }>("/api/asistente/transcribir", form, { headers: { "Content-Type": "multipart/form-data" } })
+    .then((r) => r.data);
+};

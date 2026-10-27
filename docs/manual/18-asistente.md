@@ -21,6 +21,21 @@ clientes sería otro proyecto.
   pantallas internas. Lo ven todos los roles menos `CLIENT`, y queda por encima
   de las ventanas grandes (el panel del lead), para poder abrirlo con un lead
   abierto. Abre un panel lateral; cerrarlo no corta la conversación.
+- **Formato tipo Claude:** los mensajes propios en burbuja a la derecha, las
+  respuestas como texto a la izquierda; abajo, una caja con el clip y el
+  micrófono a la izquierda y el modelo y Enviar a la derecha. El botón de
+  **pantalla completa** agranda el panel y fija la lista de conversaciones a la
+  izquierda (queda recordado en el navegador).
+- **Adjuntos:** con el clip, **arrastrando** archivos al panel o **pegando** una
+  captura (Ctrl+V). Fotos (JPG, PNG, WEBP, GIF, HEIC), PDF, Excel (.xlsx), Word
+  (.docx) y texto (.txt, .csv, .md); hasta 5 por mensaje y 25 MB cada uno. Se
+  suben al elegirlos (se ve una ruedita) y se mandan con el mensaje; sin texto,
+  el mensaje sale como "Analizá lo que te adjunto.". En la conversación quedan
+  como etiquetas que abren el archivo.
+- **Micrófono:** graba, se toca el cuadrado para terminar, y el audio se pasa a
+  texto en la caja para corregirlo antes de mandarlo. El audio no se guarda.
+- **Escuchar:** el parlante de cada respuesta la lee en voz alta con la voz del
+  navegador o del celular (sin costo; la calidad depende del dispositivo).
 - **Conversaciones guardadas:** el reloj del encabezado muestra las
   conversaciones anteriores de quien está logueado (las últimas 50) para
   retomarlas o borrarlas; el **+** arranca una nueva. Cada persona ve solo las
@@ -51,6 +66,7 @@ clientes sería otro proyecto.
   - `base.ts` → `leerBase()` y `leerEnciclopedia()`.
   - `herramientas.ts` → `abrirHerramientas()`.
   - `topes.ts` → `chequearTopes()`.
+  - `adjuntos.service.ts` → `guardarAdjunto()`, `bloquesDeAdjuntos()`.
   - `historial.service.ts` → conversaciones (`prepararConversacion()`,
     `guardarIntercambio()`, listar, leer, borrar) y notas por persona
     (`notasDe()`, `aprenderDeLaConversacion()`).
@@ -64,6 +80,26 @@ clientes sería otro proyecto.
   primer mensaje (80 caracteres). Endpoints: `GET /api/asistente/conversaciones`,
   `GET` y `DELETE /api/asistente/conversaciones/:id` (solo el dueño; si no es
   suya, 404).
+- **Adjuntos** (`asistente_adjuntos`, modelo `AsistenteAdjunto`):
+  `POST /api/asistente/adjuntos` guarda el archivo en
+  `storage/asistente/<userId>/` y crea la fila sin `mensajeId`; el chat recibe
+  `adjuntoIds` (solo del usuario y sin mandar) y al guardar el intercambio los
+  ata a la pregunta. HEIC se pasa a JPEG; las fotos de más de 1.568 px de lado
+  se achican (el modelo las reduce igual y cada píxel de más es costo). Al
+  modelo: fotos como imagen, PDF como documento (lee texto y páginas), Excel
+  como texto hoja por hoja (`exceljs`), Word como texto (`word/document.xml`,
+  leído con un lector de zip propio, sin librerías), con tope de 150.000
+  caracteres. **Se analizan solo en el mensaje en que se mandan**: en los
+  siguientes viajan como "[Adjuntó: nombre]", para no cobrarlos de nuevo; si
+  hace falta volver a mirarlos, el asistente pide que se adjunten otra vez. Con
+  un PDF, Word o Excel adjunto el modo automático usa Opus. `GET
+  /api/asistente/adjuntos/:id` los devuelve solo al dueño.
+- **Voz:** `POST /api/asistente/transcribir` recibe el audio (webm, o mp4 en
+  iPhone), lo escribe en un temporal, lo transcribe con Whisper
+  (`transcribeAudio()`, función `asistente_audio` en `ai_usage`) y lo borra. La
+  lectura en voz alta es `speechSynthesis` del navegador: prefiere una voz
+  es-UY, después es-AR, es-419, y cualquier español; lee de a oraciones y sin
+  los símbolos de Markdown ni las marcas ✅⚠️❓.
 - **Notas por persona** (`asistente_perfiles`, modelo `AsistentePerfil`): un
   texto corto (máx. 150 palabras, en viñetas) con en qué trabaja, qué suele
   pedir, cómo le gusta que le respondan y qué clientes o temas sigue. Cada 6
@@ -144,6 +180,11 @@ clientes sería otro proyecto.
   minutos, la consulta escribe la base en el caché y cuesta unos USD 0,12 con
   Sonnet; las siguientes, entre 1 y 6 centavos según cuántas herramientas use.
   Cada modelo tiene su propio caché: cambiar de modelo vuelve a escribirlo.
+- **Whisper inventa texto con audios sin voz** (ruido, silencio): devuelve
+  frases tipo "Subtítulos realizados por…". Por eso el texto queda en la caja
+  para revisarlo, no se manda solo.
+- **Un adjunto subido y nunca mandado** queda en el storage sin `mensajeId`; no
+  hay limpieza automática todavía.
 - **Respuestas lentas**: no hay streaming; una pregunta que consulta varias
   herramientas tarda 10–30 segundos y el panel muestra "Pensando…".
 - **Resultados largos**: el resultado de una herramienta se corta a 60.000

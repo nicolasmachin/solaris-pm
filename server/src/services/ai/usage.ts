@@ -20,6 +20,7 @@ export const AI_FEATURES = {
   asistente: "Asistente de preguntas",
   asistente_chat: "Asistente del equipo",
   asistente_perfil: "Asistente: notas sobre cada usuario",
+  asistente_audio: "Asistente: mensajes de voz",
   efp: "Proyecto Final de Ingeniería",
   visita_informe: "Informe de visita técnica",
   visita_audio: "Transcripción de audios de visita",
@@ -103,6 +104,7 @@ export async function createMessage(
 
 export function recordWhisperUsage(args: {
   model: string;
+  feature?: AIFeature;
   segundos: number | null | undefined;
   ok: boolean;
   durationMs: number;
@@ -111,7 +113,7 @@ export function recordWhisperUsage(args: {
 }): void {
   const segundos = args.segundos ?? 0;
   registrar({
-    feature: "visita_audio" satisfies AIFeature,
+    feature: args.feature ?? "visita_audio",
     provider: "openai",
     model: args.model,
     audioSeconds: segundos,
