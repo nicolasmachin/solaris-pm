@@ -1,6 +1,6 @@
 # Manual del Instalador Tercerizado
 
-**Voltia · Uruguay** · Versión 0.7 · del 19/10/26 · *borrador*
+**Voltia · Uruguay** · Versión 0.8 · del 28/10/26 · *borrador*
 
 > Este manual explica **cómo trabaja con Voltia un instalador tercerizado**: cómo se empieza, qué se le pide, cómo le llega una obra, cómo cobra, cómo se hace y se entrega una obra con el estándar de Voltia, y cómo usa Voltia PM. Es el manual **de consulta de todos los instaladores tercerizados**, en cada obra: no hace falta leer ningún otro manual.
 
@@ -252,9 +252,13 @@ Sin percutor, con mecha para cerámica: el percutor la parte. La goma tiene que 
 
 ### Caminar sobre un techo
 
-**Sobre la chapa trapezoidal se pisa solo donde apoya en las correas** (donde va el tornillo), nunca en el medio de la onda: se marca, se dobla y hasta se parte en los bordes, y abre entradas de agua donde nadie perforó. Donde se camina mucho, se pone un tablón. Así quedó, vista desde abajo, una chapa pisada en una obra de Voltia:
+**Sobre un techo de chapa se camina siempre sobre tablas**, las que hagan falta para repartir el peso, apoyadas sobre las correas. Nunca se pisa la chapa directo: se marca, se abolla y hasta se perfora, y abre entradas de agua donde nadie perforó. Ya pasó en una obra de Voltia: la chapa pisada quedó abollada y perforada en varios lugares. Si en algún paso no queda otra que pisar sin tabla, se pisa solo donde la chapa apoya en las correas (donde va el tornillo), nunca en el medio de la onda. Así quedó, vista desde abajo, una chapa pisada en una obra de Voltia:
 
 ![Chapa trapezoidal marcada por las pisadas, vista desde abajo.](manual-instalador-tercerizado-chapa-pisada.png)
+
+### Trabajar sobre membrana asfáltica
+
+**Cuando se perfora o se corta metal arriba de una membrana, las virutas se barren en el momento**, no al final del día. Salen calientes y filosas: se pegan y perforan la membrana, y por ahí entra agua. Ya pasó en una obra de Voltia. Mejor todavía, se pone algo debajo de donde se trabaja (un cartón o una lona) que junte las virutas.
 
 ### Los techos que Voltia no hace
 
@@ -508,7 +512,8 @@ Son errores que ya pasaron en obras de Voltia. Están acá para que no se repita
 | Una pinza que resbaló del techo | Cayó al lado de alguien que trabajaba abajo sin casco | Casco siempre, sobre todo abajo; nadie debajo del borde |
 | Una escalera sin atar | Se cayó una persona y se accidentó | Escalera atada o sostenida (capítulo 6) |
 | Una losa perforada para anclar más fácil | Filtración adentro de la casa; hubo que volver a arreglarla | La losa no se perfora si el proyecto no lo dice; si se perfora, con tope y sellado |
-| Caminar sobre la chapa trapezoidal | La chapa se marca y se parte; entra agua donde nadie perforó | Pisar solo sobre las correas; tablón donde se camina mucho |
+| Caminar sobre la chapa sin tablas | La chapa se abolló y se perforó; entra agua donde nadie perforó | Siempre sobre tablas, apoyadas en las correas (capítulo 7) |
+| Virutas de metal sobre la membrana asfáltica | Las virutas calientes perforaron la membrana | Barrerlas en el momento, mientras se perfora; algo debajo que las junte (capítulo 7) |
 | Conexiones mal hechas (por ejemplo, los transformadores de corriente del medidor) | Hubo que volver a revisar qué estaba mal: tiempo y plata | Revisar todo en el lugar, con la aplicación, antes de irse |
 | El terreno sucio y la tierra de los pozos desparramada | El cliente molesto; hubo que ir a limpiar | El lugar queda mejor de como se encontró |
 
@@ -685,6 +690,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 8) y **se anota la med
 
 | Versión | Fecha | Qué cambió |
 |---|---|---|
+| 0.8 | 28 de octubre de 2026 | Sobre un techo de chapa se camina siempre sobre tablas, no solo donde se camina mucho. Se agrega cómo trabajar sobre membrana asfáltica: las virutas de metal se barren en el momento. Las dos cosas, con su error en «Lo que ya salió mal». |
 | 0.7 | 19 de octubre de 2026 | Los documentos de UTE vienen impresos dentro del kit, con los materiales: el instalador no los imprime, solo hace firmar al cliente, los escanea y los sube. |
 | 0.6 | 19 de octubre de 2026 | Se saca de la parte eléctrica la regla de conectar siempre en bornera o barras y nunca en los bornes de las llaves: hay casos en que se usa un borne con un conector doble hecho para eso. Se corrige el dibujo de la inclinación: el panel mira al norte. Entre las cosas que se cierran antes de irse, el video final va junto con las fotos. Se reescribe cómo termina la relación cuando el trabajo no llega al estándar. Se reescribe «Si registrar cuesta, no se registra», que se leía como un permiso para no registrar: ahora dice que todo se registra, aunque sean dos líneas. |
 | 0.5 | 19 de octubre de 2026 | Se corrige el vocabulario de las fundaciones en tierra: se replantean y se nivelan, y entre las herramientas va el hilo de replanteo. |

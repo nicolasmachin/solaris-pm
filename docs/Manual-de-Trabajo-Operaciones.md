@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.9 · del 27/10/26
+**Voltia · Uruguay** · Versión 1.10 · del 28/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -701,6 +701,8 @@ Son los criterios de Ingeniería que se aplican **en la obra**. Los que dicen **
 - **Inclinación 25°, mirando al norte**, con los paneles en vertical. Es el criterio cuando no se dice nada: si en la visita de venta se acordó otra cosa (por ejemplo, paneles coplanares) y quedó en el resumen de la visita y en el proyecto, manda eso.
 - **Los sujetadores (grampas) van dentro de la zona segura del panel**, la que indica el fabricante, y donde lo marquen los planos de Ingeniería. Nunca en la punta: el vidrio se comba y se pierde la garantía.
 - **Estructuras que se sueldan en la obra:** se terminan con primer rico en zinc y esmalte para exterior.
+- **Techo de chapa: se camina siempre sobre tablas**, las necesarias para repartir el peso, apoyadas sobre las correas. Pisar la chapa directo la abolla y la perfora, y deja entradas de agua: ya pasó en una obra de Voltia.
+- **Sobre membrana asfáltica, las virutas se barren en el momento** cada vez que se perfora o se corta metal, no al final del día: calientes y filosas, perforan la membrana. Ya pasó en una obra de Voltia. Ayuda poner un cartón o una lona debajo de donde se trabaja.
 
 ### La parte eléctrica
 
@@ -1112,6 +1114,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.10 | 28 de octubre de 2026 | En los criterios técnicos del montaje: sobre un techo de chapa se camina siempre sobre tablas, y sobre membrana asfáltica las virutas de metal se barren en el momento. |
 | 1.9 | 27 de octubre de 2026 | Desde el chat de Claude se puede ver el registro de alarmas y el detalle cada 5 minutos del inversor, en todos los Growatt (las horas en falla con sol, cada entrada de paneles y cada string, el aislamiento, la red y la hora en que dejó de comunicar), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con una nota interna que el cliente no ve. |
 | 1.8 | 22 de octubre de 2026 | Se agrega que agendar la obra y cerrar la etapa de Ejecución de Obra le avisan a Finanzas cuándo cobrar: la cuota del 50 % queda lista 10 días antes del primer día de obra, y la del 30 % al cerrar la etapa. |
 | 1.7 | 21 de octubre de 2026 | Se agrega «El chat de Claude» en las herramientas: el calendario de obras con los días libres de cada cuadrilla, los entregables de una obra y qué falta, los tickets y los mantenimientos que vienen, el informe del capataz, los datos técnicos de la obra, y cómo cambiar el estado de una subetapa desde el chat, que solo se hace cuando se confirma. |
