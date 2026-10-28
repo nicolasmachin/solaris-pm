@@ -1,6 +1,16 @@
 import { NotificationType } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
+import { enviarPush } from "./push/push.service.js";
+
+/**
+ * A dónde lleva el aviso push cuando la notificación no trae `link`: lo mismo
+ * que hace la campanita del portal al tocarla. "/" lleva a cada uno a su
+ * pantalla de inicio (el cliente, al portal).
+ */
+const URL_POR_TIPO: Partial<Record<NotificationType, string>> = {
+  encuesta_disponible: "/portal/encuestas",
+};
 
 type CreateNotificationInput = {
   projectId?: string | null;
@@ -16,7 +26,7 @@ type CreateNotificationInput = {
 };
 
 export async function createNotification(input: CreateNotificationInput) {
-  return prisma.notification.create({
+  const n = await prisma.notification.create({
     data: {
       projectId: input.projectId ?? null,
       userId: input.userId ?? null,
@@ -29,6 +39,12 @@ export async function createNotification(input: CreateNotificationInput) {
       link: input.link ?? null,
     },
   });
+  // También al celular o la computadora, si la persona activó los avisos. Sin
+  // await: el aviso no demora ni rompe lo que lo disparó.
+  if (n.userId) {
+    void enviarPush(n.userId, { titulo: n.title, cuerpo: n.message, url: n.link ?? URL_POR_TIPO[n.type] ?? "/", etiqueta: n.id });
+  }
+  return n;
 }
 
 export async function createNotificationIfNotExists(input: CreateNotificationInput) {

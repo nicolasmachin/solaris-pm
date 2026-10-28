@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -17,12 +17,14 @@ import {
   Contact,
   X,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { usePermission } from "../../hooks/usePermission";
 import { useMaterialCatalogPermissions } from "../../hooks/useMaterialCatalogPermissions";
 import { CanAccess } from "../ui/CanAccess";
+import { AvisosModal } from "../pwa/AvisosDispositivo";
 
 interface MobileNavDrawerProps {
   open: boolean;
@@ -31,6 +33,7 @@ interface MobileNavDrawerProps {
 
 export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const { user, clearAuth } = useAuthStore();
+  const [avisosAbierto, setAvisosAbierto] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -251,6 +254,15 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
               </span>
             </span>
           </button>
+          <button
+            type="button"
+            onClick={() => setAvisosAbierto(true)}
+            className="mt-2 flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+          >
+            <Bell size={16} className="shrink-0" />
+            <span>Avisos en este dispositivo</span>
+          </button>
+          {avisosAbierto && <AvisosModal publico="equipo" onClose={() => setAvisosAbierto(false)} />}
           <button
             type="button"
             onClick={handleLogout}

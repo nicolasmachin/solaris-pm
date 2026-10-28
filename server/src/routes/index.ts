@@ -1,3 +1,4 @@
+import { registerPushRoutes } from "./push.routes.js";
 import type { FastifyInstance } from "fastify";
 
 import { registerApiRoutes } from "./api.routes.js";
@@ -103,4 +104,5 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerRrhhRoutes, { prefix: "/api" });
   await app.register(registerSeguroGranizoRoutes, { prefix: "/api" });
   await app.register(registerPlanGranizoDocumentoRoutes, { prefix: "/api" });
+  await app.register(registerPushRoutes, { prefix: "/api" });
 }

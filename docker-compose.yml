@@ -34,6 +34,14 @@ services:
       # API key del modelo Claude (Anthropic). Se lee del .env del host
       # (raíz del repo) — agregar `ANTHROPIC_API_KEY=sk-ant-...` ahí.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Notificaciones push (Web Push) a celulares y computadoras. Sin las dos
+      # claves, Voltia PM no ofrece activar los avisos y no manda nada. Se
+      # generan una vez con `npx web-push generate-vapid-keys`; si se cambian,
+      # todas las suscripciones dejan de servir y cada uno tiene que activarlos
+      # de nuevo.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:nicolas@voltia.com.uy}
       JWT_SECRET: dev-secret-cambiar-en-produccion
       JWT_EXPIRES_IN: 7d
       STORAGE_PATH: /app/storage

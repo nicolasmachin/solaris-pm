@@ -4,6 +4,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useAuthStore } from "../../store/auth.store";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { CanAccess } from "../ui/CanAccess";
+import { AvisosModal } from "../pwa/AvisosDispositivo";
 import { usePermission } from "../../hooks/usePermission";
 import { useMaterialCatalogPermissions } from "../../hooks/useMaterialCatalogPermissions";
 import { useTravelViewer } from "../../hooks/useTravelViewer";
@@ -111,6 +112,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
     useMaterialCatalogPermissions();
   const canSeeAdmin = isFullAdmin || canManageMaterialCatalog || canAccessTemplates;
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [avisosAbierto, setAvisosAbierto] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -339,6 +341,12 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                 </button>
               )}
               <button
+                onClick={() => { setUserMenuOpen(false); setAvisosAbierto(true); }}
+                className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+              >
+                Avisos en este dispositivo
+              </button>
+              <button
                 onClick={() => {
                   clearAuth();
                   window.location.href = "/login";
@@ -351,6 +359,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           )}
         </div>
       </div>
+      {avisosAbierto && <AvisosModal publico="equipo" onClose={() => setAvisosAbierto(false)} />}
     </header>
   );
 }

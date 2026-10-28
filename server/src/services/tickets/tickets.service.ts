@@ -359,6 +359,8 @@ async function notifyCliente(ticket: TicketWithComments, title: string, message:
       type: NotificationType.ticket_actualizado,
       title,
       message,
+      // Lleva al reclamo (también al tocar el aviso push en el celular).
+      link: `/portal/tickets/${ticket.id}`,
     });
   } catch (err) {
     console.error("[tickets] no se pudo notificar al cliente:", err);

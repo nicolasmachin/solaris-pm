@@ -36,6 +36,13 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Voltia en el celular, con avisos",
+      items: [
+        "Voltia PM y el portal se instalan en el celular como una aplicación, sin tiendas.",
+        "Avisos en el celular aunque esté cerrada: al cliente cuando le responden un reclamo o tiene una encuesta; al equipo, lo mismo que la campanita. Se activan en el menú de la cuenta → Avisos en este dispositivo.",
+      ],
+    },
+    {
       title: "WhatsApp: conectar los números del equipo",
       items: [
         "En Administración → WhatsApp, la sección Números conectados para sumar los WhatsApp del equipo escaneando un QR (todavía espera la habilitación de Meta).",

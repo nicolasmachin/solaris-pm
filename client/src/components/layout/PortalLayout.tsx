@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
   BarChart3,
+  Bell,
   ChevronDown,
   Eye,
   FileCheck,
@@ -19,10 +20,27 @@ import {
 import { useAuthStore } from '../../store/auth.store';
 import { usePortalPreviewStore } from '../../store/portalPreview.store';
 import { PortalNotificationBell } from './PortalNotificationBell';
+import { AvisosModal } from '../pwa/AvisosDispositivo';
 
 export function PortalLayout() {
   const { user, clearAuth } = useAuthStore();
   const [open, setOpen] = useState(false);
+  const [avisosAbierto, setAvisosAbierto] = useState(false);
+
+  // Instalado desde el portal, el ícono tiene que decir "Voltia" y abrir en el
+  // portal, no "Voltia PM" en el tablero interno: se cambia el manifiesto
+  // mientras se está acá.
+  useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    const titulo = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]');
+    const antes = { href: link?.getAttribute('href'), titulo: titulo?.content };
+    link?.setAttribute('href', '/portal.webmanifest');
+    if (titulo) titulo.content = 'Voltia';
+    return () => {
+      if (link && antes.href) link.setAttribute('href', antes.href);
+      if (titulo && antes.titulo) titulo.content = antes.titulo;
+    };
+  }, []);
   const navigate = useNavigate();
   const { preview, salir } = usePortalPreviewStore();
   const location = useLocation();
@@ -112,6 +130,16 @@ export function PortalLayout() {
                     </button>
                   ) : (
                     <>
+                      <button
+                        onClick={() => {
+                          setOpen(false);
+                          setAvisosAbierto(true);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] w-full text-left"
+                      >
+                        <Bell className="w-4 h-4" />
+                        Avisos en este celular
+                      </button>
                       <Link
                         to="/cambiar-password"
                         onClick={() => setOpen(false)}
@@ -162,6 +190,7 @@ export function PortalLayout() {
         Voltia · Portal de Generadores
       </footer>
       <PortalBottomNav pathname={location.pathname} />
+      {avisosAbierto && <AvisosModal publico="cliente" onClose={() => setAvisosAbierto(false)} />}
     </div>
   );
 }

@@ -7,6 +7,10 @@ import { Toaster } from "react-hot-toast";
 import { App } from "./App";
 import { RouteRestorer } from "./components/system/RouteRestorer";
 import "./styles/index.css";
+import { iniciarPwa } from "./lib/pwa";
+
+// Instalable como aplicación + avisos push (ver lib/pwa.ts).
+iniciarPwa();
 
 const queryClient = new QueryClient({
   defaultOptions: {

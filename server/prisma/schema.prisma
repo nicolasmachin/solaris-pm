@@ -592,6 +592,7 @@ model User {
   uploadedFiles                  FileAttachment[]               @relation("FileUploadedBy")
   auditLogs                      AuditLog[]
   notifications                  Notification[]
+  pushSuscripciones              PushSuscripcion[]
   comments                       Comment[]
   settings                       Setting[]                      @relation("SettingUser")
   settingsUpdated                Setting[]                      @relation("SettingUpdatedBy")
@@ -6329,4 +6330,27 @@ model AsistentePerfil {
   updatedAt                 DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("asistente_perfiles")
+}
+
+// Avisos push (Web Push) en el celular o la computadora. Una fila por
+// dispositivo/navegador donde el usuario activó los avisos. Cada notificación
+// interna con `userId` (createNotification) sale también como push a todas sus
+// suscripciones. Si el servicio de push del navegador responde que la
+// suscripción ya no existe (404/410), se borra.
+model PushSuscripcion {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// URL del servicio de push del navegador (Google, Apple, Mozilla…). Única.
+  endpoint String @unique
+  p256dh   String
+  auth     String
+  /// Navegador y sistema, para que se entienda qué dispositivo es.
+  userAgent String?
+  fallos    Int       @default(0)
+  ultimoEnvioEn DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("push_suscripciones")
 }

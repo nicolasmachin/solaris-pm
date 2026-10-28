@@ -5,6 +5,7 @@ import { ChevronRight, FileClock } from 'lucide-react';
 import { getPortalProjects } from '../api/portal.api';
 import { getPlantasDelCliente } from '../api/energiaFv.api';
 import { PortalEnergiaPlantas } from '../components/portal/PortalEnergiaPlantas';
+import { AvisosDispositivo } from '../components/pwa/AvisosDispositivo';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuthStore } from '../store/auth.store';
 import { usePortalPreviewStore } from '../store/portalPreview.store';
@@ -44,6 +45,9 @@ export function PortalInicio() {
         <p className="text-xs text-[var(--color-text-muted)]">Hola, {nombre}</p>
         <h1 className="mt-1 text-lg font-medium text-[var(--color-text-primary)]">Tu planta solar</h1>
       </div>
+
+      {/* Invitación a activar los avisos (se cierra y no vuelve). */}
+      <AvisosDispositivo variante="tarjeta" publico="cliente" />
 
       {/* Si tiene otro proyecto que todavía está en trámite, que lo vea arriba. */}
       {enTramite.map((p) => (

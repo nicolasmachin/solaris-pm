@@ -12,6 +12,11 @@
 - Los gráficos de generación salieron de **Reportes**, que queda para los reportes mensuales.
 - Los clientes de antes de Voltia PM (los que se cargaron sin el trámite paso a paso) también entran directo a su planta, y en **Trámite UTE** ven que están habilitados en vez de once pasos pendientes.
 
+#### Voltia en el celular, con avisos
+- Voltia PM y el portal se pueden **instalar como aplicación** en el celular o la computadora, sin pasar por ninguna tienda: queda el ícono en la pantalla y se abre sin la barra del navegador. El cliente instala "Voltia", que abre directo en su portal.
+- **Avisos en el celular**: el cliente los activa desde la tarjeta del Inicio del portal o desde el menú de su cuenta, y le llegan aunque tenga el portal cerrado (cuando le respondemos un reclamo, cuando tiene una encuesta). Al equipo le llega lo mismo que a la campanita; se activa en el menú de la cuenta → **Avisos en este dispositivo**.
+- En iPhone hay que agregar Voltia a la pantalla de inicio primero; la tarjeta explica cómo, en tres pasos.
+
 #### Portal: Mis documentos
 - Sección nueva **Documentos** en el portal: el **contrato con Voltia** y los **papeles de UTE** que firmó el cliente, para verlos o bajarlos cuando quiera.
 - Si tiene el **Plan de Protección contra Granizo**, ahí mismo ve en qué estado está (vigente, en período de espera, vence pronto…), desde y hasta cuándo está protegido, cuántos paneles cubre, cuánto sale por año y cuándo es el próximo pago, con la solicitud de adhesión firmada y las condiciones del plan.

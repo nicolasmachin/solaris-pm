@@ -559,6 +559,26 @@ de vida de la instalación.
 **A qué manuales afecta.** Al de Experiencia Solar (sale el paso de entregar el
 acceso y cambia el aviso de "ya podés encender") y al PGT (qué es cada cosa).
 
+### Voltia en el celular: instalable desde el navegador, sin tiendas por ahora
+
+**Qué se decidió.** Voltia PM y el portal se instalan en el celular desde el
+navegador, con avisos, para el equipo y para los clientes. No se publica por
+ahora en App Store ni en Google Play. Si más adelante se publica, va a ser una
+aplicación "Voltia" solo con el portal del cliente, no con lo interno.
+
+**Por qué.** Instalable desde el navegador no cuesta nada, no espera la revisión
+de Apple y sale con cada deploy. Para estar en las tiendas hay que pagar (Apple,
+USD 99 por año; Google, USD 25 una vez), tramitar el número D-U-N-S de la empresa
+y pasar la revisión de Apple en cada versión, que rechaza las aplicaciones que
+son solo una página web. Mezclar lo interno con lo del cliente en la misma
+aplicación de tienda le mostraría al cliente un sistema de gestión con pantallas
+cerradas.
+
+**Desde cuándo rige.** 28 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Experiencia Solar (se le pide al cliente que
+instale el portal y active los avisos).
+
 ### La Pre-Ingeniería no termina sin los datos de la instalación definidos
 
 **Qué se decidió.** Ingeniería no da por terminada la Pre-Ingeniería sin dejar
@@ -956,7 +976,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. |
+| 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. Se registra que Voltia se instala en el celular desde el navegador, con avisos, y que por ahora no va a las tiendas. |
 | 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM, sin avisos ni confirmación de lectura en cada versión nueva; que la licencia se pide y se controla en Voltia PM y que lo que se entrega se firma; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |
 | 0.25 | 22 de octubre de 2026 | Se registra que las cuotas del plan de pagos se cobran por momento de la obra y no por fecha: la del 50 % desde diez días antes de la obra, la del 30 % con la obra terminada y la del 20 % con la habilitación, y que cada una vence a los diez días de poder cobrarse. Se registra también que lo que se le factura al cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo, guardado sin IVA), y se corrige la decisión de las facturas al cliente, que ya no parte de la cotización. |
 | 0.24 | 22 de octubre de 2026 | Se registra que de cada lead se pregunta y se carga cómo nos conoció, para medir qué canal trae ventas. |

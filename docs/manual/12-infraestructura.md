@@ -171,6 +171,76 @@ automáticos (mail de novedades y otros sin `userId`) no aparecen ahí.
 
 ---
 
+## Avisos push y Voltia instalable
+
+### Para qué existe
+
+Que los avisos lleguen al celular o a la computadora aunque Voltia PM esté
+cerrada: al cliente (le respondieron un reclamo, tiene una encuesta, y más
+adelante las alertas de su planta) y al equipo (lo mismo que la campanita). Y que
+se pueda instalar como aplicación desde el navegador, sin tiendas. Decidido el
+28-oct-2026: primero esto; una aplicación de App Store / Google Play, si se hace,
+es aparte y solo con el portal.
+
+### Cómo se usa
+
+- **Cliente:** en el Inicio del portal aparece la tarjeta *Recibí los avisos de
+  tu planta en el celular* (se cierra con la ✕ y no vuelve, guardado en
+  `localStorage`), y en el menú de la cuenta, *Avisos en este celular*.
+- **Equipo:** menú de la cuenta (arriba a la derecha, o el menú lateral en el
+  celular) → *Avisos en este dispositivo*.
+- **Activar avisos** pide el permiso del navegador, registra el dispositivo y
+  manda un aviso de prueba. Si Chrome ofrece instalar, aparece **Instalar**.
+- **iPhone:** los avisos solo andan con Voltia agregada a la pantalla de inicio
+  y abierta desde el ícono (regla de Apple, iOS 16.4 o más nuevo). Mientras se
+  abra en Safari común, la tarjeta explica los tres pasos (Compartir → Agregar a
+  inicio → abrir desde el ícono).
+
+### Cómo funciona
+
+- **Envío:** `services/push/push.service.ts` (`web-push`). No hay un canal
+  aparte: `createNotification()` (`notification.service.ts`) manda push a todas
+  las suscripciones del `userId` después de crear la notificación, sin `await`
+  (si falla no rompe lo que la disparó). Lleva título, mensaje y `link`; sin
+  `link`, `URL_POR_TIPO` (encuestas → `/portal/encuestas`) o `/`. Las
+  notificaciones sin `userId` (de proyecto) no salen por push.
+- **Suscripciones:** tabla `push_suscripciones` (`PushSuscripcion`), una por
+  navegador; `endpoint` único (si en el mismo navegador entra otra persona, pasa
+  a ser de ella). Respuesta 404/410 del servicio de push → se borra; otros
+  errores suman `fallos` y a los 5 se borra.
+- **Rutas** (`routes/push.routes.ts`, solo sesión, sin permiso de la matriz:
+  cada uno maneja sus dispositivos): `GET /api/push/estado`,
+  `POST/DELETE /api/push/suscripciones`, `POST /api/push/prueba`.
+- **Navegador:** `lib/pwa.ts` registra `public/sw.js` al arrancar (`main.tsx`),
+  guarda el evento de instalar de Chrome y hace la suscripción.
+  `components/pwa/AvisosDispositivo.tsx` es la tarjeta y la ventana.
+- **Service worker** (`public/sw.js`): muestra el aviso y al tocarlo enfoca la
+  ventana abierta de Voltia (o abre una) en la ruta del aviso. **No cachea
+  nada** a propósito: una caché vieja dejaría a la gente con una versión
+  anterior después de cada deploy. Tiene un `fetch` vacío porque Chrome lo pide
+  para ofrecer instalar.
+- **Dos manifiestos:** `site.webmanifest` ("Voltia PM", abre `/dashboard`) y
+  `portal.webmanifest` ("Voltia", abre `/portal`). `PortalLayout` cambia el
+  `<link rel="manifest">` y el título de iOS mientras se está en el portal, así
+  el cliente instala "Voltia" y no "Voltia PM".
+- **Claves:** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (ver
+  `DEPLOY.md` §6d). Sin ellas, `pushHabilitado()` da falso y no se ofrece nada.
+
+### Casos borde
+
+- En la vista como cliente no se ofrece activar (quedaría a nombre de quien
+  mira); la ruta además rechaza la cabecera `X-Portal-Preview`.
+- Push necesita HTTPS, o `localhost`: en dev se prueba entrando por el túnel a
+  `localhost:5173` desde la Mac, no desde el celular.
+- Chromium sin pantalla (Playwright) no trae servicio de push y da el permiso
+  como denegado: el envío del servidor se verificó contra un endpoint que
+  responde 201/410 (entregado / dado de baja), no con un aviso real en pantalla.
+- Hoy cada notificación interna con destinatario sale también por push. Si a
+  alguien del equipo le resulta demasiado, se desactiva en ese dispositivo; no
+  hay filtro por tipo.
+
+---
+
 ## Qué tiene que cubrir este capítulo
 
 - Docker Compose en desarrollo y en producción

@@ -387,6 +387,17 @@ dibujo de cuánto están generando los paneles en ese momento, cuánto consume l
 casa y cuánto le vende o le compra a UTE, y los gráficos de cada día, mes y año.
 El trámite le queda en el menú, en **Trámite UTE**.
 
+**Que lo instale y active los avisos.** El portal se puede instalar en el
+celular como una aplicación más: queda el ícono "Voltia" en la pantalla. Al
+entrar, el Inicio le ofrece **Activar avisos**: desde ahí le llega un aviso al
+celular cuando se le responde un reclamo o tiene una encuesta, aunque no tenga
+el portal abierto. En iPhone primero tiene que agregarlo a la pantalla de inicio
+(Compartir → Agregar a inicio) y abrirlo desde el ícono; la misma pantalla se lo
+explica. Vale la pena pedírselo al mandarle el acceso: es lo que va a hacer que
+vuelva a mirar el portal. Experiencia Solar también puede activar los avisos en
+su celular, desde el menú de su cuenta en Voltia PM → *Avisos en este
+dispositivo*: le llega lo mismo que a la campanita.
+
 > **Este paso arrastra a varios más.** Sin acceso al portal el cliente no puede
 > abrir reclamos ni responder encuestas, así que las encuestas quedan sin
 > responder y los reclamos siguen entrando por WhatsApp a cualquiera. Es el paso
@@ -1987,7 +1998,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.34 | 28 de octubre de 2026 | Ya no se le da al cliente el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia. Sale el paso de E3 "Entrega del acceso a la plataforma del inversor" con su mensaje, y el aviso de "Ya podés encender" le dice que mire su generación en el portal. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta en ese momento; el trámite queda en el menú. En el portal, los tickets pasan a llamarse reclamos. El cliente ve en el portal sus documentos firmados (contrato y papeles de UTE) y su Plan de Protección contra Granizo, con el estado, las fechas y el próximo pago. |
+| 1.34 | 28 de octubre de 2026 | Ya no se le da al cliente el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia. Sale el paso de E3 "Entrega del acceso a la plataforma del inversor" con su mensaje, y el aviso de "Ya podés encender" le dice que mire su generación en el portal. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta en ese momento; el trámite queda en el menú. En el portal, los tickets pasan a llamarse reclamos. El cliente ve en el portal sus documentos firmados (contrato y papeles de UTE) y su Plan de Protección contra Granizo, con el estado, las fechas y el próximo pago. El portal y Voltia PM se instalan en el celular y mandan avisos: al cliente se le pide que lo instale y active los avisos al mandarle el acceso. |
 | 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |
 | 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |

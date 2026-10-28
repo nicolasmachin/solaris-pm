@@ -364,6 +364,22 @@ Detalle en `docs/manual/15-whatsapp.md`. Después del primer deploy con WhatsApp
    - En el webhook de la app, suscribir además `history`, `smb_message_echoes`,
      `smb_app_state_sync` y `account_update`.
 
+## 6d. Avisos push (Voltia instalable con notificaciones)
+
+Detalle en `docs/manual/12-infraestructura.md`, *Avisos push*. Una sola vez:
+
+1. Generar las claves **en el VPS** (no copiar las de dev):
+   `docker compose -f docker-compose.prod.yml exec -T server npx web-push generate-vapid-keys`
+2. Cargarlas en el `.env` del VPS: `VAPID_PUBLIC_KEY=…`, `VAPID_PRIVATE_KEY=…` y
+   `VAPID_SUBJECT=mailto:nicolas@voltia.com.uy`. Recrear el server
+   (`docker compose -f docker-compose.prod.yml up -d server`).
+3. Verificar: `curl -s https://app.voltia.com.uy/api/push/estado` con sesión da
+   `"habilitado":true`. Sin las claves la pantalla no ofrece activar avisos y no
+   se manda nada (no rompe).
+
+**No cambiar las claves después**: todas las suscripciones quedan inservibles y
+cada persona tiene que volver a activar los avisos en cada dispositivo.
+
 ## 7. Verificar que el deploy salió bien
 
 ```bash
