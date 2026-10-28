@@ -527,8 +527,10 @@ de trabajo de Experiencia Solar**.
 ## 7 · Voltia PM
 
 Voltia PM es la herramienta interna. Tres nombres que no se mezclan: **Voltia
-PM** (la herramienta), **el portal de Voltia** (lo que ve el cliente) y **la
-aplicación del inversor** (la generación en vivo). Nunca "la app" a secas.
+PM** (la herramienta), **el portal de Voltia** (lo que ve el cliente,
+incluida su planta en vivo) y **la aplicación del inversor** (la del fabricante
+del equipo, que usa el equipo técnico; al cliente ya no se le da). Nunca "la
+app" a secas.
 
 Se entra con el **mail o con el usuario corto**, una versión corta del nombre. Quien no sabe cuál es el suyo se lo pregunta a Administración.
 
@@ -646,7 +648,7 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.4 | 28 de octubre de 2026 | En el glosario: al cliente se le dice "reclamo" y no "ticket", y el portal muestra primero su planta. |
+| 1.4 | 28 de octubre de 2026 | En el glosario: al cliente se le dice "reclamo" y no "ticket", y el portal muestra primero su planta. La aplicación del inversor queda como herramienta del equipo técnico: al cliente ya no se le da, porque lo que mostraba está en el portal. |
 | 1.3 | 22 de octubre de 2026 | Las cuotas del plan de pagos se cobran cuando llega cada momento de la obra, no en una fecha fijada de antemano. Al crear el proyecto, Ventas deja dicho qué se le factura al cliente, y Finanzas factura eso. |
 | 1.2 | 17 de octubre de 2026 | Se aclara qué es un día hábil: de lunes a viernes, sin feriados no laborables, Carnaval ni Semana de Turismo. |
 | 1.1 | 14 de octubre de 2026 | En el traspaso de Ingeniería a Operaciones se suman los datos de la instalación (paneles, inversor, red, techo y si van coplanares o inclinados), coincidiendo en la pre-ingeniería y el unifilar: la Pre-Ingeniería no se da por terminada sin ellos. |

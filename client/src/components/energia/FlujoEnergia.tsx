@@ -1,3 +1,4 @@
+import { useId, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Home, Sun, UtilityPole, Zap } from "lucide-react";
 
@@ -18,7 +19,7 @@ const VIEJO_MIN = 20;
 
 const ESTILO = `
 @keyframes flujo-energia { to { stroke-dashoffset: -24; } }
-.flujo-linea { stroke-dasharray: 6 6; animation: flujo-energia linear infinite; }
+.flujo-linea { stroke-dasharray: 4 8; animation: flujo-energia linear infinite; }
 @media (prefers-reduced-motion: reduce) { .flujo-linea { animation: none; } }
 `;
 
@@ -35,27 +36,83 @@ const kw = (w: number) =>
 const kwh = (n: number | null) =>
   n == null ? "—" : `${n.toLocaleString("es-UY", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWh`;
 
-/** Más potencia, flecha más rápida (entre 0,6 y 2,4 segundos por vuelta). */
+/** Más potencia, flujo más rápido (entre 0,9 y 2,7 segundos por vuelta). */
 function duracion(w: number) {
-  return `${Math.max(0.6, 2.4 - (w / 1000) * 0.35).toFixed(2)}s`;
+  return Math.max(0.9, 2.7 - (w / 1000) * 0.35);
 }
 
-function Linea({ d, w, color, invertida = false }: { d: string; w: number; color: string; invertida?: boolean }) {
+/** Cuántas flechas viajan a la vez por cada caño (con 3 se amontonaban; con 1 quedaba vacío). */
+const FLECHAS = 2;
+
+/**
+ * Un caño entre dos nodos. Quieto (gris) si no pasa energía. Si pasa: el caño
+ * se ilumina con el color del flujo, adentro corre el "agua" (trazo
+ * punteado) y viajan flechas con chispas en el sentido de la energía.
+ */
+function Linea({
+  d,
+  w,
+  color,
+  invertida = false,
+  brillo,
+  movimiento,
+}: {
+  d: string;
+  w: number;
+  color: string;
+  invertida?: boolean;
+  /** id del filtro de brillo (único por planta: puede haber varias en la página). */
+  brillo: string;
+  /** false si el sistema pide reducir movimiento. */
+  movimiento: boolean;
+}) {
   const activa = w >= UMBRAL_W;
+  if (!activa) return <path d={d} stroke="var(--color-border)" strokeWidth={4} strokeLinecap="round" fill="none" />;
+  const dur = duracion(w);
   return (
     <>
-      <path d={d} stroke="var(--color-border)" strokeWidth={4} strokeLinecap="round" fill="none" />
-      {activa && (
-        <path
-          d={d}
-          className="flujo-linea"
-          stroke={color}
-          strokeWidth={4}
-          strokeLinecap="round"
-          fill="none"
-          style={{ animationDuration: duracion(w), animationDirection: invertida ? "reverse" : "normal" }}
-        />
-      )}
+      {/* El caño */}
+      <path d={d} stroke={color} strokeOpacity={0.18} strokeWidth={12} strokeLinecap="round" fill="none" />
+      {/* El agua que corre adentro */}
+      <path
+        d={d}
+        className="flujo-linea"
+        stroke={color}
+        strokeOpacity={0.6}
+        strokeWidth={2}
+        strokeLinecap="round"
+        fill="none"
+        style={{ animationDuration: `${dur.toFixed(2)}s`, animationDirection: invertida ? "reverse" : "normal" }}
+      />
+      {/* Flechas con chispas, viajando en el sentido del flujo */}
+      {movimiento &&
+        Array.from({ length: FLECHAS }, (_, i) => (
+          <g key={i} filter={`url(#${brillo})`}>
+            <path d="M -4 -4.5 L 2 0 L -4 4.5" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {(
+              [
+                [-8, -6, 1.3, 0.7],
+                [-10, 5, 1.1, 0.9],
+                [-3, 7, 1, 0.55],
+                [-1, -7, 0.9, 0.8],
+              ] as const
+            ).map(([cx, cy, r, t], k) => (
+              <circle key={k} cx={cx} cy={cy} r={r} fill="#fff6c8">
+                <animate attributeName="opacity" values="0;1;0" dur={`${t}s`} begin={`${(i * 0.17 + k * 0.11).toFixed(2)}s`} repeatCount="indefinite" />
+              </circle>
+            ))}
+            <animateMotion
+              dur={`${dur}s`}
+              begin={`${(-(i * dur) / FLECHAS).toFixed(2)}s`}
+              repeatCount="indefinite"
+              path={d}
+              rotate={invertida ? "auto-reverse" : "auto"}
+              keyPoints={invertida ? "1;0" : "0;1"}
+              keyTimes="0;1"
+              calcMode="linear"
+            />
+          </g>
+        ))}
     </>
   );
 }
@@ -97,6 +154,11 @@ export function FlujoEnergia({ fuentes, claveCache }: { fuentes: FuentesEnergia;
     refetchInterval: 5 * 60_000,
     retry: 1,
   });
+  const brillo = `flujo-brillo-${useId().replace(/:/g, "")}`;
+  const movimiento = useMemo(
+    () => typeof window === "undefined" || !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    [],
+  );
 
   if (!curva || !curva.disponible || curva.puntos.length === 0) return null;
 
@@ -133,19 +195,45 @@ export function FlujoEnergia({ fuentes, claveCache }: { fuentes: FuentesEnergia;
             (vende ? `, vendiendo a UTE ${kw(red)}` : compra ? `, comprando a UTE ${kw(red)}` : "")}
         </title>
 
-        {/* Líneas: paneles → inversor, inversor → casa, inversor ↔ UTE */}
-        <Linea d={`M ${C.x} 78 L ${C.x} ${C.y - 16}`} w={gen} color="var(--en-gen)" />
-        <Linea d={`M ${C.x + 16} ${C.y} L 274 ${C.y}`} w={consumo ?? 0} color="var(--en-cons)" />
+        <defs>
+          {/* Brillo de las flechas y las chispas */}
+          <filter id={brillo} x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="1.8" result="borroso" />
+            <feMerge>
+              <feMergeNode in="borroso" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Caños: paneles → inversor, inversor → casa, inversor ↔ UTE */}
+        <Linea d={`M ${C.x} 78 L ${C.x} ${C.y - 16}`} w={gen} color="var(--en-gen)" brillo={brillo} movimiento={movimiento} />
+        <Linea d={`M ${C.x + 16} ${C.y} L 274 ${C.y}`} w={consumo ?? 0} color="var(--en-cons)" brillo={brillo} movimiento={movimiento} />
         <Linea
           d={`M ${C.x - 16} ${C.y} L 86 ${C.y}`}
           w={red}
           color={vende ? "var(--en-exp)" : "var(--en-imp)"}
           invertida={compra}
+          brillo={brillo}
+          movimiento={movimiento}
         />
 
-        {/* Inversor */}
-        <circle cx={C.x} cy={C.y} r={16} fill="var(--color-bg-card)" stroke="var(--color-border)" strokeWidth={2} />
-        <Zap x={C.x - 9} y={C.y - 9} width={18} height={18} color="var(--color-text-muted)" />
+        {/* Inversor: se enciende cuando pasa energía por él */}
+        <circle
+          cx={C.x}
+          cy={C.y}
+          r={16}
+          fill="var(--color-bg-card)"
+          stroke={gen >= UMBRAL_W ? "var(--en-gen)" : "var(--color-border)"}
+          strokeWidth={2}
+        />
+        <Zap
+          x={C.x - 9}
+          y={C.y - 9}
+          width={18}
+          height={18}
+          color={gen >= UMBRAL_W ? "var(--en-gen)" : "var(--color-text-muted)"}
+        />
 
         {/* Paneles */}
         <Nodo x={C.x} y={50} color="var(--en-gen)" activo={gen >= UMBRAL_W}>

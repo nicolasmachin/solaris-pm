@@ -877,7 +877,6 @@ model Project {
   @@index([saleDate])
   @@index([deletedAt])
   @@map("projects")
-  growattAltas                    GrowattAltaVisitante[]
 }
 
 // ─── Traspasos entre áreas ───────────────────────────────────────────────────
@@ -6330,35 +6329,4 @@ model AsistentePerfil {
   updatedAt                 DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("asistente_perfiles")
-}
-
-
-// Alta del cliente en la aplicación del inversor (visitante de la web de
-// Growatt), hecha por el propio cliente: Voltia le manda un link de un solo uso,
-// el cliente elige usuario y contraseña, y Voltia PM crea el visitante en
-// Growatt con su planta. La contraseña NO se guarda acá ni en ningún lado: va
-// directo a Growatt. Desde el portal el cliente hace lo mismo sin link
-// (canal PORTAL, sin token).
-model GrowattAltaVisitante {
-  id        String  @id @default(cuid())
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  /// sha256 del token del link (el token en claro solo existe en el link). null = PORTAL.
-  tokenHash String?  @unique
-  canal     String   @default("LINK") // LINK | PORTAL
-  expiraEn  DateTime @db.Timestamptz(6)
-  /// Cuando el cliente completó el alta. Con esto el link ya no sirve.
-  usadoEn   DateTime? @db.Timestamptz(6)
-  usuarioCreado String?
-  /// Intentos fallidos (usuario ocupado, Growatt rechazó…): tope contra abuso.
-  intentos  Int      @default(0)
-  /// Quién generó el link (o el usuario CLIENT, si fue desde el portal).
-  creadoPorId String?
-  anuladoEn DateTime? @db.Timestamptz(6)
-
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-
-  @@index([projectId])
-  @@map("growatt_altas_visitante")
 }

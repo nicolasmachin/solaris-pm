@@ -97,6 +97,7 @@ const MaterialesConsolidados = lazy(() => import("./pages/MaterialesConsolidados
 const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) => ({ default: module.VisitaTecnica })));
 const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
 const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
+const PortalDocumentos = lazy(() => import("./pages/PortalDocumentos").then((module) => ({ default: module.PortalDocumentos })));
 const PortalInicio = lazy(() => import("./pages/PortalInicio").then((module) => ({ default: module.PortalInicio })));
 const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
 const PortalTickets = lazy(() => import("./pages/PortalTickets").then((module) => ({ default: module.PortalTickets })));
@@ -104,8 +105,6 @@ const PortalTicketDetail = lazy(() => import("./pages/PortalTicketDetail").then(
 const PortalSurveys = lazy(() => import("./pages/PortalSurveys").then((module) => ({ default: module.PortalSurveys })));
 const PortalReportes = lazy(() => import("./pages/PortalReportes").then((module) => ({ default: module.PortalReportes })));
 const PortalVideos = lazy(() => import("./pages/PortalVideos").then((module) => ({ default: module.PortalVideos })));
-const PortalAppInversor = lazy(() => import("./pages/PortalAppInversor").then((module) => ({ default: module.PortalAppInversor })));
-const AltaApp = lazy(() => import("./pages/AltaApp").then((module) => ({ default: module.AltaApp })));
 const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
 const ChangePassword = lazy(() => import("./pages/ChangePassword").then((module) => ({ default: module.ChangePassword })));
 const Clientes = lazy(() => import("./modules/clientes/pages/ClientesPage").then((module) => ({ default: module.ClientesPage })));
@@ -242,8 +241,6 @@ export function App() {
       <Routes>
       {/* Public */}
       <Route path="/login" element={<Login />} />
-      {/* Alta del cliente en la aplicación del inversor: link de un solo uso, sin login */}
-      <Route path="/alta-app/:token" element={<AltaApp />} />
 
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -268,12 +265,12 @@ export function App() {
       >
         <Route path="/portal" element={<PortalInicio />} />
         <Route path="/portal/ute" element={<PortalProjects />} />
+        <Route path="/portal/documentos" element={<PortalDocumentos />} />
         <Route path="/portal/tickets" element={<PortalTickets />} />
         <Route path="/portal/tickets/:id" element={<PortalTicketDetail />} />
         <Route path="/portal/encuestas" element={<PortalSurveys />} />
         <Route path="/portal/reportes" element={<PortalReportes />} />
         <Route path="/portal/videos" element={<PortalVideos />} />
-        <Route path="/portal/app-inversor" element={<PortalAppInversor />} />
         <Route path="/portal/:id" element={<PortalProjectUte />} />
       </Route>
 

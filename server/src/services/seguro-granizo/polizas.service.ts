@@ -127,7 +127,7 @@ export async function resolverCantidadPaneles(
 
 // ─── Lectura ─────────────────────────────────────────────────────────────────
 
-const polizaInclude = {
+export const polizaInclude = {
   project: {
     select: {
       id: true,

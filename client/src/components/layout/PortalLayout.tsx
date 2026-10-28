@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Eye,
   FileCheck,
+  FileText,
   Home,
   KeyRound,
   LogOut,
@@ -14,7 +15,6 @@ import {
   Star,
   X,
   type LucideIcon,
-  Smartphone,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { usePortalPreviewStore } from '../../store/portalPreview.store';
@@ -174,9 +174,9 @@ const PORTAL_NAV: PortalNavItem[] = [
   { to: '/portal', label: 'Inicio', corto: 'Inicio', icon: Home },
   { to: '/portal/reportes', label: 'Reportes', corto: 'Reportes', icon: BarChart3 },
   { to: '/portal/tickets', label: 'Mis reclamos', corto: 'Reclamos', icon: MessageSquare },
+  { to: '/portal/documentos', label: 'Documentos', corto: 'Documentos', icon: FileText },
   { to: '/portal/encuestas', label: 'Encuestas', corto: 'Encuestas', icon: Star },
   { to: '/portal/videos', label: 'Videos', corto: 'Videos', icon: PlayCircle },
-  { to: '/portal/app-inversor', label: 'App del inversor', corto: 'App', icon: Smartphone },
   { to: '/portal/ute', label: 'Trámite UTE', corto: 'UTE', icon: FileCheck },
 ];
 

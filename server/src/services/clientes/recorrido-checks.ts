@@ -131,28 +131,28 @@ export const CHECKS_E3: ChecklistDef[] = [
     detalle: "No es una llamada: es el envío del material. El check es 'le mandé el material'.",
   },
   {
-    codigo: "e3_acceso_inversor",
-    titulo: "Entrega del acceso a la plataforma del inversor",
-    orden: 2,
-    plazoDiasHabiles: 15,
-    detalle: "El usuario y la contraseña los deja registrados el técnico; acá se le entregan al cliente.",
-  },
-  {
     codigo: "e3_alta_reportes",
     titulo: "Alta en reportes mensuales y dónde encontrarlos",
-    orden: 3,
+    orden: 2,
     plazoDiasHabiles: 15,
     detalle: "Es el único correo automático que recibe el cliente en 25 años.",
   },
   {
     codigo: "e3_portal_recorrido",
     titulo: "Recorrido por las funcionalidades del portal",
-    orden: 4,
+    orden: 3,
     plazoDiasHabiles: 15,
-    detalle: "Tickets, encuestas, reportes y documentación.",
+    detalle: "Su planta en vivo, reclamos, documentos, encuestas y reportes.",
   },
 ];
 
+// Retirado el 28-10-2026: `e3_acceso_inversor` ("Entrega del acceso a la
+// plataforma del inversor"). El portal de Voltia ya muestra la generación, el
+// consumo y el flujo de energía en vivo: mandar al cliente a la aplicación de
+// otra marca para ver lo mismo no tiene sentido (decisión de Nicolás). En prod
+// había 93 filas, 41 tildadas, ninguna con nota. Se borran con
+// `prisma/scripts/retirar-check-acceso-inversor.ts`.
+//
 // Retirado el 24-09-2026: `e3_garantias` ("Repaso de garantías"). No se hacía. La
 // garantía ya está en el contrato firmado y el paso no producía ningún documento
 // nuevo: era un recordatorio que sumaba un renglón a la lista sin sumar trabajo
@@ -203,7 +203,6 @@ export const HECHO_ACTIVA_CHECKS = {
   habilitacion: [
     "e2_habilitacion",
     "e3_capacitacion",
-    "e3_acceso_inversor",
     "e3_alta_reportes",
     "e3_portal_recorrido",
   ],

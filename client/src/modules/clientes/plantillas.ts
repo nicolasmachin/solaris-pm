@@ -153,9 +153,9 @@ Nos sirve mucho para saber qué mejorar. Gracias.`,
 
 {pasos para encender}
 
-Te dejo también el acceso a la aplicación de tu inversor para que veas cuánto estás generando: {accesos e instrucciones}. En un día soleado como hoy deberías ver unos {generación esperable}. Los primeros días conviene mirarla seguido para acostumbrarte.
+Cuánto estás generando lo ves en el portal de Voltia, apenas entrás: lo que dan los paneles, lo que consume tu casa y lo que le vendés a UTE. En un día soleado como hoy deberías ver unos {generación esperable}. Los primeros días conviene mirarlo seguido para acostumbrarte.
 
-Cualquier duda con la aplicación o con lo que ves, escribime.`,
+Cualquier duda con lo que ves, escribime.`,
   },
   {
     id: "encuesta_habilitacion",
@@ -179,21 +179,7 @@ Son tres preguntas. Gracias.`,
 
 {videos y material}
 
-En el portal tenés además tus reportes de generación, la documentación de la obra y un lugar para abrirnos un reclamo o una consulta cuando lo necesites. Si querés lo recorremos juntos por teléfono.`,
-  },
-  {
-    id: "acceso_inversor",
-    recorrido: "E3",
-    titulo: "Acceso a la plataforma del inversor",
-    cuando: "Dentro de los 15 días hábiles. El usuario y la contraseña los deja el técnico.",
-    checks: ["e3_acceso_inversor"],
-    motivo: "SEGUIMIENTO",
-    cuerpo: `Hola {nombre}, te paso el acceso a la plataforma del inversor, que es donde ves la generación en vivo:
-
-{usuario y contraseña}
-{app o link}
-
-Cualquier duda para entrar, escribime.`,
+En el portal de Voltia ves tu planta en vivo (lo que generás, lo que consumís y lo que le vendés a UTE), tus reportes, tus documentos y un lugar para abrirnos un reclamo o una consulta cuando lo necesites. Si querés lo recorremos juntos por teléfono.`,
   },
   {
     id: "alta_reportes",

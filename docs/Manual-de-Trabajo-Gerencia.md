@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.26 — 26 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.27 — 28 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -539,6 +539,26 @@ mira.
 
 **A qué manuales afecta.** Al de Experiencia Solar.
 
+### Al cliente no se le da la aplicación del inversor: todo está en el portal
+
+**Qué se decidió.** Voltia deja de darle al cliente el acceso a la aplicación
+del inversor (la de la marca del equipo). Lo que esa aplicación le mostraba —la
+generación en el momento, el histórico, el consumo y lo que vende o compra a
+UTE— lo ve en el portal de Voltia, que además tiene sus reportes, sus documentos
+firmados, su Plan de Protección contra Granizo y sus reclamos. Una vez
+habilitado, lo primero que ve al entrar al portal es su planta. Al cliente que
+ya tenía la aplicación no se le saca, pero se lo lleva al portal.
+
+**Por qué.** Mandarlo a la aplicación de otra marca para ver lo mismo no suma:
+le da dos lugares para mirar, y el que no es de Voltia no tiene sus documentos
+ni un lugar para abrir un reclamo. El portal es la cara de Voltia en los 25 años
+de vida de la instalación.
+
+**Desde cuándo rige.** 28 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Experiencia Solar (sale el paso de entregar el
+acceso y cambia el aviso de "ya podés encender") y al PGT (qué es cada cosa).
+
 ### La Pre-Ingeniería no termina sin los datos de la instalación definidos
 
 **Qué se decidió.** Ingeniería no da por terminada la Pre-Ingeniería sin dejar
@@ -936,6 +956,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. |
 | 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM, sin avisos ni confirmación de lectura en cada versión nueva; que la licencia se pide y se controla en Voltia PM y que lo que se entrega se firma; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |
 | 0.25 | 22 de octubre de 2026 | Se registra que las cuotas del plan de pagos se cobran por momento de la obra y no por fecha: la del 50 % desde diez días antes de la obra, la del 30 % con la obra terminada y la del 20 % con la habilitación, y que cada una vence a los diez días de poder cobrarse. Se registra también que lo que se le factura al cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo, guardado sin IVA), y se corrige la decisión de las facturas al cliente, que ya no parte de la cotización. |
 | 0.24 | 22 de octubre de 2026 | Se registra que de cada lead se pregunta y se carga cómo nos conoció, para medir qué canal trae ventas. |

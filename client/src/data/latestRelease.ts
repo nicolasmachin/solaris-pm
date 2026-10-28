@@ -27,10 +27,12 @@ export const LATEST_RELEASE: Release = {
   date: "28 de octubre de 2026",
   sections: [
     {
-      title: "El cliente crea solo su acceso a la aplicación del inversor",
+      title: "Portal: el Inicio pasa a ser la planta del cliente",
       items: [
-        "Desde la ficha del cliente se le manda un link de un solo uso: elige su usuario y su contraseña y la cuenta queda creada con su planta.",
-        "Nadie de Voltia ve la contraseña. También lo puede hacer desde el portal, en App del inversor.",
+        "Una vez habilitado, el cliente entra directo a su planta: un dibujo del flujo de energía de ahora (paneles, casa y UTE, con flechas que muestran hacia dónde va) y su generación y consumo por hora, día, mes y año.",
+        "Antes de la habilitación sigue viendo el trámite UTE, que después queda en el menú.",
+        "Nueva sección Documentos: el contrato y los papeles de UTE firmados, y el Plan de Protección contra Granizo con su estado, sus fechas y el próximo pago.",
+        "Tickets pasa a llamarse Reclamos, y el portal aprovecha todo el ancho en la computadora.",
       ],
     },
     {

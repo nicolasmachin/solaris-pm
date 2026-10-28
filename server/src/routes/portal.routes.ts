@@ -23,6 +23,7 @@ import { registerPortalVideosRoutes } from "./portal-videos.routes.js";
 import { serializeDate } from "../utils/serialization.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { getStoredFilePath } from "../services/file-storage.service.js";
+import { archivoDelCliente, documentosDelCliente } from "../services/portal/documentos-cliente.service.js";
 import { regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
 import {
   setDatosUteCliente,
@@ -942,6 +943,33 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         if (fs.existsSync(absolutePath)) return reply.send(fs.createReadStream(absolutePath));
       }
       return reply.send(await regenerarPdfDesdeSnapshot(id));
+    },
+  );
+
+  // ─── Mis documentos ───────────────────────────────────────────────────────
+  // Contrato firmado, papeles de UTE firmados y el Plan de Protección contra
+  // Granizo (estado, plazos, Anexo A y condiciones). Ver documentos-cliente.service.ts.
+  app.get(
+    "/client/documentos",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      return { proyectos: await documentosDelCliente(user.id) };
+    },
+  );
+
+  app.get(
+    "/client/documentos/:fileId",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const { fileId } = z.object({ fileId: z.string() }).parse(request.params);
+      const f = await archivoDelCliente(user.id, fileId);
+      const absolutePath = getStoredFilePath(f.url);
+      if (!fs.existsSync(absolutePath)) throw notFound("ARCHIVO_NO_ENCONTRADO", "No encontramos el archivo");
+      reply.header("Content-Type", f.mimeType || "application/octet-stream");
+      reply.header("Content-Disposition", contentDisposition("inline", f.filename));
+      return reply.send(fs.createReadStream(absolutePath));
     },
   );
 

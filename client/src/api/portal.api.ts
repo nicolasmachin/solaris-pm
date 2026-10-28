@@ -270,3 +270,57 @@ export async function setPortalDiaCorte(
   );
   return data.diaCorteMedidor;
 }
+
+// ─── Mis documentos ────────────────────────────────────────────────────────
+// Contrato y papeles de UTE firmados, y el Plan de Protección contra Granizo.
+
+export interface PortalDocArchivo {
+  id: string;
+  nombre: string;
+  /** Cuándo se subió a Voltia PM (ISO). No es la fecha de firma. */
+  cargadoEl: string;
+}
+
+export type PortalPlanEstado =
+  | "PENDIENTE_INICIO"
+  | "PENDIENTE_ACTIVACION"
+  | "EN_CARENCIA"
+  | "VIGENTE"
+  | "POR_VENCER"
+  | "EN_GRACIA"
+  | "SUSPENDIDA"
+  | "VENCIDA"
+  | "CANCELADA";
+
+export interface PortalPlanGranizo {
+  estado: PortalPlanEstado;
+  faltaFirma: boolean;
+  faltaPago: boolean;
+  coberturaActiva: boolean;
+  sinCarencia: boolean;
+  /** "YYYY-MM-DD" */
+  coberturaDesde: string | null;
+  vencimiento: string | null;
+  diasParaVencer: number | null;
+  proximoCobro: { fecha: string | null; montoUsd: number } | null;
+  deudaUsd: number;
+  cantidadPaneles: number;
+  montoAnualUsd: number;
+  anexo: (PortalDocArchivo & { firmadoEl: string | null }) | null;
+  condiciones: PortalDocArchivo | null;
+}
+
+export interface PortalDocumentosProyecto {
+  projectId: string;
+  nombre: string;
+  capacityKwp: number;
+  contrato: PortalDocArchivo | null;
+  ute: { suministro: number; archivos: PortalDocArchivo[] }[];
+  plan: PortalPlanGranizo | null;
+}
+
+export const getPortalDocumentos = () =>
+  apiClient.get<{ proyectos: PortalDocumentosProyecto[] }>("/api/client/documentos").then((r) => r.data.proyectos);
+
+/** Ruta relativa: va por apiClient, que le agrega la sesión (y la vista como cliente). */
+export const portalDocumentoPath = (fileId: string) => `/api/client/documentos/${fileId}`;

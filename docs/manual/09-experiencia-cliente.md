@@ -423,6 +423,18 @@ mensaje "Garantías y cierre", que se ofrecía desde ese paso. **La subetapa
 documentación final"**: es otra cosa (el cierre del proyecto, no el recorrido del
 cliente) y no se tocó.
 
+**Se retiró `e3_acceso_inversor` ("Entrega del acceso a la plataforma del
+inversor") el 28-10-2026.** Decisión de Nicolás: el portal ya muestra la
+generación, el consumo y el flujo de energía en vivo, y mandar al cliente a la
+aplicación de otra marca para ver lo mismo no suma. Medido antes: 93 filas en
+producción, 41 tildadas, ninguna con nota. Se borran con
+`prisma/scripts/retirar-check-acceso-inversor.ts`, que además corre un lugar el
+orden de `e3_alta_reportes` (3 → 2) y `e3_portal_recorrido` (4 → 3). Con él se
+retiró la plantilla "Acceso a la plataforma del inversor", y el mensaje "Ya podés
+encender + capacitación" manda a mirar la generación en el portal. El alta del
+visitante de Growatt desde Voltia PM (link de un solo uso), hecha el mismo día,
+se sacó entera antes de llegar a producción: queda en el historial de git.
+
 - Se crean **por demanda** (`ensureChecks`, idempotente): la primera vez que se
   piden para un proyecto. Así los ~95 clientes que ya existen entran sin backfill,
   y un cambio del catálogo alcanza a todos.
@@ -1410,9 +1422,13 @@ Ricca: el 12-oct dio producción 21,4, consumo 29,2, importado 15,9, exportado
 - **Arriba de las pestañas, el flujo de "ahora"** (`FlujoEnergia.tsx`), como la
   pantalla principal de la aplicación de Growatt: paneles arriba, inversor al
   centro, la red de UTE a la izquierda y la casa a la derecha, cada uno con su
-  potencia en kW. Las líneas se animan en el sentido del flujo (paneles → casa,
-  y hacia UTE al vender o desde UTE al comprar), más rápido cuanto más potencia;
-  por debajo de 30 W quedan quietas. Debajo, lo producido y consumido en el día.
+  potencia en kW. Cada línea es un "caño" que se ilumina con el color del flujo
+  cuando pasa energía: adentro corre un punteado y viajan dos flechas con
+  chispas (SVG `animateMotion`, con un filtro de brillo de id único por planta)
+  en el sentido del flujo (paneles → casa, y hacia UTE al vender o desde UTE al
+  comprar), más rápido cuanto más potencia (de 2,7 a 0,9 s por recorrido). Por
+  debajo de 30 W la línea queda gris y quieta. La cantidad de flechas
+  (`FLECHAS`) la eligió Nicolás mirándola: tres se amontonaban, una quedaba vacía. Debajo, lo producido y consumido en el día.
   Se ve en la ficha y en el portal, en cualquier pestaña.
 - **Hora**: la curva del día (W cada 5 minutos, dibujada en kW). Producción como
   área, consumo, exportado e importado como líneas. Navegación por día; en el

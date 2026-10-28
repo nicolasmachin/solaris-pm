@@ -1,10 +1,17 @@
 # 10 · Portal del cliente
 
-> **Capítulo parcial.** Están escritas y al día las secciones "Generación día a
-> día", "Videos" y "Ver el portal como lo ve el cliente". El resto funciona en producción
+> **Capítulo parcial.** Están escritas y al día las secciones "El Inicio del
+> portal", "Generación y consumo", "Mis documentos", "Videos", "El menú del
+> portal" y "Ver el portal como lo ve el cliente". El resto funciona en producción
 > pero todavía no está documentado.
 
-Lo que ve el cliente final: su planta, el trámite UTE, reclamos, encuestas y reportes.
+Lo que ve el cliente final: su planta, el trámite UTE, reclamos, documentos, encuestas y reportes.
+
+**El portal reemplaza a la aplicación del inversor** (decidido el 28-oct-2026):
+al cliente ya no se le da acceso a la aplicación de la marca. Hubo una sección
+"App del inversor" para que creara solo su usuario de Growatt; se sacó entera el
+mismo día, antes de llegar a producción (ver capítulo 09, el retiro de
+`e3_acceso_inversor`).
 
 **Al cliente se le dice "reclamo", no "ticket"** (28-oct-2026: la gente no
 entendía la palabra). En el portal son *Mis reclamos* y *Abrir un reclamo*, y
@@ -76,6 +83,80 @@ en `portal.api.ts` quedaron sin uso: se pueden borrar.
 
 ---
 
+# Mis documentos
+
+## Para qué existe
+
+Que el cliente tenga a mano lo que firmó —el contrato con Voltia y los papeles
+de UTE— y, si lo tiene, su Plan de Protección contra Granizo con sus plazos, sin
+pedirlo por WhatsApp.
+
+## Cómo se usa
+
+Pestaña **Documentos** (`/portal/documentos`, `PortalDocumentos.tsx`). Por
+proyecto: una tarjeta **Contrato con Voltia**, una **Papeles de UTE** (agrupados
+por "Cuenta UTE N" si el proyecto tiene más de una) y, si hay plan, **Plan de
+Protección contra Granizo**: el estado con una frase que lo explica, protegido
+desde / hasta, paneles, costo por año, próximo pago, lo pendiente de pago si hay,
+y el Anexo A firmado y las condiciones. Cada archivo tiene **Ver** (lo abre en
+otra pestaña) y descargar.
+
+## Cómo funciona
+
+`services/portal/documentos-cliente.service.ts`:
+
+- `GET /client/documentos` → `documentosDelCliente(userId)`. No hay modelo
+  nuevo: son `FileAttachment` que ya sube el equipo, reconocidos por
+  `toolSource`:
+  - `contrato-firmado`: el bloque Contrato firmado del proyecto. Uno solo
+    vigente (subir otro borra el anterior).
+  - `ute-docs-firmados`: los papeles UTE firmados que sube Operaciones, uno o
+    varios por suministro (`suministro` null = el principal).
+  - `plan-granizo-anexo`: el Anexo A (`SeguroGranizoPoliza.anexoFileId`).
+  - `plan-granizo`: el PDF de condiciones vigente (`sincronizarDocumentoGenerado`).
+- El estado del plan se calcula con `estadoDePoliza()` (el estado guardado no es
+  el visible). Al portal van solo estado, fechas, paneles, montos y los dos
+  archivos: nada de notas, siniestros, número de serie ni cobros internos.
+- `GET /client/documentos/:fileId` → `archivoDelCliente()`: busca el archivo
+  con `toolSource` en la lista permitida **y** proyecto del cliente
+  (`clients.some.userId`); si no, 404 `DOCUMENTO_NO_ENCONTRADO`. Así una foto de
+  obra o un presupuesto del mismo proyecto no salen por acá. Se sirve `inline`
+  con su `mimeType`.
+- El cliente lo pide con `apiClient` (blob), así lleva la sesión y, en la vista
+  como cliente, la cabecera `X-Portal-Preview`. **Ver** abre la pestaña antes
+  de pedir el archivo: abrirla después del `await` el celular la bloquea como
+  ventana emergente.
+
+## Permisos
+
+`PORTAL_CLIENTE:VIEW` en los dos endpoints, más el filtro por dueño. En la vista
+como cliente, el hook del portal reemplaza al usuario (requiere
+`EXPERIENCIA_CLIENTES:VIEW`, solo GET). Verificado por API el 28-oct-2026:
+archivo propio → 200; de otro cliente o fuera de la lista → 404.
+
+## Reglas y decisiones
+
+- Al cliente se le dice **Plan de Protección contra Granizo**, nunca "seguro".
+- Las frases de cada estado están en `ESTADO` y `explicacion()` de
+  `PortalDocumentos.tsx`; las reglas (30 días de espera, 15 de gracia) son las
+  de `seguro-granizo/estado.ts`.
+- No hay "proforma", "contrato generado sin firmar" ni el ZIP de UTE sin
+  firmar: solo lo firmado, más las condiciones del plan.
+
+## Casos borde
+
+- **No hay fecha de firma del contrato ni de los papeles UTE**: se muestra
+  "Cargado el …" (`createdAt` del archivo). El Anexo A sí tiene fecha de firma
+  (`anexoFirmadoEn`).
+- **Los papeles UTE no dicen cuál es cuál**: se suben sueltos (a veces un ZIP o
+  una foto con varios). Se muestran con el nombre del archivo.
+- Si falta el archivo físico (base copiada de producción sin el storage, como en
+  dev), el listado lo muestra igual y al abrirlo da 404 `ARCHIVO_NO_ENCONTRADO`.
+- Un proyecto que es ampliación de otro no muestra el plan: el plan cuelga del
+  proyecto original.
+
+---
+
 # Videos
 
 ## Para qué existe
@@ -133,8 +214,7 @@ la marca cuando la ruta no es de ninguna otra sección.
   contenido (`<main>` en `PortalLayout`) llegan hasta `max-w-6xl`; antes era
   `max-w-3xl` y en la computadora se veía como una pantalla de celular. Cada
   página pone su propio tope (Inicio y Reportes, todo; Videos `5xl`; Trámite UTE
-  `5xl` con dos columnas; reclamos y encuestas `4xl`; App del inversor, angosto
-  porque es un formulario). En la vista de energía, a partir de `lg` el flujo de
+  `5xl` con dos columnas; reclamos y encuestas `4xl`; Documentos `5xl`). En la vista de energía, a partir de `lg` el flujo de
   "ahora" va a la izquierda del gráfico (también en la ficha interna).
 - **Se pasó a la barra de abajo porque las pestañas no entraban.** Con cinco
   secciones quedaban cortadas en un celular angosto, y deslizarlas de costado no
@@ -245,69 +325,3 @@ sobre cómo funciona hoy**:
 - `docs/features/*/SPEC.md` si existe para este módulo: es diseño previo, puede
   contradecir a la implementación.
 - `docs/pendientes/` para saber qué falta.
-
-
-# Acceso a la aplicación del inversor (alta del visitante de Growatt)
-
-## Para qué existe
-
-Para que el cliente tenga su usuario de la aplicación del inversor (un
-"visitante" de la web de Growatt que ve solo su planta) sin que nadie de Voltia
-le invente una contraseña y se la mande por WhatsApp. Desde el 28-oct-2026.
-
-## Cómo se usa
-
-- **Equipo:** ficha del cliente (Experiencia Solar) → **Acceso a la app del
-  inversor** → *Generar el link*. Muestra el link y abre WhatsApp con el mensaje
-  armado. Si ya tiene acceso, dice qué usuario eligió y cuándo.
-- **Cliente con el link:** `/alta-app/:token`, página pública (sin login) donde
-  elige usuario, contraseña y mail. Ve en el momento si el usuario ya existe.
-- **Cliente en el portal:** `/portal/app-inversor`, el mismo formulario, sin link.
-
-## Cómo funciona
-
-- `services/growatt-alta/growatt-alta.service.ts`. El link es un token aleatorio
-  (24 bytes, base64url); en `growatt_altas_visitante` se guarda solo su
-  **sha256**, el vencimiento (7 días), si se usó, el usuario elegido e intentos.
-  Generar un link nuevo anula los anteriores sin usar.
-- El alta llama a `crearVisitanteGrowatt()` (`growatt/web.client.ts`), que hace
-  lo mismo que la web en Setting → Visitor Account list → Add: `POST
-  /set/addViewAccount` con `accountName`, `pwd` **en claro** (la web no la
-  cifra), `email`, `activeName`, `phone`, `timezone=8` (el mismo que dejó la web
-  en las cuentas creadas a mano) y `plantIds` = la planta Growatt vinculada al
-  proyecto. Antes pregunta `POST /userCenter.do action=checkAccountExist`.
-- **La contraseña no se guarda**: llega en el POST, va a Growatt y se descarta.
-  Al terminar se deja un comentario en el proyecto con el usuario elegido (lo
-  firma quien generó el link; desde el portal, sin link previo, el propio
-  usuario CLIENT).
-- La URL pública sale de `APP_PUBLIC_URL` o, si no está, de `MCP_PUBLIC_URL`
-  (en prod `https://app.voltia.com.uy`).
-
-## Permisos
-
-- Generar el link y ver el estado: `EXPERIENCIA_CLIENTES:EDIT` / `VIEW`.
-- Portal: `PORTAL_CLIENTE:VIEW`, y solo proyectos propios (`ProjectClient`).
-- Las rutas `/api/publico/alta-app/*` no piden login: van en un plugin aparte
-  (`registerGrowattAltaPublicRoutes`) y tienen un freno de 30 pedidos cada 10
-  minutos por IP. El token es el secreto.
-
-## Reglas y decisiones
-
-- Validación igual a la de la web de Growatt (`validarVisitante()`): usuario de
-  3+ caracteres sin espacios ni especiales, contraseña de 6+, mail válido.
-- 10 intentos fallidos (usuario ocupado o rechazo de Growatt) dejan el link
-  vencido; en el portal, 10 por día por proyecto.
-- Solo Growatt. Huawei (FusionSolar) no está explorado.
-
-## Casos borde
-
-- **No se probó el alta en vivo desde el servidor** al construirlo: crear un
-  visitante de prueba en la cuenta real de Growatt quedó bloqueado. El POST es
-  idéntico al que hizo la web al crear `yramos` el 28-oct-2026 (capturado con
-  Playwright), pero conviene probar el primer alta real y mirar el comentario.
-- Las cuentas creadas antes a mano no están en `growatt_altas_visitante`: se
-  detectan por el comentario "Cuenta de visitante Growatt CREADA: usuario 'x'"
-  (`visitanteManual()`). Con eso la ficha muestra el usuario y el portal no
-  ofrece crear otra. Un visitante creado a mano sin ese comentario no se ve.
-- Si la planta se desvincula después, el link deja de servir (`infoLink` lo da
-  por vencido).

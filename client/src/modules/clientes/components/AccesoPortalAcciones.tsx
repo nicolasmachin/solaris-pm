@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Eye, Link2, Send, Smartphone, UserPlus } from "lucide-react";
+import { Eye, Link2, Send, UserPlus } from "lucide-react";
 
 import type { ClienteFicha } from "../../../api/clientes.api";
 import { usePermission } from "../../../hooks/usePermission";
 import { usePortalPreviewStore } from "../../../store/portalPreview.store";
 import { CrearUsuarioModal } from "./CrearUsuarioModal";
 import { ReenviarAccesoModal } from "./ReenviarAccesoModal";
-import { AltaAppModal } from "./AltaAppModal";
 
 const boton =
   "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors";
@@ -23,7 +22,7 @@ export function AccesoPortalAcciones({ ficha }: { ficha: ClienteFicha }) {
   const navigate = useNavigate();
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const activarPreview = usePortalPreviewStore((s) => s.activar);
-  const [modal, setModal] = useState<"crear" | "reenviar" | "app" | null>(null);
+  const [modal, setModal] = useState<"crear" | "reenviar" | null>(null);
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
 
   async function copiarEnlace() {
@@ -74,23 +73,12 @@ export function AccesoPortalAcciones({ ficha }: { ficha: ClienteFicha }) {
       ) : (
         <span className="text-[11px] text-[var(--color-text-muted)]">Sin acceso al portal</span>
       )}
-      {canEdit && (
-        <button
-          type="button"
-          className={botonNormal}
-          title="Mandarle al cliente el link para que cree su acceso a la aplicación del inversor"
-          onClick={() => setModal("app")}
-        >
-          <Smartphone className="h-3.5 w-3.5 shrink-0" /> Acceso a la app del inversor
-        </button>
-      )}
       <button type="button" className={botonNormal} title="Copiar el enlace del portal de Voltia" onClick={copiarEnlace}>
         <Link2 className="h-3.5 w-3.5 shrink-0" /> Copiar enlace del portal
       </button>
 
       {modal === "crear" && <CrearUsuarioModal cliente={ficha} onClose={() => setModal(null)} />}
       {modal === "reenviar" && <ReenviarAccesoModal cliente={ficha} onClose={() => setModal(null)} />}
-      {modal === "app" && <AltaAppModal projectId={ficha.projectId} nombre={ficha.nombre} onClose={() => setModal(null)} />}
     </div>
   );
 }

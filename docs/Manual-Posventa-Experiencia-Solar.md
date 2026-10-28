@@ -128,7 +128,7 @@ Son seis. **Ninguno es opcional.**
 | 3 | **Cualquier visita a su propiedad** — materiales, relevamiento o equipo | E1/E2 | Antes de ir. **Si no está agendado, no vamos.** |
 | 4 | **Obra terminada y qué sigue** — que arranca el trámite, con su plazo | E1→E2 | El mismo día |
 | 5 | **Ya podés encender** | E2→E3 | **24-48 h** desde la habilitación |
-| 6 | **Capacitación** — cómo usar la aplicación del inversor, qué generación esperar | E3 | En el mismo contacto que el 5 |
+| 6 | **Capacitación** — cómo ver su planta en el portal de Voltia, qué generación esperar | E3 | En el mismo contacto que el 5 |
 
 > **Ojo con el plazo del hito 2.** Los dos días hábiles corren desde que
 > **Operaciones confirma la fecha en el calendario**, no desde que se cerró la
@@ -629,9 +629,9 @@ es tolerable. Si no, cada día es una traición.
 >>
 >> {pasos para encender}
 >>
->> Te dejo también el acceso a la aplicación de tu inversor para que veas cuánto estás generando: {accesos e instrucciones}. En un día soleado como hoy deberías ver unos {generación esperable}. Los primeros días conviene mirarla seguido para acostumbrarte.
+>> Cuánto estás generando lo ves en el portal de Voltia, apenas entrás: lo que dan los paneles, lo que consume tu casa y lo que le vendés a UTE. En un día soleado como hoy deberías ver unos {generación esperable}. Los primeros días conviene mirarlo seguido para acostumbrarte.
 >>
->> Cualquier duda con la aplicación o con lo que ves, escribime.
+>> Cualquier duda con lo que ves, escribime.
 > ## Cada día que pasa el cliente deja de ahorrar plata.
 
 No es una demora administrativa: es dinero suyo que se pierde y que no se
@@ -673,7 +673,7 @@ Qué tiene que llevar ese mensaje:
 2. **Cómo encenderlo**: cortar el precinto y subir la llave de microgeneración.
    **El inversor no se toca.** El encendido lo hace él; que vaya alguien de Voltia
    es excepción.
-3. **El acceso a la aplicación del inversor** para ver la generación: en Growatt, el link para que él mismo cree su usuario y su contraseña (ver más abajo, *El portal y la aplicación del inversor*).
+3. **Dónde ver la generación**: en el portal de Voltia, que al entrar le muestra su planta en ese momento. Ya no se le da el acceso a la aplicación del inversor (ver más abajo, *El portal y la aplicación del inversor*).
 4. **Qué generación esperar hoy**, con un número concreto para su instalación. Sin
    esto, el cliente no sabe si lo que ve está bien o mal.
 
@@ -748,26 +748,7 @@ habilitada para clientes; un video que no está cargado ahí, el cliente no lo v
 en el portal. Lo mismo vale para cualquier video que se le mande después, en
 cualquier etapa.
 
-### 7.2 · Acceso a la plataforma del inversor
-
-| | |
-|---|---|
-| **Plazo** | 15 días hábiles |
-| **Qué decir** | Plantilla **"Acceso a la plataforma del inversor"** |
-
-> **El texto, tal como sale en Voltia PM:**
->
->> Hola {nombre}, te paso el acceso a la plataforma del inversor, que es donde ves la generación en vivo:
->>
->> {usuario y contraseña}
->> {app o link}
->>
->> Cualquier duda para entrar, escribime.
-**El usuario y la contraseña los deja registrados el técnico** durante la
-instalación. Acá solo se le entregan al cliente. Si no están registrados, el
-problema es anterior y hay que ir a buscarlo a Operaciones.
-
-### 7.3 · Alta en reportes mensuales
+### 7.2 · Alta en reportes mensuales
 
 | | |
 |---|---|
@@ -810,7 +791,7 @@ esa: es el ciclo de su medidor, no un error.
 Antes no sirve: no hay nada que comparar, y la explicación en abstracto no se
 retiene (Anexo E, tema 12).
 
-### 7.4 · Recorrido por el portal
+### 7.3 · Recorrido por el portal
 
 Su planta, reclamos, encuestas, reportes, documentación y videos. Es el paso que convierte el
 portal de "una cosa que me mandaron" en una herramienta que va a usar. Conviene
@@ -1266,6 +1247,13 @@ Protección contra Granizo** de la ficha del cliente.
   cambio de precio, con 30 días de anticipación.** Voltia PM no le escribe solo:
   **le escribís vos**. Cuando el plan se pone en rojo te llega el aviso (ver
   abajo), y en la ficha aparece **Avisar al cliente** con el mensaje listo.
+- **El cliente ve su plan en el portal de Voltia**, en **Documentos**: en qué
+  estado está (vigente, en período de espera, vence pronto, vencido…), desde y
+  hasta cuándo está protegido, cuántos paneles cubre, cuánto sale por año y
+  cuándo es el próximo pago, con el Anexo A firmado y las condiciones del plan.
+  Lo que ve sale de lo que el equipo carga en la pestaña Plan granizo: si el
+  Anexo A no está subido, el portal le dice que todavía no está cargado. No
+  reemplaza el aviso de vencimiento, que lo sigue escribiendo una persona.
 - **Atraso:** si no paga dentro de los **15 días** del vencimiento, sigue
   cubierto ("En gracia"). Pasados los 15 días queda **suspendido** y no cubre; si
   paga después, corre una nueva carencia de 30 días desde el pago.
@@ -1528,8 +1516,7 @@ sólo los catorce con su lugar, para encontrarlos rápido.
 | Ya podés encender + capacitación | 6.1 | E2 |
 | Aviso de la encuesta de habilitación | 6.2 | E2 |
 | Material de capacitación | 7.1 | E3 |
-| Acceso a la plataforma del inversor | 7.2 | E3 |
-| Alta en los reportes mensuales | 7.3 | E3 |
+| Alta en los reportes mensuales | 7.2 | E3 |
 | Plan de granizo: plan activo, aviso de vencimiento, vencido sin pago, plan suspendido | 12.1 | Plan de granizo |
 | Plan de granizo: recibimos el aviso de daño, confirmación de la reposición, no corresponde reponer, paneles repuestos | 12.1 | Plan de granizo |
 
@@ -1766,11 +1753,11 @@ partes:
 
 - Son **dos cosas distintas**, y conviene explicarlo así desde el principio, con esos dos nombres siempre:
 - **El portal de Voltia:** lo primero que ve, una vez habilitado, es **su planta**: cuánto generan los paneles en ese momento, cuánto consume la casa y cuánto le vende o le compra a UTE, y su generación y su consumo por hora, día, mes y año, igual que en la aplicación de su inversor (en los inversores Growatt; en Huawei, por ahora, sin la curva del día). Además: el trámite UTE, los reclamos, las encuestas, los reportes mensuales, los videos que se le mandaron, y donde carga su fecha de corte y su tarifa.
-- **La aplicación de tu inversor:** la generación en tiempo real, el histórico y el consumo. Es de la marca del inversor, no de Voltia. Sigue sirviendo, pero ya no hace falta para ver cómo va.
+- **La aplicación de tu inversor:** es de la marca del inversor, no de Voltia. **Desde el 28 de octubre de 2026 ya no se le da al cliente**: todo lo que mostraba (la generación en el momento, el histórico y el consumo) está en el portal de Voltia. El cliente que ya la tenía puede seguir usándola, pero se lo lleva al portal.
 
-**Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación del inversor (en plantas Growatt) **no se le inventan usuario ni contraseña**: desde la ficha, **Acceso a la app del inversor** arma un link de un solo uso, que vale 7 días, con el mensaje listo para mandar por WhatsApp. El cliente abre el link, elige él su usuario y su contraseña, y la cuenta queda creada con su planta. Nadie de Voltia ve esa contraseña; en los comentarios del proyecto queda anotado qué usuario eligió. Si se la olvida, se le manda un link nuevo. El cliente que ya entra al portal lo puede hacer también desde ahí, en **App del inversor**. Para que funcione, la planta tiene que estar asociada al cliente en Voltia PM. En plantas de otra marca, sigue siendo como antes: se crea el usuario siguiendo el video instructivo.
+**Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. **No se le da acceso a la aplicación del inversor**: si lo pide, se le explica que en el portal de Voltia ve lo mismo, y además sus reportes, sus documentos y sus reclamos, en un solo lugar y con el nombre de Voltia. Mandarlo a la aplicación de otra marca para ver lo mismo no suma y le da dos lugares para mirar.
 
-**Cuándo escalar:** problemas técnicos de la plataforma del inversor, a Operaciones.
+**Cuándo escalar:** si el portal no le muestra la generación (por ejemplo, porque la planta no está asociada a su ficha), a Operaciones.
 
 ---
 
@@ -1811,7 +1798,7 @@ partes:
 **Qué explicar:**
 
 - **El encendido lo hace el cliente**: cortar el precinto y subir la llave de microgeneración. **No se toca el inversor.** Es una maniobra de un minuto, y conviene explicarla paso a paso.
-- Después se confirma con él que **quedó generando**: en la aplicación del inversor tiene que verse la generación subiendo.
+- Después se confirma con él que **quedó generando**: en el portal de Voltia (o en su ficha, del lado de Voltia PM) tiene que verse la generación subiendo.
 
 **Política interna:** Voltia avisa dentro de las **24 a 48 horas** de otorgada la habilitación, sin esperar que pregunte. **Si pregunta él, el aviso llegó tarde.** Al confirmar que genera, se le recuerda el **20 % final**. Que vaya alguien de Voltia a encender es excepción, no la regla.
 
@@ -1827,7 +1814,7 @@ partes:
 
 **Qué explicar:**
 
-- Se compara la generación **real** (la aplicación del inversor) contra la **esperada** (el gráfico de la propuesta), **por mes y no por día**. Un día nublado aislado no dice nada.
+- Se compara la generación **real** (la de su planta en el portal de Voltia o en su ficha) contra la **esperada** (el gráfico de la propuesta), **por mes y no por día**. Un día nublado aislado no dice nada.
 - El pico de potencia depende de la altura del sol, la orientación y la temperatura. **En invierno, con sol, es normal no llegar a la potencia nominal**: los 6 kWp son en condiciones ideales, no un piso de cada día.
 - Lo que más convence es mostrarle **la curva de potencia de un día soleado de ese mes**: ve que el sistema anda y entiende por qué no llega al número. Está en su ficha, en **Generación y consumo → Hora**, yendo con las flechas al día que se quiera (y el cliente la ve igual en su portal).
 
@@ -1984,7 +1971,7 @@ capítulo aparte: repiten lo que ya se explicó, con la pantalla al lado.
 | Los pasos de la etapa | La lista de pasos, con los que tienen plazo resaltados, y el botón de plantillas | Dentro de la ficha |
 | Los mensajes modelo | El panel de plantillas: se elige a la izquierda, se lee a la derecha, se copia | Botón **Plantillas** de la etapa |
 | El trámite de UTE | Los hitos con sus fechas — lo mismo que ve el cliente | Dentro de la ficha |
-| La generación y el consumo | La curva del día, los días, los meses y los años, como en la aplicación del inversor, con cuánto se autoconsume, se exporta y se importa | Dentro de la ficha (**Generación y consumo**) |
+| La generación y el consumo | La curva del día, los días, los meses y los años, con el flujo de energía de ese momento arriba y cuánto se autoconsume, se exporta y se importa | Dentro de la ficha (**Generación y consumo**) |
 | El portal del cliente | Su pantalla tal cual la ve él | Se abre en modo cliente desde el listado (el ojito) o desde la ficha (**Ver como el cliente**) |
 | Los reportes mensuales | El tablero desde donde salen, con los tres pasos numerados | Experiencia Solar → Reportes FV |
 | El listado de clientes | Agrupado por etapa y ordenado por prioridad de contacto | Experiencia Solar → Generadores |
@@ -2000,7 +1987,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.34 | 28 de octubre de 2026 | El acceso a la aplicación del inversor (Growatt) ya no se arma con usuario y contraseña inventados: se le manda al cliente un link de un solo uso desde su ficha y él elige los suyos; también lo puede hacer desde el portal. En el portal, los tickets pasan a llamarse reclamos (*Mis reclamos*, *Abrir un reclamo*), que es como lo entiende el cliente. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta (generación, consumo y lo que vende o compra a UTE en ese momento), y ya no el trámite, que queda en el menú. |
+| 1.34 | 28 de octubre de 2026 | Ya no se le da al cliente el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia. Sale el paso de E3 "Entrega del acceso a la plataforma del inversor" con su mensaje, y el aviso de "Ya podés encender" le dice que mire su generación en el portal. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta en ese momento; el trámite queda en el menú. En el portal, los tickets pasan a llamarse reclamos. El cliente ve en el portal sus documentos firmados (contrato y papeles de UTE) y su Plan de Protección contra Granizo, con el estado, las fechas y el próximo pago. |
 | 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |
 | 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |
