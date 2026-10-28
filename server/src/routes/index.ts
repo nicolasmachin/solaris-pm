@@ -28,6 +28,7 @@ import { registerMaterialTemplatesRoutes } from "./material-templates.routes.js"
 import { registerMcpRoutes } from "./mcp/index.js";
 import { registerPortalRoutes } from "./portal.routes.js";
 import { registerProformaRoutes } from "./proforma.routes.js";
+import { registerGrowattAltaPublicRoutes, registerGrowattAltaRoutes } from "./growatt-alta.routes.js";
 import { registerPreIngenieriaRoutes } from "./preingenieria.routes.js";
 import { registerJustificacionPotenciaRoutes } from "./justificacion-potencia.routes.js";
 import { registerProposalsV2DefaultsRoutes } from "./proposals-v2-defaults.routes.js";
@@ -91,6 +92,8 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerContractRoutes, { prefix: "/api" });
   await app.register(registerContratoFirmadoRoutes, { prefix: "/api" });
   await app.register(registerProformaRoutes, { prefix: "/api" });
+  await app.register(registerGrowattAltaPublicRoutes, { prefix: "/api" });
+  await app.register(registerGrowattAltaRoutes, { prefix: "/api" });
   await app.register(registerTraspasosRoutes, { prefix: "/api" });
   await app.register(registerTicketsRoutes, { prefix: "/api" });
   await app.register(registerEncuestasRoutes, { prefix: "/api" });

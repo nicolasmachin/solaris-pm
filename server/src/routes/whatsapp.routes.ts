@@ -21,7 +21,13 @@ import {
   listarPlantillas,
   mensajesDe,
 } from "../services/whatsapp-cloud/api.service.js";
-import { faltantesParaEnviar, whatsappConfig } from "../services/whatsapp-cloud/config.js";
+import { faltantesParaConectar, faltantesParaEnviar, whatsappConfig } from "../services/whatsapp-cloud/config.js";
+import {
+  actualizarNumero,
+  conectarNumero,
+  listarNumeros,
+  sincronizarNumero,
+} from "../services/whatsapp-cloud/numeros.service.js";
 import { AppError, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
@@ -120,5 +126,56 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
     });
     reply.code(201);
     return creada;
+  });
+
+  // ─── Números conectados con el registro integrado de Meta ─────────────────
+
+  // Lo que necesita el navegador para abrir la ventana de Meta. El app id y el
+  // id de configuración son públicos (van igual en el código de la página).
+  app.get("/whatsapp/registro", puede, async () => {
+    const c = whatsappConfig();
+    return {
+      faltan: faltantesParaConectar(c),
+      appId: c.appId || null,
+      configId: c.signupConfigId || null,
+      graphVersion: c.graphVersion,
+    };
+  });
+
+  app.get("/whatsapp/numeros", puede, async () => listarNumeros());
+
+  app.post("/whatsapp/numeros", puede, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = z
+      .object({
+        code: z.string().min(10).max(2048),
+        phoneNumberId: z.string().regex(/^\d{5,30}$/),
+        wabaId: z.string().regex(/^\d{5,30}$/),
+        businessId: z.string().regex(/^\d{5,30}$/).optional(),
+        etiqueta: z.string().max(60).optional(),
+        responsableId: z.string().min(1).max(40).optional(),
+      })
+      .parse(request.body);
+    const numero = await conMeta(() => conectarNumero({ ...body, userId: user.id }));
+    reply.code(201);
+    const { tokenCifrado: _t, ...rest } = numero;
+    return rest;
+  });
+
+  app.post("/whatsapp/numeros/:id/sincronizar", puede, async (request) => {
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const { tokenCifrado: _t, ...rest } = await sincronizarNumero(id);
+    return rest;
+  });
+
+  app.patch("/whatsapp/numeros/:id", puede, async (request) => {
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const body = z
+      .object({
+        etiqueta: z.string().max(60).nullable().optional(),
+        responsableId: z.string().min(1).max(40).nullable().optional(),
+      })
+      .parse(request.body);
+    return actualizarNumero(id, body);
   });
 }

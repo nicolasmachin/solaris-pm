@@ -352,6 +352,17 @@ Detalle en `docs/manual/15-whatsapp.md`. Después del primer deploy con WhatsApp
    (con `--ver` lista las suscriptas).
 5. Prueba punta a punta: desde Administración → WhatsApp, mandar `hello_world` al
    celular de prueba, contestar desde el celular y ver la respuesta y las tildes.
+6. **Conectar números reales** (migración `whatsapp_numeros_coexistencia`, aditiva):
+   - En Meta, "Inicio de sesión con Facebook para empresas" → Configuraciones →
+     crear una del tipo **registro integrado de WhatsApp**; copiar su id.
+   - En la configuración de ese inicio de sesión: `app.voltia.com.uy` en
+     "Dominios permitidos" y en "URI de redireccionamiento de OAuth válidos";
+     inicio de sesión con el SDK de JavaScript activado.
+   - En el `.env`: `META_APP_ID=1426990818884893` y
+     `WHATSAPP_SIGNUP_CONFIG_ID=<id>`; `SMTP_ENCRYPTION_KEY` tiene que estar.
+     Recrear el server (`up -d server`).
+   - En el webhook de la app, suscribir además `history`, `smb_message_echoes`,
+     `smb_app_state_sync` y `account_update`.
 
 ## 7. Verificar que el deploy salió bien
 

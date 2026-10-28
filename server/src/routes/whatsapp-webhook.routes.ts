@@ -50,7 +50,13 @@ export async function registerWhatsAppWebhookRoutes(app: FastifyInstance) {
     // Se contesta enseguida: si Meta no recibe el 200 rápido, reintenta. El
     // procesamiento es idempotente, así que un reintento no duplica nada.
     reply.code(200).send("OK");
-    console.log(`[whatsapp] webhook: ${cuerpo.toString("utf8")}`);
+    // Solo un resumen: el historial de un número trae conversaciones enteras y
+    // no tienen por qué quedar en los logs.
+    const campos = ((request.body as { entry?: Array<{ changes?: Array<{ field?: string }> }> }).entry ?? [])
+      .flatMap((e) => e.changes ?? [])
+      .map((c) => c.field)
+      .join(",");
+    console.log(`[whatsapp] webhook: ${campos || "sin cambios"} (${cuerpo.length} bytes)`);
     setImmediate(() => {
       procesarWebhook(request.body as Parameters<typeof procesarWebhook>[0]).catch((err) =>
         console.error("[whatsapp] error procesando webhook:", err),

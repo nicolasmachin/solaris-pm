@@ -23,6 +23,26 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.5",
+  date: "28 de octubre de 2026",
+  sections: [
+    {
+      title: "El cliente crea solo su acceso a la aplicación del inversor",
+      items: [
+        "Desde la ficha del cliente se le manda un link de un solo uso: elige su usuario y su contraseña y la cuenta queda creada con su planta.",
+        "Nadie de Voltia ve la contraseña. También lo puede hacer desde el portal, en App del inversor.",
+      ],
+    },
+    {
+      title: "WhatsApp: conectar los números del equipo",
+      items: [
+        "En Administración → WhatsApp, la sección Números conectados para sumar los WhatsApp del equipo escaneando un QR (todavía espera la habilitación de Meta).",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_4: Release = {
   version: "13.4",
   date: "27 de octubre de 2026",
   sections: [
@@ -942,6 +962,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.4",
+    shortDate: "27 oct",
+    highlights: RELEASE_13_4.sections.map((sec) => sec.title),
+  },
   {
     version: "13.3",
     shortDate: "26 oct",

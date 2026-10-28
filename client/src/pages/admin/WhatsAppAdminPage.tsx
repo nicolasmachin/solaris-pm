@@ -14,6 +14,7 @@ import {
   type WhatsAppPlantilla,
 } from "../../api/whatsapp.api";
 import { Button } from "../../components/ui/Button";
+import { WhatsAppNumeros } from "./WhatsAppNumeros";
 
 // Administración → WhatsApp: la conexión de Voltia PM con la Cloud API de Meta.
 // Hoy sirve para probar la conexión y para grabar los videos que pide la revisión
@@ -369,6 +370,8 @@ export function TabWhatsApp() {
           <span>Falta configurar en el servidor: {estado.faltan.join(", ")}. Hasta entonces no se puede mandar nada.</span>
         </div>
       )}
+
+      <WhatsAppNumeros />
 
       <div className="grid overflow-hidden rounded-xl border border-[var(--color-border)] md:grid-cols-[260px_1fr]">
         <div className="border-b border-[var(--color-border)] md:border-b-0 md:border-r">

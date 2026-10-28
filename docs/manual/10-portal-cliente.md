@@ -186,3 +186,69 @@ sobre cómo funciona hoy**:
 - `docs/features/*/SPEC.md` si existe para este módulo: es diseño previo, puede
   contradecir a la implementación.
 - `docs/pendientes/` para saber qué falta.
+
+
+# Acceso a la aplicación del inversor (alta del visitante de Growatt)
+
+## Para qué existe
+
+Para que el cliente tenga su usuario de la aplicación del inversor (un
+"visitante" de la web de Growatt que ve solo su planta) sin que nadie de Voltia
+le invente una contraseña y se la mande por WhatsApp. Desde el 28-oct-2026.
+
+## Cómo se usa
+
+- **Equipo:** ficha del cliente (Experiencia Solar) → **Acceso a la app del
+  inversor** → *Generar el link*. Muestra el link y abre WhatsApp con el mensaje
+  armado. Si ya tiene acceso, dice qué usuario eligió y cuándo.
+- **Cliente con el link:** `/alta-app/:token`, página pública (sin login) donde
+  elige usuario, contraseña y mail. Ve en el momento si el usuario ya existe.
+- **Cliente en el portal:** `/portal/app-inversor`, el mismo formulario, sin link.
+
+## Cómo funciona
+
+- `services/growatt-alta/growatt-alta.service.ts`. El link es un token aleatorio
+  (24 bytes, base64url); en `growatt_altas_visitante` se guarda solo su
+  **sha256**, el vencimiento (7 días), si se usó, el usuario elegido e intentos.
+  Generar un link nuevo anula los anteriores sin usar.
+- El alta llama a `crearVisitanteGrowatt()` (`growatt/web.client.ts`), que hace
+  lo mismo que la web en Setting → Visitor Account list → Add: `POST
+  /set/addViewAccount` con `accountName`, `pwd` **en claro** (la web no la
+  cifra), `email`, `activeName`, `phone`, `timezone=8` (el mismo que dejó la web
+  en las cuentas creadas a mano) y `plantIds` = la planta Growatt vinculada al
+  proyecto. Antes pregunta `POST /userCenter.do action=checkAccountExist`.
+- **La contraseña no se guarda**: llega en el POST, va a Growatt y se descarta.
+  Al terminar se deja un comentario en el proyecto con el usuario elegido (lo
+  firma quien generó el link; desde el portal, sin link previo, el propio
+  usuario CLIENT).
+- La URL pública sale de `APP_PUBLIC_URL` o, si no está, de `MCP_PUBLIC_URL`
+  (en prod `https://app.voltia.com.uy`).
+
+## Permisos
+
+- Generar el link y ver el estado: `EXPERIENCIA_CLIENTES:EDIT` / `VIEW`.
+- Portal: `PORTAL_CLIENTE:VIEW`, y solo proyectos propios (`ProjectClient`).
+- Las rutas `/api/publico/alta-app/*` no piden login: van en un plugin aparte
+  (`registerGrowattAltaPublicRoutes`) y tienen un freno de 30 pedidos cada 10
+  minutos por IP. El token es el secreto.
+
+## Reglas y decisiones
+
+- Validación igual a la de la web de Growatt (`validarVisitante()`): usuario de
+  3+ caracteres sin espacios ni especiales, contraseña de 6+, mail válido.
+- 10 intentos fallidos (usuario ocupado o rechazo de Growatt) dejan el link
+  vencido; en el portal, 10 por día por proyecto.
+- Solo Growatt. Huawei (FusionSolar) no está explorado.
+
+## Casos borde
+
+- **No se probó el alta en vivo desde el servidor** al construirlo: crear un
+  visitante de prueba en la cuenta real de Growatt quedó bloqueado. El POST es
+  idéntico al que hizo la web al crear `yramos` el 28-oct-2026 (capturado con
+  Playwright), pero conviene probar el primer alta real y mirar el comentario.
+- Las cuentas creadas antes a mano no están en `growatt_altas_visitante`: se
+  detectan por el comentario "Cuenta de visitante Growatt CREADA: usuario 'x'"
+  (`visitanteManual()`). Con eso la ficha muestra el usuario y el portal no
+  ofrece crear otra. Un visitante creado a mano sin ese comentario no se ve.
+- Si la planta se desvincula después, el link deja de servir (`infoLink` lo da
+  por vencido).

@@ -1,5 +1,22 @@
 # Novedades
 
+## v13.5
+
+### 28 de octubre de 2026
+
+#### El cliente crea solo su acceso a la aplicación del inversor
+- Ya no hace falta inventarle usuario y contraseña al cliente y mandárselos por WhatsApp. Desde la ficha del cliente, **Acceso a la app del inversor** arma un **link de un solo uso** (vale 7 días) con el mensaje listo para mandar por WhatsApp.
+- El cliente abre el link, **elige su usuario y su contraseña** y su cuenta queda creada en la aplicación del inversor con su planta. La página le avisa en el momento si el usuario ya existe o si la contraseña es corta, y al final le deja los links para bajar la aplicación.
+- **Nadie de Voltia ve la contraseña.** En los comentarios del proyecto queda anotado el usuario que eligió.
+- También lo puede hacer **desde el portal de Voltia**, en la sección nueva **App del inversor**.
+- Por ahora, solo para plantas Growatt.
+
+#### WhatsApp: conectar los números del equipo
+- En **Administración → WhatsApp** hay una sección nueva, **Números conectados**, para sumar los WhatsApp del equipo a Voltia PM sin sacarlos del celular: el dueño escanea un código QR con WhatsApp Business y listo.
+- Cada número lleva para qué se usa (Ventas, Experiencia Solar…) y su responsable, y muestra cómo va la carga de sus chats de los últimos 6 meses.
+- Lo que se escribe desde el celular también queda registrado en Voltia PM.
+- Todavía no se puede usar: falta que Meta habilite a Voltia como proveedor tecnológico.
+
 ## v13.4
 
 ### 27 de octubre de 2026
@@ -11,6 +28,7 @@
 - Elegís el modelo: **Automático** (recomendado: usa uno más potente cuando el pedido es grande), o uno fijo. Cada respuesta se puede copiar con un clic.
 - Podés **adjuntar fotos, PDF, Excel y Word**: con el clip, arrastrándolos al chat o pegando una captura. Sirve para que analice una factura, el display de un inversor o el listado de preguntas de un cliente.
 - **Micrófono**: le hablás, se pasa a texto y lo mandás. Y cada respuesta tiene un botón para **escucharla en voz alta**.
+- El chat **queda abierto mientras navegás** por Voltia PM (y aunque recargues la página), así seguís la conversación mirando un lead o un proyecto.
 - El chat se parece al de Claude, y se puede agrandar a pantalla completa con la lista de conversaciones al costado.
 - **Tus conversaciones quedan guardadas**: desde el reloj del panel retomás o borrás las anteriores. Solo las ves vos.
 - El asistente te habla por tu nombre y **va aprendiendo cómo te gusta trabajar** (respuestas cortas o largas, qué temas y clientes seguís) a medida que lo usás.
@@ -21,8 +39,9 @@
 
 #### Diagnosticar una planta desde el chat, a fondo
 - Desde el chat de Claude conectado a Voltia PM se puede pedir **el detalle del inversor cada 5 minutos** de un día o de varios: cuánto da cada entrada de paneles, la tensión de la red, la temperatura y los códigos de falla. Con un Excel para bajar, que además queda en los documentos de la obra.
-- Avisa solo lo que se ve raro: una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), cortes de comunicación con la hora exacta y tensión de red alta.
-- Por ahora, inversores Growatt de la línea MIN.
+- Avisa solo lo que se ve raro: horas en que el inversor estuvo en falla habiendo sol, **aislamiento bajo** de los paneles (el caso típico del que "arranca tarde a la mañana"), una entrada del inversor sin nada conectado, dos grupos de paneles enchufados en la misma entrada (el inversor recorta y se pierde generación), un grupo de paneles caído, cortes de comunicación con la hora exacta y tensión de red alta.
+- También trae **el registro de alarmas** del inversor de los últimos meses: qué fallas tuvo, cuántas veces, qué días y qué recomienda el fabricante.
+- Sirve para **todos los inversores Growatt**, los chicos (línea MIN) y los grandes (línea MAX), y lo usa también el **Asistente Voltia**: ante una consulta técnica de un cliente, revisa solo la generación, las alarmas y el detalle antes de contestar.
 
 #### Las plantas nuevas se asocian solas a su cliente
 - Cada 15 días Voltia PM revisa las plantas de Growatt y Huawei, y las que se llaman igual que un cliente quedan asociadas solas: entran al monitoreo diario y a los reportes sin que nadie tenga que hacerlo a mano.

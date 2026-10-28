@@ -13,6 +13,10 @@ export type WhatsAppConfig = {
   phoneNumberId: string;
   wabaId: string;
   graphVersion: string;
+  /** Id de la app "Voltia PM" de Meta (público: lo usa el SDK en el navegador). */
+  appId: string;
+  /** Configuración de "Inicio de sesión con Facebook para empresas" del registro integrado. */
+  signupConfigId: string;
 };
 
 /** Versión de la Graph API por defecto: v26.0 es la vigente desde julio de 2026. */
@@ -26,6 +30,8 @@ export function whatsappConfig(): WhatsAppConfig {
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ?? "",
     wabaId: process.env.WHATSAPP_WABA_ID ?? "",
     graphVersion: process.env.GRAPH_API_VERSION || GRAPH_VERSION_DEFAULT,
+    appId: process.env.META_APP_ID ?? "",
+    signupConfigId: process.env.WHATSAPP_SIGNUP_CONFIG_ID ?? "",
   };
 }
 
@@ -35,6 +41,15 @@ export function faltantesParaEnviar(c: WhatsAppConfig = whatsappConfig()): strin
   if (!c.token) faltan.push("WHATSAPP_TOKEN");
   if (!c.phoneNumberId) faltan.push("WHATSAPP_PHONE_NUMBER_ID");
   if (!c.wabaId) faltan.push("WHATSAPP_WABA_ID");
+  return faltan;
+}
+
+/** Qué falta para conectar números con el registro integrado. Vacío = listo. */
+export function faltantesParaConectar(c: WhatsAppConfig = whatsappConfig()): string[] {
+  const faltan: string[] = [];
+  if (!c.appId) faltan.push("META_APP_ID");
+  if (!c.appSecret) faltan.push("META_APP_SECRET");
+  if (!c.signupConfigId) faltan.push("WHATSAPP_SIGNUP_CONFIG_ID");
   return faltan;
 }
 

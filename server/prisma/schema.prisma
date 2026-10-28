@@ -681,6 +681,8 @@ model User {
   createdAt                      DateTime                       @default(now()) @db.Timestamptz(6)
   updatedAt                      DateTime                       @updatedAt @db.Timestamptz(6)
   whatsappMensajesEnviados       WhatsAppMensaje[]              @relation("WhatsAppMensajeEnviadoPor")
+  whatsappNumerosResponsable     WhatsAppNumero[]               @relation("WhatsAppNumeroResponsable")
+  whatsappNumerosConectados      WhatsAppNumero[]               @relation("WhatsAppNumeroConectadoPor")
   cierresMes                     CierreMes[]                    @relation("CierreMesCerradoPor")
   reaperturasMes                 CierreMes[]                    @relation("CierreMesReabiertoPor")
 
@@ -875,6 +877,7 @@ model Project {
   @@index([saleDate])
   @@index([deletedAt])
   @@map("projects")
+  growattAltas                    GrowattAltaVisitante[]
 }
 
 // ─── Traspasos entre áreas ───────────────────────────────────────────────────
@@ -5770,6 +5773,9 @@ model WhatsAppMensaje {
   estadoEn      DateTime? @db.Timestamptz(6)
   errorCodigo   String?
   errorDetalle  String?
+  /// De dónde salió: API (Voltia PM) | CELULAR (escrito en WhatsApp Business del
+  /// celular, número en coexistencia) | HISTORIAL (traído al conectar el número).
+  origen        String    @default("API")
   /// Quién lo mandó desde Voltia PM (solo salientes).
   enviadoPorId  String?
   enviadoPor    User?     @relation("WhatsAppMensajeEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: SetNull)
@@ -5780,7 +5786,51 @@ model WhatsAppMensaje {
   createdAt     DateTime  @default(now()) @db.Timestamptz(6)
 
   @@index([telefono, ocurridoEn])
+  @@index([phoneNumberId, ocurridoEn])
   @@map("whatsapp_mensajes")
+}
+
+/// Un número de WhatsApp de Voltia conectado a la Cloud API desde Voltia PM
+/// (Administración → WhatsApp → Conectar número), con el registro integrado de
+/// Meta. En coexistencia el número sigue andando en la aplicación WhatsApp
+/// Business del celular. Ver docs/manual/15-whatsapp.md.
+model WhatsAppNumero {
+  id                 String    @id @default(cuid())
+  phoneNumberId      String    @unique
+  wabaId             String
+  businessId         String?
+  /// Como lo muestra Meta: "+598 98 123 456".
+  telefono           String
+  nombreVerificado   String?
+  /// Token de la integración (usuario del sistema del negocio), cifrado con
+  /// SMTP_ENCRYPTION_KEY. Nunca sale del servidor.
+  tokenCifrado       String
+  /// true si el número sigue en la aplicación WhatsApp Business del celular.
+  coexistencia       Boolean   @default(false)
+  /// Para qué se usa: "Ventas", "Experiencia Solar"…
+  etiqueta           String?
+  responsableId      String?
+  responsable        User?     @relation("WhatsAppNumeroResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  /// CONECTADO | DESCONECTADO
+  estado             String    @default("CONECTADO")
+  /// Sincronización de contactos e historial (solo coexistencia): se puede
+  /// pedir una sola vez por conexión y dentro de las 24 h.
+  syncContactosId    String?
+  syncContactosEn    DateTime? @db.Timestamptz(6)
+  syncHistorialId    String?
+  syncHistorialEn    DateTime? @db.Timestamptz(6)
+  /// Avance que informa Meta mientras manda el historial (0-100).
+  historialProgreso  Int?
+  /// Si el dueño no compartió el historial, el motivo que da Meta.
+  historialError     String?
+  syncError          String?
+  conectadoPorId     String?
+  conectadoPor       User?     @relation("WhatsAppNumeroConectadoPor", fields: [conectadoPorId], references: [id], onDelete: SetNull)
+  conectadoEn        DateTime  @default(now()) @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@map("whatsapp_numeros")
 }
 
 /// Cada cambio de estado de un saliente, tal como lo informa Meta. El estado
@@ -6280,4 +6330,35 @@ model AsistentePerfil {
   updatedAt                 DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("asistente_perfiles")
+}
+
+
+// Alta del cliente en la aplicación del inversor (visitante de la web de
+// Growatt), hecha por el propio cliente: Voltia le manda un link de un solo uso,
+// el cliente elige usuario y contraseña, y Voltia PM crea el visitante en
+// Growatt con su planta. La contraseña NO se guarda acá ni en ningún lado: va
+// directo a Growatt. Desde el portal el cliente hace lo mismo sin link
+// (canal PORTAL, sin token).
+model GrowattAltaVisitante {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// sha256 del token del link (el token en claro solo existe en el link). null = PORTAL.
+  tokenHash String?  @unique
+  canal     String   @default("LINK") // LINK | PORTAL
+  expiraEn  DateTime @db.Timestamptz(6)
+  /// Cuando el cliente completó el alta. Con esto el link ya no sirve.
+  usadoEn   DateTime? @db.Timestamptz(6)
+  usuarioCreado String?
+  /// Intentos fallidos (usuario ocupado, Growatt rechazó…): tope contra abuso.
+  intentos  Int      @default(0)
+  /// Quién generó el link (o el usuario CLIENT, si fue desde el portal).
+  creadoPorId String?
+  anuladoEn DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@map("growatt_altas_visitante")
 }

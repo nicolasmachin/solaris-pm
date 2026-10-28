@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.33 · del 27/10/26
+**Voltia · Uruguay** · Versión 1.34 · del 28/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -669,7 +669,7 @@ Qué tiene que llevar ese mensaje:
 2. **Cómo encenderlo**: cortar el precinto y subir la llave de microgeneración.
    **El inversor no se toca.** El encendido lo hace él; que vaya alguien de Voltia
    es excepción.
-3. **El acceso a la aplicación del inversor** para ver la generación.
+3. **El acceso a la aplicación del inversor** para ver la generación: en Growatt, el link para que él mismo cree su usuario y su contraseña (ver más abajo, *El portal y la aplicación del inversor*).
 4. **Qué generación esperar hoy**, con un número concreto para su instalación. Sin
    esto, el cliente no sabe si lo que ve está bien o mal.
 
@@ -1764,7 +1764,7 @@ partes:
 - **El portal de Voltia:** el seguimiento del trámite, las encuestas, los tickets, los videos que se le mandaron, y donde carga su fecha de corte y su tarifa. En *Mis reportes solares* ve además **su generación y su consumo**: la curva del día, los días del mes, los meses y los años, igual que en la aplicación de su inversor (en los inversores Growatt; en Huawei, por ahora, sin la curva del día).
 - **La aplicación de tu inversor:** la generación en tiempo real, el histórico y el consumo. Es de la marca del inversor, no de Voltia. Sigue sirviendo, pero ya no hace falta para ver cómo va.
 
-**Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación del inversor se le manda el link de descarga y las credenciales; si no tiene usuario, lo creás siguiendo el video instructivo.
+**Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación del inversor (en plantas Growatt) **no se le inventan usuario ni contraseña**: desde la ficha, **Acceso a la app del inversor** arma un link de un solo uso, que vale 7 días, con el mensaje listo para mandar por WhatsApp. El cliente abre el link, elige él su usuario y su contraseña, y la cuenta queda creada con su planta. Nadie de Voltia ve esa contraseña; en los comentarios del proyecto queda anotado qué usuario eligió. Si se la olvida, se le manda un link nuevo. El cliente que ya entra al portal lo puede hacer también desde ahí, en **App del inversor**. Para que funcione, la planta tiene que estar asociada al cliente en Voltia PM. En plantas de otra marca, sigue siendo como antes: se crea el usuario siguiendo el video instructivo.
 
 **Cuándo escalar:** problemas técnicos de la plataforma del inversor, a Operaciones.
 
@@ -1996,6 +1996,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.34 | 28 de octubre de 2026 | El acceso a la aplicación del inversor (Growatt) ya no se arma con usuario y contraseña inventados: se le manda al cliente un link de un solo uso desde su ficha y él elige los suyos; también lo puede hacer desde el portal. |
 | 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |
 | 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |

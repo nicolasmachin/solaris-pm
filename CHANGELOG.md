@@ -1,5 +1,22 @@
 # Novedades
 
+## v13.5
+
+### 28 de octubre de 2026
+
+#### El cliente crea solo su acceso a la aplicación del inversor
+- Ya no hace falta inventarle usuario y contraseña al cliente y mandárselos por WhatsApp. Desde la ficha del cliente, **Acceso a la app del inversor** arma un **link de un solo uso** (vale 7 días) con el mensaje listo para mandar por WhatsApp.
+- El cliente abre el link, **elige su usuario y su contraseña** y su cuenta queda creada en la aplicación del inversor con su planta. La página le avisa en el momento si el usuario ya existe o si la contraseña es corta, y al final le deja los links para bajar la aplicación.
+- **Nadie de Voltia ve la contraseña.** En los comentarios del proyecto queda anotado el usuario que eligió.
+- También lo puede hacer **desde el portal de Voltia**, en la sección nueva **App del inversor**.
+- Por ahora, solo para plantas Growatt.
+
+#### WhatsApp: conectar los números del equipo
+- En **Administración → WhatsApp** hay una sección nueva, **Números conectados**, para sumar los WhatsApp del equipo a Voltia PM sin sacarlos del celular: el dueño escanea un código QR con WhatsApp Business y listo.
+- Cada número lleva para qué se usa (Ventas, Experiencia Solar…) y su responsable, y muestra cómo va la carga de sus chats de los últimos 6 meses.
+- Lo que se escribe desde el celular también queda registrado en Voltia PM.
+- Todavía no se puede usar: falta que Meta habilite a Voltia como proveedor tecnológico.
+
 ## v13.4
 
 ### 27 de octubre de 2026

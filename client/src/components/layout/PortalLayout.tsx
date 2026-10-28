@@ -13,6 +13,7 @@ import {
   Star,
   X,
   type LucideIcon,
+  Smartphone,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { usePortalPreviewStore } from '../../store/portalPreview.store';
@@ -174,6 +175,7 @@ const PORTAL_NAV: PortalNavItem[] = [
   { to: '/portal/tickets', label: 'Mis tickets', corto: 'Tickets', icon: MessageSquare },
   { to: '/portal/encuestas', label: 'Encuestas', corto: 'Encuestas', icon: Star },
   { to: '/portal/videos', label: 'Videos', corto: 'Videos', icon: PlayCircle },
+  { to: '/portal/app-inversor', label: 'App del inversor', corto: 'App', icon: Smartphone },
 ];
 
 // En la barra de abajo entran cómodas cinco. Si hay más, las primeras cuatro

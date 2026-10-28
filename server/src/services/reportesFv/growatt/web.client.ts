@@ -271,3 +271,72 @@ export async function alarmasPlanta(plantId: string, desde: string, hasta: strin
   const fin = `${hasta} 23:59:59`;
   return out.filter((a) => a.time >= desde && a.time <= fin).sort((a, b) => a.time.localeCompare(b.time));
 }
+
+// ─── Visitantes (acceso del cliente a la aplicación del inversor) ─────────────
+//
+// Lo mismo que hace la web en Setting → Visitor Account list → Add (verificado
+// el 28-oct-2026 al crear 'yramos'): la contraseña viaja TAL CUAL en `pwd` (la
+// web no la cifra), `plantIds` con las plantas que ve, y la respuesta es
+// {"result":1} o {"result":0,"msg":"…"}. Las reglas son las del JS de la página
+// (addUserCheck): usuario sin caracteres especiales, contraseña ≥ 6, mail válido.
+
+/** Caracteres que la web de Growatt no acepta en el usuario (los mismos de su JS). */
+const ESPECIALES = /[`~!#$%^&*()+<>?:"{},/;'\\·！￥（）：；“”‘、，|《。》？【】\s]/;
+
+export function validarVisitante(usuario: string, password: string, email: string): string | null {
+  if (!usuario.trim()) return "Elegí un nombre de usuario.";
+  if (usuario.trim().length < 3) return "El usuario tiene que tener al menos 3 caracteres.";
+  if (ESPECIALES.test(usuario.trim())) return "El usuario no puede tener espacios ni caracteres especiales (solo letras, números, guion, guion bajo, punto o @).";
+  if (password.length < 6) return "La contraseña tiene que tener al menos 6 caracteres.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Falta un mail válido.";
+  return null;
+}
+
+/** true si el nombre de usuario ya existe en Growatt (en cualquier cuenta). */
+export async function usuarioGrowattExiste(usuario: string): Promise<boolean> {
+  await asegurarSesion();
+  const r = await post("/userCenter.do", { action: "checkAccountExist", accountName: usuario.trim() });
+  const t = (await r.text()).trim();
+  return t === "true";
+}
+
+/**
+ * Crea un visitante que ve solo `plantId`. Devuelve null si salió bien, o el
+ * mensaje de Growatt si lo rechazó. No guarda la contraseña en ningún lado.
+ */
+export async function crearVisitanteGrowatt(p: {
+  usuario: string;
+  password: string;
+  email: string;
+  nombre: string;
+  telefono?: string | null;
+  plantId: string;
+}): Promise<string | null> {
+  const error = validarVisitante(p.usuario, p.password, p.email);
+  if (error) return error;
+  await asegurarSesion();
+  const form = {
+    accountName: p.usuario.trim(),
+    pwd: p.password,
+    // Mismo valor que dejó la web en las cuentas creadas a mano (no cambia las
+    // horas de la planta, que van en el huso de la planta).
+    timezone: "8",
+    email: p.email.trim(),
+    nickName: p.usuario.trim(),
+    activeName: p.nombre.trim(),
+    company: "",
+    phone: (p.telefono ?? "").replace(/\D/g, ""),
+    isSendPwd: "false",
+    plantIds: p.plantId,
+  };
+  let r = await post("/set/addViewAccount", form);
+  let j = (await r.json().catch(() => null)) as { result?: number; msg?: string } | null;
+  if (!j) {
+    // Sesión vencida: la web devuelve la página de login en vez de JSON.
+    await login();
+    r = await post("/set/addViewAccount", form);
+    j = (await r.json().catch(() => null)) as { result?: number; msg?: string } | null;
+  }
+  if (j?.result === 1) return null;
+  return j?.msg ? `Growatt rechazó el alta: ${j.msg}` : "Growatt no confirmó el alta.";
+}

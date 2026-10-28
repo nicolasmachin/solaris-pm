@@ -73,3 +73,59 @@ export async function crearWhatsAppPlantilla(body: {
 }) {
   return (await apiClient.post<{ id: string; status: string; category: string }>("/api/whatsapp/plantillas", body)).data;
 }
+
+// ─── Números conectados con el registro integrado de Meta ──────────────────
+
+export type WhatsAppRegistroConfig = {
+  faltan: string[];
+  appId: string | null;
+  configId: string | null;
+  graphVersion: string;
+};
+
+export type WhatsAppNumero = {
+  id: string;
+  phoneNumberId: string;
+  wabaId: string;
+  telefono: string;
+  nombreVerificado: string | null;
+  coexistencia: boolean;
+  etiqueta: string | null;
+  estado: "CONECTADO" | "DESCONECTADO";
+  responsable: { id: string; name: string } | null;
+  conectadoPor: string | null;
+  conectadoEn: string;
+  syncContactosEn: string | null;
+  syncHistorialEn: string | null;
+  historialProgreso: number | null;
+  historialError: string | null;
+  syncError: string | null;
+  puedeSincronizar: boolean;
+};
+
+export async function getWhatsAppRegistro() {
+  return (await apiClient.get<WhatsAppRegistroConfig>("/api/whatsapp/registro")).data;
+}
+
+export async function getWhatsAppNumeros() {
+  return (await apiClient.get<WhatsAppNumero[]>("/api/whatsapp/numeros")).data;
+}
+
+export async function conectarWhatsAppNumero(body: {
+  code: string;
+  phoneNumberId: string;
+  wabaId: string;
+  businessId?: string;
+  etiqueta?: string;
+  responsableId?: string;
+}) {
+  return (await apiClient.post<WhatsAppNumero>("/api/whatsapp/numeros", body)).data;
+}
+
+export async function sincronizarWhatsAppNumero(id: string) {
+  return (await apiClient.post<WhatsAppNumero>(`/api/whatsapp/numeros/${id}/sincronizar`)).data;
+}
+
+export async function actualizarWhatsAppNumero(id: string, body: { etiqueta?: string | null; responsableId?: string | null }) {
+  return (await apiClient.patch(`/api/whatsapp/numeros/${id}`, body)).data;
+}

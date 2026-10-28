@@ -1,11 +1,14 @@
 # 15 · WhatsApp (Cloud API de Meta)
 
-> **Estado al 17-oct-2026:** construida la base (webhook, envío, plantillas y la
-> pantalla de Administración → WhatsApp) para la revisión de Meta. Todavía **no
-> está conectado ningún número real**: se prueba con el número de prueba de Meta.
-> Sin deploy. El plan completo (números por área, conversaciones dentro de la
-> ficha, avisos automáticos) está en el informe de indicadores y en
-> `docs/pendientes/`.
+> **Estado al 27-oct-2026:** la base (webhook, envío, plantillas) está en
+> producción con las variables cargadas, el webhook verificado por Meta y la app
+> "Voltia PM" publicada; ida y vuelta probada con el número de prueba de Meta. La
+> conexión de números reales (registro integrado, coexistencia) está hecha en
+> desarrollo, **sin deploy**, y depende de que Voltia sea proveedor tecnológico
+> de Meta. Todavía no hay ningún número real conectado. Los envíos siguen saliendo
+> por el número de las variables de entorno. El plan completo (números por área,
+> conversaciones dentro de la ficha, avisos automáticos) está en el informe de
+> indicadores y en `docs/pendientes/`.
 
 ## Para qué existe
 
@@ -31,7 +34,15 @@ y queda como está.
 - **Plantillas**: la lista de Meta con su estado (aprobada, en revisión, rechazada
   con el motivo, pausada) y el formulario para crear una y mandarla a aprobar.
 
-Es la pantalla que se graba para la revisión de la aplicación en Meta.
+- **Números conectados** (arriba de todo): los números reales de Voltia conectados
+  a Voltia PM, con para qué se usa cada uno, su responsable y cómo va la
+  sincronización del historial. Abajo, **Conectar número**: se completa para qué
+  es y el responsable, y se abre la ventana de Meta. El dueño del número entra
+  con su Facebook, elige el portafolio de Voltia, elige "conectar la aplicación
+  WhatsApp Business que ya usás" y escanea el código QR con el celular.
+
+Las conversaciones y las plantillas son la pantalla que se graba para la revisión
+de la aplicación en Meta.
 
 ## Cómo funciona
 
@@ -54,6 +65,44 @@ prefijo `/api` y sin login:
 - Al mensaje se le deja el **estado más avanzado** (sent < delivered < read <
   failed): "leído" a veces llega antes que "entregado".
 
+**Conexión de números** (`numeros.service.ts`, registro integrado de Meta):
+
+- El navegador (`WhatsAppNumeros.tsx` → `abrirRegistro()`) carga el SDK de
+  Facebook y llama a `FB.login` con `config_id` (`WHATSAPP_SIGNUP_CONFIG_ID`),
+  `response_type: "code"` y `extras.featureType: "whatsapp_business_app_onboarding"`
+  (coexistencia). Meta devuelve los ids del número y de la cuenta por
+  `postMessage` (tipo `WA_EMBEDDED_SIGNUP`, evento `FINISH…`) y el **código de
+  un solo uso** en el callback del login. Llegan en cualquier orden: se esperan
+  los dos (5 s de tope para los ids).
+- `conectarNumero()`: canjea el código (`GET /oauth/access_token` con app id y
+  secreto; **vence a los 30 segundos**), lee el número (`is_on_biz_app`,
+  `display_phone_number`, `verified_name`), suscribe la app a la cuenta
+  (`POST /{waba}/subscribed_apps`) y guarda todo en `whatsapp_numeros`, con el
+  token cifrado (`email/crypto.ts` → `encryptSecret()`, clave
+  `SMTP_ENCRYPTION_KEY`). Reconectar el mismo número actualiza la fila.
+- **En coexistencia no se llama a `/register`**: el número ya está registrado en
+  la aplicación del celular.
+- `sincronizarNumero()`: pide contactos (`smb_app_state_sync`) y después
+  historial (`history`) con `POST /{phone_number_id}/smb_app_data`. **Meta deja
+  pedir cada uno una sola vez y dentro de las 24 h** de conectar; si falla, queda
+  `syncError` y la pantalla ofrece "Reintentar" mientras esté en plazo.
+
+**Webhook de coexistencia** (`procesarWebhook()`):
+
+- `smb_message_echoes`: lo que el dueño escribe desde el celular. Se guarda como
+  saliente con `origen = CELULAR`.
+- `history`: las conversaciones de hasta 6 meses atrás, por tandas que pueden
+  llegar desordenadas. Cada mensaje se guarda con `origen = HISTORIAL`; los del
+  negocio se reconocen porque traen `to`. `historialProgreso` solo sube. Si el
+  dueño tiene apagado "compartir historial", llega el error 2593109 y queda en
+  `historialError`.
+- `account_update` con `PARTNER_REMOVED`: el número se desconectó; pasa a
+  `DESCONECTADO`. El formato exacto de ese aviso no se verificó con un caso real.
+- `smb_app_state_sync` (la agenda del celular) **no se guarda**: los clientes ya
+  están en Voltia PM.
+- El log del webhook ya no imprime el cuerpo: solo los campos y el tamaño, porque
+  el historial trae conversaciones enteras.
+
 **Envío** (`api.service.ts`): `POST /{GRAPH_API_VERSION}/{PHONE_NUMBER_ID}/messages`.
 
 - `enviarPlantilla()` arma `template` con `components.body.parameters`.
@@ -75,16 +124,19 @@ ventana).
 **Tablas** (migración `whatsapp_cloud_mensajes`, aditiva): `whatsapp_mensajes`
 (dirección, teléfono, tipo, texto, plantilla, estado, error, quién lo mandó,
 payload) y `whatsapp_estados` (cada cambio de estado con el precio que informa
-Meta, base para medir el gasto).
+Meta, base para medir el gasto). La migración `whatsapp_numeros_coexistencia`
+(aditiva) suma `whatsapp_numeros` y la columna `whatsapp_mensajes.origen`
+(`API` | `CELULAR` | `HISTORIAL`).
 
 ## Permisos
 
 | Qué | Permiso |
 |---|---|
 | Ver y usar Administración → WhatsApp (estado, conversaciones, enviar, plantillas) | `CONFIGURACION:EDIT` |
+| Conectar números, editar responsable y para qué, reintentar la sincronización | `CONFIGURACION:EDIT` |
 | Webhook | público, protegido por la firma de Meta |
 
-Crear una plantilla queda en auditoría.
+Crear una plantilla y conectar un número quedan en auditoría.
 
 ## Reglas y decisiones
 
@@ -98,6 +150,15 @@ Crear una plantilla queda en auditoría.
   (ver los tests).
 - **La versión de la Graph API va en variable** (`GRAPH_API_VERSION`, por defecto
   `v26.0`, la vigente desde julio de 2026).
+
+- **Coexistencia exige ser proveedor tecnológico** de Meta (Tech Provider). Sin
+  eso, la ventana de Meta no ofrece conectar la aplicación del celular.
+- **Lo que se pierde al conectar un número** (según Meta): se desvinculan los
+  dispositivos vinculados (WhatsApp Web, la computadora) y hay que volver a
+  vincularlos; las listas de difusión dejan de andar; por la API no hay grupos,
+  llamadas, mensajes temporales ni de ver una vez. El número queda en 20 mensajes
+  por segundo. Si el celular pasa unos 14 días sin abrir WhatsApp Business, Meta
+  desconecta el número.
 
 ## Casos borde
 
@@ -128,5 +189,8 @@ Crear una plantilla queda en auditoría.
 ## Variables de entorno
 
 `WHATSAPP_TOKEN`, `META_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`,
-`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`, `GRAPH_API_VERSION`. Detalle en
+`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`, `GRAPH_API_VERSION`. Para conectar
+números: `META_APP_ID` (público) y `WHATSAPP_SIGNUP_CONFIG_ID` (el id de la
+configuración de "Inicio de sesión con Facebook para empresas" del registro
+integrado), además de `META_APP_SECRET` y `SMTP_ENCRYPTION_KEY`. Detalle en
 `docs/DEPLOY.md` §2 y §6c.
