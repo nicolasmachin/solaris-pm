@@ -44,7 +44,7 @@ export function PortalTickets() {
   const canSubmit = effectiveProjectId && titulo.trim() && descripcion.trim() && !crear.isPending;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="mx-auto max-w-4xl space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Mis reclamos</h1>

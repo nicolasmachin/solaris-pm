@@ -53,7 +53,7 @@ export function PortalVideos() {
 
   if (isError || !data) {
     return (
-      <div className="mx-auto max-w-3xl rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-8 text-center text-sm text-[var(--color-text-muted)]">
+      <div className="mx-auto max-w-5xl rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-8 text-center text-sm text-[var(--color-text-muted)]">
         No pudimos cargar los videos. Probá de nuevo en un rato.
       </div>
     );
@@ -74,7 +74,7 @@ export function PortalVideos() {
   const variasAreas = data.secciones.length > 1;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Videos</h1>
         <p className="text-sm text-[var(--color-text-muted)]">
@@ -219,7 +219,7 @@ function Reproductor({
   const otros = lista.videos;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4">
       <button
         onClick={() => onAbrir(null)}
         className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"

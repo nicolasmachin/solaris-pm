@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Mail, Phone } from 'lucide-react';
-import { getPortalProjectUte } from '../api/portal.api';
+import { getPortalProjects, getPortalProjectUte } from '../api/portal.api';
 import { UteTimeline } from '../components/ute/UteTimeline';
 import { useAuthStore } from '../store/auth.store';
 import { usePortalPreviewStore } from '../store/portalPreview.store';
@@ -28,6 +28,10 @@ export function PortalProjectUte({ projectId }: { projectId?: string } = {}) {
   const params = useParams<{ id: string }>();
   const id = projectId ?? params.id;
   const embebido = !!projectId;
+  // Con un solo proyecto, /portal/ute vuelve a mandar acá: no hay lista a la
+  // que volver.
+  const { data: proyectos } = useQuery({ queryKey: ['portal-projects'], queryFn: getPortalProjects });
+  const conVolver = !embebido && (proyectos?.length ?? 0) > 1;
   const { user } = useAuthStore();
   const { preview } = usePortalPreviewStore();
   const { data, isLoading, error } = useQuery({
@@ -37,8 +41,8 @@ export function PortalProjectUte({ projectId }: { projectId?: string } = {}) {
   });
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {!embebido && (
+    <div className="max-w-5xl mx-auto">
+      {conVolver && (
         <Link
           to="/portal/ute"
           className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mb-3"
@@ -90,6 +94,10 @@ export function PortalProjectUte({ projectId }: { projectId?: string } = {}) {
             )}
           </div>
 
+          {/* En pantalla ancha, los pasos a la izquierda y los contactos de
+              UTE a la derecha. */}
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <div>
           {/* Timeline. Un cliente anterior a Voltia PM no tiene el trámite
               cargado: mostrarle once pasos pendientes sería decirle que no
               está habilitado. */}
@@ -102,6 +110,7 @@ export function PortalProjectUte({ projectId }: { projectId?: string } = {}) {
           ) : (
             <UteTimeline items={data.timeline} />
           )}
+          </div>
 
           {/* Contactos UTE */}
           <div className="rounded-md bg-[var(--color-bg-app)] border border-[var(--color-border)] p-4">
@@ -131,6 +140,7 @@ export function PortalProjectUte({ projectId }: { projectId?: string } = {}) {
             >
               Cómo funciona el trámite UTE →
             </a>
+          </div>
           </div>
         </div>
       )}

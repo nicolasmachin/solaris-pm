@@ -117,7 +117,7 @@ export function FlujoEnergia({ fuentes, claveCache }: { fuentes: FuentesEnergia;
   // y la casa a la derecha.
   const C = { x: 180, y: 135 };
   return (
-    <div className="border-b border-[var(--color-border)] px-4 pb-3 pt-3">
+    <div className="border-b border-[var(--color-border)] px-4 pb-3 pt-3 lg:flex lg:w-[38%] lg:shrink-0 lg:flex-col lg:justify-center lg:border-b-0 lg:border-r">
       <style>{ESTILO}</style>
       <div className="mb-1 flex items-baseline justify-between gap-2 text-[11px] text-[var(--color-text-muted)]">
         <span className="font-mono uppercase tracking-wider">{viejo ? "Último dato" : "Ahora"}</span>

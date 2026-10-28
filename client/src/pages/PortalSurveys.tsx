@@ -89,7 +89,7 @@ export function PortalSurveys() {
   const respondidas = (surveys ?? []).filter((s) => s.estado === "RESPONDIDA");
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="mx-auto max-w-4xl space-y-5">
       <div>
         <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Encuestas</h1>
         <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">Tu opinión nos ayuda a mejorar tu experiencia solar.</p>

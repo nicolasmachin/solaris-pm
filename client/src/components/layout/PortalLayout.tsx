@@ -47,7 +47,7 @@ export function PortalLayout() {
           la pantalla propia sino la del cliente. */}
       {preview && (
         <div className="sticky top-0 z-30 border-b border-amber-500/40 bg-amber-500/15 px-4 py-2">
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-sm text-amber-200">
               <Eye className="h-4 w-4 shrink-0" />
               <span>
@@ -66,7 +66,7 @@ export function PortalLayout() {
         </div>
       )}
       <header className="border-b border-[var(--color-border)] bg-[var(--color-bg-card)]">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/portal" className="flex items-center gap-2">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fa6ff" strokeWidth="2">
               <circle cx="12" cy="12" r="5" fill="#ffd84d" fillOpacity="0.28" />
@@ -136,7 +136,7 @@ export function PortalLayout() {
           </div>
         </div>
         {/* Computadora: pestañas arriba. En el celular van abajo (PortalBottomNav). */}
-        <nav className="max-w-3xl mx-auto hidden sm:flex items-center gap-1 px-4">
+        <nav className="max-w-6xl mx-auto hidden sm:flex items-center gap-1 px-4">
           {PORTAL_NAV.map((item) => (
             <Link
               key={item.to}
@@ -154,7 +154,7 @@ export function PortalLayout() {
           ))}
         </nav>
       </header>
-      <main className="flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <Outlet />
       </main>
       {/* En el celular el pie queda arriba de la barra de abajo, que es fija. */}

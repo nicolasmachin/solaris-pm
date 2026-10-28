@@ -232,8 +232,12 @@ export function EnergiaPlanta({
         </div>
       </div>
 
+      {/* En pantalla ancha el flujo de "ahora" va a la izquierda del gráfico;
+          en el celular, arriba. Si no hay flujo, el gráfico ocupa todo. */}
+      <div className="lg:flex">
       {/* Ahora: paneles, casa y red, con el sentido del flujo */}
       <FlujoEnergia fuentes={fuentes} claveCache={claveCache} />
+      <div className="min-w-0 flex-1">
 
       {/* Navegador de fechas */}
       <div className="flex items-center justify-center gap-3 px-4 pt-3">
@@ -339,6 +343,9 @@ export function EnergiaPlanta({
           El consumo y lo exportado se calculan con el medidor de la planta: los totales son exactos, la curva es aproximada.
         </p>
       )}
+
+      </div>
+      </div>
 
       {verTabla && !sinCurva && (
         <TablaDatos pestania={pestania} curva={curva} barras={(activa.data as { barras?: BarraEnergia[] } | undefined)?.barras ?? []} />

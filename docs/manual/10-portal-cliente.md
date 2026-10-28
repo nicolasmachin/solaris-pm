@@ -129,6 +129,13 @@ la marca cuando la ruta no es de ninguna otra sección.
 
 ## Reglas y decisiones
 
+- **Ancho de computadora** (28-oct-2026): el encabezado, el menú y el
+  contenido (`<main>` en `PortalLayout`) llegan hasta `max-w-6xl`; antes era
+  `max-w-3xl` y en la computadora se veía como una pantalla de celular. Cada
+  página pone su propio tope (Inicio y Reportes, todo; Videos `5xl`; Trámite UTE
+  `5xl` con dos columnas; reclamos y encuestas `4xl`; App del inversor, angosto
+  porque es un formulario). En la vista de energía, a partir de `lg` el flujo de
+  "ahora" va a la izquierda del gráfico (también en la ficha interna).
 - **Se pasó a la barra de abajo porque las pestañas no entraban.** Con cinco
   secciones quedaban cortadas en un celular angosto, y deslizarlas de costado no
   se descubre. Es el patrón de las aplicaciones del teléfono.

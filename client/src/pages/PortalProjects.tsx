@@ -24,7 +24,7 @@ export function PortalProjects() {
   }, [data, navigate]);
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-5">
         <p className="text-xs text-[var(--color-text-muted)]">Hola, {(preview?.clientName ?? user?.name ?? '').split(' ')[0]}</p>
         <h1 className="text-lg font-medium text-[var(--color-text-primary)] mt-1">

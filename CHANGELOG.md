@@ -12,6 +12,9 @@
 - Los gráficos de generación salieron de **Reportes**, que queda para los reportes mensuales.
 - Los clientes de antes de Voltia PM (los que se cargaron sin el trámite paso a paso) también entran directo a su planta, y en **Trámite UTE** ven que están habilitados en vez de once pasos pendientes.
 
+#### Portal: aprovecha toda la pantalla en la computadora
+- En la computadora el portal ya no se ve angosto, como pensado solo para el celular: usa el ancho de la pantalla. En el Inicio, el dibujo del flujo de energía queda a la izquierda y el gráfico del día a la derecha; en el trámite UTE, los pasos a la izquierda y los contactos de UTE a la derecha.
+
 #### Portal: "Tickets" pasa a llamarse "Reclamos"
 - La sección del portal ahora es **Mis reclamos**, con el botón **Abrir un reclamo**. Los avisos que le llegan al cliente también dicen "reclamo".
 
