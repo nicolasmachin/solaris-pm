@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Versión 1.3 — 22 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.4 — 28 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -636,8 +636,8 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 | **Paso** | Un aviso al cliente dentro del recorrido de Experiencia Solar. Algunos tienen plazo; **vencer no bloquea**. |
 | **Cadencia** | Cuánto tiempo puede pasar un cliente sin contacto antes de que Voltia PM lo marque. Vale para E1 y E2; **E3 no tiene**, porque no termina nunca y marcaría a todos para siempre. |
 | **Novedad** | Pasó algo en el proyecto después del último contacto: el cliente todavía no lo sabe. |
-| **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
-| **Portal de Voltia** | Lo que ve el cliente: avance, documentación, reportes, tickets y encuestas. |
+| **Ticket** | Un reclamo o consulta registrado, con estado y responsable. Al cliente se le dice **reclamo**: así se llama en el portal. |
+| **Portal de Voltia** | Lo que ve el cliente: su planta, el avance del trámite, documentación, reportes, reclamos y encuestas. |
 | **Reunión de coordinación** | Donde se trata lo que está fuera de plazo entre áreas. |
 
 ---
@@ -646,6 +646,7 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.4 | 28 de octubre de 2026 | En el glosario: al cliente se le dice "reclamo" y no "ticket", y el portal muestra primero su planta. |
 | 1.3 | 22 de octubre de 2026 | Las cuotas del plan de pagos se cobran cuando llega cada momento de la obra, no en una fecha fijada de antemano. Al crear el proyecto, Ventas deja dicho qué se le factura al cliente, y Finanzas factura eso. |
 | 1.2 | 17 de octubre de 2026 | Se aclara qué es un día hábil: de lunes a viernes, sin feriados no laborables, Carnaval ni Semana de Turismo. |
 | 1.1 | 14 de octubre de 2026 | En el traspaso de Ingeniería a Operaciones se suman los datos de la instalación (paneles, inversor, red, techo y si van coplanares o inclinados), coincidiendo en la pre-ingeniería y el unifilar: la Pre-Ingeniería no se da por terminada sin ellos. |

@@ -105,6 +105,16 @@ const CLIENT_PROJECTS_INCLUDE = {
 } as const;
 
 
+/**
+ * Cliente que ya genera pero cuyo trámite UTE no está en Voltia PM: los que se
+ * importaron por CSV (anteriores a Voltia PM) o un proyecto dado por completado
+ * sin cargar el trámite. Para el portal están habilitados: si no, verían el
+ * trámite "por empezar" de una planta que anda hace un año (Alberto Norman).
+ */
+function habilitadoSinTramite(p: { uteProcesses: unknown[]; importedFromCsv: boolean; status: string }) {
+  return p.uteProcesses.length === 0 && (p.importedFromCsv || p.status === "COMPLETED");
+}
+
 // ─── Registro de rutas ──────────────────────────────────────────────────────
 
 /**
@@ -507,6 +517,8 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           capacityKwp: true,
           locationCity: true,
           locationProvince: true,
+          status: true,
+          importedFromCsv: true,
           // Todos los trámites: con varios suministros (una cuenta UTE por
           // inversor) la obra está habilitada recién cuando terminan todos.
           uteProcesses: {
@@ -530,6 +542,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           uteCaseNumber: principal?.caseNumber ?? null,
           uteCurrentStage: principal ? (todos ? principal.currentStage : principal.currentStage === "FINALIZADO" ? "DOCS_2" : principal.currentStage) : null,
           uteFinalized: todos,
+          habilitado: todos || habilitadoSinTramite(p),
         };
       });
     },
@@ -586,6 +599,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
             }
           : null,
         timeline,
+        habilitadoSinTramite: habilitadoSinTramite(project),
       };
     },
   );

@@ -4,6 +4,7 @@ import {
   BarChart3,
   ChevronDown,
   Eye,
+  FileCheck,
   Home,
   KeyRound,
   LogOut,
@@ -170,12 +171,13 @@ type PortalNavItem = { to: string; label: string; corto: string; icon: LucideIco
 // Las secciones del portal. Agregar una acá la suma a los dos menús: las
 // pestañas de arriba (computadora) y la barra de abajo (celular).
 const PORTAL_NAV: PortalNavItem[] = [
-  { to: '/portal', label: 'Mis proyectos', corto: 'Inicio', icon: Home },
+  { to: '/portal', label: 'Inicio', corto: 'Inicio', icon: Home },
   { to: '/portal/reportes', label: 'Reportes', corto: 'Reportes', icon: BarChart3 },
-  { to: '/portal/tickets', label: 'Mis tickets', corto: 'Tickets', icon: MessageSquare },
+  { to: '/portal/tickets', label: 'Mis reclamos', corto: 'Reclamos', icon: MessageSquare },
   { to: '/portal/encuestas', label: 'Encuestas', corto: 'Encuestas', icon: Star },
   { to: '/portal/videos', label: 'Videos', corto: 'Videos', icon: PlayCircle },
   { to: '/portal/app-inversor', label: 'App del inversor', corto: 'App', icon: Smartphone },
+  { to: '/portal/ute', label: 'Trámite UTE', corto: 'UTE', icon: FileCheck },
 ];
 
 // En la barra de abajo entran cómodas cinco. Si hay más, las primeras cuatro
@@ -183,9 +185,14 @@ const PORTAL_NAV: PortalNavItem[] = [
 const MAX_BARRA = 5;
 
 function esActiva(item: PortalNavItem, pathname: string) {
-  if (item.to !== '/portal') return pathname === item.to || pathname.startsWith(`${item.to}/`);
-  // "Inicio" abarca también el detalle de un proyecto (/portal/:id).
-  return !PORTAL_NAV.some((o) => o.to !== '/portal' && (pathname === o.to || pathname.startsWith(`${o.to}/`)));
+  if (item.to === '/portal') return pathname === '/portal' || pathname === '/portal/';
+  if (pathname === item.to || pathname.startsWith(`${item.to}/`)) return true;
+  // "Trámite UTE" abarca también el detalle de un proyecto (/portal/:id).
+  return (
+    item.to === '/portal/ute' &&
+    pathname.startsWith('/portal/') &&
+    !PORTAL_NAV.some((o) => o.to !== '/portal' && (pathname === o.to || pathname.startsWith(`${o.to}/`)))
+  );
 }
 
 /**

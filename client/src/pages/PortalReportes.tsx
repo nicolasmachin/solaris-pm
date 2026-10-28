@@ -15,7 +15,6 @@ import {
 import { useAuthBlobUrl, downloadAuthenticated } from "../hooks/useAuthBlobUrl";
 import { Spinner } from "../components/ui/Spinner";
 import { PortalEnergiaDashboard } from "../components/portal/PortalEnergiaDashboard";
-import { PortalEnergiaPlantas } from "../components/portal/PortalEnergiaPlantas";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -260,10 +259,7 @@ export function PortalReportes() {
         </p>
       </div>
 
-      {/* Generación y consumo hora por hora, día, mes y año (como la aplicación
-          del inversor). */}
-      <PortalEnergiaPlantas />
-
+      {/* La generación y el consumo hora por hora están en el Inicio. */}
       <PortalEnergiaDashboard />
 
       {reportes.length === 0 ? (

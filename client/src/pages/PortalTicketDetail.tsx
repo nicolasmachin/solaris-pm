@@ -36,7 +36,7 @@ export function PortalTicketDetail() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Link to="/portal/tickets" className="inline-flex items-center gap-1 text-sm text-[var(--color-accent)] hover:underline">
-        <ChevronLeft size={16} /> Mis tickets
+        <ChevronLeft size={16} /> Mis reclamos
       </Link>
 
       {isLoading || !t ? (

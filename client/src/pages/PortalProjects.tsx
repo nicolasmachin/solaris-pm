@@ -4,9 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { getPortalProjects } from '../api/portal.api';
 import { useAuthStore } from '../store/auth.store';
+import { usePortalPreviewStore } from '../store/portalPreview.store';
 
+/** `/portal/ute`: los trámites UTE del cliente. Con uno solo, va directo al detalle. */
 export function PortalProjects() {
   const { user } = useAuthStore();
+  const { preview } = usePortalPreviewStore();
   const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ['portal-projects'],
@@ -23,9 +26,9 @@ export function PortalProjects() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-5">
-        <p className="text-xs text-[var(--color-text-muted)]">Hola, {user?.name?.split(' ')[0] ?? ''}</p>
+        <p className="text-xs text-[var(--color-text-muted)]">Hola, {(preview?.clientName ?? user?.name ?? '').split(' ')[0]}</p>
         <h1 className="text-lg font-medium text-[var(--color-text-primary)] mt-1">
-          Tus proyectos
+          Trámite UTE
         </h1>
         <p className="text-xs text-[var(--color-text-muted)] mt-1">
           Elegí un proyecto para ver el avance del trámite UTE.
@@ -56,9 +59,9 @@ export function PortalProjects() {
                     {p.location} · {p.capacityKwp} kWp
                     {p.uteCaseNumber && ` · Caso UTE ${p.uteCaseNumber}`}
                   </p>
-                  {p.uteFinalized ? (
+                  {p.habilitado ? (
                     <span className="inline-block mt-1.5 text-[10px] font-mono uppercase rounded bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5">
-                      Trámite finalizado
+                      {p.uteFinalized ? 'Trámite finalizado' : 'Habilitado'}
                     </span>
                   ) : p.uteCurrentStage ? (
                     <span className="inline-block mt-1.5 text-[10px] font-mono uppercase rounded bg-blue-500/15 text-blue-400 px-1.5 py-0.5">

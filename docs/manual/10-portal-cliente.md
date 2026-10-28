@@ -4,14 +4,66 @@
 > día", "Videos" y "Ver el portal como lo ve el cliente". El resto funciona en producción
 > pero todavía no está documentado.
 
-Lo que ve el cliente final: sus proyectos, tickets, encuestas y reportes.
+Lo que ve el cliente final: su planta, el trámite UTE, reclamos, encuestas y reportes.
+
+**Al cliente se le dice "reclamo", no "ticket"** (28-oct-2026: la gente no
+entendía la palabra). En el portal son *Mis reclamos* y *Abrir un reclamo*, y
+los avisos que le llegan dicen "Te respondimos tu reclamo" y "Tu reclamo quedó
+resuelto" (`notifyCliente` en `tickets.service.ts`). En el código, las rutas
+(`/portal/tickets`) y el modelo siguen llamándose tickets.
+
+---
+
+# El Inicio del portal
+
+## Para qué existe
+
+El portal nació para mostrar el avance del trámite UTE, y el Inicio era eso.
+Después de la habilitación el trámite ya no le dice nada al cliente (todo en
+verde): lo que le importa es su planta. Desde el 28-oct-2026 el Inicio cambia
+según dónde está el cliente.
+
+## Cómo funciona
+
+`PortalInicio.tsx` (`/portal`) mira `GET /client/projects` (`uteFinalized` de
+cada proyecto) y `GET /client/energia/plantas`:
+
+- **Ningún proyecto habilitado:** el trámite UTE, como antes. Con un solo
+  proyecto, el detalle directo (`PortalProjectUte` con `projectId`, sin el
+  "Volver"); con varios, la lista.
+- **Alguno habilitado:** "Tu planta solar" con la vista de energía de cada planta
+  (flujo de ahora + Hora/Día/Mes/Año). Si otro proyecto suyo sigue en trámite,
+  arriba va un aviso que lleva a su detalle. Si está habilitado pero no tiene
+  planta vinculada (o se le apagó el reporte mensual, la misma regla que la
+  vista de energía), un cartel dice que los datos del inversor todavía no están
+  conectados.
+
+El trámite queda siempre en el menú, **Trámite UTE** (`/portal/ute`,
+`PortalProjects`: con un solo proyecto va directo a `/portal/:id`).
+
+## Casos borde
+
+- "Habilitado" es `habilitado` del listado (`GET /client/projects`): todos los
+  trámites del proyecto finalizados (`uteFinalized`), **o** ningún trámite
+  cargado y el proyecto importado por CSV o en estado `COMPLETED`
+  (`habilitadoSinTramite()` en `portal.routes.ts`). Lo segundo cubre a los
+  clientes anteriores a Voltia PM: Alberto Norman anda hace un año y sin esto
+  veía el trámite "por empezar". En prod, al 28-oct-2026, son 36 proyectos
+  importados sin trámite. Un proyecto con varios suministros y uno pendiente
+  sigue mostrando el trámite.
+- En *Trámite UTE*, a esos clientes no se les dibuja la línea de tiempo (serían
+  once pasos pendientes): un cartel dice que la planta está habilitada y que el
+  trámite es anterior al portal (`habilitadoSinTramite` en
+  `GET /client/projects/:id/ute`).
+- En la vista como cliente, el saludo usa el nombre del cliente
+  (`preview.clientName`), no el de quien mira.
 
 ---
 
 # Generación y consumo (vista de energía)
 
-En *Mis reportes solares* el cliente tiene la misma vista que el equipo en la
-ficha: pestañas Hora, Día, Mes y Año, como la aplicación de Growatt, una por
+En el **Inicio** (ver arriba) el cliente habilitado tiene la misma vista que el
+equipo en la ficha, con el flujo de "ahora" arriba: pestañas Hora, Día, Mes y Año, como la aplicación de Growatt, una por
 planta. Endpoints `/client/energia/plantas` y `/client/energia/:projectId/*`,
 con `PORTAL_CLIENTE:VIEW` y el chequeo de que la planta sea suya. Todo el
 detalle (de dónde salen los datos, los totales, los casos borde) está en el
@@ -71,9 +123,9 @@ Las secciones están en una sola lista, `PORTAL_NAV` en `PortalLayout.tsx`
   que respeta el área segura del iPhone (`env(safe-area-inset-bottom)`). El pie
   de página lleva un margen inferior para que la barra no lo tape.
 
-"Inicio" (`/portal`) queda activa también en el detalle de un proyecto
-(`/portal/:id`): `esActiva()` la marca cuando la ruta no es de ninguna otra
-sección.
+"Inicio" (`/portal`) se marca solo en `/portal`. "Trámite UTE" (`/portal/ute`)
+queda activa también en el detalle de un proyecto (`/portal/:id`): `esActiva()`
+la marca cuando la ruta no es de ninguna otra sección.
 
 ## Reglas y decisiones
 

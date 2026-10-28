@@ -17,6 +17,7 @@ import { ChevronLeft, ChevronRight, RefreshCw, Sun, Table2 } from "lucide-react"
 
 import type { BarraEnergia, CurvaDia, FuentesEnergia, PuntoCurva, ResumenEnergia } from "../../api/energiaFv.api";
 import { Spinner } from "../ui/Spinner";
+import { FlujoEnergia } from "./FlujoEnergia";
 
 // Vista de energía de una planta, como la de la aplicación de Growatt: Hora
 // (curva del día), Día (barras del mes), Mes (barras del año) y Año. Una sola
@@ -230,6 +231,9 @@ export function EnergiaPlanta({
           ))}
         </div>
       </div>
+
+      {/* Ahora: paneles, casa y red, con el sentido del flujo */}
+      <FlujoEnergia fuentes={fuentes} claveCache={claveCache} />
 
       {/* Navegador de fechas */}
       <div className="flex items-center justify-center gap-3 px-4 pt-3">

@@ -12,6 +12,8 @@ export interface PortalProjectListItem {
   uteCaseNumber: string | null;
   uteCurrentStage: string | null;
   uteFinalized: boolean;
+  /** Trámite finalizado, o cliente anterior a Voltia PM sin trámite cargado. */
+  habilitado: boolean;
 }
 
 export type PortalTimelineStatus = "completed" | "current" | "pending";
@@ -45,6 +47,8 @@ export interface PortalProjectUte {
     uteTimeDays: number;
   } | null;
   timeline: PortalTimelineItem[];
+  /** Cliente anterior a Voltia PM: anda, pero su trámite no está cargado. */
+  habilitadoSinTramite: boolean;
 }
 
 export async function getPortalProjects(): Promise<PortalProjectListItem[]> {

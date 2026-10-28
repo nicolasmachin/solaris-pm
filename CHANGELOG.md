@@ -4,6 +4,17 @@
 
 ### 28 de octubre de 2026
 
+#### Portal: el Inicio pasa a ser la planta del cliente
+- Mientras el cliente espera la habilitación, el Inicio del portal sigue siendo el avance del trámite UTE.
+- **Una vez habilitado, el Inicio muestra su planta**: lo que generó, lo que consumió y lo que vendió o compró a UTE. El trámite queda en el menú, en **Trámite UTE**, por si lo quiere volver a ver.
+- Arriba de los gráficos hay un **dibujo del flujo de energía de ahora**, como en la aplicación de Growatt: cuánto sale de los paneles, cuánto consume la casa y cuánto se le vende o se le compra a UTE, con flechas animadas en el sentido en que va la energía. Se actualiza cada 5 minutos.
+- El mismo dibujo aparece en la ficha del cliente, en **Generación y consumo**.
+- Los gráficos de generación salieron de **Reportes**, que queda para los reportes mensuales.
+- Los clientes de antes de Voltia PM (los que se cargaron sin el trámite paso a paso) también entran directo a su planta, y en **Trámite UTE** ven que están habilitados en vez de once pasos pendientes.
+
+#### Portal: "Tickets" pasa a llamarse "Reclamos"
+- La sección del portal ahora es **Mis reclamos**, con el botón **Abrir un reclamo**. Los avisos que le llegan al cliente también dicen "reclamo".
+
 #### El cliente crea solo su acceso a la aplicación del inversor
 - Ya no hace falta inventarle usuario y contraseña al cliente y mandárselos por WhatsApp. Desde la ficha del cliente, **Acceso a la app del inversor** arma un **link de un solo uso** (vale 7 días) con el mensaje listo para mandar por WhatsApp.
 - El cliente abre el link, **elige su usuario y su contraseña** y su cuenta queda creada en la aplicación del inversor con su planta. La página le avisa en el momento si el usuario ya existe o si la contraseña es corta, y al final le deja los links para bajar la aplicación.

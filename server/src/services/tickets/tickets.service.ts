@@ -178,7 +178,7 @@ export async function agregarComentario(params: {
 
   // Si un interno comenta (no interno) un ticket abierto por el cliente, avisarle in-app.
   if (!params.esInterno && ticket.origenCliente && params.autorId !== ticket.creadoPorId) {
-    await notifyCliente(ticket, "Nuevo comentario en tu ticket", `"${ticket.titulo}" tiene una respuesta.`);
+    await notifyCliente(ticket, "Te respondimos tu reclamo", `"${ticket.titulo}" tiene una respuesta.`);
   }
 
   return loadTicket(params.ticketId);
@@ -274,7 +274,7 @@ export async function resolverTicket(params: {
   });
 
   if (ticket.origenCliente) {
-    await notifyCliente(ticket, "Tu ticket fue resuelto", `"${ticket.titulo}" fue marcado como resuelto.`);
+    await notifyCliente(ticket, "Tu reclamo quedó resuelto", `"${ticket.titulo}" fue marcado como resuelto.`);
   }
 
   return loadTicket(params.ticketId);

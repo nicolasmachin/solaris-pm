@@ -1403,9 +1403,17 @@ Ricca: el 12-oct dio producción 21,4, consumo 29,2, importado 15,9, exportado
   a todo el ancho, entre las dos columnas y "Comentarios y archivos". Aparece
   solo si el proyecto tiene una planta Growatt o Huawei vinculada y no ignorada
   (`tienePlantaMonitoreo`, que arma `getClienteFicha()`).
-- **Portal de Voltia**, en *Mis reportes solares* (`PortalReportes.tsx` →
-  `PortalEnergiaPlantas.tsx`): una vista por planta del cliente, con el nombre si
-  tiene más de una.
+- **Portal de Voltia**, en el **Inicio** una vez que el cliente está habilitado
+  (`PortalInicio.tsx` → `PortalEnergiaPlantas.tsx`; ver capítulo 10, *El Inicio
+  del portal*): una vista por planta del cliente, con el nombre si tiene más de
+  una. Hasta el 28-oct-2026 estaba en *Mis reportes solares*.
+- **Arriba de las pestañas, el flujo de "ahora"** (`FlujoEnergia.tsx`), como la
+  pantalla principal de la aplicación de Growatt: paneles arriba, inversor al
+  centro, la red de UTE a la izquierda y la casa a la derecha, cada uno con su
+  potencia en kW. Las líneas se animan en el sentido del flujo (paneles → casa,
+  y hacia UTE al vender o desde UTE al comprar), más rápido cuanto más potencia;
+  por debajo de 30 W quedan quietas. Debajo, lo producido y consumido en el día.
+  Se ve en la ficha y en el portal, en cualquier pestaña.
 - **Hora**: la curva del día (W cada 5 minutos, dibujada en kW). Producción como
   área, consumo, exportado e importado como líneas. Navegación por día; en el
   día de hoy, "Datos de Growatt hace X" y **Actualizar**.
@@ -1417,6 +1425,17 @@ Ricca: el 12-oct dio producción 21,4, consumo 29,2, importado 15,9, exportado
   repartido en autoconsumo e importado.
 
 ## Cómo funciona
+
+**El flujo de "ahora" no es un dato en vivo.** Es el último tramo de 5 minutos
+de la curva de hoy: usa la misma consulta que la pestaña Hora (misma clave de
+caché, así no se le pide dos veces a Growatt) y se refresca sola cada 5 minutos.
+Muestra la hora del tramo; si tiene más de 20 minutos de atraso dice "Último
+dato" y que el inversor no mandó datos después. Comprar o vender sale de
+`deRed`/`aRed` del tramo (el mayor de los dos, si pasa de 30 W). Sin medición
+de consumo (`origenMedicion` null) muestra solo los paneles y lo aclara; sin
+curva (Huawei, por ahora) no se muestra. Paneles + compra no siempre da
+exacto el consumo: son tres mediciones distintas del mismo tramo. La animación
+se apaga si el sistema operativo pide "reducir movimiento".
 
 **Una sola pieza, dos fuentes.** `components/energia/EnergiaPlanta.tsx` recibe
 `fuentes: FuentesEnergia` (`api/energiaFv.api.ts`): `fuentesInternas(projectId)`

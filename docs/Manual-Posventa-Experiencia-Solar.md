@@ -381,10 +381,14 @@ le pide entrar de nuevo si pasan 10 días sin abrirlo.
 
 **Qué gana el cliente con el portal:** ve el avance de su trámite, la
 documentación, sus reportes de generación cuando arranquen, y **puede abrirnos un
-reclamo por ahí** en vez de por WhatsApp.
+reclamo por ahí** en vez de por WhatsApp. Lo primero que ve al entrar cambia con
+la habilitación: antes, el avance del trámite UTE; después, **su planta**, con un
+dibujo de cuánto están generando los paneles en ese momento, cuánto consume la
+casa y cuánto le vende o le compra a UTE, y los gráficos de cada día, mes y año.
+El trámite le queda en el menú, en **Trámite UTE**.
 
 > **Este paso arrastra a varios más.** Sin acceso al portal el cliente no puede
-> abrir tickets ni responder encuestas, así que las encuestas quedan sin
+> abrir reclamos ni responder encuestas, así que las encuestas quedan sin
 > responder y los reclamos siguen entrando por WhatsApp a cualquiera. Es el paso
 > que más rinde hacer temprano y el que más cuesta recuperar después: al que se
 > le pasó, nadie se lo crea seis meses más tarde.
@@ -808,7 +812,7 @@ retiene (Anexo E, tema 12).
 
 ### 7.4 · Recorrido por el portal
 
-Tickets, encuestas, reportes, documentación y videos. Es el paso que convierte el
+Su planta, reclamos, encuestas, reportes, documentación y videos. Es el paso que convierte el
 portal de "una cosa que me mandaron" en una herramienta que va a usar. Conviene
 mostrarle la pestaña **Videos**: ahí están los que ya se le mandaron, y es el
 primer lugar donde buscar antes de escribir por una duda de uso.
@@ -818,7 +822,7 @@ Tres cosas que tiene que aprender a hacer solo en el portal de Voltia:
 1. **Cargar su fecha de corte.** Sin eso, el reporte mensual no coincide con su
    factura, y es de las consultas más repetidas.
 2. **Cargar su tarifa**, para que el reporte calcule bien lo que ahorra.
-3. **Abrir un ticket**, para la próxima vez que necesite algo.
+3. **Abrir un reclamo** (en el portal, *Mis reclamos* → *Abrir un reclamo*), para la próxima vez que necesite algo.
 
 Y al entregarle el sistema, contale **la condición de la cobertura de
 voladura**: si se vuelan paneles, Voltia se hace cargo siempre que haya hecho un
@@ -1575,8 +1579,8 @@ obra, el capataz lo resuelve internamente — no lo manda a otro lado.
 | **"Ya lo vi"** | El botón que apaga el punto de novedad cuando al cliente no le importa lo que pasó. **No cuenta como contacto.** |
 | **Regla de Oro** | El aviso de habilitación dentro de 24-48 h. |
 | **Traspaso** | El pase formal de trabajo entre áreas dentro del sistema. |
-| **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
-| **Portal** | La vista que tiene el cliente: avance, documentación, reportes, tickets y encuestas. |
+| **Ticket** | Un reclamo o consulta registrado, con estado y responsable. En el portal, el cliente lo ve como **reclamo** (*Mis reclamos*): con el cliente se dice siempre "reclamo", nunca "ticket". |
+| **Portal** | La vista que tiene el cliente: su planta, el trámite, documentación, reportes, reclamos y encuestas. |
 | **Plan de Protección contra Granizo** | El servicio de reposición de paneles por granizo de Voltia. **No es un seguro**, y no se le dice así (cap. 12.1). |
 | **Anualidad** | Lo que paga el cliente por un año de plan: USD 12 por panel, IVA incluido. |
 | **Carencia** | Los 30 días desde el primer pago en que el plan todavía no cubre. No aplica si se adhiere con la obra. |
@@ -1761,7 +1765,7 @@ partes:
 **Qué explicar:**
 
 - Son **dos cosas distintas**, y conviene explicarlo así desde el principio, con esos dos nombres siempre:
-- **El portal de Voltia:** el seguimiento del trámite, las encuestas, los tickets, los videos que se le mandaron, y donde carga su fecha de corte y su tarifa. En *Mis reportes solares* ve además **su generación y su consumo**: la curva del día, los días del mes, los meses y los años, igual que en la aplicación de su inversor (en los inversores Growatt; en Huawei, por ahora, sin la curva del día).
+- **El portal de Voltia:** lo primero que ve, una vez habilitado, es **su planta**: cuánto generan los paneles en ese momento, cuánto consume la casa y cuánto le vende o le compra a UTE, y su generación y su consumo por hora, día, mes y año, igual que en la aplicación de su inversor (en los inversores Growatt; en Huawei, por ahora, sin la curva del día). Además: el trámite UTE, los reclamos, las encuestas, los reportes mensuales, los videos que se le mandaron, y donde carga su fecha de corte y su tarifa.
 - **La aplicación de tu inversor:** la generación en tiempo real, el histórico y el consumo. Es de la marca del inversor, no de Voltia. Sigue sirviendo, pero ya no hace falta para ver cómo va.
 
 **Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación del inversor (en plantas Growatt) **no se le inventan usuario ni contraseña**: desde la ficha, **Acceso a la app del inversor** arma un link de un solo uso, que vale 7 días, con el mensaje listo para mandar por WhatsApp. El cliente abre el link, elige él su usuario y su contraseña, y la cuenta queda creada con su planta. Nadie de Voltia ve esa contraseña; en los comentarios del proyecto queda anotado qué usuario eligió. Si se la olvida, se le manda un link nuevo. El cliente que ya entra al portal lo puede hacer también desde ahí, en **App del inversor**. Para que funcione, la planta tiene que estar asociada al cliente en Voltia PM. En plantas de otra marca, sigue siendo como antes: se crea el usuario siguiendo el video instructivo.
@@ -1899,7 +1903,7 @@ partes:
 - Preguntale si **cambió la contraseña del wifi o el router**: es la causa más común.
 - Cuando se resuelve, enseñale a hacerlo solo: es de las consultas que más se repiten y que menos hace falta que pasen por Voltia.
 
-**Política interna:** mandale el **video de reconexión de su marca** para que lo haga solo, si se anima, con el botón **Enlace para el cliente** (sección 7.1): así le queda guardado en la pestaña Videos del portal para la próxima vez. Si no, que abra un ticket de soporte desde el portal de Voltia.
+**Política interna:** mandale el **video de reconexión de su marca** para que lo haga solo, si se anima, con el botón **Enlace para el cliente** (sección 7.1): así le queda guardado en la pestaña Videos del portal para la próxima vez. Si no, que abra un reclamo desde el portal de Voltia.
 
 **Cuándo escalar:** si la luz no está verde, pasa al tema 17.
 
@@ -1910,7 +1914,7 @@ partes:
 **Qué explicar:**
 
 - Que **se registra el caso y se le da seguimiento**, y cuándo va a tener novedades.
-- Cómo **abrir el ticket desde el portal de Voltia**, para la próxima.
+- Cómo **abrir un reclamo desde el portal de Voltia**, para la próxima.
 
 **Política interna:** es raro que lo reporte el cliente primero: con falla, el inversor sigue conectado y la reporta, así que **Voltia debería enterarse antes y contactarlo**. Si llama él primero, algo falló en el monitoreo. Se registra como caso técnico. Si el cliente no abre el ticket, lo abre Experiencia Solar, pero la meta es que lo haga solo.
 
@@ -1996,7 +2000,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.34 | 28 de octubre de 2026 | El acceso a la aplicación del inversor (Growatt) ya no se arma con usuario y contraseña inventados: se le manda al cliente un link de un solo uso desde su ficha y él elige los suyos; también lo puede hacer desde el portal. |
+| 1.34 | 28 de octubre de 2026 | El acceso a la aplicación del inversor (Growatt) ya no se arma con usuario y contraseña inventados: se le manda al cliente un link de un solo uso desde su ficha y él elige los suyos; también lo puede hacer desde el portal. En el portal, los tickets pasan a llamarse reclamos (*Mis reclamos*, *Abrir un reclamo*), que es como lo entiende el cliente. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta (generación, consumo y lo que vende o compra a UTE en ese momento), y ya no el trámite, que queda en el menú. |
 | 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |
 | 1.31 | 21 de octubre de 2026 | El monitoreo avisa cuando el medidor de una planta quedó al revés o mal conectado. Se agrega cómo analizar una planta desde el chat de Claude conectado a Voltia PM, para contestarle al cliente con datos y pasarle a Operaciones una pista antes de una visita de soporte. |

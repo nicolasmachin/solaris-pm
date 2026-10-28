@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Mail, Phone } from 'lucide-react';
 import { getPortalProjectUte } from '../api/portal.api';
 import { UteTimeline } from '../components/ute/UteTimeline';
 import { useAuthStore } from '../store/auth.store';
+import { usePortalPreviewStore } from '../store/portalPreview.store';
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '';
@@ -19,9 +20,16 @@ function fmtDate(iso: string | null): string {
   });
 }
 
-export function PortalProjectUte() {
-  const { id } = useParams<{ id: string }>();
+/**
+ * Avance del trámite UTE de un proyecto. Es la página `/portal/:id` y también
+ * el Inicio del portal mientras el cliente no está habilitado (`projectId`).
+ */
+export function PortalProjectUte({ projectId }: { projectId?: string } = {}) {
+  const params = useParams<{ id: string }>();
+  const id = projectId ?? params.id;
+  const embebido = !!projectId;
   const { user } = useAuthStore();
+  const { preview } = usePortalPreviewStore();
   const { data, isLoading, error } = useQuery({
     queryKey: ['portal-project-ute', id],
     queryFn: () => getPortalProjectUte(id!),
@@ -30,13 +38,15 @@ export function PortalProjectUte() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Link
-        to="/portal"
-        className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mb-3"
-      >
-        <ArrowLeft className="w-3 h-3" />
-        Volver a mis proyectos
-      </Link>
+      {!embebido && (
+        <Link
+          to="/portal/ute"
+          className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mb-3"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Volver al trámite UTE
+        </Link>
+      )}
 
       {isLoading ? (
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-8 text-center text-sm text-[var(--color-text-muted)]">
@@ -51,7 +61,7 @@ export function PortalProjectUte() {
           {/* Header */}
           <div className="border-b border-[var(--color-border)] pb-4">
             <p className="text-[11px] text-[var(--color-text-muted)]">
-              Hola, {user?.name?.split(' ')[0] ?? ''}
+              Hola, {(preview?.clientName ?? user?.name ?? '').split(' ')[0]}
             </p>
             <h2 className="text-base font-semibold text-[var(--color-text-primary)] mt-1">
               {data.clientName}{' '}
@@ -80,8 +90,18 @@ export function PortalProjectUte() {
             )}
           </div>
 
-          {/* Timeline */}
-          <UteTimeline items={data.timeline} />
+          {/* Timeline. Un cliente anterior a Voltia PM no tiene el trámite
+              cargado: mostrarle once pasos pendientes sería decirle que no
+              está habilitado. */}
+          {data.habilitadoSinTramite ? (
+            <div className="inline-flex items-start gap-2 rounded-md bg-emerald-500/15 px-3 py-2 text-[12px] text-emerald-400">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Tu planta ya está habilitada por UTE. El trámite se hizo antes de que lo siguiéramos desde este
+              portal, por eso no ves el paso a paso.
+            </div>
+          ) : (
+            <UteTimeline items={data.timeline} />
+          )}
 
           {/* Contactos UTE */}
           <div className="rounded-md bg-[var(--color-bg-app)] border border-[var(--color-border)] p-4">

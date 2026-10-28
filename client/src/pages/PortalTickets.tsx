@@ -31,14 +31,14 @@ export function PortalTickets() {
   const crear = useMutation({
     mutationFn: () => createPortalTicket({ projectId: effectiveProjectId, titulo: titulo.trim(), descripcion: descripcion.trim() }),
     onSuccess: () => {
-      toast.success("Ticket enviado");
+      toast.success("Reclamo enviado");
       qc.invalidateQueries({ queryKey: ["portal-tickets"] });
       setTitulo("");
       setDescripcion("");
       setProjectId("");
       setShowForm(false);
     },
-    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo enviar el ticket"),
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo enviar el reclamo"),
   });
 
   const canSubmit = effectiveProjectId && titulo.trim() && descripcion.trim() && !crear.isPending;
@@ -47,12 +47,12 @@ export function PortalTickets() {
     <div className="mx-auto max-w-3xl space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Mis tickets</h1>
-          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">Consultas y reclamos sobre tu instalación.</p>
+          <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Mis reclamos</h1>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">¿Algo no anda bien o tenés una duda? Escribinos y te respondemos acá.</p>
         </div>
         {!showForm && (
-          <Button size="sm" onClick={() => setShowForm(true)}>
-            <Plus size={14} className="mr-1" /> Nuevo ticket
+          <Button size="sm" className="shrink-0 whitespace-nowrap" onClick={() => setShowForm(true)}>
+            <Plus size={14} className="mr-1" /> Abrir un reclamo
           </Button>
         )}
       </div>
@@ -72,7 +72,7 @@ export function PortalTickets() {
           )}
           <div>
             <label className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Asunto</label>
-            <input value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={200} placeholder="¿Sobre qué es tu consulta?" className={inputClass} />
+            <input value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={200} placeholder="¿Qué pasa? Por ejemplo: no genera desde ayer" className={inputClass} />
           </div>
           <div>
             <label className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Detalle</label>
@@ -88,7 +88,7 @@ export function PortalTickets() {
       {isLoading ? (
         <div className="flex justify-center py-12"><Spinner size={24} /></div>
       ) : !tickets || tickets.length === 0 ? (
-        <p className="py-12 text-center text-sm text-[var(--color-text-muted)]">No tenés tickets todavía.</p>
+        <p className="py-12 text-center text-sm text-[var(--color-text-muted)]">No abriste ningún reclamo. Si algo no anda bien, tocá «Abrir un reclamo».</p>
       ) : (
         <div className="space-y-2">
           {tickets.map((t) => (
