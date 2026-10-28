@@ -1,0 +1,14 @@
+{
+  "name": "alimentacion-sheets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Conexión con la Google Sheet 'Control de alimentación 2026' para registrar comidas vía API.",
+  "scripts": {
+    "inspect": "node inspect.js",
+    "registrar": "node registrar.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

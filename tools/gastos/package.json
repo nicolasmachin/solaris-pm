@@ -1,0 +1,14 @@
+{
+  "name": "gastos-sheets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Registro de gastos en la Google Sheet 'Gastos Viaje São Paulo - Intersolar 2026' vía API.",
+  "scripts": {
+    "inspect": "node inspect.js",
+    "registrar": "node registrar.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
