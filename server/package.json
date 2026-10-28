@@ -18,6 +18,7 @@
     "test:seguro-granizo": "node --import tsx --test src/services/seguro-granizo/estado.test.ts src/services/seguro-granizo/plazos.test.ts",
     "test:growatt-historial": "node --import tsx --test src/services/reportesFv/growatt/historial-analisis.test.ts",
     "test:fv-medidor": "node --import tsx --test src/services/reportesFv/monitor/medidor.test.ts",
+    "test:soporte": "node --import tsx --test src/services/soporte/vigia.test.ts src/services/soporte/diagnostico.test.ts",
     "test:reportes-fv": "node --import tsx --test src/services/reportesFv/motor/metrics.test.ts",
     "test:reportes-fv-habiles": "node --import tsx --test src/services/reportesFv/motor/diasHabiles.test.ts",
     "test:reportes-fv-general": "node --import tsx --test src/services/reportesFv/motor/generalSimple.test.ts",

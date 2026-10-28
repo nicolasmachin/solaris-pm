@@ -380,6 +380,16 @@ Detalle en `docs/manual/12-infraestructura.md`, *Avisos push*. Una sola vez:
 **No cambiar las claves después**: todas las suscripciones quedan inservibles y
 cada persona tiene que volver a activar los avisos en cada dispositivo.
 
+## 6e. Soporte (mesa de monitoreo)
+
+Detalle en `docs/manual/19-soporte.md`. Después del deploy con las migraciones
+`soporte_mesa` y `soporte_llave` (aditivas):
+
+1. Permisos: `docker compose -f docker-compose.prod.yml exec -T server npx tsx prisma/scripts/seed-soporte-permissions.ts`
+   y reiniciar el server (caché de permisos).
+2. El vigía arranca solo en producción, cada 15 minutos de 7:00 a 20:45. Para
+   apagarlo: `SOPORTE_VIGIA=0` en el `.env`.
+
 ## 7. Verificar que el deploy salió bien
 
 ```bash

@@ -6041,6 +6041,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // VIEW = "Mi legajo" (solo lo propio). EDIT = los legajos de todos, con
     // sueldos, contratos y datos de salud.
     { module: Module.RRHH,                actions: [Action.VIEW, Action.EDIT] },
+    // VIEW = ver la mesa de Soporte y recibir sus alertas. EDIT = cerrar casos y
+    // avisar al cliente.
+    { module: Module.SOPORTE,             actions: [Action.VIEW, Action.EDIT] },
     { module: Module.USUARIOS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.CONFIGURACION,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];

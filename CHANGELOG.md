@@ -12,6 +12,13 @@
 - Los gráficos de generación salieron de **Reportes**, que queda para los reportes mensuales.
 - Los clientes de antes de Voltia PM (los que se cargaron sin el trámite paso a paso) también entran directo a su planta, y en **Trámite UTE** ven que están habilitados en vez de once pasos pendientes.
 
+#### Soporte: la mesa que vigila las plantas
+- Nuevo menú **Soporte**. Cada 15 minutos con sol, Voltia PM mira todas las plantas Growatt y **abre un caso cuando una lleva una hora sin generar o sin comunicar mientras el resto de la cartera sí genera**. Antes de abrirlo le pregunta al inversor qué le pasa, y lo explica en criollo: "dejó de mandar datos a las 16:23, y en ese momento generaba 3,5 kW", "el inversor no ve la red de UTE: casi siempre es la llave de microgeneración", "no le llega tensión de los paneles".
+- Una vez por día detecta **las plantas que generan menos de lo normal para ellas**: compara a cada una con el resto de la cartera los mismos días (si está nublado baja todo el mundo) y con lo que genera siempre (cada techo tiene su orientación y sus sombras).
+- La mesa muestra los casos abiertos y todas las plantas con lo que generan ahora y sus últimos días comparados con lo normal. Los casos se cierran solos cuando la planta vuelve a generar.
+- **Avisar al cliente**: un toque, con el mensaje listo para revisar. Le llega al portal y al celular, y lo ve arriba de todo en el Inicio mientras el caso esté abierto. Nunca le escribe el sistema solo.
+- Las alertas le llegan por ahora a Administración; después habrá un rol de Soporte.
+
 #### Voltia en el celular, con avisos
 - Voltia PM y el portal se pueden **instalar como aplicación** en el celular o la computadora, sin pasar por ninguna tienda: queda el ícono en la pantalla y se abre sin la barra del navegador. El cliente instala "Voltia", que abre directo en su portal.
 - **Avisos en el celular**: el cliente los activa desde la tarjeta del Inicio del portal o desde el menú de su cuenta, y le llegan aunque tenga el portal cerrado (cuando le respondemos un reclamo, cuando tiene una encuesta). Al equipo le llega lo mismo que a la campanita; se activa en el menú de la cuenta → **Avisos en este dispositivo**.

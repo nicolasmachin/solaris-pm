@@ -324,3 +324,13 @@ export const getPortalDocumentos = () =>
 
 /** Ruta relativa: va por apiClient, que le agrega la sesión (y la vista como cliente). */
 export const portalDocumentoPath = (fileId: string) => `/api/client/documentos/${fileId}`;
+
+// ─── Avisos de Soporte sobre la planta ─────────────────────────────────────
+export interface PortalAvisoPlanta {
+  id: string;
+  planta: string;
+  mensaje: string;
+  avisadoEn: string;
+}
+export const getPortalAvisosPlanta = () =>
+  apiClient.get<{ avisos: PortalAvisoPlanta[] }>("/api/client/avisos-planta").then((r) => r.data.avisos);

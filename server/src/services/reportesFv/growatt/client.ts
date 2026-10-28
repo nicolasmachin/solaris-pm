@@ -37,6 +37,10 @@ export interface PlantaGrowatt {
   peakPowerKw?: number | null;
   city?: string | null;
   country?: string | null;
+  /** Potencia de ahora (W), energía total (kWh) y estado crudo (1 en línea, 4 desconectada). Los usa el vigía de Soporte. */
+  potenciaW?: number | null;
+  energiaTotalKwh?: number | null;
+  statusNum?: number | null;
 }
 
 /**
@@ -137,6 +141,10 @@ export async function listarPlantas(): Promise<PlantaGrowatt[]> {
         peakPowerKw: p.peak_power != null ? Number(p.peak_power) : null,
         city: p.city != null ? String(p.city) : null,
         country: p.country != null ? String(p.country) : null,
+        potenciaW: p.current_power != null && Number.isFinite(Number(p.current_power)) ? Number(p.current_power) : null,
+        energiaTotalKwh:
+          p.total_energy != null && Number.isFinite(Number(p.total_energy)) ? Number(p.total_energy) : null,
+        statusNum: p.status != null && Number.isFinite(Number(p.status)) ? Number(p.status) : null,
       });
     }
     if (plantas.length >= (totalEsperado ?? 0)) break;
@@ -344,6 +352,55 @@ export async function estadoInversor(deviceSn: string): Promise<EstadoInversorGr
     statusText: texto(d.statusText),
     status: num(d.status),
     ultimoDatoEn: parsearFechaGrowatt(d.time ?? d.lastUpdateTimeText),
+  };
+}
+
+/** Último dato de un inversor MIN (tipo 7) o MAX (tipo 4): lo que mira Soporte para confirmar un caso. */
+export interface UltimoDatoInversor {
+  ultimoDatoEn: Date | null;
+  status: number | null;
+  statusText: string | null;
+  faultCode: number | null;
+  faultTexto: string | null;
+  pacW: number | null;
+  /** La mayor tensión de red de las fases (V). */
+  vacMax: number | null;
+  /** La mayor tensión de paneles de las entradas (V). */
+  vpvMax: number | null;
+}
+
+/**
+ * `tlx_last_data` (MIN) o `max_last_data` (MAX). POST con form body. Una
+ * llamada por equipo: se pide solo para las plantas que el vigía ya marcó.
+ * Verificado el 28-oct-2026 con los dos tipos: traen pac, vac1..3 (o vacr/s/t),
+ * vpv1..16, time, status, statusText y el código de falla.
+ */
+export async function ultimoDatoInversor(deviceSn: string, tipo: number): Promise<UltimoDatoInversor | null> {
+  const esMax = tipo === 4;
+  const data = await post(esMax ? "device/max/max_last_data" : "device/tlx/tlx_last_data", {
+    [esMax ? "max_sn" : "tlx_sn"]: deviceSn,
+  });
+  const d = (esMax ? data?.max : data?.tlx) ?? data?.data ?? data;
+  if (!d || typeof d !== "object") return null;
+  const num = (v: unknown): number | null => {
+    const n = Number(v);
+    return v !== null && v !== "" && Number.isFinite(n) ? n : null;
+  };
+  const max = (claves: string[]) => {
+    const vals = claves.map((k) => num(d[k])).filter((v): v is number => v != null);
+    return vals.length ? Math.max(...vals) : null;
+  };
+  const codigos = [d.faultCode, d.faultType, d.faultCode1, d.faultType1].map(num).filter((v): v is number => !!v);
+  const texto = typeof d.errorText === "string" && d.errorText.toLowerCase() !== "unknown" ? d.errorText : null;
+  return {
+    ultimoDatoEn: parsearFechaGrowatt(d.time),
+    status: num(d.status),
+    statusText: typeof d.statusText === "string" ? d.statusText : null,
+    faultCode: codigos[0] ?? null,
+    faultTexto: texto,
+    pacW: num(d.pac),
+    vacMax: max(["vac1", "vac2", "vac3", "vacr", "vacs", "vact"]),
+    vpvMax: max(Array.from({ length: 16 }, (_, i) => `vpv${i + 1}`)),
   };
 }
 

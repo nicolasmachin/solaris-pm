@@ -11,6 +11,8 @@ import type { NotificationType } from "../../types/api.types";
 
 function getTypeIcon(type: NotificationType): string {
   switch (type) {
+    case "soporte_aviso_cliente":
+      return "⚠️";
     case "ticket_actualizado":
       return "🎫";
     case "encuesta_disponible":
@@ -74,7 +76,9 @@ export function PortalNotificationBell() {
   function handleItemClick(id: string, projectId: string | null, read: boolean, type: NotificationType) {
     if (!read) markOneMutation.mutate(id);
     setOpen(false);
-    if (type === "ticket_actualizado") {
+    if (type === "soporte_aviso_cliente") {
+      navigate("/portal");
+    } else if (type === "ticket_actualizado") {
       navigate("/portal/tickets");
     } else if (type === "encuesta_disponible") {
       navigate("/portal/encuestas");

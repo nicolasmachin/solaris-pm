@@ -18,6 +18,7 @@ import {
   X,
   LogOut,
   Bell,
+  LifeBuoy,
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -186,6 +187,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             <NavLink to="/clientes" className={linkClass}>
               <Contact size={18} className="shrink-0" />
               <span>Experiencia Solar</span>
+            </NavLink>
+          </CanAccess>
+          <CanAccess module="SOPORTE" action="VIEW">
+            <NavLink to="/soporte" className={linkClass}>
+              <LifeBuoy size={18} className="shrink-0" />
+              <span>Soporte</span>
             </NavLink>
           </CanAccess>
           <CanAccess module="FINANZAS" action="VIEW">

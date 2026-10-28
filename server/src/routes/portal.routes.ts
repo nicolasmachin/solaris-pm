@@ -946,6 +946,35 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     },
   );
 
+  // ─── Avisos de Soporte sobre la planta ─────────────────────────────────────
+  // Los casos abiertos de los que una persona de Soporte ya le avisó: el
+  // cliente los ve arriba en el Inicio hasta que se cierran. Solo el mensaje
+  // que se le mandó, nunca el detalle interno.
+  app.get(
+    "/client/avisos-planta",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const casos = await prisma.soporteCaso.findMany({
+        where: {
+          estado: "ABIERTO",
+          clienteAvisadoEn: { not: null },
+          project: { deletedAt: null, clients: { some: { userId: user.id } } },
+        },
+        select: { id: true, mensajeCliente: true, clienteAvisadoEn: true, project: { select: { clientName: true } } },
+        orderBy: { clienteAvisadoEn: "desc" },
+      });
+      return {
+        avisos: casos.map((c) => ({
+          id: c.id,
+          planta: c.project.clientName,
+          mensaje: c.mensajeCliente ?? "",
+          avisadoEn: c.clienteAvisadoEn!.toISOString(),
+        })),
+      };
+    },
+  );
+
   // ─── Mis documentos ───────────────────────────────────────────────────────
   // Contrato firmado, papeles de UTE firmados y el Plan de Protección contra
   // Granizo (estado, plazos, Anexo A y condiciones). Ver documentos-cliente.service.ts.

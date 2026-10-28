@@ -213,6 +213,11 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               Experiencia Solar
             </NavLink>
           </CanAccess>
+          <CanAccess module="SOPORTE" action="VIEW">
+            <NavLink to="/soporte" className={navLinkClass}>
+              Soporte
+            </NavLink>
+          </CanAccess>
           <CanAccess module="FINANZAS" action="VIEW">
             <FinanzasNavLink navLinkClass={navLinkClass} />
           </CanAccess>

@@ -559,6 +559,27 @@ de vida de la instalación.
 **A qué manuales afecta.** Al de Experiencia Solar (sale el paso de entregar el
 acceso y cambia el aviso de "ya podés encender") y al PGT (qué es cada cosa).
 
+### Soporte: Voltia vigila las plantas y una persona le avisa al cliente
+
+**Qué se decidió.** Voltia PM revisa todas las plantas cada 15 minutos con sol y
+abre un caso cuando una no genera, no comunica o genera menos de lo normal. **Al
+cliente lo avisa siempre una persona**, con un toque desde el caso; el sistema
+no le escribe solo. **Por ahora no hay un responsable de Soporte**: las alertas
+le llegan a Administración, hasta que exista el rol. **Fuera de horario no se
+avisa a nadie**: lo detectado queda en la cola para el día siguiente (de noche
+no hay sol, así que tampoco hay qué detectar).
+
+**Por qué.** Que el cliente se entere antes que Voltia de que su planta no
+anda es lo peor que puede pasar en la posventa: pierde plata cada día y pierde
+confianza. El aviso lo confirma una persona para no mandarle falsas alarmas
+mientras el sistema se prueba; cuando se vea que no se equivoca, los casos
+claros (la llave) pueden pasar a avisarse solos.
+
+**Desde cuándo rige.** 28 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Experiencia Solar y al de Operaciones (las
+visitas de soporte).
+
 ### Voltia en el celular: instalable desde el navegador, sin tiendas por ahora
 
 **Qué se decidió.** Voltia PM y el portal se instalan en el celular desde el
@@ -976,7 +997,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. Se registra que Voltia se instala en el celular desde el navegador, con avisos, y que por ahora no va a las tiendas. |
+| 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. Se registra que Voltia se instala en el celular desde el navegador, con avisos, y que por ahora no va a las tiendas. Se registra que Voltia vigila las plantas y que al cliente le avisa siempre una persona; por ahora sin responsable de Soporte. |
 | 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM, sin avisos ni confirmación de lectura en cada versión nueva; que la licencia se pide y se controla en Voltia PM y que lo que se entrega se firma; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |
 | 0.25 | 22 de octubre de 2026 | Se registra que las cuotas del plan de pagos se cobran por momento de la obra y no por fecha: la del 50 % desde diez días antes de la obra, la del 30 % con la obra terminada y la del 20 % con la habilitación, y que cada una vence a los diez días de poder cobrarse. Se registra también que lo que se le factura al cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo, guardado sin IVA), y se corrige la decisión de las facturas al cliente, que ya no parte de la cotización. |
 | 0.24 | 22 de octubre de 2026 | Se registra que de cada lead se pregunta y se carga cómo nos conoció, para medir qué canal trae ventas. |

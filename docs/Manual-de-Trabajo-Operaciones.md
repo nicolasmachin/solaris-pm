@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.10 · del 28/10/26
+**Voltia · Uruguay** · Versión 1.11 · del 28/10/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -197,7 +197,7 @@ Si todo sigue el procedimiento, el gerente de Operaciones no tiene que inventar 
 
 - **La cuadrilla propia:** un capataz y su equipo de operarios. Si el trabajo lo pide, el gerente de Operaciones puede sumar gente.
 - **Las cuadrillas tercerizadas:** empresas instaladoras que trabajan para Voltia, cada una en su zona.
-- **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso.
+- **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso. Muchas visitas de soporte van a nacer de la **mesa de Soporte** de Voltia PM, que detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y dice qué vio el inversor (sin red, sin tensión de paneles, el código de falla). Antes de salir conviene leer el caso: a veces es la llave y la sube el cliente.
 
 ### Cuadrilla propia o tercerizada
 
@@ -1114,6 +1114,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.11 | 28 de octubre de 2026 | Las visitas de soporte pueden nacer de la mesa de Soporte de Voltia PM, que detecta en el día las plantas con problemas y dice qué vio el inversor. |
 | 1.10 | 28 de octubre de 2026 | En los criterios técnicos del montaje: sobre un techo de chapa se camina siempre sobre tablas, y sobre membrana asfáltica las virutas de metal se barren en el momento. |
 | 1.9 | 27 de octubre de 2026 | Desde el chat de Claude se puede ver el registro de alarmas y el detalle cada 5 minutos del inversor, en todos los Growatt (las horas en falla con sol, cada entrada de paneles y cada string, el aislamiento, la red y la hora en que dejó de comunicar), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con una nota interna que el cliente no ve. |
 | 1.8 | 22 de octubre de 2026 | Se agrega que agendar la obra y cerrar la etapa de Ejecución de Obra le avisan a Finanzas cuándo cobrar: la cuota del 50 % queda lista 10 días antes del primer día de obra, y la del 30 % al cerrar la etapa. |

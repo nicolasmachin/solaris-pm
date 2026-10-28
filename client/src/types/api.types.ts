@@ -51,7 +51,9 @@ export type NotificationType =
   | "seguro_granizo_danio_plazo"
   | "documento_nueva_version"
   | "legajo_vencimiento"
-  | "legajo_documento";
+  | "legajo_documento"
+  | "soporte_alerta"
+  | "soporte_aviso_cliente";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

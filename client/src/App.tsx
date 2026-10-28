@@ -97,6 +97,7 @@ const MaterialesConsolidados = lazy(() => import("./pages/MaterialesConsolidados
 const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) => ({ default: module.VisitaTecnica })));
 const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
 const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
+const Soporte = lazy(() => import("./pages/Soporte").then((module) => ({ default: module.Soporte })));
 const PortalDocumentos = lazy(() => import("./pages/PortalDocumentos").then((module) => ({ default: module.PortalDocumentos })));
 const PortalInicio = lazy(() => import("./pages/PortalInicio").then((module) => ({ default: module.PortalInicio })));
 const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
@@ -523,6 +524,14 @@ export function App() {
         />
         {/* Pendientes se mudó a una tab dentro de Mis tareas. */}
         <Route path="/pendientes" element={<Navigate to="/mis-tareas/pendientes" replace />} />
+        <Route
+          path="/soporte"
+          element={
+            <PermissionRoute module="SOPORTE" action="VIEW">
+              <Soporte />
+            </PermissionRoute>
+          }
+        />
         <Route
           path="/clientes"
           element={

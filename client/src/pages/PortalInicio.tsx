@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { ChevronRight, FileClock } from 'lucide-react';
+import { AlertTriangle, ChevronRight, FileClock } from 'lucide-react';
 
-import { getPortalProjects } from '../api/portal.api';
+import { getPortalAvisosPlanta, getPortalProjects } from '../api/portal.api';
 import { getPlantasDelCliente } from '../api/energiaFv.api';
 import { PortalEnergiaPlantas } from '../components/portal/PortalEnergiaPlantas';
 import { AvisosDispositivo } from '../components/pwa/AvisosDispositivo';
@@ -25,6 +25,7 @@ export function PortalInicio() {
   const nombre = (preview?.clientName ?? user?.name ?? '').split(' ')[0];
   const proyectosQ = useQuery({ queryKey: ['portal-projects'], queryFn: getPortalProjects });
   const plantasQ = useQuery({ queryKey: ['portal-energia-plantas'], queryFn: getPlantasDelCliente });
+  const avisosQ = useQuery({ queryKey: ['portal-avisos-planta'], queryFn: getPortalAvisosPlanta, refetchInterval: 5 * 60_000 });
 
   if (proyectosQ.isLoading || plantasQ.isLoading) return <Spinner />;
 
@@ -45,6 +46,22 @@ export function PortalInicio() {
         <p className="text-xs text-[var(--color-text-muted)]">Hola, {nombre}</p>
         <h1 className="mt-1 text-lg font-medium text-[var(--color-text-primary)]">Tu planta solar</h1>
       </div>
+
+      {/* Lo que Soporte le avisó sobre su planta, mientras siga abierto. */}
+      {(avisosQ.data ?? []).map((a) => (
+        <div key={a.id} className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Aviso sobre tu planta{(avisosQ.data ?? []).length > 1 ? ` · ${a.planta}` : ''}
+            </p>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{a.mensaje}</p>
+            <Link to="/portal/tickets" className="mt-2 inline-block text-xs font-medium text-[var(--color-accent)] hover:underline">
+              ¿Querés contarnos algo? Abrí un reclamo →
+            </Link>
+          </div>
+        </div>
+      ))}
 
       {/* Invitación a activar los avisos (se cierra y no vuelve). */}
       <AvisosDispositivo variante="tarjeta" publico="cliente" />

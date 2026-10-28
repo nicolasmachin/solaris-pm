@@ -243,6 +243,10 @@ enum NotificationType {
   // RRHH: novedades del legajo (recibo nuevo, documento validado o rechazado,
   // o —para RRHH— un documento cargado por el empleado que espera validación).
   legajo_documento
+  // Soporte: el vigía detectó un problema en una planta (al equipo de Soporte).
+  soporte_alerta
+  // Soporte: aviso al cliente de un problema en su planta (lo confirma una persona).
+  soporte_aviso_cliente
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
@@ -352,6 +356,10 @@ enum Module {
   // Recursos Humanos. VIEW = "Mi legajo" (lo propio). EDIT = los legajos de
   // todos, con sueldos y contratos: solo gerencia y administración.
   RRHH
+  // Soporte: mesa de monitoreo de plantas (vigía cada 15 min + casos). VIEW =
+  // ver la mesa y recibir las alertas; EDIT = resolver, descartar y avisar al
+  // cliente. Por ahora solo ADMIN; después, el rol de Soporte.
+  SOPORTE
 }
 
 enum Moneda {
@@ -593,6 +601,8 @@ model User {
   auditLogs                      AuditLog[]
   notifications                  Notification[]
   pushSuscripciones              PushSuscripcion[]
+  soporteCasosResueltos          SoporteCaso[]                  @relation("SoporteCasoResueltoPor")
+  soporteCasosAvisados           SoporteCaso[]                  @relation("SoporteCasoAvisadoPor")
   comments                       Comment[]
   settings                       Setting[]                      @relation("SettingUser")
   settingsUpdated                Setting[]                      @relation("SettingUpdatedBy")
@@ -779,6 +789,8 @@ model Project {
   reporteFvGeneracionesDiarias    ReporteFvGeneracionDiaria[]
   fvCurvasDia                     FvCurvaDia[]
   growattPlant                    GrowattPlant?
+  soporteEstados                  SoporteEstadoPlanta[]
+  soporteCasos                    SoporteCaso[]
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
   agendaEventos                   AgendaEvento[]                 @relation("AgendaEventoProject")
@@ -6353,4 +6365,81 @@ model PushSuscripcion {
 
   @@index([userId])
   @@map("push_suscripciones")
+}
+
+// ─── Soporte: mesa de monitoreo ──────────────────────────────────────────────
+// Ver services/soporte. El vigía lee `plant/list` de Growatt cada 15 minutos con
+// sol (dos llamadas para toda la cartera: potencia, energía total y estado) y
+// abre casos cuando una planta no genera o no comunica mientras las demás sí.
+
+enum SoporteCasoTipo {
+  SIN_GENERACION   // comunica pero no genera con sol (la llave, una falla)
+  SIN_COMUNICACION // desconectada de Growatt con sol (wifi, datalogger, corte)
+  FALLA_INVERSOR   // el inversor informa un código de falla
+  BAJO_RENDIMIENTO // genera bastante menos que lo normal para ella (cartera como referencia)
+}
+
+enum SoporteCasoEstado {
+  ABIERTO
+  RESUELTO
+  DESCARTADO
+}
+
+/// Última lectura de cada planta Growatt vinculada. Una fila por planta.
+model SoporteEstadoPlanta {
+  growattPlantId BigInt   @id
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// Estado crudo de plant/list: 1 = en línea, 4 = desconectada.
+  status          Int?
+  potenciaW       Float?
+  energiaTotalKwh Float?
+  /// Energía total al primer sondeo del día (para "energía de hoy").
+  energiaInicioDiaKwh Float?
+  diaInicio       DateTime? @db.Date
+  leidoEn         DateTime  @db.Timestamptz(6)
+  /// Cuánto rinde normalmente esta planta respecto de la mediana de la cartera
+  /// (promedio móvil). Absorbe orientación y sombras: 1 = como la mediana.
+  factorNormal    Float?
+  /// Sondeos seguidos sin generar / desconectada mientras la cartera genera.
+  ceroConSol         Int @default(0)
+  desconectadaConSol Int @default(0)
+  ultimaGeneracionEn DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@map("soporte_estado_plantas")
+}
+
+model SoporteCaso {
+  id             String            @id @default(cuid())
+  projectId      String
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  growattPlantId BigInt?
+  tipo           SoporteCasoTipo
+  estado         SoporteCasoEstado @default(ABIERTO)
+  titulo         String
+  /// Qué se vio, en lenguaje del equipo (con la evidencia: hora, potencia, código).
+  detalle        String
+  codigoFalla    Int?
+  /// El inversor no ve la red con los paneles con tensión: casi siempre la
+  /// llave de microgeneración, que la puede subir el cliente.
+  llaveDelCliente Boolean          @default(false)
+  detectadoEn    DateTime          @default(now()) @db.Timestamptz(6)
+  ultimaVezEn    DateTime          @default(now()) @db.Timestamptz(6)
+
+  resueltoEn     DateTime?         @db.Timestamptz(6)
+  resueltoPorId  String?
+  resueltoPor    User?             @relation("SoporteCasoResueltoPor", fields: [resueltoPorId], references: [id], onDelete: SetNull)
+  /// "Volvió a generar" (automático) o lo que escribió quien lo cerró.
+  motivoCierre   String?
+
+  clienteAvisadoEn    DateTime? @db.Timestamptz(6)
+  clienteAvisadoPorId String?
+  clienteAvisadoPor   User?     @relation("SoporteCasoAvisadoPor", fields: [clienteAvisadoPorId], references: [id], onDelete: SetNull)
+  mensajeCliente      String?
+
+  @@index([estado])
+  @@index([projectId, estado])
+  @@map("soporte_casos")
 }

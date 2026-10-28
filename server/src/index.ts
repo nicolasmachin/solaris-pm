@@ -2,6 +2,7 @@ import { startBillerCfeEmitidosJob } from "./services/biller/cfe-emitidos.job.js
 import { startBillerRecibidosJob } from "./services/biller/recibidos.job.js";
 import fs from "node:fs";
 import { startPlanGranizoJob } from "./services/seguro-granizo/plan-granizo.job.js";
+import { startSoporteJobs } from "./services/soporte/soporte.job.js";
 import path from "node:path";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
@@ -112,6 +113,7 @@ async function start() {
   startDailyDigestJob();
   startNovedadesJob();
   startPlanGranizoJob();
+  startSoporteJobs();
   startBillerRecibidosJob();
   startBillerCfeEmitidosJob();
   startVencimientosLegajoJob();
