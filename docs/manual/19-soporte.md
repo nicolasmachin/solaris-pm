@@ -138,6 +138,15 @@ avisarle por WhatsApp.
 
 ## Reglas y decisiones
 
+- **No consume recursos aparte**: no hay agentes ni procesos nuevos ni IA. Es
+  un `cron` dentro del mismo proceso del server, que hace 2 consultas a
+  Growatt por vuelta más una por inversor sospechoso, y termina. Nunca corren
+  dos vueltas a la vez (`corriendo`), cada consulta tiene 30 s de límite y 5
+  reintentos, y la vuelta entera tiene un tope de 10 minutos
+  (`TOPE_VUELTA_MS`): lo que no llegó a revisar queda para la próxima. Pedido
+  explícito de Nicolás el 28-oct-2026, después de que el asistente Secretario
+  llenara la RAM de la VPS de desarrollo con agentes que quedaban abiertos.
+
 - **El vigía solo corre en producción** (`vigiaHabilitado()`): dev usa el mismo
   token de Growatt y compartirían el cupo. En dev: **Revisar ahora**, o
   `SOPORTE_VIGIA=1`. `SOPORTE_VIGIA=0` lo apaga en prod.

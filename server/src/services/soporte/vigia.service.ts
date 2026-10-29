@@ -29,6 +29,14 @@ export type ResultadoVigia = {
 
 let corriendo = false;
 
+/**
+ * Tope de una vuelta. Cada consulta a Growatt ya tiene 30 s de límite y 5
+ * reintentos, pero si hubiera muchas plantas sospechosas a la vez la vuelta
+ * corta acá y deja el resto para la siguiente: nunca queda nada colgado ni se
+ * pisan dos vueltas.
+ */
+const TOPE_VUELTA_MS = 10 * 60_000;
+
 export async function correrVigia(ahora = new Date()): Promise<ResultadoVigia> {
   if (corriendo) throw new Error("El vigía ya está corriendo");
   corriendo = true;
@@ -79,7 +87,12 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
   let casosCerrados = 0;
   let consultasInversor = 0;
 
+  const inicio = Date.now();
   for (const { v, g, lectura, projectId } of filas) {
+    if (Date.now() - inicio > TOPE_VUELTA_MS) {
+      console.warn("[soporte] la vuelta pasó los 10 minutos: el resto queda para la próxima");
+      break;
+    }
     const previo = previos.get(v.plantId);
     const ev = evaluarLectura(
       {
