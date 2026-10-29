@@ -26,6 +26,11 @@ export const CODIGOS_GROWATT: Record<number, CodigoFalla> = {
     titulo: "Problema con la tierra (PE)",
     queHacer: "Revisar la conexión a tierra del inversor.",
   },
+  405: {
+    titulo: "Falla del relé de salida del inversor",
+    queHacer:
+      "El inversor no logra conectarse a la red por el relé interno. Growatt indica reiniciarlo; si vuelve a aparecer, es garantía del inversor (caso Irigaray, MID 10KTL3-XL2, 22 al 26-oct-2026: tres días en falla con sol).",
+  },
   203: {
     titulo: "Aislamiento bajo de los paneles",
     queHacer:
