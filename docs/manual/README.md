@@ -53,7 +53,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 16 | [Documentación (intranet)](16-documentacion.md) | Manuales y procedimientos con versiones, publicación automática en cada deploy, confirmación de lectura | ✅ Completo |
 | 17 | [Recursos Humanos](17-rrhh.md) | Mi legajo, legajos completos, validación de documentos, vencimientos, recibos en lote, licencias y saldo, entregas de materiales con firma, privacidad | ✅ Completo |
 | 18 | [Asistente del equipo](18-asistente.md) | Chat con IA dentro de Voltia PM: base de conocimiento, herramientas del conector en solo lectura, modelos, topes de gasto | ✅ Completo |
-| 19 | [Soporte](19-soporte.md) | Mesa de monitoreo de plantas: vigía cada 15 minutos, diagnóstico con el último dato del inversor, genera menos de lo normal, avisos al equipo y al cliente | 🟡 Parcial (fases 1 a 3 de Growatt; falta Huawei y el rol de Soporte) |
+| 19 | [Soporte](19-soporte.md) | Mesa de monitoreo de plantas: revisión automática cada media hora, diagnóstico con el último dato del inversor, genera menos de lo normal, avisos al equipo y al cliente | 🟡 Parcial (fases 1 a 3 de Growatt; falta Huawei y el rol de Soporte) |
 
 Los capítulos pendientes existen con su esqueleto y se completan a medida que se
 trabaja sobre cada módulo. Un capítulo marcado ⬜ **no significa que la

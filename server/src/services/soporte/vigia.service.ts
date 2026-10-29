@@ -1,4 +1,4 @@
-// Vigía de Soporte: cada 15 minutos con sol mira toda la cartera Growatt.
+// Vigía de Soporte: cada media hora con sol mira toda la cartera Growatt.
 //
 // Costo: `plant/list` trae potencia, energía total y estado de TODAS las
 // plantas en 2 llamadas (100 por página). Solo para las que quedan sospechosas

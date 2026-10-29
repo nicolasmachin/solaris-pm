@@ -14,8 +14,8 @@ export const SOL_MIN = 0.1;
 export const SOL_APRENDER = 0.15;
 /** Por debajo de esto, la planta "no genera". */
 export const POTENCIA_MIN_W = 10;
-/** Sondeos seguidos (de 15 min) antes de abrir un caso: una hora. */
-export const SONDEOS_PARA_ALERTA = 4;
+/** Sondeos seguidos (de 30 min) antes de abrir un caso: una hora. */
+export const SONDEOS_PARA_ALERTA = 2;
 /** Peso de cada lectura nueva en el factor normal (aprende en unos días de sol). */
 const ALFA = 0.03;
 
@@ -86,9 +86,11 @@ export function evaluarLectura(
   }
   const vsNormal = ratio != null && factorNormal ? ratio / factorNormal : genera ? null : haySol && enLinea ? 0 : null;
 
+  // Solo con sol en ESTA lectura: el contador se conserva de noche y no puede
+  // disparar un aviso sin sol.
   let alerta: Evaluacion["alerta"] = null;
-  if (ceroConSol >= SONDEOS_PARA_ALERTA) alerta = "SIN_GENERACION";
-  else if (desconectadaConSol >= SONDEOS_PARA_ALERTA) alerta = "SIN_COMUNICACION";
+  if (haySol && ceroConSol >= SONDEOS_PARA_ALERTA) alerta = "SIN_GENERACION";
+  else if (haySol && desconectadaConSol >= SONDEOS_PARA_ALERTA) alerta = "SIN_COMUNICACION";
 
   return { factorNormal, ceroConSol, desconectadaConSol, genera, haySol: haySol, alerta, vsNormal };
 }

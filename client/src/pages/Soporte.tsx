@@ -19,7 +19,7 @@ import {
 import { Spinner } from "../components/ui/Spinner";
 import { usePermission } from "../hooks/usePermission";
 
-// Mesa de Soporte: el vigía mira la cartera cada 15 minutos con sol y abre
+// Mesa de Soporte: la revisión automática mira la cartera cada media hora con sol y abre
 // casos; acá se ven, se avisa al cliente (siempre lo decide una persona) y se
 // cierran. Abajo, todas las plantas con su lectura de ahora.
 
@@ -100,7 +100,7 @@ export function Soporte() {
           </h1>
           <p className="text-sm text-[var(--color-text-muted)]">
             Mesa de monitoreo de plantas. Última lectura {hace(data.ultimaLectura)}
-            {data.vigiaAutomatico ? " · se revisa sola cada 15 minutos con sol" : " · revisión automática apagada en este entorno"}
+            {data.vigiaAutomatico ? " · se revisa sola cada media hora con sol" : " · revisión automática apagada en este entorno"}
             {data.mediana != null && ` · la cartera está generando al ${Math.round(data.mediana * 100)} % de su potencia`}
           </p>
         </div>

@@ -19,9 +19,11 @@ export function startSoporteJobs() {
     console.log("[soporte] vigía apagado (SOPORTE_VIGIA=1 para prenderlo fuera de producción)");
     return;
   }
-  // Cada 15 minutos de 7:00 a 20:45: de noche no hay sol y no hay nada que mirar.
+  // Cada media hora de 7:00 a 20:30: de noche no hay sol y no hay nada que
+  // mirar. Media hora alcanza (decidido el 28-oct-2026): lo que se busca es no
+  // pasar días sin enterarse, no minutos.
   cron.schedule(
-    process.env.CRON_SOPORTE_VIGIA || "*/15 7-20 * * *",
+    process.env.CRON_SOPORTE_VIGIA || "*/30 7-20 * * *",
     async () => {
       try {
         const r = await correrVigia();

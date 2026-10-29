@@ -38,7 +38,11 @@ Menú **Soporte** (`/soporte`, `pages/Soporte.tsx`):
 
 ## Cómo funciona
 
-### El vigía (cada 15 minutos, de 7:00 a 20:45)
+### La revisión automática, "el vigía" (cada media hora, de 7:00 a 20:30)
+
+En el código se llama vigía; en la pantalla y en los manuales del equipo es
+"la revisión automática". Cada media hora y no cada 15 minutos (decidido el
+28-oct-2026): alcanza para enterarse en el día, con la mitad de consultas.
 
 `services/soporte/vigia.service.ts` → `correrVigia()`, programado en
 `soporte.job.ts`.
@@ -54,7 +58,8 @@ Menú **Soporte** (`/soporte`, `pages/Soporte.tsx`):
    está nublado, baja todo el mundo.
 3. Por planta, `evaluarLectura()` (puro, `vigia.test.ts`) cuenta lecturas
    seguidas **en línea sin generar con sol** (`ceroConSol`) o **desconectada con
-   sol** (`desconectadaConSol`). A las 4 (una hora) hay alerta. Si genera, se
+   sol** (`desconectadaConSol`). A las 2 (una hora) hay alerta, y solo si esa
+   lectura tiene sol (el contador se conserva de noche). Si genera, se
    ponen en cero y **se cierran solos** los casos de planta caída ("Volvió a
    generar a las…").
 4. **Antes de abrir el caso se confirma con el inversor**: `ultimoDatoInversor()`
@@ -94,16 +99,24 @@ techo al este a las 17 h siempre rinde poco) y confundía.
 `ReporteFvGeneracionDiaria` (la carga el monitoreo de las 8).
 
 - rendimiento del día = kWh / kWp; cociente = rendimiento / mediana de la
-  cartera ese día (el clima se cancela); **lo normal de la planta** = mediana de
-  sus cocientes de 60 días (orientación, sombras); vs. lo normal = cociente /
-  lo normal. **Hoy no entra** (día incompleto).
+  cartera ese día. Con eso **la estación se cancela**: en julio genera menos
+  todo el mundo.
+- **Lo normal de la planta** = mediana de sus cocientes **del mismo mes del año
+  anterior** (si tiene ≥ 8 días con sol), o si no de los **últimos 30 días**
+  (`fuente` en `RendimientoPlanta`). Hace falta porque el cociente de cada planta
+  también cambia con la estación (sol de invierno más bajo, sombras): medido el
+  28-oct-2026 en 44 plantas con 4 meses o más, la mitad varía 23 % entre su
+  mejor y su peor mes, y una de cada diez más de 50 % (Vanoli: 1,50 en junio,
+  0,84 en octubre). Los datos arrancan el 1-jun-2026, así que hasta junio de
+  2027 se usan los 30 días. vs. lo normal = cociente / lo normal. **Hoy no
+  entra** (día incompleto).
 - Alerta si en 2 de los últimos 3 días con sol (mediana ≥ 1 kWh/kWp) estuvo
   debajo del 60 % y el último también; se cierra sola cuando el último vuelve a
   80 %. Los días en cero no cuentan (son del vigía). Si ya hay un caso de
   planta caída, no se abre otro.
-- Probado sobre producción el 28-oct-2026 (81 plantas, 30 días): marcó 11
-  plantas, casi todas con algo real (Norman, Gerónimo Viera, Martín González,
-  Álvaro García…).
+- Probado sobre producción el 28-oct-2026 con lo normal de 30 días y sin los
+  días en cero: marcó 8 plantas en 30 días (Martín González, Irigaray,
+  Crudelli, Ricca, Diego Trias…), las mismas que ya se veían raras.
 - `rendimientoReciente()` alimenta también la columna de la mesa (caché de 10
   minutos en la ruta).
 
@@ -128,7 +141,7 @@ avisarle por WhatsApp.
 - **El vigía solo corre en producción** (`vigiaHabilitado()`): dev usa el mismo
   token de Growatt y compartirían el cupo. En dev: **Revisar ahora**, o
   `SOPORTE_VIGIA=1`. `SOPORTE_VIGIA=0` lo apaga en prod.
-- Una hora (4 lecturas) antes de alertar: menos da falsas alarmas por nubes que
+- Una hora (2 lecturas) antes de alertar: menos da falsas alarmas por nubes que
   tapan una planta y no la mediana.
 - Los códigos de `codigos.ts` salen de los manuales MIN/MAX; **el 302 = sin red
   (la llave) está confirmado con Norman**, los demás a confirmar caso a caso.

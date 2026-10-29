@@ -6,7 +6,13 @@
 // Método (probado sobre producción el 28-oct-2026, 81 plantas, 30 días):
 //   rendimiento del día = kWh / kWp
 //   cociente = rendimiento / mediana de la cartera ese día  (el clima se cancela)
-//   lo normal de la planta = mediana de sus cocientes de 60 días (orientación, sombras)
+//   lo normal de la planta = mediana de sus cocientes del MISMO MES del año
+//     anterior (si tiene ≥ 8 días con sol), o si no de los últimos 30 días.
+//     Por mes porque el cociente de cada planta cambia con la estación (sol de
+//     invierno más bajo, sombras distintas): medido en prod el 28-oct-2026, la
+//     mitad de las plantas varía 23 % entre su mejor y su peor mes (Vanoli: 1,50
+//     en junio, 0,84 en octubre). Los datos arrancan en junio de 2026: hasta
+//     junio de 2027 se usan los últimos 30 días, que siguen la estación.
 //   vs normal = cociente / lo normal
 // Alerta si en 2 de los últimos 3 días con sol (mediana ≥ 1 kWh/kWp) estuvo por
 // debajo del 60 % de lo normal y el último también. Marcó 11 plantas en 30
@@ -35,13 +41,16 @@ export type RendimientoPlanta = {
   nombre: string;
   /** Cociente normal de la planta respecto de la mediana de la cartera. */
   normal: number;
+  /** De dónde salió lo normal. */
+  fuente: "MISMO_MES_ANIO_ANTERIOR" | "ULTIMOS_30_DIAS";
   /** Últimos días con sol (los más viejos primero), con kWh y "vs. lo normal". */
   ultimos: Array<{ dia: string; kwh: number; vs: number }>;
 };
 
 /** El cálculo de arriba, por proyecto. Solo base de datos. */
 export async function rendimientoReciente(): Promise<Map<string, RendimientoPlanta>> {
-  const desde = new Date(Date.now() - 63 * 86_400_000);
+  // Un año y un mes: para tener el mismo mes del año anterior.
+  const desde = new Date(Date.now() - 400 * 86_400_000);
   // Hoy no: el día está incompleto y cualquier planta parecería generar poco.
   const hoy = new Date(`${new Date().toLocaleDateString("en-CA", { timeZone: "America/Montevideo" })}T00:00:00Z`);
   const filas: Fila[] = (
@@ -75,14 +84,28 @@ export async function rendimientoReciente(): Promise<Map<string, RendimientoPlan
       .filter((f) => f.med != null)
       .map((f) => ({ ...f, rat: f.kwh / f.kwp / f.med! }))
       .sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
-    const validos = conCociente.filter((f) => f.rat > 0.2);
-    const normal = mediana(validos.map((f) => f.rat));
-    if (normal == null || validos.length < 10) continue;
+    const validos = conCociente.filter((f) => f.rat > 0.2 && f.med! >= DIA_CON_SOL);
+    // Mismo mes calendario del año anterior.
+    const mesAnterior = `${hoy.getUTCFullYear() - 1}-${String(hoy.getUTCMonth() + 1).padStart(2, "0")}`;
+    const delMes = validos.filter((f) => dia(f.fecha).startsWith(mesAnterior));
+    const hace30 = new Date(hoy.getTime() - 30 * 86_400_000);
+    const recientes = validos.filter((f) => f.fecha >= hace30);
+    let normal: number | null;
+    let fuente: RendimientoPlanta["fuente"];
+    if (delMes.length >= 8) {
+      normal = mediana(delMes.map((f) => f.rat));
+      fuente = "MISMO_MES_ANIO_ANTERIOR";
+    } else {
+      if (recientes.length < 10) continue;
+      normal = mediana(recientes.map((f) => f.rat));
+      fuente = "ULTIMOS_30_DIAS";
+    }
+    if (normal == null) continue;
     const ultimos = conCociente
       .filter((f) => f.med! >= DIA_CON_SOL)
       .slice(-3)
       .map((f) => ({ dia: dia(f.fecha), kwh: f.kwh, vs: f.rat / normal }));
-    out.set(projectId, { nombre: fs[0].nombre, normal, ultimos });
+    out.set(projectId, { nombre: fs[0].nombre, normal, fuente, ultimos });
   }
   return out;
 }

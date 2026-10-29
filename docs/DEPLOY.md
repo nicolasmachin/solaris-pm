@@ -387,7 +387,7 @@ Detalle en `docs/manual/19-soporte.md`. Después del deploy con las migraciones
 
 1. Permisos: `docker compose -f docker-compose.prod.yml exec -T server npx tsx prisma/scripts/seed-soporte-permissions.ts`
    y reiniciar el server (caché de permisos).
-2. El vigía arranca solo en producción, cada 15 minutos de 7:00 a 20:45. Para
+2. La revisión automática (el "vigía") arranca sola en producción, cada media hora de 7:00 a 20:30. Para
    apagarlo: `SOPORTE_VIGIA=0` en el `.env`.
 
 ## 7. Verificar que el deploy salió bien

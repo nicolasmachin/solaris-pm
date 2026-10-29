@@ -561,7 +561,7 @@ acceso y cambia el aviso de "ya podés encender") y al PGT (qué es cada cosa).
 
 ### Soporte: Voltia vigila las plantas y una persona le avisa al cliente
 
-**Qué se decidió.** Voltia PM revisa todas las plantas cada 15 minutos con sol y
+**Qué se decidió.** Voltia PM revisa todas las plantas cada media hora con sol y
 abre un caso cuando una no genera, no comunica o genera menos de lo normal. **Al
 cliente lo avisa siempre una persona**, con un toque desde el caso; el sistema
 no le escribe solo. **Por ahora no hay un responsable de Soporte**: las alertas
@@ -574,6 +574,11 @@ anda es lo peor que puede pasar en la posventa: pierde plata cada día y pierde
 confianza. El aviso lo confirma una persona para no mandarle falsas alarmas
 mientras el sistema se prueba; cuando se vea que no se equivoca, los casos
 claros (la llave) pueden pasar a avisarse solos.
+
+Cada media hora y no más seguido: alcanza para enterarse en el día de una falla
+como la de Norman, que estuvo veinte días sin generar, con la mitad de consultas.
+Lo "normal" de cada planta se toma de la misma época del año, porque cada techo
+rinde distinto en invierno que en verano.
 
 **Desde cuándo rige.** 28 de octubre de 2026.
 
