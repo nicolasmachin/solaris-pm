@@ -1189,7 +1189,27 @@ Los movimientos del banco los trae el **lector del banco**, un programa que lee
 los movimientos de cada cuenta en el home banking. Por ahora lee las dos cuentas
 del BROU, **de lunes a viernes a las 8:00 y a las 18:00**, con un usuario del
 banco que solo puede consultar (no puede transferir ni pagar). Lee el mes
-anterior y el actual; lo que ya había leído no se repite. Para saber de qué cuenta es
+anterior y el actual; lo que ya había leído no se repite. Trae también el
+**asunto** de cada movimiento (a quién se le pagó o quién transfirió y el
+concepto), que es lo primero que se muestra.
+
+**Qué es cada movimiento que falta cargar.** Debajo de cada uno, Voltia PM
+sugiere lo que más se le parece, del más probable al menos, marcado «Muy
+probable» o «Probable» y con el porqué (mismo monto, a cuántos días, qué palabra
+del asunto coincide): un gasto o cobro que se cargó **sin cuenta** o en la cuenta
+equivocada, la **factura de un proveedor** que sigue a pagar, el **costo fijo**
+del mes sin pagar, el **cobro previsto** de un cliente o una **factura recibida**
+por revisar. Con **«Es este»** se registra lo que falta y queda emparejado: se le
+pone la cuenta, se registra el pago al proveedor desde esa cuenta, se marca
+pagado el costo fijo o cobrado el cobro (si entró menos de lo previsto, el resto
+queda previsto). Para los que no tienen sugerencia, **«Que la IA interprete»**
+lee el asunto y dice qué cree que es; si elige una opción, se confirma con el
+mismo «Es este» (nunca se aplica sola). Las comisiones e IVA del banco se cargan
+todas juntas con **«Cargar los cargos del banco»**.
+
+**Cada gasto y cada cobro se carga con su cuenta.** Un movimiento pagado o
+cobrado sin cuenta no baja ni sube ningún saldo, y el banco no lo encuentra: es
+la causa más común de que el saldo de Voltia PM no coincida con el del banco. Para saber de qué cuenta es
 cada uno, la cuenta tiene que tener cargado su **número de cuenta del banco**
 (en Administración → Cuentas). Una cuenta que el lector todavía no leyó dice
 «todavía no se leyó»: esa cuenta se controla con la conciliación mensual (5.12).
@@ -1270,6 +1290,12 @@ a un gasto, se busca en Facturas → por revisar: si llegó, aparece sugerido ah
 
 Un pago hecho **desde una cuenta de otra moneda** muestra lo que salió de la
 cuenta, y debajo «paga … a …» con lo que bajó de la deuda y la cotización.
+
+**Costos fijos del mes.** Arriba de Costos fijos está la lista de **lo que falta
+pagar** en el mes (se puede ir al anterior o al siguiente), con cuándo vence y el
+último monto pagado. **«Pagar»** pide la cuenta de donde sale, la fecha y el
+monto; al registrarlo, sale de la lista. El pago queda como del mes del costo
+fijo aunque se pague en otro (el alquiler de septiembre pagado en octubre).
 
 **Las facturas de proveedor pagadas con «Registrar pago»** también aparecen en
 la lista, pero marcadas **«Factura a pagar»**, con el monto en gris y sin signo
@@ -1761,7 +1787,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.22 | 29 de octubre de 2026 | El lector del banco empieza a leer las cuentas del BROU de lunes a viernes a las 8 y a las 18. |
+| 0.22 | 29 de octubre de 2026 | El lector del banco empieza a leer las cuentas del BROU de lunes a viernes a las 8 y a las 18. El lector trae el asunto; sugerencias, IA y «Es este» para cada movimiento del banco; costos fijos: lista de lo que falta pagar en el mes con «Pagar»; Cobros: «A cobrar ahora». |
 | 0.21 | 27 de octubre de 2026 | La proforma de un proyecto con financiación puede ser la generada en Voltia PM o una subida, si se hizo por fuera. |
 | 0.20 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM avisa cuándo un cliente está listo para cobrar y cuándo una cuota venció. Cobros muestra al entrar solo lo que falta cobrar, con el filtro nuevo «Listos para cobrar». Nueva tabla de cuándo queda lista cada cuota y cómo entran en el flujo de fondos. Lo que se le factura a cada cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo); Facturación muestra por separado presupuesto, a facturar, facturado y lo que falta, y al emitir se propone lo que falta facturar. Palabra nueva en el glosario: «A facturar». La lista de facturas recibidas se puede filtrar por proveedor, tipo, fecha y número. Un pago a proveedor se puede hacer desde una cuenta de otra moneda, con la cotización del día. «Arrancar cuenta» también cierra lo que quedaba a favor por pagos viejos. En las facturas por revisar, Voltia PM sugiere los gastos ya cargados más parecidos (también los cargados sin proveedor), con el porqué. En Movimientos, la columna Factura y el filtro de gastos sin factura. En Movimientos, las facturas pagadas con un pago se marcan «Factura a pagar» para no confundirlas con una salida de plata. En las facturas por revisar, «Ya está registrada»: vincular a un gasto elegido a mano, crear el gasto pagado o marcarla ya contemplada. Se aclara que descartar la saca del archivo para la contadora. |
 | 0.19 | 22 de octubre de 2026 | El menú de Finanzas pasa a la izquierda, con las pantallas agrupadas; en el celular es un desplegable. Comisiones se suma al grupo Compras. Cada aviso de «Para hacer hoy» lleva a la pantalla donde se resuelve. |

@@ -164,14 +164,17 @@ export async function cuotasListasPorProyecto(projectIds?: string[]) {
   });
   const hitos = await hitosDeProyectos(cuotas.map((c) => c.projectId!));
   const hoy = todayUtc();
-  const porProyecto = new Map<string, { cantidad: number; vencidas: number; montoUsd: number; cuotas: string[] }>();
+  const porProyecto = new Map<string, { cantidad: number; vencidas: number; montoUsd: number; montoVencidoUsd: number; cuotas: string[] }>();
   for (const c of cuotas) {
     const info = infoCuota(c, hitos.get(c.projectId!), hoy);
     if (!info?.listo) continue;
-    const r = porProyecto.get(c.projectId!) ?? { cantidad: 0, vencidas: 0, montoUsd: 0, cuotas: [] };
+    const r = porProyecto.get(c.projectId!) ?? { cantidad: 0, vencidas: 0, montoUsd: 0, montoVencidoUsd: 0, cuotas: [] };
     r.cantidad++;
     if (info.vencida) r.vencidas++;
-    if (c.moneda === "USD") r.montoUsd += Number(c.monto);
+    if (c.moneda === "USD") {
+      r.montoUsd += Number(c.monto);
+      if (info.vencida) r.montoVencidoUsd += Number(c.monto);
+    }
     r.cuotas.push(c.descripcion);
     porProyecto.set(c.projectId!, r);
   }

@@ -7,6 +7,22 @@
 #### Los movimientos del BROU entran solos
 
 - El lector del banco lee las dos cuentas del BROU de lunes a viernes a las 8:00 y a las 18:00, con un usuario del banco que solo puede consultar. En Finanzas → Banco se ve el saldo que dice el banco y qué movimientos faltan cargar en Voltia PM.
+- Trae también el **asunto** de cada movimiento (a quién se le pagó o quién transfirió, y el concepto), que es lo que se ve primero en la lista.
+
+#### Qué es cada movimiento del banco: sugerencias, IA y «Es este»
+
+- Debajo de cada movimiento del banco que falta cargar, Voltia PM sugiere qué es: un gasto o cobro cargado sin cuenta (o en la cuenta equivocada), la factura de un proveedor que sigue a pagar, el costo fijo del mes, el cobro previsto de un cliente o una factura recibida por revisar. Compara monto, fecha y el asunto (tolera nombres mal escritos y entiende el mes: «Sueldo Emir Septiembre»).
+- Con **«Es este»** se registra lo que falta y queda emparejado con el banco: se le pone la cuenta, se registra el pago al proveedor, se marca pagado el costo fijo o cobrado el cobro (si entró menos, el resto queda previsto).
+- **La IA** lee los que no tienen sugerencia y dice qué cree que es («pago a Dibaril por cañería para G. Suárez, no está cargado»); si elige una opción, se confirma con el mismo «Es este».
+- Las comisiones e IVA del banco se cargan todas juntas con un botón.
+
+#### Costos fijos: lo que falta pagar en el mes
+
+- En Finanzas → Costos fijos, arriba, la lista de lo que falta pagar del mes (con mes anterior y siguiente). Cada uno tiene **Pagar**: se elige la cuenta, la fecha y el monto, y sale de la lista.
+
+#### Cobros: cuánto hay que cobrar ahora
+
+- En Cobros, la columna «A cobrar ahora» muestra el monto de las cuotas listas y cuáles son; abajo, el total listo para cobrar y cuánto de eso está vencido.
 
 ## v13.5
 

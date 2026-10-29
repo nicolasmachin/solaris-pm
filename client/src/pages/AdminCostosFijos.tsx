@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CostosFijosDelMes } from "../components/finance/CostosFijosDelMes";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Plus, X } from "lucide-react";
@@ -50,6 +51,8 @@ export function TabCostosFijos() {
 
   return (
     <div className="space-y-5">
+      <CostosFijosDelMes />
+      <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Los costos fijos</h2>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <p className="text-sm text-[var(--color-text-muted)]">

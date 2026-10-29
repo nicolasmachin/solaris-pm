@@ -15404,6 +15404,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       estadoAprobacion: z.nativeEnum(EstadoAprobacion).default(EstadoAprobacion.REGISTRADO),
       archivoAdjuntoUrl: z.string().optional(),
       fixedCostId: z.string().optional(),
+      // Costo fijo: el mes que se paga, si no es el de la fecha (el alquiler de
+      // septiembre pagado en octubre). La lista "Falta pagar" mira mes/anio.
+      periodoMes: z.coerce.number().int().min(1).max(12).optional(),
+      periodoAnio: z.coerce.number().int().min(2020).max(2100).optional(),
       // Si viene seteado y el movimiento es GASTO + PAGADO con proveedor + cuenta,
       // el monto del form se trata como Payment total: se distribuye entre las
       // facturas pendientes indicadas y, si sobra, se crea el movimiento nuevo
@@ -15997,8 +16001,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const body = movementCreateSchema.parse(request.body);
       const fecha = parseDateOnly(body.fecha);
       await assertFechaAbierta(fecha);
-      const mes = fecha.getUTCMonth() + 1;
-      const anio = fecha.getUTCFullYear();
+      const conPeriodo = !!body.fixedCostId && !!body.periodoMes && !!body.periodoAnio;
+      const mes = conPeriodo ? body.periodoMes! : fecha.getUTCMonth() + 1;
+      const anio = conPeriodo ? body.periodoAnio! : fecha.getUTCFullYear();
 
       let tipoCambio = body.tipoCambio ? new Prisma.Decimal(body.tipoCambio) : null;
       if (body.moneda === Moneda.UYU && !tipoCambio) {

@@ -18,6 +18,8 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { desvincularBanco, pendientesPorCuenta, registrarLectura, registroBanco, vincularBanco } from "../services/finance/bank-reconciliation.service.js";
 import { porConciliar } from "../services/finance/por-conciliar.service.js";
+import { cargarCargosBancarios, resolverBanco } from "../services/finance/resolver-banco.service.js";
+import { interpretarConIa } from "../services/finance/sugerir-banco.service.js";
 import { paraHacerHoy, totalParaHacerHoy } from "../services/finance/para-hacer-hoy.service.js";
 import { toDateOnlyString, todayUtc } from "../utils/dates.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
@@ -52,6 +54,7 @@ const lecturaSchema = z.object({
           descripcion: z.string(),
           documento: z.string().nullable().optional(),
           dependencia: z.string().nullable().optional(),
+          asunto: z.string().max(500).nullable().optional(),
           debito: z.number().nonnegative().nullable().optional(),
           credito: z.number().nonnegative().nullable().optional(),
         }),
@@ -69,7 +72,35 @@ export async function registerConciliacionBancoRoutes(app: FastifyInstance) {
     return { ok: true, resultado };
   });
 
-  app.get("/finance/banco/pendientes", ver, async () => ({ cuentas: await pendientesPorCuenta() }));
+  app.get("/finance/banco/pendientes", ver, async () => ({ cuentas: await pendientesPorCuenta({ sugerencias: true }) }));
+
+  // "Es este": resolver un movimiento del banco con una de sus sugerencias.
+  app.post("/finance/banco/movimientos/:id/resolver", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const { clave } = z.object({ clave: z.string().min(3) }).strict().parse(request.body);
+    return { ok: true, hecho: await resolverBanco(id, clave, user.id) };
+  });
+
+  // Los cargos del banco (comisiones, IVA) que faltan, todos de una vez.
+  app.post("/finance/banco/cargos-bancarios", editar, async (request) => {
+    const user = ensureUser(request);
+    const { ids } = z.object({ ids: z.array(z.string()).min(1).max(500) }).strict().parse(request.body);
+    return { ok: true, cargados: await cargarCargosBancarios(ids, user.id) };
+  });
+
+  // La IA interpreta lo que falta cargar y no tiene una sugerencia clara.
+  app.post("/finance/banco/interpretar", editar, async (request) => {
+    const user = ensureUser(request);
+    const { accountId } = z.object({ accountId: z.string().optional() }).strict().parse(request.body ?? {});
+    const cuentas = await pendientesPorCuenta({ sugerencias: true });
+    const filas = cuentas
+      .filter((c) => !accountId || c.accountId === accountId)
+      .flatMap((c) => c.pendientes
+        .filter((p) => !p.cargoBancario && (p.sugerencias?.[0]?.puntaje ?? 0) < 70)
+        .map((p) => ({ id: p.id, accountId: c.accountId, moneda: c.moneda, fecha: new Date(`${p.fecha}T00:00:00.000Z`), tipo: p.tipo, monto: p.monto, descripcion: p.descripcion, asunto: p.asunto })));
+    return { ok: true, interpretados: await interpretarConIa(filas, user.id), revisados: filas.length };
+  });
 
   // Lista única "Por conciliar" del Inicio de Finanzas.
   app.get("/finance/por-conciliar", ver, async () => porConciliar());

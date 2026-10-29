@@ -126,6 +126,18 @@ export function FinanceCobros() {
       ),
     },
     {
+      // Lo que se puede cobrar ya: las cuotas cuyo momento de la obra llegó.
+      key: 'ahora', label: 'A cobrar ahora', align: 'right',
+      render: (p) => p.listoParaCobrar ? (
+        <span className="flex flex-col items-end">
+          <span className={klass('font-semibold tabular-nums', p.listoParaCobrar.vencidas ? 'text-red-300' : 'text-emerald-300')}>
+            {fmtCurrency(p.listoParaCobrar.montoUSD, 'USD')}
+          </span>
+          <span className="text-[10px] text-[var(--color-text-muted)]">{p.listoParaCobrar.descripciones.join(' · ')}</span>
+        </span>
+      ) : <span className="text-[var(--color-text-muted)]">—</span>,
+    },
+    {
       key: 'estado', label: 'Estado',
       render: (p) => (
         <div className="flex flex-wrap items-center gap-1.5">
@@ -236,6 +248,18 @@ export function FinanceCobros() {
               onRowClick={(p) => navigate(`/finanzas/cobros/${p.id}`)}
               rowClickableOnDesktop
             />
+            {filtered.some((p) => p.listoParaCobrar) && (
+              <div className="flex flex-wrap justify-end gap-6 border-t border-[var(--color-border)] px-4 py-3 text-sm">
+                <span className="text-[var(--color-text-secondary)]">
+                  Listo para cobrar:{' '}
+                  <b className="tabular-nums text-emerald-300">{fmtCurrency(filtered.reduce((a, p) => a + (p.listoParaCobrar?.montoUSD ?? 0), 0), 'USD')}</b>
+                </span>
+                <span className="text-[var(--color-text-secondary)]">
+                  De eso, vencido:{' '}
+                  <b className="tabular-nums text-red-300">{fmtCurrency(filtered.reduce((a, p) => a + (p.listoParaCobrar?.montoVencidoUSD ?? 0), 0), 'USD')}</b>
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

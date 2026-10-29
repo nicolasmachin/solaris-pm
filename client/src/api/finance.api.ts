@@ -578,7 +578,7 @@ export interface CobroProjectItem {
   ultimoCobro: string | null;
   cantidadCobros: number;
   // Cuotas del plan cuyo momento de la obra ya llegó (null = ninguna).
-  listoParaCobrar: { cuotas: number; vencidas: number; montoUSD: number; descripciones: string[] } | null;
+  listoParaCobrar: { cuotas: number; vencidas: number; montoUSD: number; montoVencidoUSD?: number; descripciones: string[] } | null;
 }
 
 // Cuota atada a un momento de la obra (seña, previo a la obra, obra

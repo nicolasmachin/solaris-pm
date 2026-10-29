@@ -460,5 +460,6 @@ Detalle de lo que entra: `docs/pendientes/finanzas-noche-21oct-hecho.md`.
 3. Si la simulación está bien, aplicar: el mismo comando con `--apply`.
 4. Avisar: desde ese momento algunas señas viejas nunca cobradas aparecen como "Cuota vencida" en Cobros y en "Para hacer hoy".
 4b. Segundo deploy del 22-oct: migración `20261022230000_pago_otra_moneda` (aditiva: `payments.montoCuenta` y `payments.tipoCambio`, nulas).
+4d. 29-oct: migraciones `20261029130000_banco_asunto` y `20261029140000_banco_sugerencia_ia` (aditivas). Después del deploy, el robot manda el asunto en la próxima corrida (o `node leer.mjs --reenviar` desde `~/Dev/lector-banco`).
 4c. Migración `20261023000000_factura_contemplada` (aditiva: `facturas_recibidas.notaRegistro`, nula).
 5. Avisar a Finanzas: los proyectos que llevaban factura **con** nota (al 22-oct, 3; dos sin emitir) quedan "A definir" en Finanzas → Facturación; hay que cargarles el monto con **Definir**. Desde el deploy, crear un proyecto desde un lead ganado exige definir qué se le factura.

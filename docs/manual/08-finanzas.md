@@ -1426,7 +1426,32 @@ cron de lunes a viernes 8:00 y 18:00 (`correr.sh`, salida en
 `capturas/corridas.log`); `--prueba` lee sin mandar y `--reenviar` manda la
 última lectura sin entrar al banco. La URL y el token de Voltia PM están en
 `~/.config/voltia-banco/voltia-pm.env`; las claves del banco, en
-`brou-empresa.env` (600). Primera lectura en producción: 29-oct-2026. Esa ruta **no usa sesión de usuario**: se
+`brou-empresa.env` (600). Primera lectura en producción: 29-oct-2026. **Asunto**: el robot abre el
+detalle de cada movimiento (clic en la fecha → "Detalle de un movimiento" →
+vuelve con la flecha) y lo guarda en `capturas/asuntos.json` para no reabrirlo;
+el banco corta la sesión a los ~6 min de entrar aunque haya actividad, así que
+abre detalles solo los primeros 3,5 min y sigue en la próxima corrida.
+`BankMovement.asunto`; `registrarLectura()` lo completa también en filas ya
+guardadas.
+
+**Sugerencias y "Es este".** `sugerir-banco.service.ts` → `sugerenciasBanco()`
+(lo usan `pendientesPorCuenta({ sugerencias: true })` y `registroBanco()` para
+las FALTA_CARGAR). Candidatos de la misma moneda: movimientos PAGADO sin banco
+ni aplicaciones, sin cuenta / en esta / en una cuenta sin lector
+(`numeroCuentaBanco` null); deudas a pagar y saldo por proveedor; costos fijos
+del mes y del anterior sin pagar; cobros PREVISTO; facturas recibidas
+PENDIENTE. Puntaje: mismo monto 35 / parecido 25 / cercano 8; nombre propio del
+asunto 45 (dos palabras 55; palabras genéricas como "sueldo", meses o "pago" no
+cuentan; tolera errores de tipeo con distancia de edición); fecha 15/8/2;
+−30 si el monto es menos de la mitad o más del doble; ±10/−20 según el mes que
+nombre el asunto. Mínimo 45, hasta 3. `resolver-banco.service.ts` →
+`resolverBanco()` (`POST /finance/banco/movimientos/:id/resolver` {clave}) y
+`cargarCargosBancarios()` (`POST /finance/banco/cargos-bancarios`).
+`interpretarConIa()` (`POST /finance/banco/interpretar`, feature IA
+`conciliacion_banco`) manda de a 15 filas sin sugerencia fuerte (<70) con sus 8
+candidatos más cercanos sin umbral; guarda `BankMovement.sugerenciaIa`
+{opcion, queEs, confianza}. UI: `SugerenciasBanco.tsx` en `FaltaCargarBanco` y
+`FinanceBancoTab`. Esa ruta **no usa sesión de usuario**: se
 autentica con `BANCO_LECTOR_TOKEN` en `Authorization: Bearer …`
 (comparación en tiempo constante); si la variable no está, responde 404. La
 cuenta se reconoce por `Account.numeroCuentaBanco`.

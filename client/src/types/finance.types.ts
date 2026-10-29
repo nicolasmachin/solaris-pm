@@ -429,5 +429,8 @@ export interface MovimientoFormData {
   subcategoriaId?: string;
   accountId?: string;
   fixedCostId?: string;
+  /** Costo fijo: el mes que se paga, si no es el de la fecha. */
+  periodoMes?: number;
+  periodoAnio?: number;
   observaciones?: string;
 }

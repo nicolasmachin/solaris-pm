@@ -29,8 +29,22 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Los movimientos del BROU entran solos",
       items: [
-        "El lector del banco lee las dos cuentas del BROU de lunes a viernes a las 8 y a las 18. En Finanzas → Banco se ve el saldo del banco y qué movimientos faltan cargar en Voltia PM.",
+        "El lector del banco lee las dos cuentas del BROU de lunes a viernes a las 8 y a las 18, con el asunto de cada movimiento. En Finanzas → Banco se ve el saldo del banco y qué falta cargar.",
       ],
+    },
+    {
+      title: "Qué es cada movimiento del banco",
+      items: [
+        "Sugerencias por monto, fecha y asunto (gasto sin cuenta, factura a pagar, costo fijo, cobro previsto, factura recibida), la IA para los que quedan y «Es este» para resolver de un toque.",
+      ],
+    },
+    {
+      title: "Costos fijos: lo que falta pagar",
+      items: ["Arriba de Costos fijos, la lista del mes con «Pagar»: al pagarlo, sale de la lista."],
+    },
+    {
+      title: "Cobros: cuánto hay que cobrar ahora",
+      items: ["La columna «A cobrar ahora» y abajo el total listo y vencido."],
     },
   ],
 };

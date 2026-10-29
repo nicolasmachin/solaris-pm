@@ -150,7 +150,7 @@ export async function listarCobrosPorProyecto(filtro: FiltroCobros) {
       ultimoCobro: ultimoCobro ? serializeDateOnly(ultimoCobro) : null,
       cantidadCobros: cobros.length,
       listoParaCobrar: lista
-        ? { cuotas: lista.cantidad, vencidas: lista.vencidas, montoUSD: roundMoney(lista.montoUsd), descripciones: lista.cuotas }
+        ? { cuotas: lista.cantidad, vencidas: lista.vencidas, montoUSD: roundMoney(lista.montoUsd), montoVencidoUSD: roundMoney(lista.montoVencidoUsd), descripciones: lista.cuotas }
         : null,
     };
   });

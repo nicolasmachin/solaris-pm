@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { AlertTriangle, ChevronDown, ChevronRight, Landmark, Plus } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, Landmark, Plus, Sparkles } from 'lucide-react';
 
-import { getPendientesBanco, marcarNoVaBanco, type CuentaConciliada, type PendienteBanco } from '../../api/bancoConciliacion.api';
+import {
+  cargarCargosBancarios, getPendientesBanco, interpretarBancoConIa, marcarNoVaBanco,
+  type CuentaConciliada, type PendienteBanco,
+} from '../../api/bancoConciliacion.api';
+import { invalidarBanco, SugerenciasBanco } from './SugerenciasBanco';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
 import { usePermission } from '../../hooks/usePermission';
 
@@ -54,6 +58,17 @@ export function FaltaCargarBanco({ onCargar }: { onCargar: (p: CargarDesdeBanco)
     },
   });
 
+  const cargos = useMutation({
+    mutationFn: (ids: string[]) => cargarCargosBancarios(ids),
+    onSuccess: (r) => { toast.success(`${r.cargados} cargos del banco cargados como gasto`); invalidarBanco(qc); },
+    onError: () => toast.error('No se pudieron cargar los cargos del banco'),
+  });
+  const ia = useMutation({
+    mutationFn: (accountId: string) => interpretarBancoConIa(accountId),
+    onSuccess: (r) => { toast.success(`La IA revisó ${r.revisados} movimientos`); invalidarBanco(qc); },
+    onError: (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'La IA no pudo interpretar'),
+  });
+
   if (cuentas.length === 0) return null;
   const total = cuentas.reduce((n, c) => n + c.pendientes.length, 0);
 
@@ -85,6 +100,36 @@ export function FaltaCargarBanco({ onCargar }: { onCargar: (p: CargarDesdeBanco)
                   {c.bancoSaldo != null && <span>Saldo en el banco {fmtCurrency(c.bancoSaldo, c.moneda)}</span>}
                   <span>{c.conciliados} coinciden · margen {fmtCurrency(c.margen, c.moneda)}</span>
                 </div>
+                {puedeEditar && c.pendientes.length > 0 && (() => {
+                  const cargosIds = c.pendientes.filter((p) => p.cargoBancario).map((p) => p.id);
+                  const sinSugerencia = c.pendientes.filter((p) => !p.cargoBancario && !(p.sugerencias?.length)).length;
+                  const conSugerencia = c.pendientes.filter((p) => !p.cargoBancario && p.sugerencias?.length).length;
+                  return (
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-[var(--color-text-muted)]">
+                        {conSugerencia} con sugerencia · {sinSugerencia} sin · {cargosIds.length} cargos del banco
+                      </span>
+                      {cargosIds.length > 0 && (
+                        <button
+                          disabled={cargos.isPending}
+                          onClick={() => { if (confirm(`¿Cargar los ${cargosIds.length} cargos del banco (comisiones, IVA) como gastos de ${c.nombre}?`)) cargos.mutate(cargosIds); }}
+                          className="rounded border border-[var(--color-border)] px-2 py-1 hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+                        >
+                          Cargar los {cargosIds.length} cargos del banco
+                        </button>
+                      )}
+                      {sinSugerencia > 0 && (
+                        <button
+                          disabled={ia.isPending}
+                          onClick={() => ia.mutate(c.accountId)}
+                          className="inline-flex items-center gap-1 rounded border border-violet-500/40 px-2 py-1 text-violet-300 hover:bg-violet-500/10 disabled:opacity-50"
+                        >
+                          <Sparkles className="h-3 w-3" /> {ia.isPending ? 'La IA está leyendo…' : 'Que la IA interprete los que no tienen sugerencia'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
                 {c.pendientes.length === 0 ? (
                   <p className="text-xs text-[var(--color-text-muted)]">Nada pendiente en esta cuenta.</p>
                 ) : (
@@ -94,8 +139,12 @@ export function FaltaCargarBanco({ onCargar }: { onCargar: (p: CargarDesdeBanco)
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="tabular-nums text-[var(--color-text-secondary)]">{fmtDate(p.fecha)}</span>
                           <span className="min-w-0 flex-1 text-[var(--color-text-primary)]">
-                            {p.descripcion}
-                            {p.documento && <span className="ml-1 text-[11px] text-[var(--color-text-muted)]">doc. {p.documento}</span>}
+                            {/* El asunto dice a quién / qué: va primero; lo del banco, debajo. */}
+                            {p.asunto || p.descripcion}
+                            {p.cargoBancario && <span className="ml-2 rounded border border-[var(--color-border)] px-1 text-[9px] font-mono uppercase text-[var(--color-text-muted)]">cargo del banco</span>}
+                            <span className="block text-[11px] text-[var(--color-text-muted)]">
+                              {p.asunto ? p.descripcion : ''}{p.documento ? `${p.asunto ? ' · ' : ''}doc. ${p.documento}` : ''}
+                            </span>
                           </span>
                           <span className={`tabular-nums font-semibold ${p.tipo === 'INGRESO' ? 'text-green-400' : 'text-red-400'}`}>
                             {p.tipo === 'INGRESO' ? '+' : '-'}{fmtCurrency(p.monto, c.moneda)}
@@ -103,7 +152,7 @@ export function FaltaCargarBanco({ onCargar }: { onCargar: (p: CargarDesdeBanco)
                           {puedeEditar && (
                             <span className="inline-flex gap-1">
                               <button
-                                onClick={() => onCargar({ accountId: c.accountId, tipo: p.tipo, fecha: p.fecha, descripcion: p.descripcion, monto: String(p.monto), moneda: c.moneda })}
+                                onClick={() => onCargar({ accountId: c.accountId, tipo: p.tipo, fecha: p.fecha, descripcion: p.asunto || p.descripcion, monto: String(p.monto), moneda: c.moneda })}
                                 className="inline-flex items-center gap-1 rounded bg-[var(--color-accent)] px-2 py-1 text-xs font-semibold text-gray-900 hover:bg-[var(--color-accent-hover)]"
                               >
                                 <Plus className="h-3 w-3" /> Cargar
@@ -117,6 +166,7 @@ export function FaltaCargarBanco({ onCargar }: { onCargar: (p: CargarDesdeBanco)
                             </span>
                           )}
                         </div>
+                        {puedeEditar && !p.cargoBancario && <SugerenciasBanco p={p} />}
                         {noVa?.id === p.id && (
                           <form
                             className="mt-2 flex flex-wrap gap-2"

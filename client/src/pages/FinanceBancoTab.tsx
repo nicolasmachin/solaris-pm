@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { SugerenciasBanco } from '../components/finance/SugerenciasBanco';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
@@ -79,7 +80,7 @@ export function FinanceBancoTab() {
   function cargar(m: MovimientoBancoRegistro) {
     const q = new URLSearchParams({
       new: '1', tipo: m.tipo, accountId: m.accountId, fecha: m.fecha,
-      descripcion: m.descripcion, monto: String(m.monto), moneda: m.moneda,
+      descripcion: m.asunto || m.descripcion, monto: String(m.monto), moneda: m.moneda,
     });
     navigate(`/finanzas/movimientos?${q.toString()}`);
   }
@@ -155,8 +156,11 @@ export function FinanceBancoTab() {
                   <td className="px-3 py-2 whitespace-nowrap">{fmtDate(m.fecha)}</td>
                   <td className="px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">{m.cuenta}</td>
                   <td className="px-3 py-2">
-                    {m.descripcion}
-                    {m.documento && <span className="block text-[11px] text-[var(--color-text-muted)]">Doc. {m.documento}</span>}
+                    {m.asunto || m.descripcion}
+                    <span className="block text-[11px] text-[var(--color-text-muted)]">
+                      {m.asunto ? m.descripcion : ''}{m.documento ? `${m.asunto ? ' · ' : ''}Doc. ${m.documento}` : ''}
+                    </span>
+                    {canEdit && m.estado === 'FALTA_CARGAR' && !m.cargoBancario && <SugerenciasBanco p={m} />}
                   </td>
                   <td className={`px-3 py-2 text-right tabular-nums ${m.tipo === 'INGRESO' ? 'text-emerald-300' : ''}`}>
                     {m.tipo === 'INGRESO' ? '+' : '−'}{fmtCurrency(m.monto, m.moneda)}

@@ -2961,6 +2961,13 @@ model BankMovement {
   fecha       DateTime       @db.Date
   descripcion String
   documento   String?
+  // Lo que dice el detalle del movimiento en el home banking: a quién se le
+  // pagó o quién transfirió, y el concepto. Clave para saber qué es.
+  asunto      String?
+  // Lo que la IA interpretó que es (cuando el parecido no alcanzó): la opción
+  // elegida, la razón y la confianza. Se recalcula a pedido.
+  sugerenciaIa   Json?
+  sugerenciaIaAt DateTime?
   dependencia String?
   tipo        TipoMovimiento
   monto       Decimal        @db.Decimal(14, 2)

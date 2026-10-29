@@ -20,8 +20,10 @@
 
 import { createHash } from "node:crypto";
 
+
 import { Moneda, Prisma, TipoMovimiento } from "@prisma/client";
 
+import { esCargoBancario, sugerenciasBanco, type SugerenciaBanco, type SugerenciaIa } from "./sugerir-banco.service.js";
 import { prisma } from "../../lib/prisma.js";
 import { addDays, diffInDays, parseDateOnly, toDateOnlyString } from "../../utils/dates.js";
 
@@ -41,6 +43,7 @@ export type LecturaCuenta = {
     descripcion: string;
     documento?: string | null;
     dependencia?: string | null;
+    asunto?: string | null;
     debito?: number | null;
     credito?: number | null;
   }>;
@@ -92,12 +95,19 @@ export async function registrarLectura(cuentas: LecturaCuenta[], leidoEn: Date):
         descripcion,
         documento,
         dependencia: m.dependencia?.trim() || null,
+        asunto: m.asunto?.trim() || null,
         tipo,
         monto: new Prisma.Decimal(monto),
         claveUnica: createHash("sha256").update(`${base}|${n}`).digest("hex"),
       });
     }
     const { count } = await prisma.bankMovement.createMany({ data: filas, skipDuplicates: true });
+    // El asunto puede llegar en una lectura posterior (el robot abre el detalle
+    // de a poco): se completa en los que ya estaban sin él.
+    for (const f of filas) {
+      if (!f.asunto) continue;
+      await prisma.bankMovement.updateMany({ where: { claveUnica: f.claveUnica, asunto: null }, data: { asunto: f.asunto } });
+    }
     await prisma.account.update({
       where: { id: account.id },
       data: {
@@ -122,9 +132,31 @@ export type PendienteBanco = {
   fecha: string;
   descripcion: string;
   documento: string | null;
+  /** El detalle del home banking (a quién / concepto). */
+  asunto: string | null;
   tipo: TipoMovimiento;
   monto: number;
+  /** Solo en lo que falta cargar: lo más parecido en Voltia PM, la IA y si es un cargo del banco. */
+  sugerencias?: SugerenciaBanco[];
+  sugerenciaIa?: SugerenciaIa | null;
+  cargoBancario?: boolean;
 };
+
+async function conSugerencias<T extends PendienteBanco & { accountId?: string }>(filas: T[], cuenta: { id: string; moneda: Moneda }, ia: Map<string, unknown>) {
+  const sug = await sugerenciasBanco(filas.map((f) => ({
+    id: f.id, accountId: cuenta.id, moneda: cuenta.moneda, fecha: parseDateOnly(f.fecha), tipo: f.tipo,
+    monto: f.monto, descripcion: f.descripcion, asunto: f.asunto,
+  })));
+  // Primero lo que tiene sugerencia (se resuelve con un toque), después el resto.
+  return filas
+    .map((f) => ({
+      ...f,
+      sugerencias: sug.get(f.id) ?? [],
+      sugerenciaIa: (ia.get(f.id) as SugerenciaIa | undefined) ?? null,
+      cargoBancario: esCargoBancario(f),
+    }))
+    .sort((a, b) => (b.sugerencias[0]?.puntaje ?? (b.sugerenciaIa?.opcion ? 50 : 0)) - (a.sugerencias[0]?.puntaje ?? (a.sugerenciaIa?.opcion ? 50 : 0)));
+}
 
 export type CuentaConciliada = {
   accountId: string;
@@ -252,7 +284,7 @@ function aParejaPm(l: Lado): ParejaPm {
   };
 }
 
-export async function pendientesPorCuenta(): Promise<CuentaConciliada[]> {
+export async function pendientesPorCuenta(opciones: { sugerencias?: boolean } = {}): Promise<CuentaConciliada[]> {
   const accounts = await prisma.account.findMany({
     where: { deletedAt: null, numeroCuentaBanco: { not: null } },
     orderBy: { nombre: "asc" },
@@ -270,16 +302,21 @@ export async function pendientesPorCuenta(): Promise<CuentaConciliada[]> {
       bancoSaldo: a.bancoSaldo != null ? Number(a.bancoSaldo) : null,
       margen: MARGEN[a.moneda],
       conciliados: parejas.size,
-      pendientes: bankRows
-        .filter((r) => !parejas.has(r.id))
-        .map((r) => ({
-          id: r.id,
-          fecha: toDateOnlyString(r.fecha)!,
-          descripcion: r.descripcion,
-          documento: r.documento,
-          tipo: r.tipo,
-          monto: Number(r.monto),
-        })),
+      pendientes: await (async () => {
+        const pend = bankRows
+          .filter((r) => !parejas.has(r.id))
+          .map((r) => ({
+            id: r.id,
+            fecha: toDateOnlyString(r.fecha)!,
+            descripcion: r.descripcion,
+            documento: r.documento,
+            asunto: r.asunto,
+            tipo: r.tipo,
+            monto: Number(r.monto),
+          }));
+        if (!opciones.sugerencias) return pend;
+        return conSugerencias(pend, a, new Map(bankRows.map((r) => [r.id, r.sugerenciaIa])));
+      })(),
     });
   }
   return out;
@@ -333,6 +370,7 @@ export async function registroBanco(filtro: { accountId?: string; desde: string;
         fecha: toDateOnlyString(r.fecha)!,
         descripcion: r.descripcion,
         documento: r.documento,
+        asunto: r.asunto,
         dependencia: r.dependencia,
         tipo: r.tipo,
         monto: Number(r.monto),
@@ -342,6 +380,14 @@ export async function registroBanco(filtro: { accountId?: string; desde: string;
         noVaPor: r.ignoradoPor?.name ?? null,
       });
     }
+  }
+  // Lo que falta cargar lleva sus sugerencias.
+  for (const a of accounts) {
+    const faltan = out.filter((r) => r.accountId === a.id && r.estado === "FALTA_CARGAR");
+    if (!faltan.length) continue;
+    const ia = await prisma.bankMovement.findMany({ where: { id: { in: faltan.map((f) => f.id) } }, select: { id: true, sugerenciaIa: true } });
+    const conS = new Map((await conSugerencias(faltan, a, new Map(ia.map((r) => [r.id, r.sugerenciaIa])))).map((r) => [r.id, r]));
+    for (let i = 0; i < out.length; i++) { const c = conS.get(out[i].id); if (c) out[i] = c; }
   }
   return out.sort((x, y) => y.fecha.localeCompare(x.fecha) || x.cuenta.localeCompare(y.cuenta));
 }
