@@ -20,21 +20,32 @@ nadie: lo detectado queda en la cola.
 
 Menú **Soporte** (`/soporte`, `pages/Soporte.tsx`):
 
-- Arriba: cuándo fue la última lectura, cómo está generando la cartera, y cuatro
-  datos: casos abiertos, plantas en línea, reclamos abiertos (lleva a Mis
-  tareas → Tickets) e incidencias del monitoreo diario (lleva a Experiencia
-  Solar → Monitoreo).
-- **Casos abiertos**: qué se detectó, desde cuándo y la evidencia (la hora del
-  último dato, la potencia, el código, las tensiones). Acciones: **Avisar al
-  cliente** (abre el mensaje sugerido, se puede editar), **Resuelto** y
-  **Descartar** (las dos piden qué era). **Ver cerrados** muestra los últimos
-  50, con quién y por qué se cerraron.
-- **Plantas ahora**: todas las plantas vinculadas, primero las con caso, después
-  las desconectadas y después las que vienen generando menos. Columnas: estado,
-  potencia de ahora, **últimos días vs. lo normal** (los últimos 3 días con
-  sol), energía de hoy y cuándo generó por última vez.
-- **Revisar ahora** corre el vigía en el momento; **Revisar rendimiento**, el
-  chequeo diario de "genera menos".
+- Arriba: cuándo fue la última lectura, cómo está generando la cartera, y
+  cuatro datos: plantas con problema, plantas en línea (de noche dice "sin
+  sol"), reclamos abiertos (lleva a Mis tareas → Tickets) y las incidencias del
+  monitoreo diario (lleva a Experiencia Solar → Monitoreo, para el historial y
+  las revisiones).
+- **Problemas**: **todo lo que está abierto, de las dos fuentes juntas** —los
+  casos de la revisión automática y las incidencias abiertas del monitoreo
+  diario— **agrupado por tipo**: falla del inversor, no genera, no comunica,
+  genera menos de lo normal, medidor mal conectado, no exporta, sin datos de la
+  plataforma. Arriba, un bloque por tipo con la cantidad en grande (se toca y
+  baja a ese grupo). Cada grupo dice en una línea qué suele ser.
+- Cada planta con problema es una **tarjeta grande**: el nombre (lleva a su
+  ficha), los kWp, de dónde salió (revisión automática o monitoreo diario, o los
+  dos), **cuántos días lleva** en grande, si está en obra o silenciada, sus
+  últimos 3 días con sol en barras contra lo normal, qué se vio (con "ver más")
+  y las acciones:
+  - casos de la revisión automática: **Avisar al cliente**, **Resuelto**,
+    **Descartar**;
+  - incidencias del monitoreo diario: **Ya la vi**, **Descartar** (con el
+    motivo) y **Ver en Monitoreo** (las mismas acciones que allá).
+- **Ver casos cerrados** muestra los últimos 50 casos de Soporte cerrados.
+- **Plantas ahora**: todas las plantas vinculadas con su lectura (ver abajo).
+  De noche el estado dice "Sin sol" en vez de "Desconectada": Growatt da a casi
+  todas por desconectadas a la noche y no quiere decir nada.
+- **Revisar ahora** corre la revisión en el momento; **Revisar rendimiento**,
+  el chequeo diario de "genera menos".
 
 ## Cómo funciona
 
@@ -177,6 +188,22 @@ hora.
   Crudelli, Ricca, Diego Trias…), las mismas que ya se veían raras.
 - `rendimientoReciente()` alimenta también la columna de la mesa (caché de 10
   minutos en la ruta).
+
+### Una sola lista de problemas
+
+`armarProblemas()` en `routes/soporte.routes.ts` junta los `SoporteCaso`
+abiertos y las `FvIncidencia` abiertas del monitoreo diario, y los agrupa
+(`GRUPO_CASO`, `GRUPO_INCIDENCIA`). **Una planta con un caso y una incidencia
+por lo mismo aparece una vez**: el caso, con la marca de que el monitoreo
+también lo vio. "No genera", "no comunica" y "falla" cuentan como lo mismo para
+esto (la planta está caída, vista distinto). Las incidencias que traen "código
+N" se explican con la misma tabla (`describirCodigo()`), así Norman dice "el
+inversor no ve la red de UTE" y no "código 302".
+
+"Genera menos" avisa si esos mismos días la planta tuvo cortes de comunicación
+(incidencias `SIN_COMUNICACION` o `SIN_DATOS_API`): los kWh pueden estar
+incompletos. Caso Irigaray (22 al 27-oct-2026): parecía rendir 8 % de lo normal
+y en realidad era el relé en falla (código 405) más el datalogger cortado.
 
 ### Avisar al cliente
 

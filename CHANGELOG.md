@@ -18,6 +18,8 @@
 - La mesa muestra los casos abiertos y todas las plantas con lo que generan ahora y sus últimos días comparados con lo normal. Los casos se cierran solos cuando la planta vuelve a generar.
 - **Avisar al cliente**: un toque, con el mensaje listo para revisar. Le llega al portal y al celular, y lo ve arriba de todo en el Inicio mientras el caso esté abierto. Nunca le escribe el sistema solo.
 - También vigila las **plantas Huawei**: avisa si FusionSolar las marca sin comunicación o con falla, o si las ve sanas pero no suman energía.
+- **Todos los problemas en un solo lugar, agrupados y a la vista**: la mesa junta lo que detecta la revisión automática con lo que ya marcaba el monitoreo diario (medidor mal conectado, no exporta…), agrupado por tipo de problema, con la cantidad de cada uno en grande y una tarjeta por planta que muestra cuántos días lleva, sus últimos días en barras y qué hacer. Los códigos de falla se explican en criollo ("el inversor no ve la red de UTE", "falla del relé").
+- De noche la mesa ya no muestra a todas las plantas como desconectadas: dice "sin sol".
 - **Las plantas en obra no avisan**: si la planta, o una ampliación suya, tiene obra agendada en el calendario, no se abre caso aunque esté desconectada, y la mesa la muestra "En obra hasta el…". Lo mismo con las que se silenciaron desde el Monitoreo.
 - Las alertas le llegan por ahora a Administración; después habrá un rol de Soporte.
 

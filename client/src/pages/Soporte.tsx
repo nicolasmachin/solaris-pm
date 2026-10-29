@@ -1,7 +1,26 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, LifeBuoy, MessageSquare, RefreshCw, Send, Wifi, WifiOff, X, Zap } from "lucide-react";
+import {
+  AlertTriangle,
+  Ban,
+  CheckCircle2,
+  Eye,
+  Gauge,
+  LifeBuoy,
+  MessageSquare,
+  Moon,
+  PlugZap,
+  RefreshCw,
+  Send,
+  SunDim,
+  TrendingDown,
+  Wifi,
+  WifiOff,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 import {
@@ -12,9 +31,13 @@ import {
   getMensajeCliente,
   getSoporteCasos,
   getSoporteTablero,
+  descartarIncidencia,
+  revisarIncidencia,
   type SoporteCaso,
   type SoporteCasoTipo,
+  type SoporteGrupo,
   type SoportePlanta,
+  type SoporteProblema,
 } from "../api/soporte.api";
 import { Spinner } from "../components/ui/Spinner";
 import { usePermission } from "../hooks/usePermission";
@@ -128,30 +151,29 @@ export function Soporte() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Dato titulo="Casos abiertos" valor={String(data.casos.length)} alerta={data.casos.length > 0} />
-        <Dato titulo="Plantas en línea" valor={`${enLinea} de ${data.plantas.length}`} />
+        <Dato titulo="Plantas con problema" valor={String(new Set(data.problemas.map((p) => p.projectId ?? p.cliente)).size)} alerta={data.problemas.length > 0} />
+        <Dato
+          titulo={data.haySol ? "Plantas en línea" : "Plantas en línea (de noche)"}
+          valor={data.haySol ? `${enLinea} de ${data.plantas.length}` : "sin sol"}
+        />
         <Dato titulo="Reclamos abiertos" valor={String(data.reclamosAbiertos)} link="/mis-tareas/tickets" />
-        <Dato titulo="Incidencias del monitoreo diario" valor={String(data.incidenciasMonitoreo)} link="/clientes/monitoreo" />
+        <Dato titulo="Monitoreo diario (detalle)" valor={String(data.incidenciasMonitoreo)} link="/clientes/monitoreo" />
       </div>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-[var(--color-text-primary)]">Casos abiertos</h2>
+          <h2 className="font-display text-lg font-semibold text-[var(--color-text-primary)]">Problemas</h2>
           <button type="button" onClick={() => setVerCerrados((v) => !v)} className="text-xs text-[var(--color-accent)] hover:underline">
-            {verCerrados ? "Ocultar cerrados" : "Ver cerrados"}
+            {verCerrados ? "Ocultar casos cerrados" : "Ver casos cerrados"}
           </button>
         </div>
-        {data.casos.length === 0 ? (
+        {data.problemas.length === 0 ? (
           <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-muted)]">
             <CheckCircle2 className="mr-1.5 inline h-4 w-4 text-emerald-400" />
-            No hay casos abiertos: todas las plantas que se pueden ver están andando.
+            No hay problemas abiertos: todas las plantas que se pueden ver están andando.
           </p>
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {data.casos.map((c) => (
-              <TarjetaCaso key={c.id} c={c} puedeEditar={puedeEditar} onCambio={invalidar} />
-            ))}
-          </div>
+          <Problemas problemas={data.problemas} casos={data.casos} puedeEditar={puedeEditar} onCambio={invalidar} />
         )}
         {verCerrados &&
           (cerradosQ.isLoading ? (
@@ -165,7 +187,7 @@ export function Soporte() {
           ))}
       </section>
 
-      <TablaPlantas plantas={data.plantas} />
+      <TablaPlantas plantas={data.plantas} haySol={data.haySol} />
     </div>
   );
 }
@@ -188,21 +210,7 @@ function Dato({ titulo, valor, alerta, link }: { titulo: string; valor: string; 
 }
 
 function TarjetaCaso({ c, puedeEditar, onCambio }: { c: SoporteCaso; puedeEditar: boolean; onCambio: () => void }) {
-  const [avisando, setAvisando] = useState(false);
-  const [cerrando, setCerrando] = useState<null | "RESUELTO" | "DESCARTADO">(null);
-  const [motivo, setMotivo] = useState("");
   const t = TIPO[c.tipo];
-
-  const cerrar = useMutation({
-    mutationFn: () => cerrarCasoSoporte(c.id, cerrando!, motivo),
-    onSuccess: () => {
-      toast.success("Caso cerrado");
-      setCerrando(null);
-      onCambio();
-    },
-    onError: (e) => toast.error(errorDe(e) ?? "No se pudo cerrar"),
-  });
-
   return (
     <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -216,6 +224,29 @@ function TarjetaCaso({ c, puedeEditar, onCambio }: { c: SoporteCaso; puedeEditar
       </div>
       <p className="mt-2 text-sm font-medium text-[var(--color-text-primary)]">{c.titulo}</p>
       <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{c.detalle}</p>
+      <AccionesCaso c={c} puedeEditar={puedeEditar} onCambio={onCambio} />
+    </article>
+  );
+}
+
+/** Aviso al cliente, cierre y estado del aviso de un caso de Soporte. */
+function AccionesCaso({ c, puedeEditar, onCambio }: { c: SoporteCaso; puedeEditar: boolean; onCambio: () => void }) {
+  const [avisando, setAvisando] = useState(false);
+  const [cerrando, setCerrando] = useState<null | "RESUELTO" | "DESCARTADO">(null);
+  const [motivo, setMotivo] = useState("");
+
+  const cerrar = useMutation({
+    mutationFn: () => cerrarCasoSoporte(c.id, cerrando!, motivo),
+    onSuccess: () => {
+      toast.success("Caso cerrado");
+      setCerrando(null);
+      onCambio();
+    },
+    onError: (e) => toast.error(errorDe(e) ?? "No se pudo cerrar"),
+  });
+
+  return (
+    <>
       {c.motivoCierre && (
         <p className="mt-2 text-xs text-[var(--color-text-muted)]">
           Cierre{c.resueltoPor ? ` (${c.resueltoPor})` : " (automático)"}: {c.motivoCierre}
@@ -274,7 +305,7 @@ function TarjetaCaso({ c, puedeEditar, onCambio }: { c: SoporteCaso; puedeEditar
         </div>
       )}
       {avisando && <AvisarCliente caso={c} onClose={() => setAvisando(false)} onListo={onCambio} />}
-    </article>
+    </>
   );
 }
 
@@ -330,14 +361,14 @@ function AvisarCliente({ caso, onClose, onListo }: { caso: SoporteCaso; onClose:
   );
 }
 
-function TablaPlantas({ plantas }: { plantas: SoportePlanta[] }) {
+function TablaPlantas({ plantas, haySol }: { plantas: SoportePlanta[]; haySol: boolean }) {
   const [q, setQ] = useState("");
   const filas = useMemo(() => {
-    const peso = (p: SoportePlanta) => (p.caso ? 0 : !p.enLinea ? 1 : peorDia(p) < 0.6 ? 2 : 3);
+    const peso = (p: SoportePlanta) => (p.caso ? 0 : haySol && !p.enLinea ? 1 : peorDia(p) < 0.6 ? 2 : 3);
     return plantas
       .filter((p) => p.cliente.toLowerCase().includes(q.toLowerCase()))
       .sort((a, b) => peso(a) - peso(b) || peorDia(a) - peorDia(b));
-  }, [plantas, q]);
+  }, [plantas, q, haySol]);
 
   return (
     <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
@@ -387,6 +418,10 @@ function TablaPlantas({ plantas }: { plantas: SoportePlanta[] }) {
                     <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs ${TIPO[p.caso.tipo].clase}`}>
                       <AlertTriangle className="h-3 w-3" /> {TIPO[p.caso.tipo].texto}
                     </span>
+                  ) : !haySol ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)]" title="De noche Growatt da a casi todas por desconectadas: no quiere decir nada">
+                      <Moon className="h-3 w-3" /> Sin sol
+                    </span>
                   ) : p.enLinea ? (
                     <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
                       <Wifi className="h-3 w-3" /> En línea
@@ -428,5 +463,267 @@ function TablaPlantas({ plantas }: { plantas: SoportePlanta[] }) {
         las sombras también (cada planta contra sí misma). 100 % es normal; en rojo, menos del 60 %.
       </p>
     </section>
+  );
+}
+
+// ─── Problemas agrupados ────────────────────────────────────────────────────
+
+const GRUPOS: Record<SoporteGrupo, { titulo: string; queEs: string; icono: LucideIcon; color: string; borde: string }> = {
+  FALLA: {
+    titulo: "Falla del inversor",
+    queEs: "El inversor informa un código de falla. Cada tarjeta dice qué significa y qué hacer.",
+    icono: Zap,
+    color: "text-red-400",
+    borde: "border-red-500/40",
+  },
+  NO_GENERA: {
+    titulo: "No genera",
+    queEs: "Comunica pero no genera con sol: la llave, el lado de los paneles o el inversor apagado.",
+    icono: Ban,
+    color: "text-red-400",
+    borde: "border-red-500/40",
+  },
+  NO_COMUNICA: {
+    titulo: "No comunica",
+    queEs: "Dejó de mandar datos. Suele ser el wifi o el datalogger; no quiere decir que no genere.",
+    icono: WifiOff,
+    color: "text-amber-300",
+    borde: "border-amber-500/40",
+  },
+  GENERA_MENOS: {
+    titulo: "Genera menos de lo normal",
+    queEs: "Genera, pero bastante menos que lo normal para ella en esta época, comparada con el resto de la cartera.",
+    icono: TrendingDown,
+    color: "text-amber-300",
+    borde: "border-amber-500/40",
+  },
+  MEDIDOR: {
+    titulo: "Medidor mal conectado",
+    queEs: "Exporta más de lo que genera: los transformadores del medidor están dados vuelta o en otra fase.",
+    icono: Gauge,
+    color: "text-amber-300",
+    borde: "border-amber-500/40",
+  },
+  NO_EXPORTA: {
+    titulo: "No exporta",
+    queEs: "Genera pero no le vende nada a UTE: suele ser la inyección limitada en el inversor.",
+    icono: PlugZap,
+    color: "text-amber-300",
+    borde: "border-amber-500/40",
+  },
+  SIN_DATOS: {
+    titulo: "Sin datos de la plataforma",
+    queEs: "Growatt o Huawei no contestan sobre esta planta hace días. Es un problema nuestro, no del cliente.",
+    icono: SunDim,
+    color: "text-[var(--color-text-muted)]",
+    borde: "border-[var(--color-border)]",
+  },
+};
+const ORDEN_GRUPOS: SoporteGrupo[] = ["FALLA", "NO_GENERA", "NO_COMUNICA", "GENERA_MENOS", "MEDIDOR", "NO_EXPORTA", "SIN_DATOS"];
+
+function diasDesde(desde: string): number {
+  const d = desde.length === 10 ? new Date(`${desde}T12:00:00`) : new Date(desde);
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
+}
+const ddmm = (desde: string) => `${desde.slice(8, 10)}/${desde.slice(5, 7)}`;
+
+function Problemas({
+  problemas,
+  casos,
+  puedeEditar,
+  onCambio,
+}: {
+  problemas: SoporteProblema[];
+  casos: SoporteCaso[];
+  puedeEditar: boolean;
+  onCambio: () => void;
+}) {
+  const caso = new Map(casos.map((c) => [c.id, c]));
+  const grupos = ORDEN_GRUPOS.map((g) => ({ g, items: problemas.filter((p) => p.grupo === g) })).filter((x) => x.items.length);
+  return (
+    <div className="space-y-5">
+      {/* Resumen: un bloque por tipo de problema, con la cantidad en grande */}
+      <div className="flex flex-wrap gap-2">
+        {grupos.map(({ g, items }) => {
+          const G = GRUPOS[g];
+          const Icono = G.icono;
+          return (
+            <a
+              key={g}
+              href={`#grupo-${g}`}
+              className={`flex items-center gap-2 rounded-xl border ${G.borde} bg-[var(--color-bg-card)] px-3 py-2 hover:bg-[var(--color-bg-card-hover)]`}
+            >
+              <Icono className={`h-5 w-5 ${G.color}`} />
+              <span className={`font-display text-2xl font-bold ${G.color}`}>{items.length}</span>
+              <span className="text-sm text-[var(--color-text-secondary)]">{G.titulo}</span>
+            </a>
+          );
+        })}
+      </div>
+
+      {grupos.map(({ g, items }) => {
+        const G = GRUPOS[g];
+        const Icono = G.icono;
+        return (
+          <div key={g} id={`grupo-${g}`} className="scroll-mt-20 space-y-2">
+            <div className="flex items-baseline gap-2">
+              <Icono className={`h-4 w-4 self-center ${G.color}`} />
+              <h3 className={`font-semibold ${G.color}`}>
+                {G.titulo} · {items.length}
+              </h3>
+              <p className="text-xs text-[var(--color-text-muted)]">{G.queEs}</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {items
+                .sort((a, b) => diasDesde(b.desde) - diasDesde(a.desde))
+                .map((p) => (
+                  <TarjetaProblema key={p.clave} p={p} borde={G.borde} caso={caso.get(p.id)} puedeEditar={puedeEditar} onCambio={onCambio} />
+                ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TarjetaProblema({
+  p,
+  borde,
+  caso,
+  puedeEditar,
+  onCambio,
+}: {
+  p: SoporteProblema;
+  borde: string;
+  caso: SoporteCaso | undefined;
+  puedeEditar: boolean;
+  onCambio: () => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const dias = diasDesde(p.desde);
+  return (
+    <article className={`flex flex-col rounded-xl border ${borde} bg-[var(--color-bg-card)] p-4`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          {p.projectId ? (
+            <Link to={`/clientes/${p.projectId}`} className="block truncate text-lg font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]">
+              {p.cliente}
+            </Link>
+          ) : (
+            <p className="truncate text-lg font-semibold text-[var(--color-text-primary)]">{p.cliente}</p>
+          )}
+          <p className="text-[11px] text-[var(--color-text-muted)]">
+            {p.kwp != null && `${p.kwp} kWp · `}
+            {p.origen === "SOPORTE" ? "revisión automática" : "monitoreo diario"}
+            {p.origen === "SOPORTE" && p.monitoreoDesde && ` · también el monitoreo diario, desde el ${ddmm(p.monitoreoDesde)}`}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="font-display text-2xl font-bold leading-none text-[var(--color-text-primary)]">{dias === 0 ? "hoy" : dias}</p>
+          {dias > 0 && <p className="text-[10px] text-[var(--color-text-muted)]">{dias === 1 ? "día" : "días"}</p>}
+        </div>
+      </div>
+
+      {p.pausa && (
+        <p className="mt-2 inline-flex w-fit rounded-md bg-blue-500/15 px-2 py-0.5 text-xs text-blue-400">
+          {p.pausa.motivo === "OBRA" ? "En obra" : "Silenciada"} hasta el {ddmm(p.pausa.hasta)}
+        </p>
+      )}
+
+      {p.dias && p.dias.length > 0 && (
+        <div className="mt-3 flex items-end gap-2">
+          {p.dias.map((d) => (
+            <div key={d.dia} className="flex-1 text-center" title={`${d.kwh.toFixed(1)} kWh`}>
+              <div className="mx-auto flex h-10 w-full items-end rounded bg-[var(--color-bg-app)]">
+                <div
+                  className={`w-full rounded ${d.vs < 0.6 ? "bg-red-500/70" : d.vs < 0.85 ? "bg-amber-400/70" : "bg-emerald-500/70"}`}
+                  style={{ height: `${Math.max(4, Math.min(100, d.vs * 100))}%` }}
+                />
+              </div>
+              <p className={`mt-0.5 text-[11px] ${colorVs(d.vs)}`}>{Math.round(d.vs * 100)}%</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">{ddmm(d.dia)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {p.titulo && <p className="mt-3 text-sm font-semibold text-[var(--color-text-primary)]">{p.titulo}</p>}
+      <p className={`${p.titulo ? "mt-1" : "mt-3"} text-sm text-[var(--color-text-secondary)] ${abierto ? "" : "line-clamp-3"}`}>{p.detalle}</p>
+      {p.detalle.length > 160 && (
+        <button type="button" onClick={() => setAbierto((v) => !v)} className="mt-0.5 w-fit text-xs text-[var(--color-accent)] hover:underline">
+          {abierto ? "ver menos" : "ver más"}
+        </button>
+      )}
+
+      <div className="mt-auto pt-1">
+        {caso ? (
+          <AccionesCaso c={caso} puedeEditar={puedeEditar} onCambio={onCambio} />
+        ) : (
+          <AccionesIncidencia p={p} puedeEditar={puedeEditar} onCambio={onCambio} />
+        )}
+      </div>
+    </article>
+  );
+}
+
+/** Incidencias del monitoreo diario: las mismas acciones que en Experiencia Solar → Monitoreo. */
+function AccionesIncidencia({ p, puedeEditar, onCambio }: { p: SoporteProblema; puedeEditar: boolean; onCambio: () => void }) {
+  const [descartando, setDescartando] = useState(false);
+  const [nota, setNota] = useState("");
+  const revisar = useMutation({
+    mutationFn: () => revisarIncidencia(p.id),
+    onSuccess: () => {
+      toast.success("Marcada como vista");
+      onCambio();
+    },
+    onError: (e) => toast.error(errorDe(e) ?? "No se pudo marcar"),
+  });
+  const descartar = useMutation({
+    mutationFn: () => descartarIncidencia(p.id, nota),
+    onSuccess: () => {
+      toast.success("Descartada");
+      onCambio();
+    },
+    onError: (e) => toast.error(errorDe(e) ?? "No se pudo descartar"),
+  });
+  return (
+    <div className="mt-3 space-y-2">
+      {p.revisada && <p className="text-xs text-[var(--color-text-muted)]">Ya la vio alguien (sigue abierta hasta que se resuelva).</p>}
+      {puedeEditar && !descartando && (
+        <div className="flex flex-wrap gap-2">
+          {!p.revisada && (
+            <button type="button" onClick={() => revisar.mutate()} disabled={revisar.isPending} className={botonChico}>
+              <Eye className="h-4 w-4" /> Ya la vi
+            </button>
+          )}
+          <button type="button" onClick={() => setDescartando(true)} className={botonChico}>
+            <X className="h-4 w-4" /> Descartar
+          </button>
+          <Link to="/clientes/monitoreo" className={botonChico}>
+            Ver en Monitoreo
+          </Link>
+        </div>
+      )}
+      {descartando && (
+        <div className="space-y-2">
+          <input
+            autoFocus
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+            placeholder="Por qué no es un problema"
+            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
+          />
+          <div className="flex gap-2">
+            <button type="button" onClick={() => descartar.mutate()} disabled={descartar.isPending || nota.trim().length < 3} className={botonChico}>
+              Confirmar
+            </button>
+            <button type="button" onClick={() => setDescartando(false)} className={botonChico}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -47,7 +47,31 @@ export interface SoportePlanta {
   pausa: { motivo: "OBRA" | "SILENCIADA"; hasta: string } | null;
 }
 
+export type SoporteGrupo = "FALLA" | "NO_GENERA" | "NO_COMUNICA" | "GENERA_MENOS" | "MEDIDOR" | "NO_EXPORTA" | "SIN_DATOS";
+
+/** Un problema de la mesa: caso de Soporte o incidencia del monitoreo diario. */
+export interface SoporteProblema {
+  clave: string;
+  origen: "SOPORTE" | "MONITOREO";
+  id: string;
+  projectId: string | null;
+  cliente: string;
+  grupo: SoporteGrupo;
+  titulo: string;
+  detalle: string;
+  desde: string;
+  avisadoCliente: string | null;
+  conPortal: boolean;
+  revisada: boolean;
+  monitoreoDesde: string | null;
+  kwp: number | null;
+  dias: Array<{ dia: string; kwh: number; vs: number }> | null;
+  pausa: { motivo: "OBRA" | "SILENCIADA"; hasta: string } | null;
+}
+
 export interface SoporteTablero {
+  haySol: boolean;
+  problemas: SoporteProblema[];
   vigiaAutomatico: boolean;
   ultimaLectura: string | null;
   mediana: number | null;
@@ -72,3 +96,9 @@ export const correrVigia = () =>
     .then((r) => r.data);
 export const correrRendimiento = () =>
   apiClient.post<{ abiertos: number; cerrados: number }>("/api/soporte/rendimiento").then((r) => r.data);
+
+// Incidencias del monitoreo diario (mismas rutas que Experiencia Solar → Monitoreo).
+export const revisarIncidencia = (id: string) =>
+  apiClient.post(`/api/reportes-fv/monitor/incidencias/${id}/revisar`, {}).then((r) => r.data);
+export const descartarIncidencia = (id: string, nota: string) =>
+  apiClient.post(`/api/reportes-fv/monitor/incidencias/${id}/descartar`, { nota }).then((r) => r.data);

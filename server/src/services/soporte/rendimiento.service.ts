@@ -164,6 +164,16 @@ export async function revisarRendimiento(): Promise<{ abiertos: number; cerrados
     });
     if (caida) continue; // ya hay un caso de planta caída: es el mismo problema
 
+    // Si esos días también se cortó la comunicación, los kWh pueden estar
+    // incompletos: el problema puede ser de datos y no de generación (caso
+    // Irigaray, 22 al 27-oct-2026: relé en falla y datalogger cortado).
+    const desdeDia = new Date(`${conGen[0].dia}T00:00:00Z`);
+    const cortes = await prisma.fvIncidencia.count({
+      where: { projectId, diagnostico: { in: ["SIN_COMUNICACION", "SIN_DATOS_API"] }, ultimaDeteccionEn: { gte: desdeDia } },
+    });
+    const ojo = cortes
+      ? " Ojo: esos días la planta también tuvo cortes de comunicación, así que los kWh pueden estar incompletos; revisar primero la comunicación y el historial del inversor."
+      : "";
     const detalleDias = conGen
       .map((u) => `${u.dia.slice(8, 10)}/${u.dia.slice(5, 7)}: ${u.kwh.toFixed(1)} kWh (${Math.round(u.vs * 100)} % de lo normal)`)
       .join(", ");
@@ -171,7 +181,7 @@ export async function revisarRendimiento(): Promise<{ abiertos: number; cerrados
       projectId,
       tipo: SoporteCasoTipo.BAJO_RENDIMIENTO,
       titulo: "Genera menos de lo normal",
-      detalle: `${r.nombre} viene generando por debajo de lo normal para ella, comparada con el resto de la cartera los mismos días: ${detalleDias}. Mirar la curva del día: una meseta es derateo o límite de potencia; arranque tarde a la mañana, aislación; la mitad de lo normal, un string caído.`,
+      detalle: `${r.nombre} viene generando por debajo de lo normal para ella, comparada con el resto de la cartera los mismos días: ${detalleDias}.${ojo} Mirar la curva del día: una meseta es derateo o límite de potencia; arranque tarde a la mañana, aislación; la mitad de lo normal, un string caído.`,
     });
     if (res.nuevo) abiertos++;
   }

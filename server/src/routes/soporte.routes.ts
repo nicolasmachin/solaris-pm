@@ -18,8 +18,10 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { avisarCliente, cerrarManual, mensajeSugerido } from "../services/soporte/casos.service.js";
 import { rendimientoReciente, revisarRendimiento, type RendimientoPlanta } from "../services/soporte/rendimiento.service.js";
 import { vigiaHabilitado } from "../services/soporte/soporte.job.js";
-import { medianaCartera, rendimiento } from "../services/soporte/vigia.js";
+import { medianaCartera, rendimiento, SOL_MIN } from "../services/soporte/vigia.js";
+import { listarIncidencias, type FilaIncidencia } from "../services/reportesFv/monitor/incidencias.service.js";
 import { pausasDePlantas } from "../services/soporte/pausas.js";
+import { describirCodigo } from "../services/soporte/codigos.js";
 import { kwpEfectivo } from "../services/soporte/kwp.js";
 import { correrVigia } from "../services/soporte/vigia.service.js";
 import { badRequest, notFound } from "../utils/errors.js";
@@ -114,7 +116,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         prisma.soporteEstadoHuawei.findMany({ include: { project: { select: selectProyecto } } }),
         prisma.soporteCaso.findMany({ where: { estado: "ABIERTO" }, include: incluirCaso, orderBy: { detectadoEn: "desc" } }),
         prisma.ticket.count({ where: { estado: { in: [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO] } } }),
-        prisma.fvIncidencia.count({ where: { estado: "ABIERTA" } }),
+        listarIncidencias({ estado: "ABIERTA" }),
         rendimientoCacheado(),
       ]);
       const lecturas = estados.map((e) => ({
@@ -184,6 +186,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
           dias: dias.get(h.projectId)?.ultimos ?? null,
         });
       }
+      const problemas = armarProblemas(casos.map(serializarCaso), incidencias, plantas);
       const ultimaLectura = estados.reduce<Date | null>((m, e) => (!m || e.leidoEn > m ? e.leidoEn : m), null);
       return {
         vigiaAutomatico: vigiaHabilitado(),
@@ -192,7 +195,11 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         plantas,
         casos: casos.map(serializarCaso),
         reclamosAbiertos: reclamos,
-        incidenciasMonitoreo: incidencias,
+        incidenciasMonitoreo: incidencias.length,
+        // Con la mediana de la cartera por debajo de esto es de noche (o muy
+        // nublado): "desconectada" no quiere decir nada, Growatt las da así.
+        haySol: mediana != null && mediana >= SOL_MIN,
+        problemas,
       };
     });
 
@@ -235,4 +242,121 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
       return revisarRendimiento();
     });
   });
+}
+
+// ─── Problemas: casos de Soporte + incidencias del monitoreo diario ──────────
+// Una sola lista, agrupada por tipo de problema, para la vista gráfica de la
+// mesa. Si una planta tiene caso de Soporte y también incidencia del monitoreo
+// por lo mismo, se muestra una vez (el caso) con la marca de que el monitoreo
+// también lo vio.
+
+type Grupo = "FALLA" | "NO_GENERA" | "NO_COMUNICA" | "GENERA_MENOS" | "MEDIDOR" | "NO_EXPORTA" | "SIN_DATOS";
+
+const GRUPO_CASO: Record<SoporteCasoTipo, Grupo> = {
+  FALLA_INVERSOR: "FALLA",
+  SIN_GENERACION: "NO_GENERA",
+  SIN_COMUNICACION: "NO_COMUNICA",
+  BAJO_RENDIMIENTO: "GENERA_MENOS",
+};
+const GRUPO_INCIDENCIA: Partial<Record<FilaIncidencia["diagnostico"], Grupo>> = {
+  ERROR_DISPOSITIVO: "FALLA",
+  SIN_GENERACION: "NO_GENERA",
+  SIN_COMUNICACION: "NO_COMUNICA",
+  GENERACION_BAJA: "GENERA_MENOS",
+  MEDIDOR_INVERTIDO: "MEDIDOR",
+  SIN_EXPORTACION: "NO_EXPORTA",
+  SIN_DATOS_API: "SIN_DATOS",
+};
+/** "La planta está caída": no genera, no comunica o falla son el mismo problema visto distinto. */
+const CAIDA: Grupo[] = ["FALLA", "NO_GENERA", "NO_COMUNICA"];
+const familia = (g: Grupo) => (CAIDA.includes(g) ? "CAIDA" : g);
+
+type Problema = {
+  clave: string;
+  origen: "SOPORTE" | "MONITOREO";
+  id: string;
+  projectId: string | null;
+  cliente: string;
+  grupo: Grupo;
+  titulo: string;
+  detalle: string;
+  /** ISO (caso) o YYYY-MM-DD (incidencia). */
+  desde: string;
+  avisadoCliente: string | null;
+  conPortal: boolean;
+  revisada: boolean;
+  /** El monitoreo diario también lo vio, desde este día. */
+  monitoreoDesde: string | null;
+  kwp: number | null;
+  dias: Array<{ dia: string; kwh: number; vs: number }> | null;
+  pausa: { motivo: "OBRA" | "SILENCIADA"; hasta: string } | null;
+};
+
+function armarProblemas(
+  casos: ReturnType<typeof serializarCaso>[],
+  incidencias: FilaIncidencia[],
+  plantas: Array<{ projectId: string; kwp: number | null; dias: Problema["dias"]; pausa: Problema["pausa"] }>,
+): Problema[] {
+  const planta = new Map(plantas.map((p) => [p.projectId, p]));
+  const out: Problema[] = [];
+  const vistos = new Map<string, Problema>(); // projectId|familia → problema
+
+  for (const c of casos) {
+    const grupo = GRUPO_CASO[c.tipo];
+    const p: Problema = {
+      clave: `caso-${c.id}`,
+      origen: "SOPORTE",
+      id: c.id,
+      projectId: c.projectId,
+      cliente: c.cliente,
+      grupo,
+      titulo: c.titulo,
+      detalle: c.detalle,
+      desde: c.detectadoEn,
+      avisadoCliente: c.clienteAvisadoEn,
+      conPortal: c.conPortal,
+      revisada: false,
+      monitoreoDesde: null,
+      kwp: planta.get(c.projectId)?.kwp ?? null,
+      dias: planta.get(c.projectId)?.dias ?? null,
+      pausa: planta.get(c.projectId)?.pausa ?? null,
+    };
+    out.push(p);
+    vistos.set(`${c.projectId}|${familia(grupo)}`, p);
+  }
+  for (const i of incidencias) {
+    const grupo = GRUPO_INCIDENCIA[i.diagnostico];
+    if (!grupo) continue;
+    const ya = i.projectId ? vistos.get(`${i.projectId}|${familia(grupo)}`) : undefined;
+    if (ya) {
+      ya.monitoreoDesde = ya.monitoreoDesde ?? i.primeraDeteccionEn;
+      continue;
+    }
+    const pl = i.projectId ? planta.get(i.projectId) : undefined;
+    // El monitoreo diario dice "código 302" a secas: se explica con la misma
+    // tabla que usa Soporte.
+    const codigo = Number((i.detalle ?? "").match(/c[oó]digo (\d+)/i)?.[1] ?? NaN);
+    const falla = Number.isFinite(codigo) ? describirCodigo(codigo, null) : null;
+    const p: Problema = {
+      clave: `inc-${i.id}`,
+      origen: "MONITOREO",
+      id: i.id,
+      projectId: i.projectId,
+      cliente: i.clientName ?? i.plantName,
+      grupo,
+      titulo: falla?.titulo ?? "",
+      detalle: falla ? `${i.detalle ?? ""} ${falla.queHacer}`.trim() : i.detalle ?? "",
+      desde: i.primeraDeteccionEn,
+      avisadoCliente: null,
+      conPortal: false,
+      revisada: i.revisada,
+      monitoreoDesde: i.primeraDeteccionEn,
+      kwp: pl?.kwp ?? null,
+      dias: pl?.dias ?? null,
+      pausa: pl?.pausa ?? null,
+    };
+    out.push(p);
+    if (i.projectId) vistos.set(`${i.projectId}|${familia(grupo)}`, p);
+  }
+  return out;
 }
