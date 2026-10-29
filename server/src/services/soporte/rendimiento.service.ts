@@ -25,8 +25,10 @@ import { prisma } from "../../lib/prisma.js";
 import { abrirOActualizar, cerrarAutomatico } from "./casos.service.js";
 import { kwpEfectivo } from "./kwp.js";
 import { pausasDePlantas } from "./pausas.js";
+import { investigarDia } from "./investigar.js";
 
 const UMBRAL_BAJO = 0.6;
+
 const UMBRAL_RECUPERADO = 0.8;
 const DIA_CON_SOL = 1.0; // kWh/kWp de la mediana
 
@@ -47,8 +49,10 @@ export type RendimientoPlanta = {
   normal: number;
   /** De dónde salió lo normal. */
   fuente: "MISMO_MES_ANIO_ANTERIOR" | "ULTIMOS_30_DIAS";
-  /** Últimos días con sol (los más viejos primero), con kWh y "vs. lo normal". */
+  /** Últimos 3 días con sol (los más viejos primero), con kWh y "vs. lo normal". */
   ultimos: Array<{ dia: string; kwh: number; vs: number }>;
+  /** Los días con sol de las últimas dos semanas, igual que `ultimos`. */
+  quincena: Array<{ dia: string; kwh: number; vs: number }>;
 };
 
 /** El cálculo de arriba, por proyecto. Solo base de datos. */
@@ -124,11 +128,17 @@ export async function rendimientoReciente(): Promise<Map<string, RendimientoPlan
       fuente = "ULTIMOS_30_DIAS";
     }
     if (normal == null) continue;
-    const ultimos = conCociente
+    const conSol = conCociente
       .filter((f) => f.med! >= DIA_CON_SOL)
-      .slice(-3)
-      .map((f) => ({ dia: dia(f.fecha), kwh: f.kwh, vs: f.rat / normal }));
-    out.set(projectId, { nombre: fs[0].nombre, normal, fuente, ultimos });
+      .map((f) => ({ dia: dia(f.fecha), kwh: f.kwh, vs: f.rat / normal! }));
+    const hace14 = dia(new Date(hoy.getTime() - 14 * 86_400_000));
+    out.set(projectId, {
+      nombre: fs[0].nombre,
+      normal,
+      fuente,
+      ultimos: conSol.slice(-3),
+      quincena: conSol.filter((d) => d.dia >= hace14),
+    });
   }
   return out;
 }
@@ -145,45 +155,79 @@ export async function revisarRendimiento(): Promise<{ abiertos: number; cerrados
   const pausas = await pausasDePlantas(ids, hoy, new Map([...g, ...h].map((p) => [p.projectId!, p.monitoreoSilenciadoHasta])));
   let abiertos = 0;
   let cerrados = 0;
-  for (const [projectId, r] of porPlanta) {
-    // Los días en cero los ve el vigía ("no genera"): acá solo los que generaron.
-    const conGen = r.ultimos.filter((u) => u.kwh > 0);
-    if (conGen.length < 3) continue;
-    const vs = conGen.map((u) => u.vs);
-    const ultimo = vs[vs.length - 1];
+  const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+  const pct = (v: number) => `${Math.round(v * 100)} %`;
 
-    if (ultimo >= UMBRAL_RECUPERADO) {
-      cerrados += await cerrarAutomatico(projectId, [SoporteCasoTipo.BAJO_RENDIMIENTO], "Volvió a rendir normal.");
+  // Con UN día rojo alcanza (criterio de Nicolás, 28-oct-2026): se va a mirar
+  // el inversor ese día y la planta queda a la vista. No se espera a que se
+  // acumulen días: las fallas que vienen y van (Martín González) se escapan.
+  for (const [projectId, r] of porPlanta) {
+    const dias = r.quincena;
+    const ultimo = dias[dias.length - 1];
+    if (!ultimo) continue;
+    const abierto = await prisma.soporteCaso.findFirst({
+      where: { projectId, estado: "ABIERTO", tipo: SoporteCasoTipo.BAJO_RENDIMIENTO },
+    });
+
+    if (ultimo.vs >= UMBRAL_RECUPERADO) {
+      // Se cierra solo con 3 días con sol seguidos normales (y si no se repite).
+      const tres = dias.slice(-3);
+      if (abierto && !abierto.recurrente && tres.length === 3 && tres.every((d) => d.vs >= UMBRAL_RECUPERADO)) {
+        cerrados += await cerrarAutomatico(projectId, [SoporteCasoTipo.BAJO_RENDIMIENTO], "Rindió normal 3 días con sol seguidos.");
+      }
       continue;
     }
-    if (vs.filter((x) => x < UMBRAL_BAJO).length < 2 || ultimo >= UMBRAL_BAJO) continue;
+    // Rojo: menos del 60 % de lo normal, generando algo (el cero es del vigía).
+    if (ultimo.vs >= UMBRAL_BAJO || ultimo.kwh <= 0) continue;
     if (pausas.has(projectId)) continue;
-
+    if (abierto?.ultimoDiaRevisado && abierto.ultimoDiaRevisado.toISOString().slice(0, 10) === ultimo.dia) continue;
     const caida = await prisma.soporteCaso.findFirst({
       where: { projectId, estado: "ABIERTO", tipo: { not: SoporteCasoTipo.BAJO_RENDIMIENTO } },
     });
     if (caida) continue; // ya hay un caso de planta caída: es el mismo problema
 
-    // Si esos días también se cortó la comunicación, los kWh pueden estar
-    // incompletos: el problema puede ser de datos y no de generación (caso
-    // Irigaray, 22 al 27-oct-2026: relé en falla y datalogger cortado).
-    const desdeDia = new Date(`${conGen[0].dia}T00:00:00Z`);
+    const otrosRojos = dias.filter((d) => d.dia !== ultimo.dia && d.vs < UMBRAL_BAJO && d.kwh > 0);
+    const seRepite = otrosRojos.length > 0 || !!abierto;
     const cortes = await prisma.fvIncidencia.count({
-      where: { projectId, diagnostico: { in: ["SIN_COMUNICACION", "SIN_DATOS_API"] }, ultimaDeteccionEn: { gte: desdeDia } },
+      where: {
+        projectId,
+        diagnostico: { in: ["SIN_COMUNICACION", "SIN_DATOS_API"] },
+        ultimaDeteccionEn: { gte: new Date(`${ultimo.dia}T00:00:00Z`) },
+      },
     });
     const ojo = cortes
-      ? " Ojo: esos días la planta también tuvo cortes de comunicación, así que los kWh pueden estar incompletos; revisar primero la comunicación y el historial del inversor."
+      ? " Ojo: ese día la planta también tuvo cortes de comunicación, así que los kWh pueden estar incompletos."
       : "";
-    const detalleDias = conGen
-      .map((u) => `${u.dia.slice(8, 10)}/${u.dia.slice(5, 7)}: ${u.kwh.toFixed(1)} kWh (${Math.round(u.vs * 100)} % de lo normal)`)
-      .join(", ");
-    const res = await abrirOActualizar({
-      projectId,
-      tipo: SoporteCasoTipo.BAJO_RENDIMIENTO,
-      titulo: "Genera menos de lo normal",
-      detalle: `${r.nombre} viene generando por debajo de lo normal para ella, comparada con el resto de la cartera los mismos días: ${detalleDias}.${ojo} Mirar la curva del día: una meseta es derateo o límite de potencia; arranque tarde a la mañana, aislación; la mitad de lo normal, un string caído.`,
-    });
-    if (res.nuevo) abiertos++;
+    const texto = `El ${ddmm(ultimo.dia)} generó ${ultimo.kwh.toFixed(1)} kWh, el ${pct(ultimo.vs)} de lo normal para ella (con el resto de la cartera como referencia del clima).${
+      otrosRojos.length ? ` Ya le pasó en las dos semanas anteriores: ${otrosRojos.map((d) => `${ddmm(d.dia)} (${pct(d.vs)})`).join(", ")}.` : ""
+    }${ojo}`;
+
+    let casoId: string;
+    if (abierto) {
+      casoId = abierto.id;
+      await prisma.soporteCaso.update({
+        where: { id: abierto.id },
+        data: {
+          recurrente: true,
+          titulo: abierto.titulo.startsWith("Se repite") ? abierto.titulo : "Se repite: genera menos de lo normal",
+          detalle: `${abierto.detalle} Otra vez: ${texto}`,
+          ultimaVezEn: new Date(),
+        },
+      });
+    } else {
+      const res = await abrirOActualizar({
+        projectId,
+        tipo: SoporteCasoTipo.BAJO_RENDIMIENTO,
+        titulo: seRepite ? "Se repite: genera menos de lo normal" : "Genera menos de lo normal (en observación)",
+        detalle: `${r.nombre}: ${texto}`,
+      });
+      casoId = res.id;
+      if (res.nuevo) abiertos++;
+      if (seRepite) await prisma.soporteCaso.update({ where: { id: casoId }, data: { recurrente: true } });
+    }
+    await prisma.soporteCaso.update({ where: { id: casoId }, data: { ultimoDiaRevisado: new Date(`${ultimo.dia}T00:00:00Z`) } });
+    // Ir a mirar el inversor ese día.
+    await investigarDia(casoId, projectId, ultimo.dia);
   }
   return { abiertos, cerrados };
 }

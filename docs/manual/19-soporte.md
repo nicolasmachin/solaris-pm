@@ -195,13 +195,33 @@ hora.
   0,84 en octubre). Los datos arrancan el 1-jun-2026, así que hasta junio de
   2027 se usan los 30 días. vs. lo normal = cociente / lo normal. **Hoy no
   entra** (día incompleto).
-- Alerta si en 2 de los últimos 3 días con sol (mediana ≥ 1 kWh/kWp) estuvo
-  debajo del 60 % y el último también; se cierra sola cuando el último vuelve a
-  80 %. Los días en cero no cuentan (son del vigía). Si ya hay un caso de
-  planta caída, no se abre otro.
-- Probado sobre producción el 28-oct-2026 con lo normal de 30 días y sin los
-  días en cero: marcó 8 plantas en 30 días (Martín González, Irigaray,
-  Crudelli, Ricca, Diego Trias…), las mismas que ya se veían raras.
+- **Con un solo día rojo alcanza** (criterio de Nicolás, 28-oct-2026: "con
+  una sola vez que pasa ya lo vas a detectar"). Cada mañana se mira **el último
+  día con sol**: si generó algo pero menos del 60 % de lo normal, se abre el
+  caso y **se va a mirar el inversor ese día** (`investigar.ts` →
+  `investigarDia()`): el historial cada 5 minutos de ese día y, si hubo un
+  código de falla, las alarmas de las dos semanas anteriores. Dos consultas a
+  la web de Growatt, solo para esa planta.
+  - Si el inversor estuvo en falla, el caso pasa a "falla del inversor" con el
+    código explicado; si el código vino más de un día, "Se repite: …" y no se
+    cierra solo. Martín González (23-oct): "Se repite: Aislamiento bajo de los
+    paneles", en falla de 05:51 a 15:47, aislamiento hasta 43 kΩ, 10 días en dos
+    semanas.
+  - Si no hay falla pero sí otra cosa (cortes de comunicación, recorte,
+    entrada sin tensión, aislamiento bajo), se anota.
+  - Si no se ve nada: "en observación" (sombra nueva, suciedad, un grupo de
+    paneles). Si ya hubo otro día rojo en las dos semanas anteriores, o vuelve a
+    pasar con el caso abierto, pasa a "Se repite".
+  - `ultimoDiaRevisado` evita mirar dos veces el mismo día (si se corre a mano).
+  - Se cierra solo con 3 días con sol seguidos al 80 % o más, salvo que se
+    repita (ahí lo cierra una persona).
+- Los días en cero no cuentan (son del vigía); si ya hay un caso de planta
+  caída, no se abre otro; las plantas en obra o silenciadas no avisan.
+- **El día de lluvia ya está descontado**: cada planta se compara contra la
+  mediana de la cartera ese mismo día, y los días con la mediana debajo de 1
+  kWh/kWp ni entran. Lo único que podría engañar es un chaparrón localizado
+  sobre una planta lejos del resto; por eso se mira el inversor antes de
+  concluir.
 - `rendimientoReciente()` alimenta también la columna de la mesa (caché de 10
   minutos en la ruta).
 
