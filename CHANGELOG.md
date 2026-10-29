@@ -1,5 +1,13 @@
 # Novedades
 
+## v13.6
+
+### 29 de octubre de 2026
+
+#### Los movimientos del BROU entran solos
+
+- El lector del banco lee las dos cuentas del BROU de lunes a viernes a las 8:00 y a las 18:00, con un usuario del banco que solo puede consultar. En Finanzas → Banco se ve el saldo que dice el banco y qué movimientos faltan cargar en Voltia PM.
+
 ## v13.5
 
 ### 28 de octubre de 2026

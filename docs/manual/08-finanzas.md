@@ -1414,8 +1414,19 @@ banco no muestra.
 ### Cómo funciona
 
 **El lector.** Un robot aparte (proyecto `~/Dev/lector-banco`, fuera de este
-repo) entra al banco, lee los movimientos de los últimos días y los manda a
-`POST /api/banco/lectura`. Esa ruta **no usa sesión de usuario**: se
+repo, en la VPS de desarrollo) entra a eBROU Empresas con el operador de solo
+consulta, lee los movimientos del **mes anterior y del actual** de cada cuenta
+(sufijos `-00001` pesos y `-00002` dólares) y los manda a
+`POST /api/banco/lectura`. `leer.mjs`: un solo intento de ingreso, frena si el
+formulario cambió, navega con clics (saltar de pantalla por URL hace que el
+banco cierre la sesión), la lista no es una `<table>` (se arma cada fila desde
+la celda con fecha) y va de a 10 por página (`ul.pagination`, botón "Go to next
+page" hasta que queda `disabled`); siempre cierra la sesión con Salir. Corre por
+cron de lunes a viernes 8:00 y 18:00 (`correr.sh`, salida en
+`capturas/corridas.log`); `--prueba` lee sin mandar y `--reenviar` manda la
+última lectura sin entrar al banco. La URL y el token de Voltia PM están en
+`~/.config/voltia-banco/voltia-pm.env`; las claves del banco, en
+`brou-empresa.env` (600). Primera lectura en producción: 29-oct-2026. Esa ruta **no usa sesión de usuario**: se
 autentica con `BANCO_LECTOR_TOKEN` en `Authorization: Bearer …`
 (comparación en tiempo constante); si la variable no está, responde 404. La
 cuenta se reconoce por `Account.numeroCuentaBanco`.
@@ -1467,9 +1478,12 @@ un "No va" que hubiera. `desvincularBanco()` lo libera. Todo se audita como
 
 ### Reglas y decisiones
 
-- **El robot de BROU todavía no lee**: llega a la tabla de movimientos, falta
-  leerla y mandarla. No se toca sin Nicolás presente, porque correrlo contra el
-  banco a ciegas arriesga bloquear al operador.
+- **El robot de BROU corre desde la VPS de desarrollo**, no desde producción:
+  ahí están las claves del banco, y producción tiene pendiente cerrar su
+  seguridad (ingreso por contraseña y como root). Si la VPS de desarrollo está
+  apagada, ese día no hay lectura (la tarjeta muestra la hora de la última).
+- El banco cierra la sesión a los ~5 minutos sin actividad: el robot entra, lee
+  y sale en menos de un minuto; no se mantiene abierta.
 - **BBVA bloquea el navegador automático desde la VPS** (403 en bbva.com.uy y
   bbvanet.bbva.com.uy, probado el 21-oct-2026; no se intentó evadir). Net Cash
   no descarga el detalle. Decisión: el robot de BBVA va a correr **en la Mac

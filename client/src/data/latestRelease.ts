@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.6",
+  date: "29 de octubre de 2026",
+  sections: [
+    {
+      title: "Los movimientos del BROU entran solos",
+      items: [
+        "El lector del banco lee las dos cuentas del BROU de lunes a viernes a las 8 y a las 18. En Finanzas → Banco se ve el saldo del banco y qué movimientos faltan cargar en Voltia PM.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_5: Release = {
   version: "13.5",
   date: "28 de octubre de 2026",
   sections: [
@@ -978,6 +991,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.5",
+    shortDate: "28 oct",
+    highlights: RELEASE_13_5.sections.map((sec) => sec.title),
+  },
   {
     version: "13.4",
     shortDate: "27 oct",
