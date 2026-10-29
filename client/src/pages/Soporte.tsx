@@ -114,59 +114,58 @@ export function Soporte() {
 
   const enLinea = data.plantas.filter((p) => p.enLinea).length;
 
+  const conProblema = new Set(data.problemas.map((p) => p.projectId ?? p.cliente)).size;
+  const enlace = "text-[var(--color-accent)] hover:underline";
+
   return (
-    <div className="mx-auto max-w-7xl space-y-5 px-4 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-[var(--color-text-primary)]">
-            <LifeBuoy className="h-6 w-6 text-[var(--color-accent)]" /> Soporte
-          </h1>
-          <p className="text-sm text-[var(--color-text-muted)]">
-            Mesa de monitoreo de plantas. Última lectura {hace(data.ultimaLectura)}
-            {data.vigiaAutomatico ? " · se revisa sola cada media hora con sol" : " · revisión automática apagada en este entorno"}
-            {data.mediana != null && ` · la cartera está generando al ${Math.round(data.mediana * 100)} % de su potencia`}
-          </p>
-        </div>
+    <div className="mx-auto max-w-[1600px] space-y-3 px-4 py-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h1 className="flex items-center gap-2 font-display text-xl font-bold text-[var(--color-text-primary)]">
+          <LifeBuoy className="h-5 w-5 text-[var(--color-accent)]" /> Soporte
+        </h1>
+        <p className="text-xs text-[var(--color-text-muted)]">
+          <span className={conProblema ? "font-semibold text-red-400" : "text-emerald-400"}>
+            {conProblema ? `${conProblema} ${conProblema === 1 ? "planta" : "plantas"} con problema` : "Todo en orden"}
+          </span>
+          {" · "}
+          {data.haySol ? `${enLinea} de ${data.plantas.length} en línea` : "de noche (sin sol)"}
+          {data.mediana != null && data.haySol && ` · la cartera al ${Math.round(data.mediana * 100)} %`}
+          {" · última lectura "}
+          {hace(data.ultimaLectura)}
+          {!data.vigiaAutomatico && " (revisión automática apagada en este entorno)"}
+          {" · "}
+          <Link to="/mis-tareas/tickets" className={enlace}>
+            {data.reclamosAbiertos} reclamos abiertos
+          </Link>
+          {" · "}
+          <Link to="/clientes/monitoreo" className={enlace}>
+            historial del monitoreo
+          </Link>
+        </p>
         {puedeEditar && (
-          <div className="flex gap-2">
+          <div className="ml-auto flex gap-2">
             <button
               type="button"
               onClick={() => vigia.mutate()}
               disabled={vigia.isPending}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
             >
-              <RefreshCw className={`h-4 w-4 ${vigia.isPending ? "animate-spin" : ""}`} /> Revisar ahora
+              <RefreshCw className={`h-3.5 w-3.5 ${vigia.isPending ? "animate-spin" : ""}`} /> Revisar ahora
             </button>
             <button
               type="button"
               onClick={() => rendimiento.mutate()}
               disabled={rendimiento.isPending}
               title="Compara los últimos días de cada planta con lo normal para ella"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
             >
-              <Zap className="h-4 w-4" /> Revisar rendimiento
+              <Zap className="h-3.5 w-3.5" /> Revisar rendimiento
             </button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Dato titulo="Plantas con problema" valor={String(new Set(data.problemas.map((p) => p.projectId ?? p.cliente)).size)} alerta={data.problemas.length > 0} />
-        <Dato
-          titulo={data.haySol ? "Plantas en línea" : "Plantas en línea (de noche)"}
-          valor={data.haySol ? `${enLinea} de ${data.plantas.length}` : "sin sol"}
-        />
-        <Dato titulo="Reclamos abiertos" valor={String(data.reclamosAbiertos)} link="/mis-tareas/tickets" />
-        <Dato titulo="Monitoreo diario (detalle)" valor={String(data.incidenciasMonitoreo)} link="/clientes/monitoreo" />
-      </div>
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-[var(--color-text-primary)]">Problemas</h2>
-          <button type="button" onClick={() => setVerCerrados((v) => !v)} className="text-xs text-[var(--color-accent)] hover:underline">
-            {verCerrados ? "Ocultar casos cerrados" : "Ver casos cerrados"}
-          </button>
-        </div>
+      <section className="space-y-3">
         {data.problemas.length === 0 ? (
           <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-muted)]">
             <CheckCircle2 className="mr-1.5 inline h-4 w-4 text-emerald-400" />
@@ -187,25 +186,14 @@ export function Soporte() {
           ))}
       </section>
 
+      <div className="flex justify-end">
+        <button type="button" onClick={() => setVerCerrados((v) => !v)} className="text-xs text-[var(--color-accent)] hover:underline">
+          {verCerrados ? "Ocultar casos cerrados" : "Ver casos cerrados"}
+        </button>
+      </div>
+
       <TablaPlantas plantas={data.plantas} haySol={data.haySol} />
     </div>
-  );
-}
-
-function Dato({ titulo, valor, alerta, link }: { titulo: string; valor: string; alerta?: boolean; link?: string }) {
-  const cuerpo = (
-    <>
-      <p className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">{titulo}</p>
-      <p className={`mt-0.5 font-display text-xl font-bold ${alerta ? "text-red-400" : "text-[var(--color-text-primary)]"}`}>{valor}</p>
-    </>
-  );
-  const clase = "rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3";
-  return link ? (
-    <Link to={link} className={`${clase} hover:bg-[var(--color-bg-card-hover)]`}>
-      {cuerpo}
-    </Link>
-  ) : (
-    <div className={clase}>{cuerpo}</div>
   );
 }
 
@@ -538,132 +526,166 @@ function Problemas({
   puedeEditar: boolean;
   onCambio: () => void;
 }) {
+  const [abierto, setAbierto] = useState<string | null>(null);
   const caso = new Map(casos.map((c) => [c.id, c]));
-  const grupos = ORDEN_GRUPOS.map((g) => ({ g, items: problemas.filter((p) => p.grupo === g) })).filter((x) => x.items.length);
+  const grupos = ORDEN_GRUPOS.map((g) => ({
+    g,
+    items: problemas.filter((p) => p.grupo === g).sort((a, b) => diasDesde(b.desde) - diasDesde(a.desde)),
+  })).filter((x) => x.items.length);
+  const elegido = problemas.find((p) => p.clave === abierto) ?? null;
+
+  // Una columna por tipo de problema, lado a lado: hasta unas 20 alertas entran
+  // en la pantalla sin bajar. Con muchas, cada columna crece hacia abajo.
   return (
-    <div className="space-y-5">
-      {/* Resumen: un bloque por tipo de problema, con la cantidad en grande */}
-      <div className="flex flex-wrap gap-2">
+    <>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] items-start gap-3">
         {grupos.map(({ g, items }) => {
           const G = GRUPOS[g];
           const Icono = G.icono;
           return (
-            <a
-              key={g}
-              href={`#grupo-${g}`}
-              className={`flex items-center gap-2 rounded-xl border ${G.borde} bg-[var(--color-bg-card)] px-3 py-2 hover:bg-[var(--color-bg-card-hover)]`}
-            >
-              <Icono className={`h-5 w-5 ${G.color}`} />
-              <span className={`font-display text-2xl font-bold ${G.color}`}>{items.length}</span>
-              <span className="text-sm text-[var(--color-text-secondary)]">{G.titulo}</span>
-            </a>
+            <div key={g} className={`rounded-xl border ${G.borde} bg-[var(--color-bg-card)] p-2`}>
+              <div className="flex items-center gap-2 px-1 pb-2" title={G.queEs}>
+                <Icono className={`h-4 w-4 shrink-0 ${G.color}`} />
+                <span className={`font-display text-xl font-bold leading-none ${G.color}`}>{items.length}</span>
+                <span className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{G.titulo}</span>
+              </div>
+              <div className="space-y-1.5">
+                {items.map((p) => (
+                  <TarjetaCompacta key={p.clave} p={p} onAbrir={() => setAbierto(p.clave)} />
+                ))}
+              </div>
+            </div>
           );
         })}
       </div>
-
-      {grupos.map(({ g, items }) => {
-        const G = GRUPOS[g];
-        const Icono = G.icono;
-        return (
-          <div key={g} id={`grupo-${g}`} className="scroll-mt-20 space-y-2">
-            <div className="flex items-baseline gap-2">
-              <Icono className={`h-4 w-4 self-center ${G.color}`} />
-              <h3 className={`font-semibold ${G.color}`}>
-                {G.titulo} · {items.length}
-              </h3>
-              <p className="text-xs text-[var(--color-text-muted)]">{G.queEs}</p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {items
-                .sort((a, b) => diasDesde(b.desde) - diasDesde(a.desde))
-                .map((p) => (
-                  <TarjetaProblema key={p.clave} p={p} borde={G.borde} caso={caso.get(p.id)} puedeEditar={puedeEditar} onCambio={onCambio} />
-                ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+      {elegido && (
+        <DetalleProblema
+          p={elegido}
+          caso={caso.get(elegido.id)}
+          puedeEditar={puedeEditar}
+          onCambio={onCambio}
+          onClose={() => setAbierto(null)}
+        />
+      )}
+    </>
   );
 }
 
-function TarjetaProblema({
+/** Una alerta en dos líneas: quién, cuántos días, qué, y los últimos días. */
+function TarjetaCompacta({ p, onAbrir }: { p: SoporteProblema; onAbrir: () => void }) {
+  const dias = diasDesde(p.desde);
+  const frase = p.titulo || p.detalle.replace(/^[^:]{0,60}:\s*/, "").split(/(?<=\.)\s/)[0];
+  return (
+    <button
+      type="button"
+      onClick={onAbrir}
+      className="block w-full rounded-lg bg-[var(--color-bg-app)] px-2.5 py-2 text-left hover:bg-[var(--color-bg-card-hover)]"
+    >
+      <div className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)]">{p.cliente}</span>
+        {p.avisadoCliente && <Send className="h-3 w-3 shrink-0 text-emerald-400" aria-label="Cliente avisado" />}
+        {p.pausa && <span className="shrink-0 rounded bg-blue-500/15 px-1 text-[10px] text-blue-400">{p.pausa.motivo === "OBRA" ? "obra" : "silenciada"}</span>}
+        <span className="shrink-0 text-xs font-semibold tabular-nums text-[var(--color-text-secondary)]">{dias === 0 ? "hoy" : `${dias} d`}</span>
+      </div>
+      <div className="mt-0.5 flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-[11px] text-[var(--color-text-muted)]">{frase}</span>
+        {p.dias && p.dias.length > 0 && (
+          <span className="flex h-4 shrink-0 items-end gap-0.5" title={p.dias.map((d) => `${ddmm(d.dia)}: ${Math.round(d.vs * 100)} %`).join(" · ")}>
+            {p.dias.map((d) => (
+              <span
+                key={d.dia}
+                className={`w-1.5 rounded-sm ${d.vs < 0.6 ? "bg-red-500/80" : d.vs < 0.85 ? "bg-amber-400/80" : "bg-emerald-500/80"}`}
+                style={{ height: `${Math.max(15, Math.min(100, d.vs * 100))}%` }}
+              />
+            ))}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+/** El detalle de una alerta, con sus acciones. */
+function DetalleProblema({
   p,
-  borde,
   caso,
   puedeEditar,
   onCambio,
+  onClose,
 }: {
   p: SoporteProblema;
-  borde: string;
   caso: SoporteCaso | undefined;
   puedeEditar: boolean;
   onCambio: () => void;
+  onClose: () => void;
 }) {
-  const [abierto, setAbierto] = useState(false);
+  const G = GRUPOS[p.grupo];
   const dias = diasDesde(p.desde);
+  const listo = () => {
+    onCambio();
+    onClose();
+  };
   return (
-    <article className={`flex flex-col rounded-xl border ${borde} bg-[var(--color-bg-card)] p-4`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          {p.projectId ? (
-            <Link to={`/clientes/${p.projectId}`} className="block truncate text-lg font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]">
-              {p.cliente}
-            </Link>
-          ) : (
-            <p className="truncate text-lg font-semibold text-[var(--color-text-primary)]">{p.cliente}</p>
-          )}
-          <p className="text-[11px] text-[var(--color-text-muted)]">
-            {p.kwp != null && `${p.kwp} kWp · `}
-            {p.origen === "SOPORTE" ? "revisión automática" : "monitoreo diario"}
-            {p.origen === "SOPORTE" && p.monitoreoDesde && ` · también el monitoreo diario, desde el ${ddmm(p.monitoreoDesde)}`}
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div
+        className={`w-full max-w-xl rounded-xl border ${G.borde} bg-[var(--color-bg-card)] p-5`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className={`text-xs font-semibold ${G.color}`}>{G.titulo}</p>
+            {p.projectId ? (
+              <Link to={`/clientes/${p.projectId}`} className="text-xl font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]">
+                {p.cliente}
+              </Link>
+            ) : (
+              <p className="text-xl font-semibold text-[var(--color-text-primary)]">{p.cliente}</p>
+            )}
+            <p className="text-[11px] text-[var(--color-text-muted)]">
+              {p.kwp != null && `${p.kwp} kWp · `}
+              {dias === 0 ? "desde hoy" : `hace ${dias} ${dias === 1 ? "día" : "días"}`} ·{" "}
+              {p.origen === "SOPORTE" ? "revisión automática" : "monitoreo diario"}
+              {p.origen === "SOPORTE" && p.monitoreoDesde && ` · también el monitoreo diario, desde el ${ddmm(p.monitoreoDesde)}`}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Cerrar" className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {p.pausa && (
+          <p className="mt-2 inline-flex rounded-md bg-blue-500/15 px-2 py-0.5 text-xs text-blue-400">
+            {p.pausa.motivo === "OBRA" ? "En obra" : "Silenciada"} hasta el {ddmm(p.pausa.hasta)}
           </p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="font-display text-2xl font-bold leading-none text-[var(--color-text-primary)]">{dias === 0 ? "hoy" : dias}</p>
-          {dias > 0 && <p className="text-[10px] text-[var(--color-text-muted)]">{dias === 1 ? "día" : "días"}</p>}
-        </div>
-      </div>
-
-      {p.pausa && (
-        <p className="mt-2 inline-flex w-fit rounded-md bg-blue-500/15 px-2 py-0.5 text-xs text-blue-400">
-          {p.pausa.motivo === "OBRA" ? "En obra" : "Silenciada"} hasta el {ddmm(p.pausa.hasta)}
-        </p>
-      )}
-
-      {p.dias && p.dias.length > 0 && (
-        <div className="mt-3 flex items-end gap-2">
-          {p.dias.map((d) => (
-            <div key={d.dia} className="flex-1 text-center" title={`${d.kwh.toFixed(1)} kWh`}>
-              <div className="mx-auto flex h-10 w-full items-end rounded bg-[var(--color-bg-app)]">
-                <div
-                  className={`w-full rounded ${d.vs < 0.6 ? "bg-red-500/70" : d.vs < 0.85 ? "bg-amber-400/70" : "bg-emerald-500/70"}`}
-                  style={{ height: `${Math.max(4, Math.min(100, d.vs * 100))}%` }}
-                />
+        )}
+        {p.dias && p.dias.length > 0 && (
+          <div className="mt-3 flex items-end gap-3">
+            {p.dias.map((d) => (
+              <div key={d.dia} className="flex-1 text-center" title={`${d.kwh.toFixed(1)} kWh`}>
+                <div className="flex h-12 w-full items-end rounded bg-[var(--color-bg-app)]">
+                  <div
+                    className={`w-full rounded ${d.vs < 0.6 ? "bg-red-500/70" : d.vs < 0.85 ? "bg-amber-400/70" : "bg-emerald-500/70"}`}
+                    style={{ height: `${Math.max(4, Math.min(100, d.vs * 100))}%` }}
+                  />
+                </div>
+                <p className={`mt-0.5 text-xs ${colorVs(d.vs)}`}>{Math.round(d.vs * 100)} %</p>
+                <p className="text-[10px] text-[var(--color-text-muted)]">
+                  {ddmm(d.dia)} · {d.kwh.toFixed(1)} kWh
+                </p>
               </div>
-              <p className={`mt-0.5 text-[11px] ${colorVs(d.vs)}`}>{Math.round(d.vs * 100)}%</p>
-              <p className="text-[10px] text-[var(--color-text-muted)]">{ddmm(d.dia)}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {p.titulo && <p className="mt-3 text-sm font-semibold text-[var(--color-text-primary)]">{p.titulo}</p>}
-      <p className={`${p.titulo ? "mt-1" : "mt-3"} text-sm text-[var(--color-text-secondary)] ${abierto ? "" : "line-clamp-3"}`}>{p.detalle}</p>
-      {p.detalle.length > 160 && (
-        <button type="button" onClick={() => setAbierto((v) => !v)} className="mt-0.5 w-fit text-xs text-[var(--color-accent)] hover:underline">
-          {abierto ? "ver menos" : "ver más"}
-        </button>
-      )}
-
-      <div className="mt-auto pt-1">
+            ))}
+          </div>
+        )}
+        {p.titulo && <p className="mt-3 text-sm font-semibold text-[var(--color-text-primary)]">{p.titulo}</p>}
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{p.detalle}</p>
+        <p className="mt-2 text-xs text-[var(--color-text-muted)]">{G.queEs}</p>
         {caso ? (
-          <AccionesCaso c={caso} puedeEditar={puedeEditar} onCambio={onCambio} />
+          <AccionesCaso c={caso} puedeEditar={puedeEditar} onCambio={listo} />
         ) : (
-          <AccionesIncidencia p={p} puedeEditar={puedeEditar} onCambio={onCambio} />
+          <AccionesIncidencia p={p} puedeEditar={puedeEditar} onCambio={listo} />
         )}
       </div>
-    </article>
+    </div>
   );
 }
 

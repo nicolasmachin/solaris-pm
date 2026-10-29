@@ -20,26 +20,29 @@ nadie: lo detectado queda en la cola.
 
 Menú **Soporte** (`/soporte`, `pages/Soporte.tsx`):
 
-- Arriba: cuándo fue la última lectura, cómo está generando la cartera, y
-  cuatro datos: plantas con problema, plantas en línea (de noche dice "sin
-  sol"), reclamos abiertos (lleva a Mis tareas → Tickets) y las incidencias del
-  monitoreo diario (lleva a Experiencia Solar → Monitoreo, para el historial y
-  las revisiones).
+- Arriba, en una sola línea: cuántas plantas tienen problema, cuántas están en
+  línea (de noche dice "sin sol"), cuándo fue la última lectura, los reclamos
+  abiertos (lleva a Mis tareas → Tickets) y el historial del monitoreo
+  (Experiencia Solar → Monitoreo), más **Revisar ahora** y **Revisar
+  rendimiento**.
 - **Problemas**: **todo lo que está abierto, de las dos fuentes juntas** —los
   casos de la revisión automática y las incidencias abiertas del monitoreo
-  diario— **agrupado por tipo**: falla del inversor, no genera, no comunica,
+  diario—, **una columna por tipo**: falla del inversor, no genera, no comunica,
   genera menos de lo normal, medidor mal conectado, no exporta, sin datos de la
-  plataforma. Arriba, un bloque por tipo con la cantidad en grande (se toca y
-  baja a ese grupo). Cada grupo dice en una línea qué suele ser.
-- Cada planta con problema es una **tarjeta grande**: el nombre (lleva a su
-  ficha), los kWp, de dónde salió (revisión automática o monitoreo diario, o los
-  dos), **cuántos días lleva** en grande, si está en obra o silenciada, sus
-  últimos 3 días con sol en barras contra lo normal, qué se vio (con "ver más")
-  y las acciones:
+  plataforma. Cada columna lleva la cantidad en grande (pasando el mouse, qué
+  suele ser).
+- Cada alerta es **una tarjeta de dos líneas**: la planta, cuántos días lleva,
+  una frase de qué pasa, los últimos 3 días en mini barras, y marcas de "cliente
+  avisado" y "en obra/silenciada". Está pensado para que **hasta unas 20
+  alertas entren en la pantalla sin bajar** (pedido de Nicolás); con muchas más,
+  cada columna crece hacia abajo.
+- **Al tocar una alerta se abre el detalle**: los kWp, desde cuándo, de dónde
+  salió (revisión automática, monitoreo diario o los dos), las barras con los
+  kWh de cada día, qué se vio y las acciones:
   - casos de la revisión automática: **Avisar al cliente**, **Resuelto**,
     **Descartar**;
   - incidencias del monitoreo diario: **Ya la vi**, **Descartar** (con el
-    motivo) y **Ver en Monitoreo** (las mismas acciones que allá).
+    motivo) y **Ver en Monitoreo**.
 - **Ver casos cerrados** muestra los últimos 50 casos de Soporte cerrados.
 - **Plantas ahora**: todas las plantas vinculadas con su lectura (ver abajo).
   De noche el estado dice "Sin sol" en vez de "Desconectada": Growatt da a casi
