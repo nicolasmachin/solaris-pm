@@ -13,6 +13,7 @@ import { listarPlantas, ultimoDatoInversor } from "../reportesFv/growatt/client.
 import { huaweiConfigurado, kpiTiempoReal } from "../reportesFv/huawei/client.js";
 import { evaluarHuawei } from "./vigia-huawei.js";
 import { pausasDePlantas } from "./pausas.js";
+import { kwpEfectivo } from "./kwp.js";
 import { abrirOActualizar, cerrarAutomatico, TIPOS_CAIDA, type NuevoCaso } from "./casos.service.js";
 import { diagnosticarInversor, type Diagnostico } from "./diagnostico.js";
 import { evaluarLectura, medianaCartera, SOL_MIN, type LecturaPlanta } from "./vigia.js";
@@ -76,7 +77,8 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
         plantId: true,
         projectId: true,
         monitoreoSilenciadoHasta: true,
-        project: { select: { clientName: true, capacityKwp: true } },
+        peakPowerKw: true,
+        project: { select: { clientName: true, capacityKwp: true, reporteFvConfig: { select: { potenciaInstaladaKwp: true } } } },
         devices: { select: { deviceSn: true, tipo: true } },
       },
     }),
@@ -87,7 +89,11 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
     .map((v) => {
       const g = porId.get(String(v.plantId));
       if (!g || !v.projectId) return null;
-      const kwp = v.project?.capacityKwp != null ? Number(v.project.capacityKwp) : null;
+      const kwp = kwpEfectivo({
+        config: v.project?.reporteFvConfig?.potenciaInstaladaKwp,
+        proyecto: v.project?.capacityKwp,
+        growatt: v.peakPowerKw,
+      });
       const lectura: LecturaPlanta = { status: g.statusNum ?? null, potenciaW: g.potenciaW ?? null, kwp };
       return { v, g, lectura, projectId: v.projectId };
     })

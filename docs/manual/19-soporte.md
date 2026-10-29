@@ -107,9 +107,25 @@ genere ni comunique) si:
   (`monitoreoSilenciadoHasta` de la planta Growatt o Huawei): el mismo silencio
   del monitoreo diario.
 
-La mesa las muestra "En obra hasta el …" o "Silenciada hasta el …". La lectura
+Vale para la revisión de cada media hora y para el chequeo diario de "genera
+menos" (un día de obra a medias daría bajo). La mesa las muestra "En obra
+hasta el …" o "Silenciada hasta el …". La lectura
 se sigue guardando; solo no se abre caso. Un caso ya abierto no se cierra por
 entrar en obra: se cierra cuando vuelve a generar, o a mano.
+
+### La potencia instalada (kWp)
+
+`kwp.ts` → `kwpEfectivo()`: primero la de la configuración de reportes FV
+(`potenciaInstaladaKwp`, la cargó una persona mirando la planta), después la
+del proyecto y la de Growatt, si son ≥ 0,5 kWp. Hace falta porque en los
+proyectos hay valores mal cargados: medido el 28-oct-2026, Hotel Lamas 2 en
+0,01 kWp (y Lamas 1 con 45,6, el total del hotel), Barenof en 0, COVITEJA
+Trifásico en 0,01, y otros que no coinciden con Growatt.
+
+La potencia se usa para la mediana de la cartera (W/Wp, kWh/kWp). Para "vs. lo
+normal" **no hace falta**: se cancela (es el cociente de la planta dividido su
+propia mediana). Una planta sin potencia confiable queda fuera de la mediana
+pero igual tiene sus últimos días.
 
 ### Plantas Huawei (en la misma revisión)
 

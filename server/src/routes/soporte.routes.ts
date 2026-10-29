@@ -20,10 +20,30 @@ import { rendimientoReciente, revisarRendimiento, type RendimientoPlanta } from 
 import { vigiaHabilitado } from "../services/soporte/soporte.job.js";
 import { medianaCartera, rendimiento } from "../services/soporte/vigia.js";
 import { pausasDePlantas } from "../services/soporte/pausas.js";
+import { kwpEfectivo } from "../services/soporte/kwp.js";
 import { correrVigia } from "../services/soporte/vigia.service.js";
 import { badRequest, notFound } from "../utils/errors.js";
 
 const idParam = z.object({ id: z.string().min(1) });
+
+const selectProyecto = {
+  clientName: true,
+  code: true,
+  capacityKwp: true,
+  reporteFvConfig: { select: { potenciaInstaladaKwp: true } },
+  growattPlant: { select: { peakPowerKw: true } },
+} as const;
+
+const kwpDe = (p: {
+  capacityKwp: unknown;
+  reporteFvConfig: { potenciaInstaladaKwp: unknown } | null;
+  growattPlant: { peakPowerKw: unknown } | null;
+}) =>
+  kwpEfectivo({
+    config: p.reporteFvConfig?.potenciaInstaladaKwp,
+    proyecto: p.capacityKwp,
+    growatt: p.growattPlant?.peakPowerKw,
+  });
 
 // Los últimos días cambian una vez por día: no se recalculan en cada refresco.
 let cacheRendimiento: { en: number; datos: Map<string, RendimientoPlanta> } | null = null;
@@ -90,12 +110,8 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
 
     app.get("/soporte/tablero", { preHandler: authorize(Module.SOPORTE, Action.VIEW) }, async () => {
       const [estados, estadosHuawei, casos, reclamos, incidencias, dias] = await Promise.all([
-        prisma.soporteEstadoPlanta.findMany({
-          include: { project: { select: { clientName: true, code: true, capacityKwp: true } } },
-        }),
-        prisma.soporteEstadoHuawei.findMany({
-          include: { project: { select: { clientName: true, code: true, capacityKwp: true } } },
-        }),
+        prisma.soporteEstadoPlanta.findMany({ include: { project: { select: selectProyecto } } }),
+        prisma.soporteEstadoHuawei.findMany({ include: { project: { select: selectProyecto } } }),
         prisma.soporteCaso.findMany({ where: { estado: "ABIERTO" }, include: incluirCaso, orderBy: { detectadoEn: "desc" } }),
         prisma.ticket.count({ where: { estado: { in: [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO] } } }),
         prisma.fvIncidencia.count({ where: { estado: "ABIERTA" } }),
@@ -104,7 +120,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
       const lecturas = estados.map((e) => ({
         status: e.status,
         potenciaW: e.potenciaW,
-        kwp: e.project.capacityKwp != null ? Number(e.project.capacityKwp) : null,
+        kwp: kwpDe(e.project),
       }));
       const mediana = medianaCartera(lecturas);
       const casoPorProyecto = new Map(casos.map((c) => [c.projectId, c]));
@@ -155,7 +171,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
           projectId: h.projectId,
           cliente: h.project.clientName,
           codigo: h.project.code,
-          kwp: h.project.capacityKwp != null ? Number(h.project.capacityKwp) : null,
+          kwp: kwpDe(h.project),
           enLinea: h.salud !== 1,
           potenciaW: h.potenciaW,
           energiaHoyKwh: h.diaKwh,

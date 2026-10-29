@@ -23,12 +23,16 @@ import { SoporteCasoTipo } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { abrirOActualizar, cerrarAutomatico } from "./casos.service.js";
+import { kwpEfectivo } from "./kwp.js";
+import { pausasDePlantas } from "./pausas.js";
 
 const UMBRAL_BAJO = 0.6;
 const UMBRAL_RECUPERADO = 0.8;
 const DIA_CON_SOL = 1.0; // kWh/kWp de la mediana
 
-type Fila = { projectId: string; fecha: Date; kwh: number; kwp: number; nombre: string };
+// kwp null = sin potencia confiable: no entra en la mediana de la cartera, pero
+// igual se compara contra sí misma (la potencia se cancela en "vs. lo normal").
+type Fila = { projectId: string; fecha: Date; kwh: number; kwp: number | null; nombre: string };
 
 const mediana = (xs: number[]) => {
   const v = [...xs].sort((a, b) => a - b);
@@ -55,20 +59,37 @@ export async function rendimientoReciente(): Promise<Map<string, RendimientoPlan
   const hoy = new Date(`${new Date().toLocaleDateString("en-CA", { timeZone: "America/Montevideo" })}T00:00:00Z`);
   const filas: Fila[] = (
     await prisma.reporteFvGeneracionDiaria.findMany({
-      where: { fecha: { gte: desde, lt: hoy }, project: { deletedAt: null, capacityKwp: { gt: 0.5 } } },
-      select: { projectId: true, fecha: true, generacionKwh: true, project: { select: { capacityKwp: true, clientName: true } } },
+      where: { fecha: { gte: desde, lt: hoy }, project: { deletedAt: null } },
+      select: {
+        projectId: true,
+        fecha: true,
+        generacionKwh: true,
+        project: {
+          select: {
+            capacityKwp: true,
+            clientName: true,
+            reporteFvConfig: { select: { potenciaInstaladaKwp: true } },
+            growattPlant: { select: { peakPowerKw: true } },
+          },
+        },
+      },
     })
   ).map((r) => ({
     projectId: r.projectId,
     fecha: r.fecha,
     kwh: Number(r.generacionKwh),
-    kwp: Number(r.project.capacityKwp),
+    kwp: kwpEfectivo({
+      config: r.project.reporteFvConfig?.potenciaInstaladaKwp,
+      proyecto: r.project.capacityKwp,
+      growatt: r.project.growattPlant?.peakPowerKw,
+    }),
     nombre: r.project.clientName,
   }));
 
   const dia = (d: Date) => d.toISOString().slice(0, 10);
   const porDia = new Map<string, number[]>();
   for (const f of filas) {
+    if (f.kwp == null) continue;
     const y = f.kwh / f.kwp;
     if (y > 0.3) porDia.set(dia(f.fecha), [...(porDia.get(dia(f.fecha)) ?? []), y]);
   }
@@ -82,7 +103,9 @@ export async function rendimientoReciente(): Promise<Map<string, RendimientoPlan
     const conCociente = fs
       .map((f) => ({ ...f, med: medDia.get(dia(f.fecha)) ?? null }))
       .filter((f) => f.med != null)
-      .map((f) => ({ ...f, rat: f.kwh / f.kwp / f.med! }))
+      // Sin potencia confiable se usa 1: el cociente queda en otra escala pero
+      // "vs. lo normal" (cociente / su propia mediana) da lo mismo.
+      .map((f) => ({ ...f, rat: f.kwh / (f.kwp ?? 1) / f.med! }))
       .sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
     const validos = conCociente.filter((f) => f.rat > 0.2 && f.med! >= DIA_CON_SOL);
     // Mismo mes calendario del año anterior.
@@ -112,6 +135,14 @@ export async function rendimientoReciente(): Promise<Map<string, RendimientoPlan
 
 export async function revisarRendimiento(): Promise<{ abiertos: number; cerrados: number }> {
   const porPlanta = await rendimientoReciente();
+  // En obra (la propia o una ampliación) o silenciada: no se abre "genera menos".
+  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Montevideo" });
+  const ids = [...porPlanta.keys()];
+  const [g, h] = await Promise.all([
+    prisma.growattPlant.findMany({ where: { projectId: { in: ids } }, select: { projectId: true, monitoreoSilenciadoHasta: true } }),
+    prisma.huaweiPlant.findMany({ where: { projectId: { in: ids } }, select: { projectId: true, monitoreoSilenciadoHasta: true } }),
+  ]);
+  const pausas = await pausasDePlantas(ids, hoy, new Map([...g, ...h].map((p) => [p.projectId!, p.monitoreoSilenciadoHasta])));
   let abiertos = 0;
   let cerrados = 0;
   for (const [projectId, r] of porPlanta) {
@@ -126,6 +157,7 @@ export async function revisarRendimiento(): Promise<{ abiertos: number; cerrados
       continue;
     }
     if (vs.filter((x) => x < UMBRAL_BAJO).length < 2 || ultimo >= UMBRAL_BAJO) continue;
+    if (pausas.has(projectId)) continue;
 
     const caida = await prisma.soporteCaso.findFirst({
       where: { projectId, estado: "ABIERTO", tipo: { not: SoporteCasoTipo.BAJO_RENDIMIENTO } },
