@@ -51,6 +51,9 @@ export function ModalidadPagoPanel({ projectId }: { projectId: string }) {
       // ítems con evidencia se marcan solos, así que hay que refrescar las dos.
       qc.invalidateQueries({ queryKey: ["project", projectId] });
       qc.invalidateQueries({ queryKey: ["stages", projectId] });
+      // Con financiación bancaria el plan de cobros pasa a ser la cuota del banco.
+      qc.invalidateQueries({ queryKey: ["cobros-by-project"] });
+      qc.invalidateQueries({ queryKey: ["plan-pagos", projectId] });
     },
     onError: () => toast.error("No se pudo guardar"),
   });
@@ -121,6 +124,9 @@ export function ModalidadPagoPanel({ projectId }: { projectId: string }) {
 
       {modalidad === "FINANCIACION_BANCARIA" && (
         <>
+          <p className="mb-2 text-[11px] text-[var(--color-text-muted)]">
+            En Cobros queda prevista una sola cuota, «Financiación bancaria», por lo que falta cobrar. Cuando entra la plata del banco, se marca pagada ahí.
+          </p>
           <button
             onClick={() => setProformaOpen(true)}
             className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-black hover:opacity-90"

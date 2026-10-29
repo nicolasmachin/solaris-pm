@@ -1745,7 +1745,7 @@ partes:
 **Qué explicar:**
 
 - **Pago directo:** una seña al confirmar, y se completa el **50 %** entre 10 y 15 días antes de la obra. Después, el **30 %** con la obra terminada y el **20 %** cuando UTE habilita.
-- **Financiación bancaria:** se firma el contrato para presentar al banco, y la obra se agenda **recién con el crédito aprobado**. Por eso conviene que vaya adelantando lo que le pide el banco: es lo que más atrasa estas obras.
+- **Financiación bancaria:** se firma el contrato para presentar al banco, y la obra se agenda **recién con el crédito aprobado**. Por eso conviene que vaya adelantando lo que le pide el banco: es lo que más atrasa estas obras. En la pestaña **Cobros** el cliente tiene una sola cuota, **«Financiación bancaria»**, por todo lo que falta; cuando entra la plata del banco, Experiencia Solar la marca pagada como cualquier otro cobro.
 - Para decirle cuánto le falta, mirá la pestaña **Cobros** de su ficha: ahí está qué pagó y qué queda previsto.
 
 **Política interna:** los montos y los momentos de cobro se sacan del **plan de pagos** del proyecto, no de memoria. Si no está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más cuesta arreglar.
@@ -1999,7 +1999,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.35 | 29 de octubre de 2026 | En la lista de Cobros, Experiencia Solar ve a qué clientes les toca pagar una cuota ahora, cuánto, y cuáles están vencidas, con el total abajo. |
+| 1.35 | 29 de octubre de 2026 | En la lista de Cobros, Experiencia Solar ve a qué clientes les toca pagar una cuota ahora, cuánto, y cuáles están vencidas, con el total abajo. Con financiación bancaria, el cliente tiene una sola cuota «Financiación bancaria» que se marca pagada cuando deposita el banco. |
 | 1.34 | 28 de octubre de 2026 | Ya no se le da al cliente el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia. Sale el paso de E3 "Entrega del acceso a la plataforma del inversor" con su mensaje, y el aviso de "Ya podés encender" le dice que mire su generación en el portal. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta en ese momento; el trámite queda en el menú. En el portal, los tickets pasan a llamarse reclamos. El cliente ve en el portal sus documentos firmados (contrato y papeles de UTE) y su Plan de Protección contra Granizo, con el estado, las fechas y el próximo pago. El portal y Voltia PM se instalan en el celular y mandan avisos: al cliente se le pide que lo instale y active los avisos al mandarle el acceso. Nueva mesa de Soporte: detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y desde ahí se le avisa al cliente con un toque. |
 | 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |

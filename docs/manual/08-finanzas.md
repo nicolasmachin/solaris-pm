@@ -314,8 +314,19 @@ calendario.
   Antes bloqueaba con "mayor o igual", lo que impedía el pago único.
 - El plan admite **una sola cuota**.
 - **"Listo para cobrar" es solo para las cuotas del plan atadas a un momento.**
-  Los clientes sin plan (por ejemplo, financiación bancaria) o con otro acuerdo
-  cargado en fechas fijas siguen como antes: vencen por su fecha.
+  Los clientes con otro acuerdo cargado en fechas fijas siguen como antes:
+  vencen por su fecha.
+- **Financiación bancaria = una sola cuota del banco.** Al elegir esa modalidad
+  (PATCH del proyecto, cuando cambia a `FINANCIACION_BANCARIA`, o al convertir
+  el lead con esa modalidad), `planFinanciacionBancaria()` en
+  `planPagos.service.ts` reemplaza lo previsto por la cuota «Financiación
+  bancaria» (hito `PREVIO_OBRA`, la obra se agenda con el crédito aprobado) por
+  el saldo pendiente; una seña prevista sin cobrar se conserva aparte. No toca
+  un plan que ya tenga una cuota cuyo nombre diga «banco» o «financiación» (las
+  cargadas a mano, como «Banco BBVA»), ni proyectos sin presupuesto o ya
+  cobrados. Si falla, se loguea y no frena el guardado. Los proyectos que ya
+  tenían la modalidad se pasan con `scripts/backfill-plan-financiacion.ts`
+  (simula sin `--apply`; con `--apply --usuario=<email>`).
 - Decidido por Gerencia el 22-oct-2026: las cuotas se cobran por momento de la
   obra porque así lo dice el contrato (la cuota 1 entre 10 y 15 días antes de
   la obra, la 2 al terminarla, la 3 con la habilitación); una fecha inventada

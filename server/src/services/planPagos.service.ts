@@ -320,6 +320,54 @@ export async function createPlanPagos(args: {
 }
 
 /**
+ * Con financiación bancaria el banco paga todo junto: el plan pasa a ser una
+ * sola cuota "Financiación bancaria" por lo que falta cobrar, que se marca
+ * pagada cuando entra la plata del banco. Si hay una seña prevista sin cobrar,
+ * se respeta. Queda lista para cobrar antes de la obra, que con financiación se
+ * agenda recién con el crédito aprobado.
+ *
+ * No toca un plan que ya tenga la cuota del banco (cargada a mano, p. ej.
+ * "Banco BBVA"). Devuelve null si no hay nada que planificar.
+ */
+export async function planFinanciacionBancaria(projectId: string, userId: string): Promise<CreatePlanResult | null> {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: { budgetUsd: true },
+  });
+  const budget = Number(project?.budgetUsd ?? 0);
+  if (budget <= 0) return null;
+  const saldo = budget - (await calcularTotalCobradoUsd(projectId));
+  if (saldo <= SUM_TOLERANCE_USD) return null;
+
+  const previstos = await prisma.financeMovement.findMany({
+    where: {
+      projectId,
+      tipoMovimiento: TipoMovimiento.INGRESO,
+      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+      status: FinanceMovementStatus.PREVISTO,
+      sourceType: MovementSourceType.MANUAL,
+      deletedAt: null,
+    },
+  });
+  if (previstos.some((m) => /banco|financiaci/i.test(m.descripcion))) return null;
+
+  const cuotas: PlanCuotaInput[] = [];
+  const senia = previstos.find((m) => m.hitoCobro === HitoCobro.SENIA || /^se[ñn]a$/i.test(stripPlanPrefix(m.descripcion).trim()));
+  if (senia && Number(senia.monto) < saldo - SUM_TOLERANCE_USD) {
+    cuotas.push({
+      descripcion: stripPlanPrefix(senia.descripcion),
+      monto: Number(senia.monto),
+      ...(senia.hitoCobro || !senia.dueDate
+        ? { hitoCobro: senia.hitoCobro ?? HitoCobro.SENIA }
+        : { fechaPrevista: senia.dueDate.toISOString().slice(0, 10) }),
+    });
+  }
+  const resto = Math.round((saldo - cuotas.reduce((a, c) => a + c.monto, 0)) * 100) / 100;
+  cuotas.push({ descripcion: "Financiación bancaria", monto: resto, hitoCobro: HitoCobro.PREVIO_OBRA });
+  return createPlanPagos({ projectId, cuotas, userId });
+}
+
+/**
  * Sanity check para confirmar que el módulo Project tiene budgetUsd > 0
  * antes de mostrar el banner. Lo expongo para que el cliente lo use sin
  * tener que armar otra query.

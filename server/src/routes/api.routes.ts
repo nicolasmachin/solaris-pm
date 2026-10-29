@@ -89,7 +89,7 @@ import {
 import { syncCommissionFromMovement } from "../services/commission/sync-commission-status.js";
 import { etiquetaDocumentoComercial } from "../services/documentos-generados.service.js";
 import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
-import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
+import { createPlanPagos, getPlanPagos, planFinanciacionBancaria } from "../services/planPagos.service.js";
 import { fechaDeCobro, hitosDeProyectos, infoCuota, serializarInfo } from "../services/finance/hitos-cobro.service.js";
 import { datosFacturacion, type Facturacion, facturacionSchema, montoAFacturar } from "../services/finance/a-facturar.service.js";
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
@@ -2100,6 +2100,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // generar otra sólo para avanzar la etapa.
     if (body.modalidadPago === "FINANCIACION_BANCARIA") {
       await completarPorEvidencia(project.id, EVIDENCIA_PROFORMA, user.id).catch(() => undefined);
+    }
+    // Y el plan de cobros pasa a ser la cuota única del banco, para marcarla
+    // pagada cuando entra la plata.
+    if (body.modalidadPago === "FINANCIACION_BANCARIA" && project.modalidadPago !== "FINANCIACION_BANCARIA") {
+      await planFinanciacionBancaria(project.id, user.id).catch((err) =>
+        request.log.error({ err, projectId: project.id }, "plan financiación bancaria failed"),
+      );
     }
 
     return serializeProject(updatedProject);
@@ -7915,6 +7922,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     } catch (err) {
       request.log.error({ err, leadId: lead.id, projectId: project.id }, "relink lead comments failed");
+    }
+
+    // Ganado con financiación bancaria: la cuota única del banco queda prevista.
+    if (body.modalidadPago === "FINANCIACION_BANCARIA") {
+      await planFinanciacionBancaria(project.id, user.id).catch((err) =>
+        request.log.error({ err, projectId: project.id }, "plan financiación bancaria failed"),
+      );
     }
 
     const projectWithStages = await prisma.project.findUniqueOrThrow({

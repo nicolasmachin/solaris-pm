@@ -23,6 +23,7 @@
 #### Cobros: cuánto hay que cobrar ahora
 
 - En Cobros, la columna «A cobrar ahora» muestra el monto de las cuotas listas y cuáles son; abajo, el total listo para cobrar y cuánto de eso está vencido.
+- Con **financiación bancaria**, al elegir esa modalidad de pago (en el onboarding o al ganar la venta) queda prevista en Cobros una sola cuota, «Financiación bancaria», por lo que falta cobrar; si la seña todavía no se cobró, sigue aparte. Cuando entra la plata del banco, se marca pagada ahí. Antes esos clientes quedaban sin cobro previsto, o con las cuotas del pago directo.
 - Experiencia Solar, que es quien cobra, ve lo mismo en su pestaña Cobros: el aviso de clientes listos para cobrar, el filtro «Listos para cobrar», la columna «A cobrar ahora», la etiqueta de cuota lista o vencida y los totales. Arranca mostrando solo lo que falta cobrar.
 
 ## v13.5
