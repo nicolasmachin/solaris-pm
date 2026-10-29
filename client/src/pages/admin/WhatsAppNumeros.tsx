@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Link2, RefreshCw, Smartphone } from "lucide-react";
+import { Link2, RefreshCw, Smartphone } from "lucide-react";
 
 import {
   actualizarWhatsAppNumero,
@@ -255,13 +255,6 @@ export function WhatsAppNumeros() {
           desvinculan y hay que volver a vincularlos.
         </p>
       </div>
-
-      {cfg && !listo && (
-        <div className="flex gap-2 rounded-lg border border-[var(--color-warning-border,var(--color-border))] bg-[var(--color-warning-bg)] p-3 text-[12px] text-[var(--color-warning-text)]">
-          <AlertTriangle size={16} className="shrink-0" />
-          <span>Para conectar números falta configurar en el servidor: {cfg.faltan.join(", ")}.</span>
-        </div>
-      )}
 
       <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
         <table className="w-full text-left text-[12px]">
