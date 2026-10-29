@@ -14,7 +14,7 @@ import { huaweiConfigurado, kpiTiempoReal } from "../reportesFv/huawei/client.js
 import { evaluarHuawei } from "./vigia-huawei.js";
 import { pausasDePlantas } from "./pausas.js";
 import { kwpEfectivo } from "./kwp.js";
-import { abrirOActualizar, cerrarAutomatico, TIPOS_CAIDA, type NuevoCaso } from "./casos.service.js";
+import { abrirOActualizar, cerrarAutomatico, marcarSiSeRepite, TIPOS_CAIDA, type NuevoCaso } from "./casos.service.js";
 import { diagnosticarInversor, type Diagnostico } from "./diagnostico.js";
 import { evaluarLectura, medianaCartera, SOL_MIN, type LecturaPlanta } from "./vigia.js";
 
@@ -224,7 +224,13 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
       };
     }
     const r = await abrirOActualizar(caso);
-    if (r.nuevo) casosNuevos++;
+    if (r.nuevo) {
+      casosNuevos++;
+      // ¿Es algo que se repite? (Martín González: aislación baja cada mañana.)
+      if (caso.tipo !== SoporteCasoTipo.SIN_COMUNICACION) {
+        await marcarSiSeRepite(r.id, projectId, v.plantId, caso.codigoFalla ?? null);
+      }
+    }
   }
 
   return { plantas: filas.length, plantasHuawei: 0, mediana, casosNuevos, casosCerrados, consultasInversor };

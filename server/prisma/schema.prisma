@@ -6427,6 +6427,10 @@ model SoporteCaso {
   /// El inversor no ve la red con los paneles con tensión: casi siempre la
   /// llave de microgeneración, que la puede subir el cliente.
   llaveDelCliente Boolean          @default(false)
+  /// La misma falla se repite (alarmas del inversor del último mes, o casos
+  /// de los últimos 7 días): no se cierra solo cuando vuelve a generar, porque
+  /// vuelve mañana. Caso Martín González: aislación baja (203) todas las mañanas.
+  recurrente      Boolean          @default(false)
   detectadoEn    DateTime          @default(now()) @db.Timestamptz(6)
   ultimaVezEn    DateTime          @default(now()) @db.Timestamptz(6)
 

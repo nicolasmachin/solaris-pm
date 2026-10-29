@@ -115,7 +115,11 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         prisma.soporteEstadoPlanta.findMany({ include: { project: { select: selectProyecto } } }),
         prisma.soporteEstadoHuawei.findMany({ include: { project: { select: selectProyecto } } }),
         prisma.soporteCaso.findMany({ where: { estado: "ABIERTO" }, include: incluirCaso, orderBy: { detectadoEn: "desc" } }),
-        prisma.ticket.count({ where: { estado: { in: [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO] } } }),
+        prisma.ticket.findMany({
+          where: { estado: { in: [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO] } },
+          select: { id: true, titulo: true, projectId: true },
+          orderBy: { createdAt: "desc" },
+        }),
         listarIncidencias({ estado: "ABIERTA" }),
         rendimientoCacheado(),
       ]);
@@ -187,6 +191,11 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         });
       }
       const problemas = armarProblemas(casos.map(serializarCaso), incidencias, plantas);
+      // Si la planta ya tiene un reclamo abierto, la mesa lo muestra en vez de
+      // ofrecer crear otro.
+      const reclamoPorProyecto = new Map<string, { id: string; titulo: string }>();
+      for (const t of reclamos) if (!reclamoPorProyecto.has(t.projectId)) reclamoPorProyecto.set(t.projectId, { id: t.id, titulo: t.titulo });
+      for (const p of problemas) p.reclamo = p.projectId ? reclamoPorProyecto.get(p.projectId) ?? null : null;
       const ultimaLectura = estados.reduce<Date | null>((m, e) => (!m || e.leidoEn > m ? e.leidoEn : m), null);
       return {
         vigiaAutomatico: vigiaHabilitado(),
@@ -194,7 +203,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         mediana,
         plantas,
         casos: casos.map(serializarCaso),
-        reclamosAbiertos: reclamos,
+        reclamosAbiertos: reclamos.length,
         incidenciasMonitoreo: incidencias.length,
         // Con la mediana de la cartera por debajo de esto es de noche (o muy
         // nublado): "desconectada" no quiere decir nada, Growatt las da así.
@@ -290,7 +299,18 @@ type Problema = {
   kwp: number | null;
   dias: Array<{ dia: string; kwh: number; vs: number }> | null;
   pausa: { motivo: "OBRA" | "SILENCIADA"; hasta: string } | null;
+  /** Reclamo abierto de la planta, si hay. */
+  reclamo?: { id: string; titulo: string } | null;
 };
+
+/** Desde cuándo está el problema: si la planta dejó de generar antes de que se abriera la incidencia, desde ahí. */
+function desdeIncidencia(i: FilaIncidencia): string {
+  if (!i.ultimaGeneracionEn) return i.primeraDeteccionEn;
+  const sig = new Date(`${i.ultimaGeneracionEn}T00:00:00Z`);
+  sig.setUTCDate(sig.getUTCDate() + 1);
+  const d = sig.toISOString().slice(0, 10);
+  return d < i.primeraDeteccionEn ? d : i.primeraDeteccionEn;
+}
 
 function armarProblemas(
   casos: ReturnType<typeof serializarCaso>[],
@@ -346,7 +366,7 @@ function armarProblemas(
       grupo,
       titulo: falla?.titulo ?? "",
       detalle: falla ? `${i.detalle ?? ""} ${falla.queHacer}`.trim() : i.detalle ?? "",
-      desde: i.primeraDeteccionEn,
+      desde: desdeIncidencia(i),
       avisadoCliente: null,
       conPortal: false,
       revisada: i.revisada,

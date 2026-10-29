@@ -101,6 +101,19 @@ En el código se llama vigía; en la pantalla y en los manuales del equipo es
    `SOPORTE:VIEW`: notificación `soporte_alerta` con link a `/soporte`, que sale
    también por push (capítulo 12, *Avisos push*).
 
+7. **¿Se repite?** Al abrir un caso de falla o de "no genera",
+   `marcarSiSeRepite()` (`casos.service.ts`) mira, una sola vez: los casos de
+   caída de la misma planta de los últimos 7 días y, si hay código de falla,
+   **las alarmas del inversor del último mes** (`alarmasPlanta()` de la web de
+   Growatt, una consulta). Si la falla apareció 3 días o más, el caso queda
+   `recurrente`: el título dice "Se repite: …", el detalle lista las fechas y la
+   hora típica, y **no se cierra solo** cuando la planta vuelve a generar (vuelve
+   mañana): lo cierra una persona. Hace falta por las fallas que vienen y van:
+   Martín González tuvo aislación baja (203) 16 días entre el 28-sep y el 28-oct,
+   siempre a la mañana (en falla de ~6 a ~13 h y generando fuerte a la tarde),
+   así que el total del día no bajaba del 60 % y "genera menos" no lo marcaba;
+   sin esto, la revisión le habría abierto y cerrado un caso cada día.
+
 Además guarda por planta (`SoporteEstadoPlanta`) la última lectura, la energía
 total del primer sondeo del día (para "Hoy") y un `factorNormal` (cuánto rinde
 respecto de la mediana, promedio móvil, que no aprende con un caso abierto). El
@@ -244,6 +257,12 @@ avisarle por WhatsApp.
   (la llave) está confirmado con Norman**, los demás a confirmar caso a caso.
 
 ## Casos borde
+
+- Una falla intermitente que dura **menos de una hora** con sol no abre caso
+  (hacen falta dos lecturas seguidas). Para esas, la fuente es el registro de
+  alarmas del inversor, que hoy solo se mira al abrir un caso. Si hiciera falta,
+  se podría revisar el registro de alarmas de toda la cartera una vez por día
+  (una consulta a la web de Growatt por planta).
 
 - "Hoy" se calcula desde la primera lectura del día: el día que se prende (o si
   el server estuvo caído a la mañana) da de menos.

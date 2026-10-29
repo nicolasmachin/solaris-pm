@@ -41,6 +41,8 @@ import {
 } from "../api/soporte.api";
 import { Spinner } from "../components/ui/Spinner";
 import { usePermission } from "../hooks/usePermission";
+import { createTicket } from "../api/tickets.api";
+import { TicketDetail } from "../modules/tickets/TicketDetail";
 
 // Mesa de Soporte: la revisión automática mira la cartera cada media hora con sol y abre
 // casos; acá se ven, se avisa al cliente (siempre lo decide una persona) y se
@@ -679,6 +681,7 @@ function DetalleProblema({
         {p.titulo && <p className="mt-3 text-sm font-semibold text-[var(--color-text-primary)]">{p.titulo}</p>}
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{p.detalle}</p>
         <p className="mt-2 text-xs text-[var(--color-text-muted)]">{G.queEs}</p>
+        <Reclamo p={p} onCambio={onCambio} />
         {caso ? (
           <AccionesCaso c={caso} puedeEditar={puedeEditar} onCambio={listo} />
         ) : (
@@ -745,6 +748,74 @@ function AccionesIncidencia({ p, puedeEditar, onCambio }: { p: SoporteProblema; 
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * El reclamo de la planta: si ya tiene uno abierto se muestra (no se duplica);
+ * si no, se crea con lo que se detectó ya cargado. Las caídas van con prioridad
+ * alta: la planta no genera o no se sabe si genera.
+ */
+function Reclamo({ p, onCambio }: { p: SoporteProblema; onCambio: () => void }) {
+  const puedeCrear = usePermission("TICKETS", "CREATE");
+  const [verId, setVerId] = useState<string | null>(null);
+  const crear = useMutation({
+    mutationFn: () => {
+      const G = GRUPOS[p.grupo];
+      const dias = diasDesde(p.desde);
+      return createTicket({
+        projectId: p.projectId!,
+        titulo: `Soporte: ${p.titulo || G.titulo}`.slice(0, 200),
+        descripcion: [
+          `Detectado por ${p.origen === "SOPORTE" ? "la revisión automática" : "el monitoreo diario"} (${G.titulo.toLowerCase()}), ${dias === 0 ? "desde hoy" : `hace ${dias} ${dias === 1 ? "día" : "días"}`}.`,
+          p.detalle,
+          p.dias?.length ? `Últimos días vs. lo normal: ${p.dias.map((d) => `${ddmm(d.dia)} ${Math.round(d.vs * 100)} % (${d.kwh.toFixed(1)} kWh)`).join(", ")}.` : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+          .slice(0, 4000),
+        prioridad: ["FALLA", "NO_GENERA", "NO_COMUNICA"].includes(p.grupo) ? "ALTA" : "MEDIA",
+      });
+    },
+    onSuccess: (t) => {
+      toast.success("Reclamo creado");
+      setVerId(t.id);
+    },
+    onError: (e) => toast.error(errorDe(e) ?? "No se pudo crear el reclamo"),
+  });
+  if (!p.projectId) return null;
+  return (
+    <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm">
+      {p.reclamo ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-[var(--color-text-muted)]" />
+          <span className="min-w-0 flex-1 truncate text-[var(--color-text-secondary)]">Reclamo abierto: {p.reclamo.titulo}</span>
+          <button type="button" onClick={() => setVerId(p.reclamo!.id)} className={botonChico}>
+            Ver reclamo
+          </button>
+        </div>
+      ) : puedeCrear ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="min-w-0 flex-1 text-xs text-[var(--color-text-muted)]">
+            Para seguirlo como un reclamo (con responsable, comentarios y visita), con lo detectado ya cargado.
+          </span>
+          <button type="button" onClick={() => crear.mutate()} disabled={crear.isPending} className={botonChico}>
+            <MessageSquare className="h-4 w-4" /> Crear reclamo
+          </button>
+        </div>
+      ) : (
+        <span className="text-xs text-[var(--color-text-muted)]">No tiene reclamo abierto.</span>
+      )}
+      {verId && (
+        <TicketDetail
+          ticketId={verId}
+          onClose={() => {
+            setVerId(null);
+            onCambio();
+          }}
+        />
       )}
     </div>
   );

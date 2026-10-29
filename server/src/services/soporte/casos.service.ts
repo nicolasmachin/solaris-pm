@@ -5,6 +5,7 @@ import { Action, Module, NotificationType, SoporteCasoEstado, SoporteCasoTipo } 
 import { prisma } from "../../lib/prisma.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { createNotification } from "../notification.service.js";
+import { alarmasPlanta, webConfigurada } from "../reportesFv/growatt/web.client.js";
 
 /**
  * "La planta está caída": una sola abierta por proyecto entre estas tres. Si
@@ -49,6 +50,12 @@ export async function abrirOActualizar(c: NuevoCaso): Promise<{ id: string; nuev
     where: { projectId: c.projectId, estado: SoporteCasoEstado.ABIERTO, tipo: { in: grupo(c.tipo) } },
   });
   if (abierto) {
+    // Un caso que se repite conserva su texto (con las fechas en que pasó):
+    // solo se marca que se volvió a ver.
+    if (abierto.recurrente) {
+      await prisma.soporteCaso.update({ where: { id: abierto.id }, data: { ultimaVezEn: new Date() } });
+      return { id: abierto.id, nuevo: false };
+    }
     await prisma.soporteCaso.update({
       where: { id: abierto.id },
       data: {
@@ -88,10 +95,13 @@ export async function abrirOActualizar(c: NuevoCaso): Promise<{ id: string; nuev
   return { id: caso.id, nuevo: true };
 }
 
-/** Cierra solos los casos abiertos de esos tipos (la planta volvió). */
+/**
+ * Cierra solos los casos abiertos de esos tipos (la planta volvió). Los que se
+ * repiten no: vuelven mañana, los cierra una persona.
+ */
 export async function cerrarAutomatico(projectId: string, tipos: SoporteCasoTipo[], motivo: string) {
   const r = await prisma.soporteCaso.updateMany({
-    where: { projectId, estado: SoporteCasoEstado.ABIERTO, tipo: { in: tipos } },
+    where: { projectId, estado: SoporteCasoEstado.ABIERTO, tipo: { in: tipos }, recurrente: false },
     data: { estado: SoporteCasoEstado.RESUELTO, resueltoEn: new Date(), motivoCierre: motivo },
   });
   return r.count;
@@ -154,4 +164,67 @@ export async function avisarCliente(id: string, userId: string, mensaje: string)
     data: { clienteAvisadoEn: new Date(), clienteAvisadoPorId: userId, mensajeCliente: texto },
   });
   return { avisados: clientes.length };
+}
+
+const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
+/**
+ * ¿Es una falla que se repite? Se mira al abrir el caso, una sola vez:
+ *  - casos de caída de la misma planta en los últimos 7 días, y
+ *  - si hay código y credenciales de la web de Growatt, las alarmas del
+ *    inversor del último mes (una consulta, solo de esta planta).
+ * Si se repite, el caso queda marcado y no se cierra solo.
+ */
+export async function marcarSiSeRepite(
+  casoId: string,
+  projectId: string,
+  growattPlantId: bigint | null,
+  codigo: number | null,
+): Promise<boolean> {
+  const notas: string[] = [];
+  const hace7 = new Date(Date.now() - 7 * 86_400_000);
+  const previos = await prisma.soporteCaso.findMany({
+    where: {
+      projectId,
+      id: { not: casoId },
+      tipo: { in: [SoporteCasoTipo.FALLA_INVERSOR, SoporteCasoTipo.SIN_GENERACION] },
+      detectadoEn: { gte: hace7 },
+    },
+    select: { detectadoEn: true },
+  });
+  if (previos.length) {
+    notas.push(`Ya se cayó ${previos.length === 1 ? "otra vez" : `${previos.length} veces más`} en los últimos 7 días.`);
+  }
+
+  if (codigo && growattPlantId != null && webConfigurada()) {
+    try {
+      const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Montevideo" });
+      const desde = new Date(Date.now() - 30 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Montevideo" });
+      const alarmas = (await alarmasPlanta(String(growattPlantId), desde, hoy)).filter((a) =>
+        new RegExp(`\\b${codigo}\\b`).test(a.codigo),
+      );
+      const dias = [...new Set(alarmas.map((a) => a.time.slice(0, 10)))].sort();
+      if (dias.length >= 3) {
+        const horas = alarmas.map((a) => a.time.slice(11, 16)).sort();
+        notas.push(
+          `El inversor dio esta falla ${dias.length} días en el último mes (${dias.map(ddmm).join(", ")}), alrededor de las ${horas[Math.floor(horas.length / 2)]}.`,
+        );
+      }
+    } catch (err) {
+      console.error("[soporte] no se pudieron leer las alarmas:", (err as Error).message);
+    }
+  }
+
+  if (!notas.length) return false;
+  const caso = await prisma.soporteCaso.findUnique({ where: { id: casoId }, select: { titulo: true, detalle: true } });
+  if (!caso) return false;
+  await prisma.soporteCaso.update({
+    where: { id: casoId },
+    data: {
+      recurrente: true,
+      titulo: `Se repite: ${caso.titulo}`,
+      detalle: `${notas.join(" ")} ${caso.detalle} Como se repite, el caso no se cierra solo cuando vuelve a generar.`,
+    },
+  });
+  return true;
 }

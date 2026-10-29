@@ -20,6 +20,9 @@
 - También vigila las **plantas Huawei**: avisa si FusionSolar las marca sin comunicación o con falla, o si las ve sanas pero no suman energía.
 - **Todos los problemas en un solo lugar, agrupados y a la vista**: la mesa junta lo que detecta la revisión automática con lo que ya marcaba el monitoreo diario (medidor mal conectado, no exporta…), agrupado por tipo de problema, con la cantidad de cada uno en grande y una tarjeta por planta que muestra cuántos días lleva, sus últimos días en barras y qué hacer. Los códigos de falla se explican en criollo ("el inversor no ve la red de UTE", "falla del relé").
 - De noche la mesa ya no muestra a todas las plantas como desconectadas: dice "sin sol".
+- **Fallas que se repiten**: cuando una planta cae por una falla, Voltia PM mira las alarmas del inversor del último mes. Si la misma falla vino varios días (como la aislación baja de cada mañana), el caso dice "Se repite", con las fechas, y no se cierra solo cuando la planta vuelve a generar a la tarde.
+- Desde el detalle de cada alerta se puede **crear un reclamo** con lo detectado ya cargado; si la planta ya tiene uno abierto, se muestra ese.
+- Los días de cada alerta del monitoreo diario se cuentan desde que la planta dejó de andar, no desde que se reabrió el aviso.
 - **Las plantas en obra no avisan**: si la planta, o una ampliación suya, tiene obra agendada en el calendario, no se abre caso aunque esté desconectada, y la mesa la muestra "En obra hasta el…". Lo mismo con las que se silenciaron desde el Monitoreo.
 - Las alertas le llegan por ahora a Administración; después habrá un rol de Soporte.
 

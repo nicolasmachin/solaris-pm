@@ -67,6 +67,7 @@ export interface SoporteProblema {
   kwp: number | null;
   dias: Array<{ dia: string; kwh: number; vs: number }> | null;
   pausa: { motivo: "OBRA" | "SILENCIADA"; hasta: string } | null;
+  reclamo: { id: string; titulo: string } | null;
 }
 
 export interface SoporteTablero {
