@@ -197,7 +197,7 @@ Si todo sigue el procedimiento, el gerente de Operaciones no tiene que inventar 
 
 - **La cuadrilla propia:** un capataz y su equipo de operarios. Si el trabajo lo pide, el gerente de Operaciones puede sumar gente.
 - **Las cuadrillas tercerizadas:** empresas instaladoras que trabajan para Voltia, cada una en su zona.
-- **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso. Muchas visitas de soporte van a nacer de la **mesa de Soporte** de Voltia PM, que detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y dice qué vio el inversor (sin red, sin tensión de paneles, el código de falla). Antes de salir conviene leer el caso: a veces es la llave y la sube el cliente.
+- **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso. Muchas visitas de soporte van a nacer de la **mesa de Soporte** de Voltia PM, que detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y dice qué vio el inversor (sin red, sin tensión de paneles, el código de falla). Antes de salir conviene leer el caso: a veces es la llave y la sube el cliente. Mientras una planta tiene obra agendada en el calendario (la suya o una ampliación), la mesa no la marca como problema: por eso **la obra tiene que estar agendada**, también las ampliaciones.
 
 ### Cuadrilla propia o tercerizada
 

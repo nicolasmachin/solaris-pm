@@ -43,6 +43,8 @@ export interface SoportePlanta {
   caso: { id: string; tipo: SoporteCasoTipo; titulo: string } | null;
   /** Últimos días con sol: kWh y cuánto rindió contra lo normal para ella (1 = normal). */
   dias: Array<{ dia: string; kwh: number; vs: number }> | null;
+  /** En obra (la propia o una ampliación) o silenciada: no da aviso. */
+  pausa: { motivo: "OBRA" | "SILENCIADA"; hasta: string } | null;
 }
 
 export interface SoporteTablero {

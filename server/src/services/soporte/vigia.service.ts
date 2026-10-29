@@ -12,6 +12,7 @@ import { prisma } from "../../lib/prisma.js";
 import { listarPlantas, ultimoDatoInversor } from "../reportesFv/growatt/client.js";
 import { huaweiConfigurado, kpiTiempoReal } from "../reportesFv/huawei/client.js";
 import { evaluarHuawei } from "./vigia-huawei.js";
+import { pausasDePlantas } from "./pausas.js";
 import { abrirOActualizar, cerrarAutomatico, TIPOS_CAIDA, type NuevoCaso } from "./casos.service.js";
 import { diagnosticarInversor, type Diagnostico } from "./diagnostico.js";
 import { evaluarLectura, medianaCartera, SOL_MIN, type LecturaPlanta } from "./vigia.js";
@@ -74,6 +75,7 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
       select: {
         plantId: true,
         projectId: true,
+        monitoreoSilenciadoHasta: true,
         project: { select: { clientName: true, capacityKwp: true } },
         devices: { select: { deviceSn: true, tipo: true } },
       },
@@ -102,6 +104,11 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
   );
 
   const hoy = diaUy(ahora);
+  const pausas = await pausasDePlantas(
+    filas.map((f) => f.projectId),
+    hoy,
+    new Map(filas.map((f) => [f.projectId, f.v.monitoreoSilenciadoHasta])),
+  );
   let casosNuevos = 0;
   let casosCerrados = 0;
   let consultasInversor = 0;
@@ -151,6 +158,8 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
       continue;
     }
     if (!ev.alerta) continue;
+    // En obra o silenciada: no se abre caso (la mesa lo muestra así).
+    if (pausas.has(projectId)) continue;
 
     // Con un caso abierto y revisado hace menos de una hora, no se vuelve a
     // preguntar: el aviso ya salió y cada consulta gasta cupo de Growatt.
@@ -241,7 +250,7 @@ async function ultimaGeneracion(projectId: string, vista: Date | null, hoy: stri
 export async function vueltaHuawei(mediana: number | null, ahora: Date) {
   const vinculadas = await prisma.huaweiPlant.findMany({
     where: { projectId: { not: null }, ignorada: false, project: { deletedAt: null } },
-    select: { plantCode: true, projectId: true, project: { select: { clientName: true } } },
+    select: { plantCode: true, projectId: true, monitoreoSilenciadoHasta: true, project: { select: { clientName: true } } },
   });
   if (vinculadas.length === 0) return { plantas: 0, casosNuevos: 0, casosCerrados: 0 };
 
@@ -253,6 +262,11 @@ export async function vueltaHuawei(mediana: number | null, ahora: Date) {
     ]),
   );
   const hoy = diaUy(ahora);
+  const pausas = await pausasDePlantas(
+    vinculadas.map((v) => v.projectId!),
+    hoy,
+    new Map(vinculadas.map((v) => [v.projectId!, v.monitoreoSilenciadoHasta])),
+  );
   const haySol = mediana != null && mediana >= SOL_MIN;
   const sol = mediana != null ? ` Mientras tanto la cartera genera al ${Math.round(mediana * 100)} % de su potencia.` : "";
   let casosNuevos = 0;
@@ -296,6 +310,7 @@ export async function vueltaHuawei(mediana: number | null, ahora: Date) {
       continue;
     }
     if (!ev.alerta) continue;
+    if (pausas.has(v.projectId)) continue;
 
     const nombre = v.project?.clientName ?? v.plantCode;
     const hoyKwh = k.diaKwh != null ? ` Hoy lleva ${k.diaKwh.toLocaleString("es-UY", { maximumFractionDigits: 1 })} kWh.` : "";

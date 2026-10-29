@@ -19,6 +19,7 @@ import { avisarCliente, cerrarManual, mensajeSugerido } from "../services/soport
 import { rendimientoReciente, revisarRendimiento, type RendimientoPlanta } from "../services/soporte/rendimiento.service.js";
 import { vigiaHabilitado } from "../services/soporte/soporte.job.js";
 import { medianaCartera, rendimiento } from "../services/soporte/vigia.js";
+import { pausasDePlantas } from "../services/soporte/pausas.js";
 import { correrVigia } from "../services/soporte/vigia.service.js";
 import { badRequest, notFound } from "../utils/errors.js";
 
@@ -107,6 +108,16 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
       }));
       const mediana = medianaCartera(lecturas);
       const casoPorProyecto = new Map(casos.map((c) => [c.projectId, c]));
+      // En obra o silenciadas: la revisión no les abre caso.
+      const [silGrowatt, silHuawei] = await Promise.all([
+        prisma.growattPlant.findMany({ where: { projectId: { not: null } }, select: { projectId: true, monitoreoSilenciadoHasta: true } }),
+        prisma.huaweiPlant.findMany({ where: { projectId: { not: null } }, select: { projectId: true, monitoreoSilenciadoHasta: true } }),
+      ]);
+      const pausas = await pausasDePlantas(
+        [...estados.map((e) => e.projectId), ...estadosHuawei.map((h) => h.projectId)],
+        new Date().toLocaleDateString("en-CA", { timeZone: "America/Montevideo" }),
+        new Map([...silGrowatt, ...silHuawei].map((p) => [p.projectId!, p.monitoreoSilenciadoHasta])),
+      );
       const plantas = estados.map((e, i) => {
         const r = rendimiento(lecturas[i]);
         const vsNormal =
@@ -129,6 +140,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
           leidoEn: e.leidoEn.toISOString(),
           ultimaGeneracionEn: e.ultimaGeneracionEn?.toISOString() ?? null,
           caso: caso ? { id: caso.id, tipo: caso.tipo, titulo: caso.titulo } : null,
+          pausa: pausas.get(e.projectId) ?? null,
           // Últimos días con sol, contra lo normal para ella (el dato confiable
           // para "genera menos"; el de ahora depende de la hora y la orientación).
           dias: dias.get(e.projectId)?.ultimos ?? null,
@@ -152,6 +164,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
           leidoEn: h.leidoEn.toISOString(),
           ultimaGeneracionEn: h.ultimaGeneracionEn?.toISOString() ?? null,
           caso: caso ? { id: caso.id, tipo: caso.tipo, titulo: caso.titulo } : null,
+          pausa: pausas.get(h.projectId) ?? null,
           dias: dias.get(h.projectId)?.ultimos ?? null,
         });
       }

@@ -93,6 +93,24 @@ respecto de la mediana, promedio móvil, que no aprende con un caso abierto). El
 factor instantáneo **no se muestra**: depende de la hora y la orientación (un
 techo al este a las 17 h siempre rinde poco) y confundía.
 
+### Plantas en obra o silenciadas: no avisan
+
+`pausas.ts` → `pausasDePlantas()`. Una planta **no abre caso** (aunque no
+genere ni comunique) si:
+
+- **Tiene obra agendada hoy en el calendario** (`InstallationSegment`), la
+  propia o la de **una ampliación suya** (`Project.parentProjectId`), con un día
+  de margen después del fin por si la reconexión se demora. Caso real: Barenof,
+  desconectada por la obra de ampliación del 26 al 30-oct-2026; sin esto le
+  habría saltado un caso "no comunica".
+- **Está silenciada** desde Experiencia Solar → Monitoreo
+  (`monitoreoSilenciadoHasta` de la planta Growatt o Huawei): el mismo silencio
+  del monitoreo diario.
+
+La mesa las muestra "En obra hasta el …" o "Silenciada hasta el …". La lectura
+se sigue guardando; solo no se abre caso. Un caso ya abierto no se cierra por
+entrar en obra: se cierra cuando vuelve a generar, o a mano.
+
 ### Plantas Huawei (en la misma revisión)
 
 `vueltaHuawei()` en `vigia.service.ts`, lógica pura en `vigia-huawei.ts`

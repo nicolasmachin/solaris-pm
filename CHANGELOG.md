@@ -18,6 +18,7 @@
 - La mesa muestra los casos abiertos y todas las plantas con lo que generan ahora y sus últimos días comparados con lo normal. Los casos se cierran solos cuando la planta vuelve a generar.
 - **Avisar al cliente**: un toque, con el mensaje listo para revisar. Le llega al portal y al celular, y lo ve arriba de todo en el Inicio mientras el caso esté abierto. Nunca le escribe el sistema solo.
 - También vigila las **plantas Huawei**: avisa si FusionSolar las marca sin comunicación o con falla, o si las ve sanas pero no suman energía.
+- **Las plantas en obra no avisan**: si la planta, o una ampliación suya, tiene obra agendada en el calendario, no se abre caso aunque esté desconectada, y la mesa la muestra "En obra hasta el…". Lo mismo con las que se silenciaron desde el Monitoreo.
 - Las alertas le llegan por ahora a Administración; después habrá un rol de Soporte.
 
 #### Voltia en el celular, con avisos

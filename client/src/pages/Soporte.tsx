@@ -379,7 +379,11 @@ function TablaPlantas({ plantas }: { plantas: SoportePlanta[] }) {
                   )}
                 </td>
                 <td className="px-2 py-2">
-                  {p.caso ? (
+                  {p.pausa ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/15 px-2 py-0.5 text-xs text-blue-400" title="Mientras tanto la revisión no le abre casos">
+                      {p.pausa.motivo === "OBRA" ? "En obra" : "Silenciada"} hasta el {p.pausa.hasta.slice(8, 10)}/{p.pausa.hasta.slice(5, 7)}
+                    </span>
+                  ) : p.caso ? (
                     <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs ${TIPO[p.caso.tipo].clase}`}>
                       <AlertTriangle className="h-3 w-3" /> {TIPO[p.caso.tipo].texto}
                     </span>
