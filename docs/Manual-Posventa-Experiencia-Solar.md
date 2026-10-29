@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.34 · del 28/10/26
+**Voltia · Uruguay** · Versión 1.35 · del 29/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1752,6 +1752,7 @@ partes:
 
 - **Cuando el cliente paga**, Experiencia Solar lo marca en la pestaña **Cobros** con **Marcar pagado**, confirmando **la fecha en que entró la plata y el monto** que pagó (Voltia PM propone la fecha de hoy y el monto previsto; se corrigen si fue otro día u otro monto). Nadie lo revisa después: lo que se carga ahí es lo que queda.
 - **Las cuotas del plan no tienen fecha**: cada una se cobra en un momento de la obra. En la pestaña **Cobros**, en lugar de la fecha dice el momento («Previo a la obra», «Obra finalizada», «Habilitación finalizada»), y la etiqueta dice si ya está **Lista para cobrar** (llegó su momento), **Vencida** (pasaron 10 días sin cobrarla) o **Prevista** (todavía no). La cuota del 50 % queda lista 10 días antes del primer día de obra; la del 30 %, cuando se da por terminada la obra; la del 20 %, cuando se finaliza la habilitación de UTE: el mismo momento en que llega el aviso de que el cliente puede encender. Al cliente, entonces, se le dice **cuándo** paga por lo que pasa en su obra, no por una fecha. El resumen de pagos que se copia para WhatsApp también pone el momento en lugar de la fecha.
+- **A quién cobrarle hoy**: en Experiencia Solar → **Cobros** (la lista de todos los clientes), arriba aparece un aviso verde con cuántos clientes están listos para cobrar una cuota y cuántos la tienen vencida, con el botón **Ver solo esos**. La columna **A cobrar ahora** dice cuánto hay que cobrarle a cada uno en este momento y qué cuotas son; abajo de la lista, el total listo para cobrar y cuánto de eso ya venció. La lista arranca mostrando solo los clientes a los que les falta cobrar algo; para ver también los que ya pagaron todo, se elige **Todos, también los completos**.
 - **Si una cuota vence y el cliente no pagó**, el reclamo lo hace Experiencia Solar, que es quien habla con él. Está decidido que esto pase al área de Administración (la contadora) cuando esa área se haga cargo de Finanzas en Voltia PM.
 
 **Cuándo escalar:** cualquier duda de montos, al asesor comercial.
@@ -1998,6 +1999,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.35 | 29 de octubre de 2026 | En la lista de Cobros, Experiencia Solar ve a qué clientes les toca pagar una cuota ahora, cuánto, y cuáles están vencidas, con el total abajo. |
 | 1.34 | 28 de octubre de 2026 | Ya no se le da al cliente el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia. Sale el paso de E3 "Entrega del acceso a la plataforma del inversor" con su mensaje, y el aviso de "Ya podés encender" le dice que mire su generación en el portal. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta en ese momento; el trámite queda en el menú. En el portal, los tickets pasan a llamarse reclamos. El cliente ve en el portal sus documentos firmados (contrato y papeles de UTE) y su Plan de Protección contra Granizo, con el estado, las fechas y el próximo pago. El portal y Voltia PM se instalan en el celular y mandan avisos: al cliente se le pide que lo instale y active los avisos al mandarle el acceso. Nueva mesa de Soporte: detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y desde ahí se le avisa al cliente con un toque. |
 | 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |
 | 1.32 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender. |

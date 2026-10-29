@@ -16,6 +16,7 @@ import {
   type CobroProjectItem,
   type CobroDetail,
 } from '../../../api/finance.api';
+import { ACobrarAhora, AvisoListos, filtrarCobros, ListoParaCobrar, OpcionesFiltroCobros, TotalesListos, type EstadoFiltroCobros } from '../../../components/finance/CobrosListos';
 import { fmtCurrency, fmtDate } from '../../../lib/finance';
 import { todayLocalISO } from '../../../utils/date';
 
@@ -68,10 +69,10 @@ function buildResumenWhatsApp(data: CobroDetail): string {
   return lines.join('\n');
 }
 
-type EstadoFilter = 'all' | EstadoCobranza;
+type EstadoFilter = EstadoFiltroCobros;
 
 export function ClientesCobros() {
-  const [estado, setEstado] = useState<EstadoFilter>('all');
+  const [estado, setEstado] = useState<EstadoFilter>('por_cobrar');
   const [search, setSearch] = useState('');
   const [detailProject, setDetailProject] = useState<{ id: string; clientName: string } | null>(null);
 
@@ -83,13 +84,8 @@ export function ClientesCobros() {
   const projects = data?.projects ?? [];
   const totales = data?.totales;
 
-  const filtered = useMemo(() => {
-    let out = projects;
-    if (estado !== 'all') out = out.filter(p => p.estadoCobranza === estado);
-    const q = search.trim().toLowerCase();
-    if (q) out = out.filter(p => p.clientName.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
-    return out;
-  }, [projects, estado, search]);
+  const listos = useMemo(() => projects.filter(p => p.listoParaCobrar), [projects]);
+  const filtered = useMemo(() => filtrarCobros(projects, estado, search), [projects, estado, search]);
 
   const columns: Column<CobroProjectItem>[] = [
     {
@@ -118,11 +114,19 @@ export function ClientesCobros() {
       ),
     },
     {
+      // Lo que se puede cobrar ya: las cuotas cuyo momento de la obra llegó.
+      key: 'ahora', label: 'A cobrar ahora', align: 'right',
+      render: (p) => <ACobrarAhora p={p} />,
+    },
+    {
       key: 'estado', label: 'Estado',
       render: (p) => (
-        <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase border', ESTADO_BADGE[p.estadoCobranza])}>
-          {ESTADO_LABEL[p.estadoCobranza]}
-        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase border', ESTADO_BADGE[p.estadoCobranza])}>
+            {ESTADO_LABEL[p.estadoCobranza]}
+          </span>
+          {p.listoParaCobrar && <ListoParaCobrar l={p.listoParaCobrar} />}
+        </div>
       ),
     },
   ];
@@ -153,6 +157,8 @@ export function ClientesCobros() {
         </div>
       )}
 
+      {estado !== 'listos' && <AvisoListos listos={listos} onVer={() => setEstado('listos')} />}
+
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
@@ -166,12 +172,7 @@ export function ClientesCobros() {
           onChange={e => setEstado(e.target.value as EstadoFilter)}
           className="px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)]"
         >
-          <option value="all">Todos los estados</option>
-          <option value="PENDIENTE">Pendientes</option>
-          <option value="PARCIAL">Parciales</option>
-          <option value="COMPLETO">Completos</option>
-          <option value="EXCEDIDO">Excedidos</option>
-          <option value="SIN_PRESUPUESTO">Sin presupuesto</option>
+          <OpcionesFiltroCobros />
         </select>
       </div>
 
@@ -189,6 +190,7 @@ export function ClientesCobros() {
               onRowClick={(p) => setDetailProject({ id: p.id, clientName: p.clientName })}
               rowClickableOnDesktop
             />
+            <TotalesListos filas={filtered} />
           </div>
         )}
       </div>

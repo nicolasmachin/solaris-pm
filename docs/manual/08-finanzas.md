@@ -218,6 +218,12 @@ calendario.
   además **Listos para cobrar**, **Todos, también los completos** y los estados
   de siempre. El filtro se recuerda por navegador (`finance-cobros-filters-v2`);
   `?filtro=listos` (el enlace de "Para hacer hoy") manda sobre lo recordado.
+- **La pestaña Cobros de Experiencia Solar** (`ClientesCobros.tsx`, en
+  `/clientes/cobros`) muestra lo mismo: aviso, filtro (arranca en **Por cobrar**,
+  sin recordarlo), columna **A cobrar ahora**, etiqueta y totales del pie. Las
+  piezas son compartidas (`components/finance/CobrosListos.tsx`:
+  `filtrarCobros`, `AvisoListos`, `ACobrarAhora`, `ListoParaCobrar`,
+  `TotalesListos`), así que un cambio en una pantalla vale para las dos.
 - Se entra al detalle de cobros de un proyecto (desde Finanzas → Cobros o desde
   la vista de Cobros del módulo Experiencia Solar). Las cuotas sin cobrar de un
   momento de la obra muestran el momento en la columna de fecha ("Previo a la
