@@ -88,8 +88,11 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
     app.addHook("preHandler", authenticate);
 
     app.get("/soporte/tablero", { preHandler: authorize(Module.SOPORTE, Action.VIEW) }, async () => {
-      const [estados, casos, reclamos, incidencias, dias] = await Promise.all([
+      const [estados, estadosHuawei, casos, reclamos, incidencias, dias] = await Promise.all([
         prisma.soporteEstadoPlanta.findMany({
+          include: { project: { select: { clientName: true, code: true, capacityKwp: true } } },
+        }),
+        prisma.soporteEstadoHuawei.findMany({
           include: { project: { select: { clientName: true, code: true, capacityKwp: true } } },
         }),
         prisma.soporteCaso.findMany({ where: { estado: "ABIERTO" }, include: incluirCaso, orderBy: { detectadoEn: "desc" } }),
@@ -110,6 +113,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
           r != null && mediana && e.factorNormal && e.status === 1 ? r / mediana / e.factorNormal : null;
         const caso = casoPorProyecto.get(e.projectId);
         return {
+          marca: "GROWATT" as "GROWATT" | "HUAWEI",
           projectId: e.projectId,
           cliente: e.project.clientName,
           codigo: e.project.code,
@@ -130,6 +134,27 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
           dias: dias.get(e.projectId)?.ultimos ?? null,
         };
       });
+      // Huawei: FusionSolar da salud y energía del día; la potencia es el
+      // promedio de la última media hora.
+      for (const h of estadosHuawei) {
+        const caso = casoPorProyecto.get(h.projectId);
+        plantas.push({
+          marca: "HUAWEI" as const,
+          projectId: h.projectId,
+          cliente: h.project.clientName,
+          codigo: h.project.code,
+          kwp: h.project.capacityKwp != null ? Number(h.project.capacityKwp) : null,
+          enLinea: h.salud !== 1,
+          potenciaW: h.potenciaW,
+          energiaHoyKwh: h.diaKwh,
+          vsNormal: null,
+          aprendiendo: false,
+          leidoEn: h.leidoEn.toISOString(),
+          ultimaGeneracionEn: h.ultimaGeneracionEn?.toISOString() ?? null,
+          caso: caso ? { id: caso.id, tipo: caso.tipo, titulo: caso.titulo } : null,
+          dias: dias.get(h.projectId)?.ultimos ?? null,
+        });
+      }
       const ultimaLectura = estados.reduce<Date | null>((m, e) => (!m || e.leidoEn > m ? e.leidoEn : m), null);
       return {
         vigiaAutomatico: vigiaHabilitado(),

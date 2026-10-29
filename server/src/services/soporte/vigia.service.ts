@@ -10,9 +10,11 @@ import { SoporteCasoTipo } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { listarPlantas, ultimoDatoInversor } from "../reportesFv/growatt/client.js";
+import { huaweiConfigurado, kpiTiempoReal } from "../reportesFv/huawei/client.js";
+import { evaluarHuawei } from "./vigia-huawei.js";
 import { abrirOActualizar, cerrarAutomatico, TIPOS_CAIDA, type NuevoCaso } from "./casos.service.js";
 import { diagnosticarInversor, type Diagnostico } from "./diagnostico.js";
-import { evaluarLectura, medianaCartera, type LecturaPlanta } from "./vigia.js";
+import { evaluarLectura, medianaCartera, SOL_MIN, type LecturaPlanta } from "./vigia.js";
 
 
 const horaUy = (d: Date) =>
@@ -21,6 +23,7 @@ const diaUy = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "America/Mo
 
 export type ResultadoVigia = {
   plantas: number;
+  plantasHuawei: number;
   mediana: number | null;
   casosNuevos: number;
   casosCerrados: number;
@@ -41,7 +44,23 @@ export async function correrVigia(ahora = new Date()): Promise<ResultadoVigia> {
   if (corriendo) throw new Error("El vigía ya está corriendo");
   corriendo = true;
   try {
-    return await vuelta(ahora);
+    // Una marca que falla no frena a la otra. Huawei usa la mediana de
+    // Growatt para saber si hay sol (es el mismo cielo).
+    let r: ResultadoVigia = { plantas: 0, plantasHuawei: 0, mediana: null, casosNuevos: 0, casosCerrados: 0, consultasInversor: 0 };
+    try {
+      r = await vuelta(ahora);
+    } catch (err) {
+      console.error("[soporte] vuelta Growatt:", err);
+    }
+    if (huaweiConfigurado()) {
+      try {
+        const h = await vueltaHuawei(r.mediana, ahora);
+        r = { ...r, plantasHuawei: h.plantas, casosNuevos: r.casosNuevos + h.casosNuevos, casosCerrados: r.casosCerrados + h.casosCerrados };
+      } catch (err) {
+        console.error("[soporte] vuelta Huawei:", err);
+      }
+    }
+    return r;
   } finally {
     corriendo = false;
   }
@@ -193,7 +212,7 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
     if (r.nuevo) casosNuevos++;
   }
 
-  return { plantas: filas.length, mediana, casosNuevos, casosCerrados, consultasInversor };
+  return { plantas: filas.length, plantasHuawei: 0, mediana, casosNuevos, casosCerrados, consultasInversor };
 }
 
 /** Con varios inversores, el problema más grave manda. */
@@ -216,4 +235,97 @@ async function ultimaGeneracion(projectId: string, vista: Date | null, hoy: stri
   if (!ultimo) return "";
   const d = ultimo.fecha.toISOString().slice(0, 10);
   return `Último día con generación registrada: ${d.slice(8, 10)}/${d.slice(5, 7)}.`;
+}
+
+/** Plantas Huawei: una llamada para todas. Ver vigia-huawei.ts. */
+export async function vueltaHuawei(mediana: number | null, ahora: Date) {
+  const vinculadas = await prisma.huaweiPlant.findMany({
+    where: { projectId: { not: null }, ignorada: false, project: { deletedAt: null } },
+    select: { plantCode: true, projectId: true, project: { select: { clientName: true } } },
+  });
+  if (vinculadas.length === 0) return { plantas: 0, casosNuevos: 0, casosCerrados: 0 };
+
+  const kpis = await kpiTiempoReal(vinculadas.map((v) => v.plantCode));
+  const previos = new Map(
+    (await prisma.soporteEstadoHuawei.findMany({ where: { plantCode: { in: vinculadas.map((v) => v.plantCode) } } })).map((e) => [
+      e.plantCode,
+      e,
+    ]),
+  );
+  const hoy = diaUy(ahora);
+  const haySol = mediana != null && mediana >= SOL_MIN;
+  const sol = mediana != null ? ` Mientras tanto la cartera genera al ${Math.round(mediana * 100)} % de su potencia.` : "";
+  let casosNuevos = 0;
+  let casosCerrados = 0;
+
+  for (const v of vinculadas) {
+    const k = kpis.get(v.plantCode);
+    if (!k || !v.projectId) continue;
+    const p = previos.get(v.plantCode);
+    const ev = evaluarHuawei(
+      {
+        diaKwh: p?.diaKwh ?? null,
+        dia: p?.diaLectura ? p.diaLectura.toISOString().slice(0, 10) : null,
+        leidoEn: p?.leidoEn ?? null,
+        sinComunicacionConSol: p?.sinComunicacionConSol ?? 0,
+        conFallaConSol: p?.conFallaConSol ?? 0,
+        sinSumarConSol: p?.sinSumarConSol ?? 0,
+      },
+      { salud: k.salud, diaKwh: k.diaKwh },
+      hoy,
+      ahora,
+      haySol,
+    );
+    const datos = {
+      projectId: v.projectId,
+      salud: k.salud,
+      diaKwh: k.diaKwh,
+      totalKwh: k.totalKwh,
+      potenciaW: ev.potenciaW,
+      leidoEn: ahora,
+      diaLectura: new Date(`${hoy}T00:00:00Z`),
+      sinComunicacionConSol: ev.sinComunicacionConSol,
+      conFallaConSol: ev.conFallaConSol,
+      sinSumarConSol: ev.sinSumarConSol,
+      ultimaGeneracionEn: ev.genera ? ahora : p?.ultimaGeneracionEn ?? null,
+    };
+    await prisma.soporteEstadoHuawei.upsert({ where: { plantCode: v.plantCode }, create: { plantCode: v.plantCode, ...datos }, update: datos });
+
+    if (ev.genera && k.salud === 3) {
+      casosCerrados += await cerrarAutomatico(v.projectId, TIPOS_CAIDA, `Volvió a generar a las ${horaUy(ahora)}.`);
+      continue;
+    }
+    if (!ev.alerta) continue;
+
+    const nombre = v.project?.clientName ?? v.plantCode;
+    const hoyKwh = k.diaKwh != null ? ` Hoy lleva ${k.diaKwh.toLocaleString("es-UY", { maximumFractionDigits: 1 })} kWh.` : "";
+    const desde = p?.ultimaGeneracionEn ? ` Sumó energía por última vez a las ${horaUy(p.ultimaGeneracionEn)}.` : "";
+    const caso: NuevoCaso =
+      ev.alerta === "SIN_COMUNICACION"
+        ? {
+            projectId: v.projectId,
+            huaweiPlantCode: v.plantCode,
+            tipo: SoporteCasoTipo.SIN_COMUNICACION,
+            titulo: "No comunica",
+            detalle: `${nombre}: FusionSolar (Huawei) la marca sin comunicación hace más de una hora.${hoyKwh}${sol}${desde} Suele ser el wifi del inversor o un corte de luz; no quiere decir que la planta esté rota.`,
+          }
+        : ev.alerta === "FALLA_INVERSOR"
+          ? {
+              projectId: v.projectId,
+              huaweiPlantCode: v.plantCode,
+              tipo: SoporteCasoTipo.FALLA_INVERSOR,
+              titulo: "FusionSolar marca una falla",
+              detalle: `${nombre}: FusionSolar (Huawei) marca la planta con falla hace más de una hora.${hoyKwh}${sol}${desde} Ver las alarmas del inversor en FusionSolar.`,
+            }
+          : {
+              projectId: v.projectId,
+              huaweiPlantCode: v.plantCode,
+              tipo: SoporteCasoTipo.SIN_GENERACION,
+              titulo: "No genera",
+              detalle: `${nombre}: FusionSolar (Huawei) la ve sana pero no sumó energía en la última hora.${hoyKwh}${sol}${desde} Puede ser la llave, el lado de los paneles o el inversor apagado.`,
+            };
+    const r = await abrirOActualizar(caso);
+    if (r.nuevo) casosNuevos++;
+  }
+  return { plantas: vinculadas.length, casosNuevos, casosCerrados };
 }

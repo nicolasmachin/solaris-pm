@@ -383,7 +383,7 @@ cada persona tiene que volver a activar los avisos en cada dispositivo.
 ## 6e. Soporte (mesa de monitoreo)
 
 Detalle en `docs/manual/19-soporte.md`. Después del deploy con las migraciones
-`soporte_mesa` y `soporte_llave` (aditivas):
+`soporte_mesa`, `soporte_llave` y `soporte_huawei` (aditivas):
 
 1. Permisos: `docker compose -f docker-compose.prod.yml exec -T server npx tsx prisma/scripts/seed-soporte-permissions.ts`
    y reiniciar el server (caché de permisos).

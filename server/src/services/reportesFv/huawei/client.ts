@@ -259,3 +259,40 @@ export async function estadoActual(plantCodes: string[]): Promise<Map<string, Es
   }
   return salida;
 }
+
+export type KpiTiempoReal = {
+  salud: EstadoSalud | null;
+  /** Energía del día hasta ahora (kWh). */
+  diaKwh: number | null;
+  /** Energía de toda la vida de la planta (kWh). */
+  totalKwh: number | null;
+};
+
+/**
+ * Lo que mira Soporte de cada planta Huawei: salud + energía del día, en una
+ * llamada de hasta 50 plantas. Verificado el 28-oct-2026: `getStationRealKpi`
+ * trae real_health_state, day_power, total_power, day_on_grid_energy y
+ * day_use_energy. No trae la potencia del momento.
+ */
+export async function kpiTiempoReal(plantCodes: string[]): Promise<Map<string, KpiTiempoReal>> {
+  const salida = new Map<string, KpiTiempoReal>();
+  const num = (v: unknown) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) ? null : Number(v));
+  for (let i = 0; i < plantCodes.length; i += 50) {
+    const lote = plantCodes.slice(i, i + 50);
+    if (i > 0) await dormir(PAUSA_MS);
+    const r = await pedir("/thirdData/getStationRealKpi", { stationCodes: lote.join(",") });
+    for (const fila of r?.data ?? []) {
+      const m = fila?.dataItemMap ?? {};
+      const e = Number(m.real_health_state);
+      salida.set(fila.stationCode, {
+        salud: e === 1 || e === 2 || e === 3 ? e : null,
+        diaKwh: num(m.day_power),
+        totalKwh: num(m.total_power),
+      });
+    }
+  }
+  return salida;
+}
+
+/** ¿Hay credenciales de Huawei? (Soporte saltea Huawei si no.) */
+export const huaweiConfigurado = () => !!process.env.HUAWEI_API_USER && !!process.env.HUAWEI_API_PASSWORD;

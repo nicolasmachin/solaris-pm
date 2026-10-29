@@ -790,6 +790,7 @@ model Project {
   fvCurvasDia                     FvCurvaDia[]
   growattPlant                    GrowattPlant?
   soporteEstados                  SoporteEstadoPlanta[]
+  soporteEstadosHuawei            SoporteEstadoHuawei[]
   soporteCasos                    SoporteCaso[]
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
@@ -6416,6 +6417,7 @@ model SoporteCaso {
   projectId      String
   project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   growattPlantId BigInt?
+  huaweiPlantCode String?
   tipo           SoporteCasoTipo
   estado         SoporteCasoEstado @default(ABIERTO)
   titulo         String
@@ -6442,4 +6444,31 @@ model SoporteCaso {
   @@index([estado])
   @@index([projectId, estado])
   @@map("soporte_casos")
+}
+
+/// Última lectura de cada planta Huawei vinculada (FusionSolar no da la
+/// potencia del momento: da el estado de salud y la energía del día, y con dos
+/// lecturas se sabe si está sumando).
+model SoporteEstadoHuawei {
+  plantCode String  @id
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// real_health_state: 1 = sin comunicación, 2 = con falla, 3 = sana.
+  salud      Int?
+  /// Energía del día hasta ahora (day_power) y total de la vida de la planta.
+  diaKwh     Float?
+  totalKwh   Float?
+  /// Promedio de la última media hora, sacado de cuánto subió diaKwh.
+  potenciaW  Float?
+  leidoEn    DateTime  @db.Timestamptz(6)
+  diaLectura DateTime? @db.Date
+
+  sinComunicacionConSol Int @default(0)
+  conFallaConSol        Int @default(0)
+  sinSumarConSol        Int @default(0)
+  ultimaGeneracionEn    DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@map("soporte_estado_huawei")
 }

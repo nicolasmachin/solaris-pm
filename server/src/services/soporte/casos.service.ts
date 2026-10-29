@@ -35,6 +35,7 @@ async function equipoSoporte(): Promise<string[]> {
 export type NuevoCaso = {
   projectId: string;
   growattPlantId?: bigint | null;
+  huaweiPlantCode?: string | null;
   tipo: SoporteCasoTipo;
   titulo: string;
   detalle: string;
@@ -65,6 +66,7 @@ export async function abrirOActualizar(c: NuevoCaso): Promise<{ id: string; nuev
     data: {
       projectId: c.projectId,
       growattPlantId: c.growattPlantId ?? null,
+      huaweiPlantCode: c.huaweiPlantCode ?? null,
       tipo: c.tipo,
       titulo: c.titulo,
       detalle: c.detalle,

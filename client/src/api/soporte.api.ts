@@ -27,6 +27,7 @@ export interface SoporteCaso {
 }
 
 export interface SoportePlanta {
+  marca: "GROWATT" | "HUAWEI";
   projectId: string;
   cliente: string;
   codigo: string;

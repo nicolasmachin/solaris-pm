@@ -38,7 +38,7 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Soporte: la mesa que vigila las plantas",
       items: [
-        "Cada media hora con sol se revisan todas las plantas Growatt: si una lleva una hora sin generar o sin comunicar mientras el resto sí, se abre un caso explicado en criollo (la llave, el wifi, los paneles).",
+        "Cada media hora con sol se revisan todas las plantas (Growatt y Huawei): si una lleva una hora sin generar o sin comunicar mientras el resto sí, se abre un caso explicado en criollo (la llave, el wifi, los paneles).",
         "Una vez por día, las plantas que generan menos de lo normal para ellas. Con un toque se le avisa al cliente, que lo ve en su portal y en el celular.",
       ],
     },

@@ -372,6 +372,11 @@ function TablaPlantas({ plantas }: { plantas: SoportePlanta[] }) {
                     {p.cliente}
                   </Link>
                   {p.kwp != null && <span className="ml-1.5 text-[11px] text-[var(--color-text-muted)]">{p.kwp} kWp</span>}
+                  {p.marca === "HUAWEI" && (
+                    <span className="ml-1.5 rounded bg-[var(--color-bg-app)] px-1 text-[10px] text-[var(--color-text-muted)]" title="En Huawei, 'Ahora' es el promedio de la última media hora">
+                      Huawei
+                    </span>
+                  )}
                 </td>
                 <td className="px-2 py-2">
                   {p.caso ? (

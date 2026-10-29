@@ -93,6 +93,30 @@ respecto de la mediana, promedio móvil, que no aprende con un caso abierto). El
 factor instantáneo **no se muestra**: depende de la hora y la orientación (un
 techo al este a las 17 h siempre rinde poco) y confundía.
 
+### Plantas Huawei (en la misma revisión)
+
+`vueltaHuawei()` en `vigia.service.ts`, lógica pura en `vigia-huawei.ts`
+(`vigia-huawei.test.ts`). FusionSolar **no da la potencia del momento**: una
+sola llamada (`kpiTiempoReal()` → `getStationRealKpi`, hasta 50 plantas) trae el
+estado de salud (`real_health_state`: 1 sin comunicación, 2 con falla, 3 sana) y
+la energía del día (`day_power`). Con dos lecturas seguidas se sabe si está
+sumando; la "potencia" que muestra la mesa es el promedio de la última media
+hora.
+
+- Sin comunicación o con falla dos lecturas seguidas con sol → caso. Sin
+  comunicación **no quiere decir rota** (Rodolfo Sosa anda bien sin wifi).
+- Sana pero sin sumar energía (menos de 0,05 kWh en media hora) dos lecturas
+  con sol → "no genera".
+- Hay sol según la mediana de las plantas Growatt (es el mismo cielo). Si
+  Growatt no contesta, no hay mediana y Huawei no alerta esa vuelta.
+- Una marca que falla no frena a la otra (`correrVigia()`). Sin credenciales de
+  Huawei (`huaweiConfigurado()`), se saltea.
+- El estado queda en `SoporteEstadoHuawei` (tabla aparte, para no tocar la de
+  Growatt ya en producción); el caso guarda `huaweiPlantCode`.
+- Probado el 28-oct-2026 con las 6 plantas reales (Cidel - Barenof figuraba sin
+  comunicación). No pregunta por las alarmas del inversor: el caso manda a
+  verlas en FusionSolar.
+
 ### Genera menos de lo normal (una vez por día, 9:30)
 
 `rendimiento.service.ts` → `revisarRendimiento()`. Sin APIs: usa
@@ -157,7 +181,6 @@ avisarle por WhatsApp.
 
 ## Casos borde
 
-- **Solo Growatt.** Huawei queda para la fase 4.
 - "Hoy" se calcula desde la primera lectura del día: el día que se prende (o si
   el server estuvo caído a la mañana) da de menos.
 - Una planta muerta desde antes que el vigía empiece se detecta en su primera
