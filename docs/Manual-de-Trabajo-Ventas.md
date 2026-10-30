@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.6 · del 29/10/26
+**Voltia · Uruguay** · Versión 1.7 · del 30/10/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -636,6 +636,20 @@ reinician.
 
 ![Una tarjeta de lead, con los días en etapa, el contador de reclamos y el botón +.](captura:ventas-tarjeta-lead)
 
+**Los leads sin tomar.** Algunos leads entran **sin vendedor**: hoy, los que
+pasa Marketing desde una conversación de Instagram. Esos aparecen arriba de todo
+en Ventas, en una franja violeta que dice **«Leads sin tomar»**, con el que más
+espera primero, su origen, hace cuánto entró y lo que anotó Marketing. En el
+tablero también se ven en violeta, con la etiqueta **«Sin tomar»**. Los ven todos
+los asesores, y al entrar uno les llega un aviso a todos.
+
+**El primero que lo toma se lo queda.** Con el botón **Tomar** (en la franja o en
+la tarjeta) el lead pasa a ser del asesor que lo tocó, y desaparece de la franja
+para los demás. Si otro lo tomó un segundo antes, Voltia PM avisa quién. Una vez
+tomado, se trabaja como cualquier otro lead, empezando por la regla 1: contestar
+en menos de 24 horas. Un lead sin tomar no se puede ganar: primero alguien lo
+tiene que tomar.
+
 **Buscar y filtrar.** Arriba están el buscador **Buscar lead…** (encuentra por
 nombre, dirección, mail, código o teléfono) y la casilla **Solo míos**, que deja
 solo los leads asignados al asesor. Sin tildarla se ven los de todos. En el
@@ -1123,6 +1137,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.7 | 30 de octubre de 2026 | Los leads que entran sin vendedor (los que pasa Marketing desde Instagram) aparecen en violeta arriba de Ventas y en el tablero; les llega un aviso a todos los asesores y el primero que toca **Tomar** se lo queda. |
 | 1.6 | 29 de octubre de 2026 | Con financiación bancaria no se arma plan de pagos: Voltia PM deja prevista una sola cuota «Financiación bancaria» por lo que falta cobrar, que se marca pagada cuando deposita el banco. |
 | 1.5 | 27 de octubre de 2026 | Con financiación bancaria, la proforma que se hizo por fuera de Voltia PM se puede subir (PDF o foto) y vale igual que una generada para cerrar el onboarding; la que ya estaba en el lead se reconoce sola. No hace falta generar otra solo para avanzar. |
 | 1.4 | 22 de octubre de 2026 | El plan de pagos ya no lleva fechas: cada cuota se cobra en su momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM le avisa a Finanzas cuándo cobrarla. Lo que se pacta distinto se carga en una fecha fija. Las cuotas se llaman «Cuota 1 · previo a la obra», «Cuota 2 · obra finalizada» y «Cuota 3 · habilitación finalizada». Al crear el proyecto, el asesor tiene que contestar **¿Qué se le factura?**: facturación normal (todo el presupuesto) u otro monto con su motivo; el presupuesto se aclara que es con IVA. |

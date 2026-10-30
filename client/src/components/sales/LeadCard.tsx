@@ -1,9 +1,11 @@
 import { useState } from "react";
 import type { CSSProperties, HTMLAttributes, Ref } from "react";
-import { Plus } from "lucide-react";
+import { Hand, Plus } from "lucide-react";
 import type { LeadListItem, SalesStage } from "../../types/leads.types";
 import { KANBAN_COLUMNS, STAGE_COLORS, STAGE_LABELS } from "../../types/leads.types";
 import { Sheet } from "../ui/Sheet";
+import { usePermission } from "../../hooks/usePermission";
+import { SIN_TOMAR, useTomarLead } from "./LeadsSinTomar";
 
 function formatMoney(value: number | null) {
   if (value === null) return "—";
@@ -50,6 +52,10 @@ export function LeadCard({
 }) {
   const [moveOpen, setMoveOpen] = useState(false);
   const draggable = dragProps != null;
+  // Sin vendedor: se pinta aparte y el que puede tomarlo lo toma desde acá.
+  const sinTomar = !lead.assignedTo;
+  const puedeTomar = usePermission("VENTAS", "TOMAR_LEAD");
+  const tomar = useTomarLead();
 
   const daysColor =
     lead.daysInStage > 14
@@ -62,7 +68,11 @@ export function LeadCard({
     <>
       <div
         ref={dragRef}
-        style={{ ...dragStyle, cursor: draggable ? (isDragging ? "grabbing" : "grab") : "pointer" }}
+        style={{
+          ...dragStyle,
+          cursor: draggable ? (isDragging ? "grabbing" : "grab") : "pointer",
+          ...(sinTomar ? { borderColor: SIN_TOMAR.border, background: SIN_TOMAR.fondo } : {}),
+        }}
         role={draggable ? undefined : "button"}
         tabIndex={draggable ? undefined : 0}
         aria-label={`Abrir lead ${lead.clientName}`}
@@ -105,8 +115,28 @@ export function LeadCard({
               </span>
               <span className="text-[11px] text-[var(--color-text-muted)]">{lead.assignedTo.name}</span>
             </div>
-          ) : null}
+          ) : (
+            <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold" style={{ color: SIN_TOMAR.texto, border: `1px solid ${SIN_TOMAR.border}` }}>
+              Sin tomar
+            </span>
+          )}
         </div>
+
+        {sinTomar && puedeTomar ? (
+          <button
+            type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              tomar.mutate(lead.id);
+            }}
+            disabled={tomar.isPending}
+            className="tap-target mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md py-1 text-xs font-semibold text-white disabled:opacity-50"
+            style={{ background: SIN_TOMAR.border }}
+          >
+            <Hand className="h-3.5 w-3.5" /> Tomar
+          </button>
+        ) : null}
 
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="font-mono text-[10px]" style={{ color: daysColor }}>

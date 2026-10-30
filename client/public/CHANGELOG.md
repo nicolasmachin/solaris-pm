@@ -1,15 +1,108 @@
 # Novedades
 
+## v13.7
+
+### 30 de octubre de 2026
+
+#### Ventas: leads sin tomar
+
+- Los leads que entran sin vendedor (hoy, los que crea Marketing desde una conversación de Instagram) aparecen arriba de todo en Ventas, en una franja violeta: **«Leads sin tomar»**, con el que más espera primero. En el tablero y en la lista también se ven en violeta, con la etiqueta «Sin tomar».
+- Los ve todo el que entra a Ventas. Con **Tomar**, el primero que lo toca se lo queda; si otro lo tomó un segundo antes, avisa quién.
+- Cuando entra uno, a los comerciales les llega un aviso en la campanita y en el celular.
+- Permiso nuevo en la matriz, **«Tomar leads sin asignar»**: arranca con los asesores comerciales, el gerente comercial y Administración.
+
+#### Arreglos
+
+- El mensaje modelo «Alta en los reportes mensuales» de Experiencia Solar ya no le dice al cliente que es el único correo automático que va a recibir: con los avisos automáticos dejó de ser cierto.
+
+## v13.6
+
+### 29 de octubre de 2026
+
+#### Marketing: los privados de Instagram dentro de Voltia PM
+
+- Menú nuevo **Marketing**, con la bandeja de mensajes privados de @voltia_uy: a la izquierda las conversaciones (con los sin leer, las derivadas y las que vinieron por un anuncio) y a la derecha el chat, con lo que escribió el cliente y lo que contestó el asistente o una persona de Voltia.
+- Se puede **contestar desde ahí**, mientras Instagram lo permita (24 horas desde el último mensaje del cliente, o 7 días si escribió por un anuncio).
+- **Tomo yo**: el asistente deja de contestar en esa conversación hasta que se la devuelvan.
+- **Crear lead**: pasa la conversación a Ventas con el origen ya puesto (anuncio o redes sin anuncio).
+- Rol nuevo **Marketing**, que junto con Administración ve y usa el módulo. WhatsApp de los anuncios aparece como «próximamente».
+
+#### Los movimientos del BROU entran solos
+
+- El lector del banco lee las dos cuentas del BROU de lunes a viernes a las 8:00 y a las 18:00, con un usuario del banco que solo puede consultar. En Finanzas → Banco se ve el saldo que dice el banco y qué movimientos faltan cargar en Voltia PM.
+- Trae también el **asunto** de cada movimiento (a quién se le pagó o quién transfirió, y el concepto), que es lo que se ve primero en la lista.
+
+#### Qué es cada movimiento del banco: sugerencias, IA y «Es este»
+
+- Debajo de cada movimiento del banco que falta cargar, Voltia PM sugiere qué es: un gasto o cobro cargado sin cuenta (o en la cuenta equivocada), la factura de un proveedor que sigue a pagar, el costo fijo del mes, el cobro previsto de un cliente o una factura recibida por revisar. Compara monto, fecha y el asunto (tolera nombres mal escritos y entiende el mes: «Sueldo Emir Septiembre»).
+- Con **«Es este»** se registra lo que falta y queda emparejado con el banco: se le pone la cuenta, se registra el pago al proveedor, se marca pagado el costo fijo o cobrado el cobro (si entró menos, el resto queda previsto).
+- **La IA** lee los que no tienen sugerencia y dice qué cree que es («pago a Dibaril por cañería para G. Suárez, no está cargado»); si elige una opción, se confirma con el mismo «Es este».
+- Las comisiones e IVA del banco se cargan todas juntas con un botón.
+
+#### Avisos automáticos al cliente
+
+- Nueva sección en Administración → **Avisos automáticos**: se elige **cuándo sale** el aviso (venta cerrada, fecha de obra confirmada, obra reprogramada, faltan unos días para la obra, obra terminada, cada etapa completada, cada paso del trámite UTE, UTE habilitó, visita técnica o mantenimiento agendado) y **qué le dice al cliente**, por **WhatsApp** o por **mail**.
+- El mensaje se escribe con los datos del cliente (nombre, fecha de obra, fecha del paso de UTE, link al portal) y se ve cómo le llega antes de guardarlo.
+- En WhatsApp, el mensaje se manda a **Meta para que lo apruebe**; cuando lo aprueba, se activa. En mail se activa directo.
+- Solo cuentan los hechos que pasan **después de activar** el aviso, y cada hecho lo manda **una sola vez**.
+- Cada envío queda registrado: a quién, cuándo, el texto y si llegó, falló o no se mandó (y por qué). Lo enviado aparece también en la bitácora del cliente y puede dejar tildado el paso de Experiencia Solar que corresponde, para que nadie le mande lo mismo a mano.
+
+#### Costos fijos: lo que falta pagar en el mes
+
+- En Finanzas → Costos fijos, arriba, la lista de lo que falta pagar del mes (con mes anterior y siguiente). Cada uno tiene **Pagar**: se elige la cuenta, la fecha y el monto, y sale de la lista.
+
+#### Cobros: cuánto hay que cobrar ahora
+
+- En Cobros, la columna «A cobrar ahora» muestra el monto de las cuotas listas y cuáles son; abajo, el total listo para cobrar y cuánto de eso está vencido.
+- Con **financiación bancaria**, al elegir esa modalidad de pago (en el onboarding o al ganar la venta) queda prevista en Cobros una sola cuota, «Financiación bancaria», por lo que falta cobrar; si la seña todavía no se cobró, sigue aparte. Cuando entra la plata del banco, se marca pagada ahí. Antes esos clientes quedaban sin cobro previsto, o con las cuotas del pago directo.
+- Experiencia Solar, que es quien cobra, ve lo mismo en su pestaña Cobros: el aviso de clientes listos para cobrar, el filtro «Listos para cobrar», la columna «A cobrar ahora», la etiqueta de cuota lista o vencida y los totales. Arranca mostrando solo lo que falta cobrar.
+
 ## v13.5
 
 ### 28 de octubre de 2026
 
-#### El cliente crea solo su acceso a la aplicación del inversor
-- Ya no hace falta inventarle usuario y contraseña al cliente y mandárselos por WhatsApp. Desde la ficha del cliente, **Acceso a la app del inversor** arma un **link de un solo uso** (vale 7 días) con el mensaje listo para mandar por WhatsApp.
-- El cliente abre el link, **elige su usuario y su contraseña** y su cuenta queda creada en la aplicación del inversor con su planta. La página le avisa en el momento si el usuario ya existe o si la contraseña es corta, y al final le deja los links para bajar la aplicación.
-- **Nadie de Voltia ve la contraseña.** En los comentarios del proyecto queda anotado el usuario que eligió.
-- También lo puede hacer **desde el portal de Voltia**, en la sección nueva **App del inversor**.
-- Por ahora, solo para plantas Growatt.
+#### Portal: el Inicio pasa a ser la planta del cliente
+- Mientras el cliente espera la habilitación, el Inicio del portal sigue siendo el avance del trámite UTE.
+- **Una vez habilitado, el Inicio muestra su planta**: lo que generó, lo que consumió y lo que vendió o compró a UTE. El trámite queda en el menú, en **Trámite UTE**, por si lo quiere volver a ver.
+- Arriba de los gráficos hay un **dibujo del flujo de energía de ahora**: cuánto sale de los paneles, cuánto consume la casa y cuánto se le vende o se le compra a UTE. Cada línea es un caño que se ilumina cuando pasa energía, con flechas y chispas que viajan en el sentido en que va, más rápido cuanta más potencia. Se actualiza cada 5 minutos.
+- El mismo dibujo aparece en la ficha del cliente, en **Generación y consumo**.
+- Los gráficos de generación salieron de **Reportes**, que queda para los reportes mensuales.
+- Los clientes de antes de Voltia PM (los que se cargaron sin el trámite paso a paso) también entran directo a su planta, y en **Trámite UTE** ven que están habilitados en vez de once pasos pendientes.
+
+#### Soporte: la mesa que vigila las plantas
+- Nuevo menú **Soporte**. Cada media hora con sol, Voltia PM mira todas las plantas y **abre un caso cuando una lleva una hora sin generar o sin comunicar mientras el resto de la cartera sí genera**. Antes de abrirlo le pregunta al inversor qué le pasa, y lo explica en criollo: "dejó de mandar datos a las 16:23, y en ese momento generaba 3,5 kW", "el inversor no ve la red de UTE: casi siempre es la llave de microgeneración", "no le llega tensión de los paneles".
+- Una vez por día detecta **las plantas que generan menos de lo normal para ellas**: compara a cada una con el resto de la cartera los mismos días (si está nublado baja todo el mundo) y con lo que genera normalmente en esa época del año (cada techo tiene su orientación y sus sombras, y rinde distinto en invierno que en verano).
+- La mesa muestra los casos abiertos y todas las plantas con lo que generan ahora y sus últimos días comparados con lo normal. Los casos se cierran solos cuando la planta vuelve a generar.
+- **Avisar al cliente**: un toque, con el mensaje listo para revisar. Le llega al portal y al celular, y lo ve arriba de todo en el Inicio mientras el caso esté abierto. Nunca le escribe el sistema solo.
+- También vigila las **plantas Huawei**: avisa si FusionSolar las marca sin comunicación o con falla, o si las ve sanas pero no suman energía.
+- **Todos los problemas en un solo lugar, agrupados y a la vista**: la mesa junta lo que detecta la revisión automática con lo que ya marcaba el monitoreo diario (medidor mal conectado, no exporta…), agrupado por tipo de problema, con la cantidad de cada uno en grande y una tarjeta por planta que muestra cuántos días lleva, sus últimos días en barras y qué hacer. Los códigos de falla se explican en criollo ("el inversor no ve la red de UTE", "falla del relé").
+- De noche la mesa ya no muestra a todas las plantas como desconectadas: dice "sin sol".
+- **"Genera menos" salta con un solo día malo y va a mirar solo**: si un día una planta genera menos del 60 % de lo normal para ella (el día de lluvia ya está descontado, porque se compara con el resto de la cartera ese mismo día), Voltia PM revisa el inversor ese día y escribe en el caso qué encontró: una falla con su explicación, aislamiento bajo, cortes de comunicación, o nada (y queda en observación). Si vuelve a pasar, el caso dice "Se repite".
+- **Fallas que se repiten**: cuando una planta cae por una falla, Voltia PM mira las alarmas del inversor del último mes. Si la misma falla vino varios días (como la aislación baja de cada mañana), el caso dice "Se repite", con las fechas, y no se cierra solo cuando la planta vuelve a generar a la tarde.
+- Desde el detalle de cada alerta se puede **crear un reclamo** con lo detectado ya cargado; si la planta ya tiene uno abierto, se muestra ese.
+- Los días de cada alerta del monitoreo diario se cuentan desde que la planta dejó de andar, no desde que se reabrió el aviso.
+- **Las plantas en obra no avisan**: si la planta, o una ampliación suya, tiene obra agendada en el calendario, no se abre caso aunque esté desconectada, y la mesa la muestra "En obra hasta el…". Lo mismo con las que se silenciaron desde el Monitoreo.
+- Las alertas le llegan por ahora a Administración; después habrá un rol de Soporte.
+
+#### Voltia en el celular, con avisos
+- Voltia PM y el portal se pueden **instalar como aplicación** en el celular o la computadora, sin pasar por ninguna tienda: queda el ícono en la pantalla y se abre sin la barra del navegador. El cliente instala "Voltia", que abre directo en su portal.
+- **Avisos en el celular**: el cliente los activa desde la tarjeta del Inicio del portal o desde el menú de su cuenta, y le llegan aunque tenga el portal cerrado (cuando le respondemos un reclamo, cuando tiene una encuesta). Al equipo le llega lo mismo que a la campanita; se activa en el menú de la cuenta → **Avisos en este dispositivo**.
+- En iPhone hay que agregar Voltia a la pantalla de inicio primero; la tarjeta explica cómo, en tres pasos.
+
+#### Portal: Mis documentos
+- Sección nueva **Documentos** en el portal: el **contrato con Voltia** y los **papeles de UTE** que firmó el cliente, para verlos o bajarlos cuando quiera.
+- Si tiene el **Plan de Protección contra Granizo**, ahí mismo ve en qué estado está (vigente, en período de espera, vence pronto…), desde y hasta cuándo está protegido, cuántos paneles cubre, cuánto sale por año y cuándo es el próximo pago, con la solicitud de adhesión firmada y las condiciones del plan.
+- Lo que el cliente ve es lo que el equipo ya sube: el contrato firmado, los papeles de UTE firmados y el Anexo A del plan. Si falta alguno, el portal le dice que todavía no está cargado.
+
+#### Ya no se le da al cliente el acceso a la aplicación del inversor
+- El portal de Voltia ya muestra todo lo que se veía en la aplicación del inversor, así que se deja de mandar al cliente a la aplicación de otra marca. Sale el paso **"Entrega del acceso a la plataforma del inversor"** del recorrido de Experiencia Solar, y su mensaje modelo.
+- El mensaje de **Material de capacitación** ahora le cuenta que en el portal ve su planta en vivo.
+
+#### Portal: aprovecha toda la pantalla en la computadora
+- En la computadora el portal ya no se ve angosto, como pensado solo para el celular: usa el ancho de la pantalla. En el Inicio, el dibujo del flujo de energía queda a la izquierda y el gráfico del día a la derecha; en el trámite UTE, los pasos a la izquierda y los contactos de UTE a la derecha.
+
+#### Portal: "Tickets" pasa a llamarse "Reclamos"
+- La sección del portal ahora es **Mis reclamos**, con el botón **Abrir un reclamo**. Los avisos que le llegan al cliente también dicen "reclamo".
 
 #### WhatsApp: conectar los números del equipo
 - En **Administración → WhatsApp** hay una sección nueva, **Números conectados**, para sumar los WhatsApp del equipo a Voltia PM sin sacarlos del celular: el dueño escanea un código QR con WhatsApp Business y listo.

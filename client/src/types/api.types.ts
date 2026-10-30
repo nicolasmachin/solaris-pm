@@ -53,7 +53,8 @@ export type NotificationType =
   | "legajo_vencimiento"
   | "legajo_documento"
   | "soporte_alerta"
-  | "soporte_aviso_cliente";
+  | "soporte_aviso_cliente"
+  | "lead_sin_tomar";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

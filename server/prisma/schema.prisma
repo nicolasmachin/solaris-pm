@@ -249,6 +249,9 @@ enum NotificationType {
   soporte_alerta
   // Soporte: aviso al cliente de un problema en su planta (lo confirma una persona).
   soporte_aviso_cliente
+  // Ventas: entró un lead sin vendedor (por ejemplo, desde Marketing). A quien
+  // tenga VENTAS:TOMAR_LEAD.
+  lead_sin_tomar
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
@@ -512,6 +515,9 @@ enum Action {
   // que fijarla es una excepción y no algo que deba poder hacer cualquiera con
   // permiso de edición sobre el módulo. Solo ADMIN y GERENTE_OPERACIONES.
   FIJAR_ETAPA
+  // Ventas: tomar un lead que entró sin vendedor (el primero que lo toma se lo
+  // queda). Recibe además el aviso de cada lead nuevo sin tomar.
+  TOMAR_LEAD
 }
 
 enum SettingLevel {

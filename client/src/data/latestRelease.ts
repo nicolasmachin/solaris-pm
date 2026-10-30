@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.7",
+  date: "30 de octubre de 2026",
+  sections: [
+    {
+      title: "Ventas: leads sin tomar",
+      items: [
+        "Los leads que entran sin vendedor (los que crea Marketing desde Instagram) aparecen en violeta arriba de Ventas y en el tablero. El primero que toca «Tomar» se lo queda, y a los comerciales les llega un aviso cuando entra uno.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_6: Release = {
   version: "13.6",
   date: "29 de octubre de 2026",
   sections: [
@@ -45,6 +58,12 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Cobros: cuánto hay que cobrar ahora",
       items: ["La columna «A cobrar ahora» y abajo el total listo y vencido."],
+    },
+    {
+      title: "Marketing: los privados de Instagram dentro de Voltia PM",
+      items: [
+        "Menú nuevo Marketing con la bandeja de mensajes de @voltia_uy: lo que escribió el cliente y lo que contestó el asistente, contestar desde ahí, «Tomo yo» para que el asistente se calle y crear el lead.",
+      ],
     },
   ],
 };
@@ -1005,6 +1024,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.6",
+    shortDate: "29 oct",
+    highlights: RELEASE_13_6.sections.map((sec) => sec.title),
+  },
   {
     version: "13.5",
     shortDate: "28 oct",

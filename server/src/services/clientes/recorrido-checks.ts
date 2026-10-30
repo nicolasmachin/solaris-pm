@@ -135,7 +135,7 @@ export const CHECKS_E3: ChecklistDef[] = [
     titulo: "Alta en reportes mensuales y dónde encontrarlos",
     orden: 2,
     plazoDiasHabiles: 15,
-    detalle: "Es el único correo automático que recibe el cliente en 25 años.",
+    detalle: "Es su resumen mensual por correo, no publicidad: vale la pena decírselo así.",
   },
   {
     codigo: "e3_portal_recorrido",

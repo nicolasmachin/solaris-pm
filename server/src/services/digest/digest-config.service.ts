@@ -66,6 +66,10 @@ export const NOTIFICATION_TYPE_META: Record<
     label: "Vencimientos del legajo",
     description: "Un documento de tu legajo (o, si gestionás Recursos Humanos, del de alguien del equipo) vence en 30 días o venció.",
   },
+  lead_sin_tomar: {
+    label: "Lead sin tomar",
+    description: "Entró un lead sin vendedor (por ejemplo, desde Marketing): el primero que lo toma se lo queda.",
+  },
   soporte_alerta: {
     label: "Alerta de Soporte",
     description: "El vigía de Soporte detectó una planta que no genera, no comunica, tiene una falla o rinde menos de lo normal.",

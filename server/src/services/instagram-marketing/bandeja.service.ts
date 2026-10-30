@@ -8,6 +8,7 @@ import { AuditAction, AuditEntityType, OrigenLead, Prisma } from "@prisma/client
 import { prisma } from "../../lib/prisma.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
+import { avisarLeadSinTomar } from "../sales/leads-sin-tomar.service.js";
 import { crearLead } from "../sales/leads.service.js";
 import { enviarPorConector, tomarPorConector } from "./conector.js";
 import {
@@ -261,7 +262,8 @@ export async function tomarConversacion(id: string, tomada: boolean, actor: Acto
 
 /**
  * Crea el lead desde la conversación, con el origen ya puesto: anuncio si
- * escribió por un anuncio de mensajes, redes sin anuncio si no.
+ * escribió por un anuncio de mensajes, redes sin anuncio si no. Sin vendedor:
+ * va a la bandeja de leads sin tomar de Ventas.
  */
 export async function crearLeadDesdeConversacion(
   id: string,
@@ -283,5 +285,7 @@ export async function crearLeadDesdeConversacion(
     metadata: { instagramConversacionId: id },
   });
   await prisma.instagramConversacion.update({ where: { id }, data: { leadId: lead.id } });
+  // Nace sin vendedor: queda en la bandeja de Ventas hasta que alguien lo tome.
+  await avisarLeadSinTomar(lead, "Instagram");
   return { id: lead.id, code: lead.code };
 }

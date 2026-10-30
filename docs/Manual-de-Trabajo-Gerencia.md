@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.28 — 29 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.29 — 30 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -1008,6 +1008,23 @@ se configuran, y con el texto que se aprobó.
 **A qué manuales afecta.** Al de Posventa (Experiencia Solar): los avisos que
 salen solos y la regla del anexo D.
 
+### Los leads que entran sin vendedor: el primero que lo toma se lo queda
+
+**Qué se decidió.** Cuando entra un cliente potencial que todavía no tiene
+vendedor —por ejemplo, alguien que escribió por Instagram y Marketing lo pasa a
+Ventas—, **no lo asigna nadie ni se reparte por turno**: queda a la vista de todo
+Ventas, marcado aparte, y **el primer vendedor que lo toma se lo queda**. A los
+vendedores les llega un aviso cuando entra uno.
+
+**Por qué.** Lo que más pesa en una consulta es contestar rápido. Si hay que
+esperar a que alguien decida a quién le toca, el cliente se enfría. Que lo tome el
+primero premia al que está atento y no deja leads tirados. Quién puede tomar
+leads se define en Voltia PM y se puede ajustar.
+
+**Desde cuándo rige.** 30 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Ventas.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -1039,6 +1056,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.29 | 30 de octubre de 2026 | Se registra que los leads que entran sin vendedor (por ejemplo, desde Marketing) los ve todo Ventas y el primero que lo toma se lo queda, sin reparto. |
 | 0.28 | 29 de octubre de 2026 | Se registra que Voltia PM le avisa solo al cliente los hechos de su proyecto (venta, obra, UTE, habilitación, agenda), con avisos que define Gerencia, sin repetir hechos viejos ni mandar dos veces lo mismo, y con registro de cada envío. Reemplaza la regla de que el sistema nunca le escribe al cliente por su cuenta. |
 | 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. Se registra que Voltia se instala en el celular desde el navegador, con avisos, y que por ahora no va a las tiendas. Se registra que Voltia vigila las plantas y que al cliente le avisa siempre una persona; por ahora sin responsable de Soporte. |
 | 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM, sin avisos ni confirmación de lectura en cada versión nueva; que la licencia se pide y se controla en Voltia PM y que lo que se entrega se firma; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |

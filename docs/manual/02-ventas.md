@@ -4,7 +4,8 @@
 > "Origen del lead (¿Cómo nos conoció?)", "Cotizador de propuestas: precargas y saludo de la carta", "Varias
 > instalaciones en una misma propuesta", "Costeo a medida de una cotización",
 > "Cotizador B2B: propuestas a empresas", "Qué se le factura: se define al
-> crear el proyecto" y "Comisión del asesor: cómo se registra al ganar". El resto del módulo funciona en producción pero
+> crear el proyecto", "Comisión del asesor: cómo se registra al ganar" y
+> "Leads sin tomar". El resto del módulo funciona en producción pero
 > todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
@@ -112,6 +113,76 @@ del chat.
 - Un lead puede llegar a `CERRADO_GANADO` sin pasar por `VISITADO`, y en ese caso
   no hay fecha de visita: el promedio de "visita a cierre" lo ignora en vez de
   contarlo como cero.
+
+---
+
+# Leads sin tomar
+
+## Para qué existe
+
+Para que un lead que entra sin vendedor no quede tirado. Hoy los crea Marketing
+desde una conversación de Instagram (capítulo 20), que no sabe a qué vendedor
+le toca. Decidido por Nicolás el 30-oct-2026: **lo ven todos los de Ventas y el
+primero que lo toma se lo queda**. No hay reparto por turno ni lo asigna nadie.
+
+## Cómo se usa
+
+- **Arriba de Ventas**, en cualquiera de las tres vistas, una franja violeta
+  «N leads sin tomar» con los leads abiertos sin vendedor, **el que más espera
+  primero**: nombre, origen, hace cuánto entró y las notas. Tocar el lead lo
+  abre; **Tomar** lo asigna a quien lo toca. Sin leads sin tomar, la franja no
+  aparece.
+- En el **tablero** (y en la vista priorizada) la tarjeta del lead sin vendedor
+  va con fondo y borde violeta, la etiqueta «Sin tomar» y su botón **Tomar**. En
+  la **lista**, la columna del vendedor dice «Sin tomar» en violeta.
+- Cuando entra uno, a quien puede tomarlo le llega un aviso (campanita y push)
+  que abre el lead.
+
+## Cómo funciona
+
+`services/sales/leads-sin-tomar.service.ts`:
+
+- `listarLeadsSinTomar()` (`GET /api/leads/sin-tomar`): leads sin borrar, sin
+  `assignedToId` y fuera de Cerrado ganado o perdido, por `createdAt`
+  ascendente, hasta 100.
+- `tomarLead()` (`POST /api/leads/:id/tomar`): `updateMany` con
+  `assignedToId: null` en el `where`, así que **la toma es atómica**: si dos
+  tocan a la vez, uno se lo queda y el otro recibe 409 «Ya lo tomó …». Deja una
+  actividad `lead_tomado` en el historial del lead y una entrada de auditoría.
+- `avisarLeadSinTomar()`: una notificación `lead_sin_tomar` a cada usuario cuyo
+  rol tiene `VENTAS:TOMAR_LEAD`. Si falla, no frena el alta. Hoy la llama solo
+  la creación de lead desde Marketing; un lead que queda sin vendedor por otro
+  camino (el alta a mano o el bot de minutas sin asesor) igual aparece en la
+  franja, pero sin aviso.
+
+El color violeta (`SIN_TOMAR` en `components/sales/LeadsSinTomar.tsx`) no lo usa
+ninguna etapa.
+
+## Permisos
+
+| Permiso | Qué habilita |
+|---|---|
+| `VENTAS:VIEW` | Ver la franja y los leads sin tomar |
+| `VENTAS:TOMAR_LEAD` | El botón Tomar y el aviso de cada lead nuevo sin tomar |
+
+`TOMAR_LEAD` es una acción nueva (migración
+`20261030040100_leads_sin_tomar_permisos`) y arranca en ADMIN,
+ASESOR_COMERCIAL y GERENTE_COMERCIAL. No se usó `VENTAS:EDIT` porque también la
+tienen Logística, Experiencia Solar y Posventa, que no venden.
+
+## Reglas y decisiones
+
+- **Tomar no reemplaza a reasignar.** Una vez tomado, el vendedor se cambia como
+  siempre, desde el panel del lead (con `VENTAS:EDIT`).
+- Al 30-oct-2026 no había en producción ningún lead abierto sin vendedor, así
+  que la franja arrancó vacía.
+
+## Casos borde
+
+- Un lead sin vendedor no se puede ganar: el congelado de la comisión exige
+  asesor (`LEAD_NO_ASESOR`). Hay que tomarlo antes.
+- ADMIN siempre ve el botón Tomar: en el cliente `usePermission()` le devuelve
+  `true` a ADMIN para todo.
 
 ---
 

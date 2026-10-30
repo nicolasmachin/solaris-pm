@@ -18,6 +18,7 @@ import { StageSelect } from "./StageSelect";
 import { LostReasonModal } from "./LostReasonModal";
 import { MarkAsWonModal } from "./MarkAsWonModal";
 import { LeadToProjectModal } from "./LeadToProjectModal";
+import { SIN_TOMAR } from "./LeadsSinTomar";
 
 const LOST_STAGE: SalesStage = "CERRADO_PERDIDO";
 const WON_STAGE: SalesStage = "CERRADO_GANADO";
@@ -318,7 +319,12 @@ export function LeadsListView({ onOpenLead }: Props) {
       label: "Propietario",
       sortable: true,
       className: "text-[var(--color-text-secondary)]",
-      render: (lead) => lead.assignedTo?.name ?? "—",
+      render: (lead) =>
+        lead.assignedTo?.name ?? (
+          <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold" style={{ color: SIN_TOMAR.texto, border: `1px solid ${SIN_TOMAR.border}` }}>
+            Sin tomar
+          </span>
+        ),
     },
   ];
 

@@ -299,3 +299,27 @@ export async function getLeadTasks(
   });
   return data;
 }
+
+// Leads sin tomar: entraron sin vendedor (p. ej. desde Marketing). El primero que
+// los toma se los queda. Ver server/src/services/sales/leads-sin-tomar.service.ts.
+export interface LeadSinTomar {
+  id: string;
+  code: string;
+  clientName: string;
+  clientPhone: string | null;
+  stage: SalesStage;
+  origen: string;
+  notes: string | null;
+  createdAt: string;
+  createdBy: string | null;
+}
+
+export async function getLeadsSinTomar(): Promise<LeadSinTomar[]> {
+  const { data } = await api.get<LeadSinTomar[]>("/api/leads/sin-tomar");
+  return data;
+}
+
+export async function tomarLead(id: string): Promise<{ ok: true; assignedTo: { id: string; name: string } }> {
+  const { data } = await api.post(`/api/leads/${id}/tomar`);
+  return data;
+}

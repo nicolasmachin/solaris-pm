@@ -190,7 +190,7 @@ En el portal de Voltia ves tu planta en vivo (lo que generás, lo que consumís 
     motivo: "SEGUIMIENTO",
     cuerpo: `Hola {nombre}, te dimos de alta en los reportes mensuales: todos los meses te va a llegar por correo un resumen de cuánto generó tu instalación y cuánto ahorraste.
 
-También los vas a tener siempre en el portal. Es el único correo automático que vas a recibir de nosotros.`,
+También los vas a tener siempre en el portal.`,
   },
 ];
 

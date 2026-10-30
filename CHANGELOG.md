@@ -1,5 +1,20 @@
 # Novedades
 
+## v13.7
+
+### 30 de octubre de 2026
+
+#### Ventas: leads sin tomar
+
+- Los leads que entran sin vendedor (hoy, los que crea Marketing desde una conversación de Instagram) aparecen arriba de todo en Ventas, en una franja violeta: **«Leads sin tomar»**, con el que más espera primero. En el tablero y en la lista también se ven en violeta, con la etiqueta «Sin tomar».
+- Los ve todo el que entra a Ventas. Con **Tomar**, el primero que lo toca se lo queda; si otro lo tomó un segundo antes, avisa quién.
+- Cuando entra uno, a los comerciales les llega un aviso en la campanita y en el celular.
+- Permiso nuevo en la matriz, **«Tomar leads sin asignar»**: arranca con los asesores comerciales, el gerente comercial y Administración.
+
+#### Arreglos
+
+- El mensaje modelo «Alta en los reportes mensuales» de Experiencia Solar ya no le dice al cliente que es el único correo automático que va a recibir: con los avisos automáticos dejó de ser cierto.
+
 ## v13.6
 
 ### 29 de octubre de 2026

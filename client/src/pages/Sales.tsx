@@ -64,6 +64,7 @@ import { SalesViewToggle, useSalesView } from "../components/sales/SalesViewTogg
 import { PriorityView } from "../components/sales/PriorityView";
 import { LeadRow } from "../components/sales/LeadRow";
 import { LeadCard } from "../components/sales/LeadCard";
+import { LeadsSinTomar } from "../components/sales/LeadsSinTomar";
 
 const WON_STAGE = "CERRADO_GANADO";
 const LOST_STAGE = "CERRADO_PERDIDO";
@@ -1239,6 +1240,8 @@ export function Sales() {
           </>
         ) : null}
       </div>
+
+      <LeadsSinTomar onOpenLead={setSelectedLeadId} />
 
       {view === "list" ? (
         <LeadsListView onOpenLead={setSelectedLeadId} />

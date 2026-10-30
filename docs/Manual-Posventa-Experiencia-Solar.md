@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.36 · del 29/10/26
+**Voltia · Uruguay** · Versión 1.37 · del 30/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -770,9 +770,11 @@ cualquier etapa.
 >
 >> Hola {nombre}, te dimos de alta en los reportes mensuales: todos los meses te va a llegar por correo un resumen de cuánto generó tu instalación y cuánto ahorraste.
 >>
->> También los vas a tener siempre en el portal. Es el único correo automático que vas a recibir de nosotros.
-Es **el único correo automático que el cliente va a recibir de nosotros en 25
-años**. Vale la pena decírselo así: no es spam, es su resumen mensual.
+>> También los vas a tener siempre en el portal.
+
+Vale la pena que el cliente lo sepa así: **no es publicidad, es su resumen
+mensual**. No se le promete que sea el único correo que va a recibir: Voltia PM
+puede mandarle además los avisos automáticos de su proyecto (ver capítulo 9).
 
 **Cuándo le llega.** No es a fin de mes: **cada generador tiene su fecha de
 corte**, el día en que UTE le cierra la factura, y su reporte sale cuando le toca
@@ -2025,6 +2027,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.37 | 30 de octubre de 2026 | El mensaje «Alta en los reportes mensuales» ya no le dice al cliente que es el único correo automático que va a recibir, porque ahora también puede recibir avisos automáticos. |
 | 1.36 | 29 de octubre de 2026 | Voltia PM puede mandarle avisos automáticos al cliente cuando pasa un hecho del proyecto; los define Gerencia. Se agrega qué tiene que saber Experiencia Solar: el aviso queda en el historial, puede dejar hecho un paso del recorrido y no reemplaza a la persona. Cambia la regla de que el sistema nunca le escribe solo al cliente. |
 | 1.35 | 29 de octubre de 2026 | En la lista de Cobros, Experiencia Solar ve a qué clientes les toca pagar una cuota ahora, cuánto, y cuáles están vencidas, con el total abajo. Con financiación bancaria, el cliente tiene una sola cuota «Financiación bancaria» que se marca pagada cuando deposita el banco. |
 | 1.34 | 28 de octubre de 2026 | Ya no se le da al cliente el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia. Sale el paso de E3 "Entrega del acceso a la plataforma del inversor" con su mensaje, y el aviso de "Ya podés encender" le dice que mire su generación en el portal. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta en ese momento; el trámite queda en el menú. En el portal, los tickets pasan a llamarse reclamos. El cliente ve en el portal sus documentos firmados (contrato y papeles de UTE) y su Plan de Protección contra Granizo, con el estado, las fechas y el próximo pago. El portal y Voltia PM se instalan en el celular y mandan avisos: al cliente se le pide que lo instale y active los avisos al mandarle el acceso. Nueva mesa de Soporte: detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y desde ahí se le avisa al cliente con un toque. |

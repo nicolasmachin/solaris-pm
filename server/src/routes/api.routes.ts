@@ -127,6 +127,7 @@ import {
   generateLeadCode,
   moverEtapaLead,
 } from "../services/sales/leads.service.js";
+import { listarLeadsSinTomar, tomarLead } from "../services/sales/leads-sin-tomar.service.js";
 import { crearAmpliacion, resolveRootProject } from "../services/ampliacion.service.js";
 import { calcularEstadoResultados, rangeForPeriod } from "../services/finance/resultados.service.js";
 import { listarCobrosPorProyecto } from "../services/finance/cobros.service.js";
@@ -6018,7 +6019,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // ─── Roles dinámicos y matriz de permisos ────────────────────────────────────
 
   const PERMISSION_CATALOG: Array<{ module: Module; actions: Action[] }> = [
-    { module: Module.VENTAS,              actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
+    // TOMAR_LEAD = tomar un lead que entró sin vendedor y recibir el aviso.
+    { module: Module.VENTAS,              actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT, Action.TOMAR_LEAD] },
     { module: Module.ONBOARDING,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.INGENIERIA,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.OPERACIONES,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.FIJAR_ETAPA] },
@@ -7409,6 +7411,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     return groups;
+  });
+
+  // GET /api/leads/sin-tomar — la bandeja de leads sin vendedor (ver
+  // services/sales/leads-sin-tomar.service.ts). La ve todo Ventas.
+  app.get("/leads/sin-tomar", { preHandler: authorize(Module.VENTAS, Action.VIEW) }, async () => listarLeadsSinTomar());
+
+  // POST /api/leads/:id/tomar — el primero que lo toma se lo queda (409 si ya lo tomó otro).
+  app.post("/leads/:id/tomar", { preHandler: authorize(Module.VENTAS, Action.TOMAR_LEAD) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    return tomarLead(id, { id: user.id, name: user.name });
   });
 
   // GET /api/leads/:id

@@ -54,7 +54,10 @@ Menú **Marketing** (`/marketing`, `pages/Marketing.tsx`). Arriba, los canales:
 - **Crear lead**: nombre (precargado con el de Instagram), teléfono y notas.
   El lead nace con el origen ya puesto —«Anuncio en Instagram o Facebook» si
   escribió por un anuncio, «Redes sociales (sin anuncio)» si no— y el detalle
-  «Instagram @usuario». Desde ahí la conversación muestra el link al lead.
+  «Instagram @usuario». **Nace sin vendedor**: va a la franja «Leads sin
+  tomar» de Ventas y les llega un aviso a los comerciales; el primero que lo toma
+  se lo queda (capítulo 02, "Leads sin tomar"). Desde ahí la conversación
+  muestra el link al lead.
 
 Al abrir una conversación queda leída **para todo el equipo** (no es por
 usuario).
@@ -98,7 +101,8 @@ enseguida con el id de Meta que devuelve el conector, así el eco no lo duplica.
   eso no se mira. Primero se le avisa al conector y, si contesta bien, se guarda.
 
 Cada respuesta, toma y devolución queda en la auditoría (`instagram_conversacion`).
-El alta del lead usa `crearLead()` de Ventas, con su propia auditoría.
+El alta del lead usa `crearLead()` de Ventas, con su propia auditoría, sin
+vendedor, y después `avisarLeadSinTomar()`.
 
 ## Permisos
 
