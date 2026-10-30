@@ -9,18 +9,18 @@ import {
   enviarInstagram,
   getInstagramConversacion,
   getInstagramConversaciones,
-  getInstagramEstado,
   tomarInstagram,
   type InstagramConversacion,
+  type InstagramEvento,
   type InstagramMensaje,
 } from "../api/marketing.api";
+import { Automatizaciones, Consultas, Contactos, EstadoAsistente } from "../components/marketing/InstagramPanel";
 import { Button } from "../components/ui/Button";
 import { usePermission } from "../hooks/usePermission";
 
-// Marketing. Por ahora, la bandeja de privados de Instagram: las conversaciones
-// del contestador (que vive en el conector de indicadores), con la posibilidad
-// de contestar a mano, tomar la conversación y crear el lead.
-// Ver docs/manual/20-marketing.md.
+// Marketing. Por ahora, Instagram: la bandeja de privados (contestar a mano,
+// tomar la conversación, crear el lead), las automatizaciones del asistente,
+// los contactos y las consultas por día. Ver docs/manual/20-marketing.md.
 
 function errorDe(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -61,6 +61,42 @@ const AUTOR_LABEL: Record<InstagramMensaje["autor"], string> = {
   PERSONA: "",
   OTRO: "ManyChat o el celular",
 };
+
+const RAZON: Record<string, string> = {
+  fuera_de_ventana: "pasó la ventana de Instagram",
+  tomada: "la tomó una persona",
+  contesto_otro: "escribió ManyChat o una persona hace poco",
+  derivada: "ya se derivó",
+  tope_de_gasto: "se llegó al tope de gasto",
+};
+
+/** Lo que decidió el asistente, entre los mensajes (en sombra, lo que habría contestado). */
+function Decision({ e }: { e: InstagramEvento }) {
+  const que =
+    e.resultado === "no_contestado"
+      ? `No contestó: ${RAZON[e.razon ?? ""] ?? e.razon}`
+      : e.resultado === "sin_respuesta"
+        ? "Decidió no contestar"
+        : e.resultado === "derivado"
+          ? "Derivó a Ventas"
+          : e.resultado === "seguimiento"
+            ? "Seguimiento del día siguiente"
+            : "Contestó";
+  return (
+    <div className="mx-auto max-w-[85%] rounded-lg border border-dashed border-[var(--color-border)] px-3 py-1.5 text-[11px] text-[var(--color-text-muted)]">
+      <p>
+        {e.sombra && <span className="mr-1 font-semibold text-sky-300">SOMBRA ·</span>}
+        {e.sombra && e.resultado !== "no_contestado" ? `Habría: ${que.toLowerCase()}` : que}
+        {e.datos.motivo && ` · ${e.datos.motivo}`} · {hora(e.creadoEn)}
+      </p>
+      {e.sombra && e.datos.mensajes?.map((t, i) => (
+        <p key={i} className="mt-1 whitespace-pre-wrap italic">
+          «{t}»
+        </p>
+      ))}
+    </div>
+  );
+}
 
 function Burbuja({ m }: { m: InstagramMensaje }) {
   const nuestro = m.autor !== "CLIENTE";
@@ -138,6 +174,18 @@ function Chat({ id, puedeEditar, onVolver }: { id: string; puedeEditar: boolean;
   const [creandoLead, setCreandoLead] = useState(false);
   const fin = useRef<HTMLDivElement>(null);
   const mensajes = data?.mensajes ?? [];
+  const eventos = data?.eventos ?? [];
+  const linea = useMemo(
+    () =>
+      [
+        ...mensajes.map((m) => ({ t: m.enviadoEn, m, e: null as InstagramEvento | null })),
+        // Lo que sí mandó ya está como mensaje: solo se muestran los "no" y la sombra.
+        ...eventos
+          .filter((e) => e.sombra || e.resultado === "no_contestado" || e.resultado === "sin_respuesta")
+          .map((e) => ({ t: e.creadoEn, m: null as InstagramMensaje | null, e })),
+      ].sort((a, b) => a.t.localeCompare(b.t)),
+    [mensajes, eventos],
+  );
 
   // Con llaves y sin devolver nada: scrollIntoView devuelve una promesa en los
   // Chrome nuevos y un efecto que devuelve algo que no es función rompe React.
@@ -228,9 +276,7 @@ function Chat({ id, puedeEditar, onVolver }: { id: string; puedeEditar: boolean;
         {mensajes.length === 0 && (
           <p className="py-10 text-center text-[12px] text-[var(--color-text-muted)]">Todavía no hay mensajes.</p>
         )}
-        {mensajes.map((m) => (
-          <Burbuja key={m.id} m={m} />
-        ))}
+        {linea.map((x) => (x.m ? <Burbuja key={x.m.id} m={x.m} /> : <Decision key={x.e!.id} e={x.e!} />))}
         <div ref={fin} />
       </div>
 
@@ -270,7 +316,6 @@ type Filtro = "todas" | "sinLeer" | "derivadas" | "tomadas";
 
 function BandejaInstagram() {
   const puedeEditar = usePermission("MARKETING", "EDIT");
-  const estado = useQuery({ queryKey: ["instagram-estado"], queryFn: getInstagramEstado });
   const { data: conversaciones = [], isLoading } = useQuery({
     queryKey: ["instagram-conversaciones"],
     queryFn: getInstagramConversaciones,
@@ -302,13 +347,7 @@ function BandejaInstagram() {
 
   return (
     <div className="space-y-2">
-      {estado.data && !estado.data.conectado && (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-200">
-          Voltia PM todavía no está conectado con el contestador de Instagram: se pueden ver las conversaciones que ya
-          llegaron, pero no contestar ni tomarlas.
-        </p>
-      )}
-      <div className="flex h-[calc(100vh-190px)] min-h-[480px] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+      <div className="flex h-[calc(100vh-230px)] min-h-[480px] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
         <aside
           className={`w-full flex-col border-r border-[var(--color-border)] md:flex md:w-[340px] md:shrink-0 ${
             abierta ? "hidden" : "flex"
@@ -396,6 +435,45 @@ function BandejaInstagram() {
   );
 }
 
+type Vista = "conversaciones" | "automatizaciones" | "contactos" | "consultas";
+
+function Instagram() {
+  const puedeEditar = usePermission("MARKETING", "EDIT");
+  const [vista, setVista] = useState<Vista>("conversaciones");
+  return (
+    <div className="space-y-2">
+      <EstadoAsistente />
+      <div className="flex flex-wrap gap-1 text-[12px]">
+        {(
+          [
+            ["conversaciones", "Conversaciones"],
+            ["automatizaciones", "Automatizaciones"],
+            ["contactos", "Contactos"],
+            ["consultas", "Consultas por día"],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setVista(k)}
+            className={`rounded-md px-2.5 py-1 ${
+              vista === k
+                ? "bg-[var(--color-accent)]/15 font-medium text-[var(--color-text-primary)]"
+                : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {vista === "conversaciones" && <BandejaInstagram />}
+      {vista === "automatizaciones" && <Automatizaciones puedeEditar={puedeEditar} />}
+      {vista === "contactos" && <Contactos />}
+      {vista === "consultas" && <Consultas />}
+    </div>
+  );
+}
+
 export function Marketing() {
   const [canal, setCanal] = useState<"instagram" | "whatsapp">("instagram");
   return (
@@ -426,7 +504,7 @@ export function Marketing() {
           </button>
         </div>
       </div>
-      {canal === "instagram" && <BandejaInstagram />}
+      {canal === "instagram" && <Instagram />}
     </div>
   );
 }

@@ -390,6 +390,31 @@ Detalle en `docs/manual/19-soporte.md`. Después del deploy con las migraciones
 2. La revisión automática (el "vigía") arranca sola en producción, cada media hora de 7:00 a 20:30. Para
    apagarlo: `SOPORTE_VIGIA=0` en el `.env`.
 
+## 6f. Marketing → Instagram (asistente, lead magnets, comentarios)
+
+Detalle y pasos de la migración en `docs/manual/20-marketing.md`. Migraciones
+`marketing_instagram`, `marketing_permisos` (crea el rol MARKETING) e
+`instagram_contestador`, todas aditivas. Las automatizaciones se siembran solas
+al arrancar el server.
+
+1. Variables en el `.env` (ya están en el compose): `INSTAGRAM_MODO=sombra` para
+   el primer deploy, `INSTAGRAM_APP_SECRET` (la clave de la app "Voltia
+   Indicadores", la misma que `META_APP_SECRET` del `.env` del conector de
+   indicadores), `INSTAGRAM_VERIFY_TOKEN` (`openssl rand -hex 24`),
+   `INSTAGRAM_CONECTOR_URL=https://indicadores.voltia.com.uy` e
+   `INSTAGRAM_CONECTOR_SECRETO` (`openssl rand -hex 32`; el mismo va como
+   `VOLTIA_PM_SECRETO` en el conector). Recrear el server.
+2. Probar: `curl -s -o /dev/null -w "%{http_code}" "https://app.voltia.com.uy/webhooks/instagram?hub.mode=subscribe&hub.verify_token=x&hub.challenge=1"`
+   tiene que dar **403**.
+3. Historial (una vez, y de nuevo al hacer el cambio): copiar
+   `~/indicadores-voltia/datos/instagram/conversaciones/` y
+   `contactos.json` al contenedor y correr
+   `npx tsx scripts/instagram-importar.ts conversaciones <carpeta>` y
+   `... contactos <archivo>`.
+4. El cambio a `INSTAGRAM_MODO=envio` y el webhook de Meta van juntos con el
+   apagado del conector: ver «La migración» en el manual. **Cada paso, con el
+   OK de Nicolás.**
+
 ## 7. Verificar que el deploy salió bien
 
 ```bash

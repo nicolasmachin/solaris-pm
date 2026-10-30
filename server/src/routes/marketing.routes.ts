@@ -1,7 +1,8 @@
 /**
- * Marketing. Por ahora, la bandeja de privados de Instagram (las conversaciones
- * del contestador). VIEW = ver; EDIT = contestar, tomar la conversación y crear
- * el lead. Ver docs/manual/20-marketing.md.
+ * Marketing → Instagram: la bandeja de privados, las automatizaciones (el
+ * "ManyChat con IA"), los contactos y las consultas por día. VIEW = ver; EDIT
+ * = contestar, tomar la conversación, crear el lead y prender, apagar o editar
+ * una automatización. Ver docs/manual/20-marketing.md.
  */
 
 import { Action, Module } from "@prisma/client";
@@ -17,7 +18,13 @@ import {
   tomarConversacion,
   verConversacion,
 } from "../services/instagram-marketing/bandeja.service.js";
-import { instagramConectorConfig } from "../services/instagram-marketing/config.js";
+import {
+  consultas,
+  contactos,
+  editarAutomatizacion,
+  estado,
+  listarAutomatizaciones,
+} from "../services/instagram-marketing/panel.service.js";
 import { unauthorized } from "../utils/errors.js";
 
 function actor(request: FastifyRequest) {
@@ -32,10 +39,7 @@ export async function registerMarketingRoutes(app: FastifyInstance) {
   const ver = { preHandler: authorize(Module.MARKETING, Action.VIEW) };
   const editar = { preHandler: authorize(Module.MARKETING, Action.EDIT) };
 
-  app.get("/marketing/instagram/estado", ver, async () => {
-    const c = instagramConectorConfig();
-    return { conectado: !!c.url && !!c.secreto };
-  });
+  app.get("/marketing/instagram/estado", ver, async () => estado());
 
   app.get("/marketing/instagram/conversaciones", ver, async () => listarConversaciones());
 
@@ -69,5 +73,40 @@ export async function registerMarketingRoutes(app: FastifyInstance) {
       .parse(request.body);
     reply.code(201);
     return crearLeadDesdeConversacion(id, body, actor(request));
+  });
+
+  app.get("/marketing/instagram/automatizaciones", ver, async () => listarAutomatizaciones());
+
+  app.patch("/marketing/instagram/automatizaciones/:id", editar, async (request) => {
+    const { id } = idParams.parse(request.params);
+    const cambio = z
+      .object({
+        activa: z.boolean().optional(),
+        nombre: z.string().trim().min(1).max(120).optional(),
+        flujo: z.string().max(20_000).optional(),
+        palabras: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+        link: z.string().trim().url().max(500).nullish(),
+        esperaMinSeg: z.number().int().min(0).max(3600).optional(),
+        esperaMaxSeg: z.number().int().min(0).max(3600).optional(),
+        topeDiario: z.number().int().min(0).max(1000).optional(),
+      })
+      .parse(request.body);
+    return editarAutomatizacion(id, cambio, actor(request));
+  });
+
+  app.get("/marketing/instagram/contactos", ver, async (request) => {
+    const q = z
+      .object({
+        etiqueta: z.string().trim().max(80).optional(),
+        texto: z.string().trim().max(80).optional(),
+        cuantos: z.coerce.number().int().min(1).max(500).optional(),
+      })
+      .parse(request.query);
+    return contactos(q);
+  });
+
+  app.get("/marketing/instagram/consultas", ver, async (request) => {
+    const { dias } = z.object({ dias: z.coerce.number().int().min(1).max(90).default(14) }).parse(request.query);
+    return consultas(dias);
   });
 }

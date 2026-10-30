@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.29 — 30 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.30 — 30 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -1025,6 +1025,37 @@ leads se define en Voltia PM y se puede ajustar.
 
 **A qué manuales afecta.** Al de Ventas.
 
+### Instagram lo atiende primero un asistente con inteligencia artificial, con las reglas de la Dirección
+
+**Qué se decidió.** Los mensajes privados y los comentarios que llegan a la
+cuenta de Instagram de Voltia los contesta primero un **asistente automático**
+que funciona dentro de Voltia PM, en el módulo de Marketing. Reemplaza a la
+herramienta que se usaba antes (ManyChat, con respuestas fijas). Sus reglas las
+pone la Dirección y son estas, en este orden: **contestar rápido lo que la
+persona preguntó**, **darle el orden de precio** (una casa, entre 8.000 y 15.000
+dólares con IVA, llave en mano; nunca un precio cerrado ni descuentos) y **pedirle
+lo que hace falta para el paso siguiente**: una foto de la factura de UTE, cómo es
+el techo y la zona. Recién cuando la persona manda eso es un lead, y el asistente
+**la pasa al asesor comercial designado por WhatsApp**, que además recibe un mail
+con la conversación. Escribe como una persona del equipo, sin ocultar que es un
+asistente si se lo preguntan. Tiene un tope de gasto mensual.
+
+Las cifras de Instagram (cuántos escriben, a cuántos se les contó el servicio,
+cuántos son leads) **se cuentan desde que el asistente de Voltia PM atiende la
+cuenta**; lo anterior queda como historial, pero no se mezcla en los números.
+
+**Por qué.** Contestar rápido es lo que más pesa en una consulta. El precio de
+entrada filtra a los curiosos, y pedir la factura deja al asesor comercial con lo
+que necesita para cotizar. Las respuestas fijas no contestaban lo que la persona
+preguntaba. Medir con datos propios evita depender de lo que informa otra
+herramienta.
+
+**Desde cuándo rige.** Las reglas, desde el 29 de octubre de 2026; el asistente
+dentro de Voltia PM, desde que se pone en marcha (primero corre unos días a la
+par del anterior, sin contestar, para compararlo).
+
+**A qué manuales afecta.** Al de Ventas.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -1056,6 +1087,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.30 | 30 de octubre de 2026 | Se registra que Instagram lo atiende primero un asistente con inteligencia artificial dentro de Voltia PM, con las reglas de la Dirección (contestar, dar el orden de precio, pedir factura y techo, pasar el lead al asesor comercial), y que sus cifras se cuentan desde que lo atiende Voltia PM. |
 | 0.29 | 30 de octubre de 2026 | Se registra que los leads que entran sin vendedor (por ejemplo, desde Marketing) los ve todo Ventas y el primero que lo toma se lo queda, sin reparto. |
 | 0.28 | 29 de octubre de 2026 | Se registra que Voltia PM le avisa solo al cliente los hechos de su proyecto (venta, obra, UTE, habilitación, agenda), con avisos que define Gerencia, sin repetir hechos viejos ni mandar dos veces lo mismo, y con registro de cada envío. Reemplaza la regla de que el sistema nunca le escribe al cliente por su cuenta. |
 | 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. Se registra que Voltia se instala en el celular desde el navegador, con avisos, y que por ahora no va a las tiendas. Se registra que Voltia vigila las plantas y que al cliente le avisa siempre una persona; por ahora sin responsable de Soporte. |

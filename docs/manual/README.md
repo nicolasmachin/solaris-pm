@@ -54,7 +54,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 17 | [Recursos Humanos](17-rrhh.md) | Mi legajo, legajos completos, validación de documentos, vencimientos, recibos en lote, licencias y saldo, entregas de materiales con firma, privacidad | ✅ Completo |
 | 18 | [Asistente del equipo](18-asistente.md) | Chat con IA dentro de Voltia PM: base de conocimiento, herramientas del conector en solo lectura, modelos, topes de gasto | ✅ Completo |
 | 19 | [Soporte](19-soporte.md) | Mesa de monitoreo de plantas: revisión automática cada media hora, diagnóstico con el último dato del inversor, genera menos de lo normal, avisos al equipo y al cliente | 🟡 Parcial (Growatt y Huawei; falta el rol de Soporte y sumar los reclamos a la mesa) |
-| 20 | [Marketing](20-marketing.md) | Bandeja de privados de Instagram (copia de las conversaciones del contestador del conector de indicadores): contestar, tomar la conversación, crear el lead; rol MARKETING | 🟡 Parcial (Instagram sin conectar todavía; WhatsApp de anuncios sin empezar) |
+| 20 | [Marketing](20-marketing.md) | Instagram de punta a punta: el asistente con Claude (privados, lead magnets, comentarios, seguimiento, derivación), la bandeja, las automatizaciones en palabras, los contactos con etiquetas y las consultas por día; el token de Meta lo da el conector de indicadores; rol MARKETING | 🟡 Parcial (Instagram hecho, sin deploy; WhatsApp de anuncios sin empezar) |
 | 20 | [Avisos automáticos al cliente](20-avisos-automaticos.md) | Disparadores del flujo → mensaje por WhatsApp (plantilla aprobada por Meta) o mail, registro de envíos | ✅ Completo |
 
 Los capítulos pendientes existen con su esqueleto y se completan a medida que se

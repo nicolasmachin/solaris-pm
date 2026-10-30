@@ -31,6 +31,8 @@ export const AI_FEATURES = {
   justificacion_potencia: "Justificación de potencia ante UTE",
   conciliacion_proveedor: "Lectura de estados de cuenta de proveedores",
   conciliacion_banco: "Interpretación de movimientos del banco",
+  instagram_privados: "Instagram: contestador de privados",
+  instagram_comentarios: "Instagram: comentarios y lead magnets",
 } as const;
 
 export type AIFeature = keyof typeof AI_FEATURES;

@@ -431,6 +431,21 @@ GERENTE_COMERCIAL, FINANZAS ni GERENTE_FINANZAS (consultado el 19/9/2026). Los
 que lo tienen ven los montos vendidos y el desglose por asesor, igual que en la
 pestaña "Reporte semanal" de Métricas.
 
+### Marketing (Instagram)
+
+Solo lectura, con `MARKETING:VIEW` (capítulo 20). Las usa Tabaré, el asesor de
+Marketing, para la revisión diaria.
+
+- `instagram_resumen`: si el asistente está contestando, en sombra o apagado,
+  el gasto del mes y las consultas por día (personas, nuevas, anuncio u
+  orgánico, speech, derivadas, leads, lead magnets, comentarios contestados).
+- `instagram_conversaciones`: las de los últimos días con lo último que decidió
+  el asistente; con `usuario`, la conversación entera con cada decisión
+  intercalada (y en sombra, lo que habría contestado).
+- `instagram_automatizaciones`: cuáles están prendidas, su actividad, los
+  últimos comentarios atendidos; con `ver_flujo`, el texto de cada una.
+- `instagram_contactos`: cuántos hay por etiqueta y la lista filtrada.
+
 ### Control de etapas y operaciones
 
 Estado de hoy, no de un período. Todo sale de `services/ops-panel.service.ts`,

@@ -26,6 +26,7 @@ import { startDailyDigestJob } from "./services/digest/daily-digest.job.js";
 import { startNovedadesJob } from "./services/novedades/novedades-email.job.js";
 import { sincronizarManuales } from "./services/documentacion/sincronizar-manuales.js";
 import { startVencimientosLegajoJob } from "./services/rrhh/vencimientos.job.js";
+import { startInstagramJobs } from "./services/instagram-marketing/instagram.job.js";
 import { recoverPendingProjectVideos } from "./services/project-video.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
@@ -119,6 +120,7 @@ async function start() {
   startBillerRecibidosJob();
   startBillerCfeEmitidosJob();
   startVencimientosLegajoJob();
+  startInstagramJobs();
 
   // La cola de compresión de videos vive en memoria: un reinicio la vacía. Sin
   // esto, un video subido justo antes de un deploy quedaría "procesando" para

@@ -1,6 +1,8 @@
 /**
- * Marketing → Instagram: la copia de las conversaciones del contestador y lo que
- * se hace con ellas desde Voltia PM (contestar, tomar, crear el lead).
+ * Marketing → Instagram: la bandeja de conversaciones y lo que se hace con ellas
+ * desde Voltia PM (contestar a mano, tomar, crear el lead). Desde el 30-oct-2026
+ * las conversaciones llegan directo del webhook de Meta (privados.ts); la carga
+ * del historial del contestador de indicadores usa `guardarDesdeConector`.
  */
 
 import { AuditAction, AuditEntityType, OrigenLead, Prisma } from "@prisma/client";
@@ -10,9 +12,11 @@ import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
 import { avisarLeadSinTomar } from "../sales/leads-sin-tomar.service.js";
 import { crearLead } from "../sales/leads.service.js";
-import { enviarPorConector, tomarPorConector } from "./conector.js";
+import { vincularLead } from "./contactos.js";
+import { enviarMensaje as enviarAMeta } from "./meta.js";
 import {
   type ConversacionConector,
+  claveDe,
   estadoAsistente,
   normalizarMensajes,
   ventanaAbierta,
@@ -32,7 +36,10 @@ type Actor = { id: string; name: string };
  * Tomar la conversación lo decide Voltia PM: lo que diga el conector de eso no
  * se mira.
  */
-export async function guardarDesdeConector(conv: ConversacionConector, opciones: { historial?: boolean } = {}) {
+export async function guardarDesdeConector(
+  conv: ConversacionConector & { speech?: number | null; seguimiento?: number | null; origenes?: unknown[]; sigue?: boolean | null },
+  opciones: { historial?: boolean } = {},
+) {
   const mensajes = normalizarMensajes(conv);
   const usuarios = new Set(
     (
@@ -50,6 +57,10 @@ export async function guardarDesdeConector(conv: ConversacionConector, opciones:
       desdeAnuncio: conv.desde_anuncio ?? undefined,
       derivadaEn: conv.derivada ? new Date(conv.derivada.momento * 1000) : null,
       derivadaMotivo: conv.derivada?.motivo ?? null,
+      ...(conv.speech ? { speechEn: new Date(conv.speech * 1000) } : {}),
+      ...(conv.seguimiento ? { seguimientoEn: new Date(conv.seguimiento * 1000) } : {}),
+      ...(conv.origenes?.length ? { origenes: conv.origenes as Prisma.InputJsonArray } : {}),
+      ...(typeof conv.sigue === "boolean" ? { sigue: conv.sigue } : {}),
     };
     const existente = await tx.instagramConversacion.findUnique({ where: { persona: conv.persona } });
     const c =
@@ -79,6 +90,8 @@ export async function guardarDesdeConector(conv: ConversacionConector, opciones:
           texto: m.texto,
           enviadoEn: m.enviadoEn,
           enviadoPorId: m.enviadoPorId && usuarios.has(m.enviadoPorId) ? m.enviadoPorId : null,
+          // La carga del historial se ve, pero no cuenta para las métricas.
+          importado: Boolean(opciones.historial),
         })),
         skipDuplicates: true,
       });
@@ -198,8 +211,23 @@ export async function verConversacion(id: string) {
     await prisma.instagramConversacion.update({ where: { id }, data: { vistaHasta: ultimo } });
   }
   const [fila] = await filas(Prisma.sql`c."id" = ${id}`);
+  // Lo que decidió el asistente (y en modo sombra, lo que habría contestado).
+  const eventos = await prisma.instagramEvento.findMany({
+    where: { persona: c.persona, tipo: { in: ["privado", "seguimiento"] } },
+    orderBy: { creadoEn: "asc" },
+    take: 100,
+  });
   return {
     conversacion: presentar(fila),
+    eventos: eventos.map((e) => ({
+      id: e.id,
+      tipo: e.tipo,
+      resultado: e.resultado,
+      razon: e.razon,
+      sombra: e.sombra,
+      creadoEn: e.creadoEn,
+      datos: e.datos,
+    })),
     mensajes: mensajes.map((m) => ({
       id: m.id,
       autor: m.autor,
@@ -220,15 +248,23 @@ export async function enviarMensaje(id: string, texto: string, actor: Actor) {
         : "Pasaron más de 24 horas desde el último mensaje: Instagram no deja escribirle hasta que vuelva a escribir.",
     );
   }
-  const { mid } = await enviarPorConector(c.persona, texto, { id: actor.id, nombre: actor.name });
+  let mid: string;
+  try {
+    mid = await enviarAMeta(c.persona, texto);
+  } catch (err) {
+    throw badRequest("INSTAGRAM_NO_ENVIO", err instanceof Error ? err.message : "Instagram no dejó mandar el mensaje");
+  }
   const ahora = new Date();
+  const clave = claveDe({ mid, momento: ahora.getTime() / 1000, de: "persona", texto });
   await prisma.$transaction([
     prisma.instagramMensaje.upsert({
-      where: { conversacionId_clave: { conversacionId: id, clave: mid } },
-      create: { conversacionId: id, clave: mid, autor: "PERSONA", texto, enviadoEn: ahora, enviadoPorId: actor.id },
+      where: { conversacionId_clave: { conversacionId: id, clave } },
+      // El eco pudo llegar antes y quedar como "otro".
+      create: { conversacionId: id, clave, autor: "PERSONA", texto, enviadoEn: ahora, enviadoPorId: actor.id },
       update: { autor: "PERSONA", enviadoPorId: actor.id },
     }),
-    prisma.instagramConversacion.update({ where: { id }, data: { ultimoMensajeEn: ahora, vistaHasta: ahora } }),
+    // Contestó una persona: el asistente no contesta encima de lo que ya estaba esperando.
+    prisma.instagramConversacion.update({ where: { id }, data: { ultimoMensajeEn: ahora, vistaHasta: ahora, responderDesde: null } }),
   ]);
   await createAuditEntry({
     entityType: AuditEntityType.instagram_conversacion,
@@ -243,10 +279,9 @@ export async function enviarMensaje(id: string, texto: string, actor: Actor) {
 export async function tomarConversacion(id: string, tomada: boolean, actor: Actor) {
   const c = await conversacionOFalla(id);
   if (!!c.tomadaEn === tomada) return { ok: true };
-  await tomarPorConector(c.persona, tomada, { id: actor.id, nombre: actor.name });
   await prisma.instagramConversacion.update({
     where: { id },
-    data: tomada ? { tomadaEn: new Date(), tomadaPorId: actor.id } : { tomadaEn: null, tomadaPorId: null },
+    data: tomada ? { tomadaEn: new Date(), tomadaPorId: actor.id, responderDesde: null } : { tomadaEn: null, tomadaPorId: null },
   });
   await createAuditEntry({
     entityType: AuditEntityType.instagram_conversacion,

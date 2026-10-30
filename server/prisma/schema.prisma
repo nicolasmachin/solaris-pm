@@ -160,6 +160,7 @@ enum AuditEntityType {
   legajo
   aviso_automatico
   instagram_conversacion
+  marketing_automatizacion
 }
 
 enum AuditAction {
@@ -709,6 +710,7 @@ model User {
   avisosAutomaticosCreados       AvisoAutomatico[]              @relation("AvisoAutomaticoCreadoPor")
   instagramConversacionesTomadas InstagramConversacion[]        @relation("InstagramConversacionTomadaPor")
   instagramMensajesEnviados      InstagramMensaje[]             @relation("InstagramMensajeEnviadoPor")
+  marketingAutomatizaciones      MarketingAutomatizacion[]      @relation("MarketingAutomatizacionActualizadaPor")
   cierresMes                     CierreMes[]                    @relation("CierreMesCerradoPor")
   reaperturasMes                 CierreMes[]                    @relation("CierreMesReabiertoPor")
 
@@ -1907,6 +1909,7 @@ model SalesLead {
   origen                  OrigenLead?
   origenDetalle           String?
   instagramConversaciones InstagramConversacion[]
+  instagramContactos      InstagramContacto[]
   lastReclamoAt           DateTime?               @db.Timestamptz(6)
   // Fecha de "alta comercial" del lead. Por default copia createdAt en
   // los registros nuevos (auto-fill en el handler de POST), pero es
@@ -6609,10 +6612,23 @@ model InstagramConversacion {
   leadId          String?
   lead            SalesLead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   mensajes        InstagramMensaje[]
+  /// Sigue a @voltia_uy (lo dice Meta al contestar); null si no se sabe.
+  sigue           Boolean?
+  /// Si la derivación fue porque mandó la factura o el techo (un lead).
+  derivadaLead    Boolean            @default(false)
+  /// Cuándo se le mandó el speech, y cuándo el seguimiento del día siguiente.
+  speechEn        DateTime?          @db.Timestamptz(6)
+  seguimientoEn   DateTime?          @db.Timestamptz(6)
+  /// Contestar a partir de este momento (la espera al azar después del último
+  /// mensaje del cliente). Lo levanta el job; null = nada pendiente.
+  responderDesde  DateTime?          @db.Timestamptz(6)
+  /// De dónde vino: [{momento, texto}] (ej. comentó AHORRO y le llegó el link).
+  origenes        Json               @default("[]")
   createdAt       DateTime           @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime           @updatedAt @db.Timestamptz(6)
 
   @@index([ultimoMensajeEn])
+  @@index([responderDesde])
   @@map("instagram_conversaciones")
 }
 
@@ -6628,9 +6644,138 @@ model InstagramMensaje {
   enviadoEn      DateTime              @db.Timestamptz(6)
   enviadoPorId   String?
   enviadoPor     User?                 @relation("InstagramMensajeEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: SetNull)
+  /// Vino de la carga del historial (antes de que Voltia PM atendiera Instagram):
+  /// se muestra, pero no cuenta para las métricas.
+  importado      Boolean               @default(false)
   createdAt      DateTime              @default(now()) @db.Timestamptz(6)
 
   @@unique([conversacionId, clave])
   @@index([conversacionId, enviadoEn])
   @@map("instagram_mensajes")
+}
+
+/// Lo que hizo (o en modo sombra, lo que habría hecho) el asistente de
+/// Instagram: cada decisión de los privados, los seguimientos y las
+/// automatizaciones de comentarios. De acá salen las métricas, el gasto por
+/// automatización y la revisión de Tabaré.
+model InstagramEvento {
+  id             String   @id @default(cuid())
+  /// privado | seguimiento | comentario
+  tipo           String
+  /// contestado, derivado, no_contestado, sin_respuesta, contestado_publico, avisado…
+  resultado      String
+  /// Por qué no se contestó (fuera_de_ventana, tomada, contesto_otro, …).
+  razon          String?
+  automatizacion String?
+  /// IGSID de la persona (privados) o del autor del comentario.
+  persona        String?
+  usuario        String?
+  comentarioId   String?
+  /// Modo sombra: se armó la respuesta pero no se mandó.
+  sombra         Boolean  @default(false)
+  desdeAnuncio   Boolean  @default(false)
+  speech         Boolean  @default(false)
+  lead           Boolean  @default(false)
+  derivado       Boolean  @default(false)
+  costoUsd       Decimal? @db.Decimal(10, 6)
+  /// Los mensajes, la respuesta pública, el motivo, temas, errores.
+  datos          Json     @default("{}")
+  creadoEn       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([creadoEn])
+  @@index([tipo, creadoEn])
+  @@index([persona])
+  @@map("instagram_eventos")
+}
+
+/// Un comentario en una publicación de @voltia_uy que tomó una automatización.
+/// La llave es el id de Meta: Meta reintenta y nunca se atiende dos veces.
+model InstagramComentario {
+  id               String    @id
+  texto            String
+  deId             String?
+  usuario          String?
+  mediaId          String?
+  automatizacion   String
+  /// Atender a partir de este momento (espera al azar). Lo levanta el job.
+  atenderDesde     DateTime  @db.Timestamptz(6)
+  /// PENDIENTE | PROCESANDO | HECHO
+  estado           String    @default("PENDIENTE")
+  resultado        String?
+  respuestaPublica String?
+  mensajePrivado   String?
+  sombra           Boolean   @default(false)
+  creadoEn         DateTime  @default(now()) @db.Timestamptz(6)
+  atendidoEn       DateTime? @db.Timestamptz(6)
+
+  @@index([estado, atenderDesde])
+  @@index([automatizacion, atendidoEn])
+  @@index([usuario])
+  @@map("instagram_comentarios")
+}
+
+/// Base de contactos de Instagram (lo que cobraba ManyChat): toda persona que
+/// escribió o comentó, con etiquetas de lo que hizo.
+model InstagramContacto {
+  id         String                      @id @default(cuid())
+  /// IGSID (el id de los privados). Null si solo se conoce el usuario (comentó).
+  persona    String?                     @unique
+  usuario    String?                     @unique
+  nombre     String?
+  sigue      Boolean?
+  primeraVez DateTime                    @db.Timestamptz(6)
+  ultimaVez  DateTime                    @db.Timestamptz(6)
+  /// Vino de la carga del historial (ManyChat, antes del 30-oct-2026).
+  importado  Boolean                     @default(false)
+  leadId     String?
+  lead       SalesLead?                  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  etiquetas  InstagramContactoEtiqueta[]
+  createdAt  DateTime                    @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime                    @updatedAt @db.Timestamptz(6)
+
+  @@index([ultimaVez])
+  @@map("instagram_contactos")
+}
+
+model InstagramContactoEtiqueta {
+  id         String            @id @default(cuid())
+  contactoId String
+  contacto   InstagramContacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  nombre     String
+  primera    DateTime          @db.Timestamptz(6)
+  ultima     DateTime          @db.Timestamptz(6)
+  veces      Int               @default(1)
+  /// Puesta por la carga del historial y nunca por Voltia PM.
+  importada  Boolean           @default(false)
+
+  @@unique([contactoId, nombre])
+  @@index([nombre])
+  @@map("instagram_contacto_etiquetas")
+}
+
+/// Las automatizaciones de Instagram, escritas en palabras (el "ManyChat con
+/// IA"). Se siembran desde server/config/instagram/*.md la primera vez y
+/// después se manejan desde Marketing. Las que empiezan con "_" son textos
+/// comunes (datos de Voltia, la parte común de los comentarios).
+model MarketingAutomatizacion {
+  id               String   @id
+  nombre           String
+  activa           Boolean  @default(false)
+  /// comentario | privado | seguimiento | texto
+  disparador       String
+  palabras         String[] @default([])
+  publicaciones    String[] @default([])
+  link             String?
+  esperaMinSeg     Int      @default(40)
+  esperaMaxSeg     Int      @default(150)
+  topeDiario       Int      @default(40)
+  /// Lo propio de cada tipo (horas del seguimiento, etc.).
+  extra            Json     @default("{}")
+  flujo            String
+  actualizadoPorId String?
+  actualizadoPor   User?    @relation("MarketingAutomatizacionActualizadaPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("marketing_automatizaciones")
 }

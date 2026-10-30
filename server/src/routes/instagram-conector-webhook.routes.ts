@@ -1,46 +1,31 @@
 /**
- * Entrada del contestador de Instagram: `/webhooks/instagram-conector`, sin
- * prefijo /api y sin login. El conector de indicadores manda acá la conversación
- * entera cada vez que cambia, firmada con el secreto compartido
- * (`X-Voltia-Firma: sha256=<HMAC del cuerpo>`, el mismo formato que usa Meta).
+ * Lo que lee el servidor de indicadores de Voltia PM, sin login de usuario,
+ * protegido con el secreto compartido (`Authorization: Bearer …`, ver
+ * services/instagram-marketing/conector.ts). Solo lectura.
  *
- * Igual que el webhook de WhatsApp, guarda el cuerpo crudo para validar la firma;
- * el parser vive solo dentro de este plugin.
+ * - `GET /webhooks/instagram-conector/consultas?desde=AAAA-MM-DD&hasta=AAAA-MM-DD`:
+ *   las consultas de Instagram por día, de donde sale la fuente "IG" de la
+ *   planilla de indicadores (ver metricas.ts).
+ *
+ * Va bajo /webhooks/ porque Caddy ya manda esa ruta al backend.
  */
 
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 
-import { instagramConectorConfig } from "../services/instagram-marketing/config.js";
-import { guardarDesdeConector } from "../services/instagram-marketing/bandeja.service.js";
-import { envioConectorSchema } from "../services/instagram-marketing/conversacion.js";
-import { firmaValida } from "../services/whatsapp-cloud/firma.js";
+import { secretoValido } from "../services/instagram-marketing/conector.js";
+import { consultasPorDia } from "../services/instagram-marketing/metricas.js";
+
+const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export async function registerInstagramConectorWebhookRoutes(app: FastifyInstance) {
-  app.addContentTypeParser("application/json", { parseAs: "buffer" }, (request, body, done) => {
-    const buffer = body as Buffer;
-    request.cuerpoCrudo = buffer;
-    try {
-      done(null, buffer.length > 0 ? JSON.parse(buffer.toString("utf8")) : {});
-    } catch (error) {
-      done(error as Error, undefined);
+  app.get("/webhooks/instagram-conector/consultas", async (request, reply) => {
+    if (!secretoValido(request.headers.authorization)) return reply.code(401).send({ error: "no_autorizado" });
+    const q = z.object({ desde: dia, hasta: dia }).safeParse(request.query);
+    if (!q.success || q.data.desde > q.data.hasta) return reply.code(400).send({ error: "fechas_invalidas" });
+    if ((Date.parse(q.data.hasta) - Date.parse(q.data.desde)) / 86_400_000 > 400) {
+      return reply.code(400).send({ error: "rango_demasiado_largo" });
     }
-  });
-
-  app.post("/webhooks/instagram-conector", { bodyLimit: 20 * 1024 * 1024 }, async (request, reply) => {
-    const firma = request.headers["x-voltia-firma"];
-    if (!firmaValida(request.cuerpoCrudo ?? Buffer.alloc(0), typeof firma === "string" ? firma : undefined, instagramConectorConfig().secreto)) {
-      console.warn("[instagram] envío del conector con firma inválida, rechazado");
-      return reply.code(401).send({ error: "firma_invalida" });
-    }
-    const envio = envioConectorSchema.safeParse(request.body);
-    if (!envio.success) {
-      return reply.code(400).send({ error: "formato_invalido", detalle: envio.error.issues.slice(0, 5) });
-    }
-    const lista = [...(envio.data.conversacion ? [envio.data.conversacion] : []), ...(envio.data.conversaciones ?? [])];
-    let nuevos = 0;
-    for (const conv of lista) {
-      nuevos += (await guardarDesdeConector(conv, { historial: envio.data.historial })).nuevos;
-    }
-    return { ok: true, conversaciones: lista.length, mensajesNuevos: nuevos };
+    return { dias: await consultasPorDia(q.data.desde, q.data.hasta) };
   });
 }

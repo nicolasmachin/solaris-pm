@@ -4,6 +4,18 @@
 
 ### 30 de octubre de 2026
 
+#### Marketing: el asistente de Instagram pasa a Voltia PM
+
+- El asistente que contesta los privados de @voltia_uy ahora vive en Voltia PM: espera un rato, contesta en varios mensajes cortos con el nombre de la persona, cuenta el speech adaptado a lo que preguntó, da el rango de precio y pide la factura de UTE y el techo. Cuando la persona los manda, la deriva a Ventas y a Martín le llega un mail con la conversación.
+- También contesta los **comentarios** y hace los **lead magnets**: quien comenta «AHORRO» recibe por privado los números de la obra y una respuesta pública distinta cada vez. Al día siguiente del speech, si la persona no contestó, le escribe un mensaje corto para retomar.
+- Arriba de Marketing se ve si el asistente está **contestando**, **en sombra** (arma las respuestas sin mandarlas, para comparar) o **apagado**, y cuánto se gastó en el mes.
+- Pestaña **Automatizaciones**: cada rutina con su flujo escrito en palabras, **PRENDIDA** o **APAGADA** bien a la vista, lo que hizo en la semana, y para prenderla, apagarla o editarla.
+- Pestaña **Contactos**: todas las personas que escribieron o comentaron, con etiquetas de lo que hicieron (escribió, recibió el speech, lead, derivado, comentó AHORRO…). Lo que viene de ManyChat se marca como historial.
+- Pestaña **Consultas por día**: cuántos escribieron (por anuncio u orgánico), a cuántos se les contó el speech, derivados, leads y lead magnets. Se cuenta desde que Voltia PM atiende Instagram.
+- En cada conversación se ve, entre los mensajes, por qué el asistente no contestó cuando no lo hizo.
+- Lo que se contesta a mano desde la bandeja sale directo por Instagram.
+- Todavía no está prendido: primero corre unos días en sombra al lado del contestador anterior.
+
 #### Ventas: leads sin tomar
 
 - Los leads que entran sin vendedor (hoy, los que crea Marketing desde una conversación de Instagram) aparecen arriba de todo en Ventas, en una franja violeta: **«Leads sin tomar»**, con el que más espera primero. En el tablero y en la lista también se ven en violeta, con la etiqueta «Sin tomar».

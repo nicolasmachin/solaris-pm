@@ -12,7 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:seed": "node --import tsx prisma/seed.ts",
-    "test:instagram-marketing": "node --import tsx --test src/services/instagram-marketing/instagram-marketing.test.ts",
+    "test:instagram-marketing": "node --import tsx --test src/services/instagram-marketing/instagram-marketing.test.ts src/services/instagram-marketing/asistente.test.ts",
     "test:avisos": "node --import tsx --test src/services/avisos/avisos.test.ts",
     "test:whatsapp": "node --import tsx --test src/services/whatsapp-cloud/whatsapp-cloud.test.ts src/services/whatsapp-cloud/coexistencia.test.ts",
     "test:biller-cfe": "node --import tsx --test src/services/biller/cfe-emitidos.test.ts",
