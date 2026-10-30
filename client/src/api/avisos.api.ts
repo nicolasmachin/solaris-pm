@@ -63,13 +63,13 @@ export type AvisoEnvio = {
   project: { code: string; clientName: string } | null;
 };
 
-export const getAvisosCatalogo = () => apiClient.get<AvisosCatalogo>("/avisos/catalogo").then((r) => r.data);
-export const getAvisos = () => apiClient.get<Aviso[]>("/avisos").then((r) => r.data);
+export const getAvisosCatalogo = () => apiClient.get<AvisosCatalogo>("/api/avisos/catalogo").then((r) => r.data);
+export const getAvisos = () => apiClient.get<Aviso[]>("/api/avisos").then((r) => r.data);
 export const getAvisosEnvios = (params: { avisoId?: string; projectId?: string } = {}) =>
-  apiClient.get<AvisoEnvio[]>("/avisos/envios", { params }).then((r) => r.data);
-export const crearAviso = (d: AvisoDatos) => apiClient.post<Aviso>("/avisos", d).then((r) => r.data);
-export const editarAviso = (id: string, d: AvisoDatos) => apiClient.put<Aviso>(`/avisos/${id}`, d).then((r) => r.data);
-export const mandarAvisoAMeta = (id: string) => apiClient.post<Aviso>(`/avisos/${id}/meta`).then((r) => r.data);
-export const activarAviso = (id: string) => apiClient.post<Aviso>(`/avisos/${id}/activar`).then((r) => r.data);
-export const pausarAviso = (id: string) => apiClient.post<Aviso>(`/avisos/${id}/pausar`).then((r) => r.data);
-export const borrarAviso = (id: string) => apiClient.delete(`/avisos/${id}`);
+  apiClient.get<AvisoEnvio[]>("/api/avisos/envios", { params }).then((r) => r.data);
+export const crearAviso = (d: AvisoDatos) => apiClient.post<Aviso>("/api/avisos", d).then((r) => r.data);
+export const editarAviso = (id: string, d: AvisoDatos) => apiClient.put<Aviso>(`/api/avisos/${id}`, d).then((r) => r.data);
+export const mandarAvisoAMeta = (id: string) => apiClient.post<Aviso>(`/api/avisos/${id}/meta`).then((r) => r.data);
+export const activarAviso = (id: string) => apiClient.post<Aviso>(`/api/avisos/${id}/activar`).then((r) => r.data);
+export const pausarAviso = (id: string) => apiClient.post<Aviso>(`/api/avisos/${id}/pausar`).then((r) => r.data);
+export const borrarAviso = (id: string) => apiClient.delete(`/api/avisos/${id}`);
