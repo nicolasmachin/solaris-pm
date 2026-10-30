@@ -804,8 +804,10 @@ Detalles que importan:
 
 **Regla de Oro (hito 5).** El job `aviso-habilitacion.service.ts` corre cada 3
 horas: a las 24 h le recuerda al rol Experiencia Solar que avise al cliente, y a
-las 48 h escala a ADMIN. **El sistema no le escribe al cliente**: sólo alerta
-internamente. La alarma se apaga cuando alguien registra una interacción con
+las 48 h escala a ADMIN. Por sí solo este job no le escribe al cliente: sólo
+alerta internamente. Si hay un aviso automático activo con el disparador "UTE
+habilitó la instalación" que deja hecho el paso `e2_habilitacion`, al salir
+cierra el paso y apaga la alarma (ver `20-avisos-automaticos.md`). La alarma se apaga cuando alguien registra una interacción con
 el paso **"Aviso de habilitación otorgada"** (`e2_habilitacion`) de la pestaña de
 pasos: `completarCheck` escribe `avisoHabilitacionEn`, y destildarlo lo vuelve a
 poner en null. Antes lo hacía un botón "Marcar avisado al Generador" dentro del
@@ -913,11 +915,13 @@ historial de la ficha. Ver "historia clínica" arriba.
 - **Capacitación junto con el aviso de encender.** Se evaluó separarlas (avisar
   primero y capacitar unos días después con datos reales en la app) y se prefirió
   un solo contacto bien hecho.
-- **El sistema no le escribe al cliente por su cuenta.** Toda comunicación
-  saliente la hace una persona. El sistema asiste: arma el mensaje y recuerda
-  cuándo. Esto es consecuencia de los guardrails de correo y WhatsApp
-  (ver `01-fundamentos.md`), y de una decisión explícita de no automatizar la voz
-  de la empresa.
+- **El sistema le escribe al cliente solo con los avisos automáticos que se
+  configuran en Administración** (desde el 29-10-2026, ver
+  `20-avisos-automaticos.md`). Antes regía "el sistema no le escribe al cliente
+  por su cuenta". Fuera de esos avisos (y del reporte mensual de generación),
+  toda comunicación saliente la sigue haciendo una persona con los mensajes
+  modelo; los guardrails de correo y WhatsApp (`01-fundamentos.md`) siguen
+  bloqueando cualquier otro envío al cliente.
 - **Si no está agendado, no vamos.** La visita que generó la queja falló primero
   como registro: no estaba en el calendario, y por eso nadie pudo avisar.
 
@@ -2022,7 +2026,7 @@ resultados (cap. 08).
 - **Un plan por instalación**, identificada por el número de serie del
   inversor. Una ampliación de la misma obra no tiene plan propio (el alta lo
   rechaza con `AMPLIACION_SUMA_AL_PLAN`): se suma al plan de la obra original.
-- **Voltia PM no le escribe al cliente** (Manual de Posventa, Anexo D). Las
+- **El aviso de vencimiento lo manda una persona** (no hay disparador de plan de granizo entre los avisos automáticos). Las
   condiciones prometen avisar el vencimiento y los cambios de precio con 30
   días. Ese aviso lo manda Experiencia Solar con el mensaje modelo "Aviso de
   vencimiento"; Voltia PM avisa al equipo y deja el mensaje listo. Lo decidió

@@ -65,6 +65,11 @@ services:
       GRAPH_API_VERSION: ${GRAPH_API_VERSION:-}
       META_APP_ID: ${META_APP_ID:-}
       WHATSAPP_SIGNUP_CONFIG_ID: ${WHATSAPP_SIGNUP_CONFIG_ID:-}
+      # Marketing → Instagram (docs/manual/20-marketing.md): el contestador vive en
+      # el conector de indicadores. Mismo secreto en las dos puntas. Sin estas,
+      # la bandeja no recibe nada y no deja contestar.
+      INSTAGRAM_CONECTOR_URL: ${INSTAGRAM_CONECTOR_URL:-}
+      INSTAGRAM_CONECTOR_SECRETO: ${INSTAGRAM_CONECTOR_SECRETO:-}
       # Días no laborables sueltos (puentes), AAAA-MM-DD separados por coma.
       FERIADOS_EXTRA: ${FERIADOS_EXTRA:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

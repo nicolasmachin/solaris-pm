@@ -25,6 +25,7 @@ import {
 import { STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "./traspasos/catalogo.js";
 import { crearTraspasoSiNoExiste } from "./traspasos/traspasos.service.js";
 import { fireStageSurveys } from "./encuestas/encuestas.service.js";
+import { emitirHecho } from "./avisos/emitir.js";
 import { activarPorHecho } from "./clientes/recorrido.service.js";
 import type { HechoRecorrido } from "./clientes/recorrido-checks.js";
 
@@ -254,6 +255,8 @@ export async function syncStageProgress(stageId: string, opts?: { actorUserId?: 
     // (la bienvenida al cerrar el onboarding, el de obra terminada).
     const hecho = STAGE_A_HECHO_RECORRIDO[updatedStage.name];
     if (hecho) await activarPorHecho(stage.projectId, hecho);
+    // Avisos automáticos al cliente configurados para esta etapa.
+    emitirHecho({ disparador: `etapa.completada:${updatedStage.name}`, projectId: stage.projectId });
   }
 
   return updatedStage;

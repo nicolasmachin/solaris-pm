@@ -2,6 +2,7 @@ import { AuditAction, AuditEntityType, EmailStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
+import { emitirHecho } from "../avisos/emitir.js";
 import { AppError, badRequest } from "../../utils/errors.js";
 import { todayUtc } from "../../utils/dates.js";
 import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
@@ -244,10 +245,14 @@ export async function registrarConsultaUteEnviada(
   try {
     // Solo el trámite de ESE suministro: con dos cuentas UTE hay dos
     // consultas, y mandar una no dice nada de la otra.
-    await prisma.uteProcess.updateMany({
+    const hoy = todayUtc();
+    const { count } = await prisma.uteProcess.updateMany({
       where: { projectId, suministro, deletedAt: null, consultaSentAt: null },
-      data: { consultaSentAt: todayUtc() },
+      data: { consultaSentAt: hoy },
     });
+    if (count > 0) {
+      emitirHecho({ disparador: "ute.hito:consultaSentAt", projectId, ref: String(suministro), ocurrioEn: hoy, eventoFecha: hoy });
+    }
   } catch {
     // El mail ya salió; nunca fallar el envío por la auto-captura de fecha.
   }

@@ -18,6 +18,7 @@ import { NotificationType, PostHabilitacionSubFase, StageType } from "@prisma/cl
 
 import { prisma } from "../lib/prisma.js";
 import { activarPorHecho } from "./clientes/recorrido.service.js";
+import { emitirHecho } from "./avisos/emitir.js";
 import {
   calculateProjectProgress,
   completeProjectIfAllStagesDone,
@@ -493,6 +494,12 @@ async function marcarHabilitacionEnProyecto(uteProcess: UteProcess): Promise<voi
   // Se cuenta desde que UTE finalizó, no desde que Voltia PM se enteró: la Regla
   // de Oro (48 h) corre desde la habilitación real.
   await activarPorHecho(uteProcess.projectId, "habilitacion", uteProcess.finalizedAt ?? undefined);
+  emitirHecho({
+    disparador: "ute.habilitado",
+    projectId: uteProcess.projectId,
+    ocurrioEn: uteProcess.finalizedAt,
+    eventoFecha: uteProcess.finalizedAt,
+  });
 }
 
 export async function advancePostventaOnUteFinalizado(uteProcess: UteProcess): Promise<void> {

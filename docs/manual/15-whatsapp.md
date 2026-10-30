@@ -22,6 +22,11 @@ sin sacarlos de ahí (lo que Meta llama "coexistence").
 No reemplaza a `services/whatsapp.service.ts` (Twilio), que manda avisos internos
 y queda como está.
 
+Los **avisos automáticos al cliente** (disparador → plantilla) usan este módulo
+para crear las plantillas en Meta y mandarlas: ver `20-avisos-automaticos.md`.
+Las plantillas de los avisos se llaman `aviso_…` y también aparecen en la lista
+de plantillas de esta pantalla.
+
 ## Cómo se usa
 
 **Administración → WhatsApp** (pestaña del grupo Sistema):

@@ -4,6 +4,14 @@
 
 ### 29 de octubre de 2026
 
+#### Marketing: los privados de Instagram dentro de Voltia PM
+
+- Menú nuevo **Marketing**, con la bandeja de mensajes privados de @voltia_uy: a la izquierda las conversaciones (con los sin leer, las derivadas y las que vinieron por un anuncio) y a la derecha el chat, con lo que escribió el cliente y lo que contestó el asistente o una persona de Voltia.
+- Se puede **contestar desde ahí**, mientras Instagram lo permita (24 horas desde el último mensaje del cliente, o 7 días si escribió por un anuncio).
+- **Tomo yo**: el asistente deja de contestar en esa conversación hasta que se la devuelvan.
+- **Crear lead**: pasa la conversación a Ventas con el origen ya puesto (anuncio o redes sin anuncio).
+- Rol nuevo **Marketing**, que junto con Administración ve y usa el módulo. WhatsApp de los anuncios aparece como «próximamente».
+
 #### Los movimientos del BROU entran solos
 
 - El lector del banco lee las dos cuentas del BROU de lunes a viernes a las 8:00 y a las 18:00, con un usuario del banco que solo puede consultar. En Finanzas → Banco se ve el saldo que dice el banco y qué movimientos faltan cargar en Voltia PM.
@@ -15,6 +23,14 @@
 - Con **«Es este»** se registra lo que falta y queda emparejado con el banco: se le pone la cuenta, se registra el pago al proveedor, se marca pagado el costo fijo o cobrado el cobro (si entró menos, el resto queda previsto).
 - **La IA** lee los que no tienen sugerencia y dice qué cree que es («pago a Dibaril por cañería para G. Suárez, no está cargado»); si elige una opción, se confirma con el mismo «Es este».
 - Las comisiones e IVA del banco se cargan todas juntas con un botón.
+
+#### Avisos automáticos al cliente
+
+- Nueva sección en Administración → **Avisos automáticos**: se elige **cuándo sale** el aviso (venta cerrada, fecha de obra confirmada, obra reprogramada, faltan unos días para la obra, obra terminada, cada etapa completada, cada paso del trámite UTE, UTE habilitó, visita técnica o mantenimiento agendado) y **qué le dice al cliente**, por **WhatsApp** o por **mail**.
+- El mensaje se escribe con los datos del cliente (nombre, fecha de obra, fecha del paso de UTE, link al portal) y se ve cómo le llega antes de guardarlo.
+- En WhatsApp, el mensaje se manda a **Meta para que lo apruebe**; cuando lo aprueba, se activa. En mail se activa directo.
+- Solo cuentan los hechos que pasan **después de activar** el aviso, y cada hecho lo manda **una sola vez**.
+- Cada envío queda registrado: a quién, cuándo, el texto y si llegó, falló o no se mandó (y por qué). Lo enviado aparece también en la bitácora del cliente y puede dejar tildado el paso de Experiencia Solar que corresponde, para que nadie le mande lo mismo a mano.
 
 #### Costos fijos: lo que falta pagar en el mes
 

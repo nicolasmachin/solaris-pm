@@ -76,6 +76,7 @@ import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../mid
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { clearUmbralNotaBajaCache } from "../services/encuestas/encuestas.service.js";
 import { activarPorHecho, crearCheckReagenda } from "../services/clientes/recorrido.service.js";
+import { emitirHecho } from "../services/avisos/emitir.js";
 import {
   completarPorEvidencia,
   despintarPorEvidencia,
@@ -2874,6 +2875,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       for (const tipo of tipos) {
         await crearTraspasoSiNoExiste({ tipo, projectId: params.projectId, actorUserId: user.id });
       }
+      // Mismo hecho que el cierre por sub-tareas: el aviso sale una sola vez por proyecto.
+      emitirHecho({ disparador: `etapa.completada:${stage.name}`, projectId: params.projectId });
     }
 
     await refreshStageProgressAndProject(stage.id, params.projectId);
@@ -6051,6 +6054,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // VIEW = ver la mesa de Soporte y recibir sus alertas. EDIT = cerrar casos y
     // avisar al cliente.
     { module: Module.SOPORTE,             actions: [Action.VIEW, Action.EDIT] },
+    // VIEW = ver la bandeja de Instagram. EDIT = contestar, tomar la
+    // conversación y crear el lead.
+    { module: Module.MARKETING,           actions: [Action.VIEW, Action.EDIT] },
     { module: Module.USUARIOS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.CONFIGURACION,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
@@ -7833,6 +7839,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       action: AuditAction.created,
       description: `Creó proyecto '${project.clientName}' desde lead ${lead.code}`,
     });
+    emitirHecho({ disparador: "proyecto.creado", projectId: project.id });
 
     // Copia de adjuntos del lead al proyecto. No falla la conversión si la
     // copia falla parcialmente (preferimos tener el proyecto creado).
@@ -9757,6 +9764,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         body.motivo,
         updated.segments?.[0]?.startDate ?? null,
       );
+      const nuevaFecha = updated.segments?.[0]?.startDate;
+      if (nuevaFecha) {
+        emitirHecho({ disparador: "obra.reprogramada", projectId: existing.projectId, ref: nuevaFecha.toISOString().slice(0, 10) });
+      }
     }
 
     await createAuditEntry({
@@ -9812,6 +9823,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // calendario no generaba ninguna obligación visible: de 33 obras agendadas, 6
     // quedaron sin confirmar y sus fechas ya pasaron.
     await activarPorHecho(existing.projectId, "fecha_confirmada");
+    emitirHecho({
+      disparador: "obra.fecha_confirmada",
+      projectId: existing.projectId,
+      ref: updated.segments?.[0]?.startDate?.toISOString().slice(0, 10),
+    });
 
     await createAuditEntry({
       entityType: AuditEntityType.installation_schedule,
@@ -9924,6 +9940,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     if (esReprogramacion && body.motivo) {
       await crearCheckReagenda(existing.projectId, body.motivo, newStart);
+      emitirHecho({ disparador: "obra.reprogramada", projectId: existing.projectId, ref: toDateOnlyString(newStart) ?? undefined });
     }
 
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
@@ -10522,6 +10539,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
           newValue: serializeDate(ahora),
           description: `Trámite UTE: ${UTE_HITO_LABEL[key] ?? key}`,
         });
+        // La habilitación (finalizedAt) tiene su propio disparador, que espera a todos los suministros.
+        if (key !== "finalizedAt") {
+          emitirHecho({
+            disparador: `ute.hito:${key}`,
+            projectId: updated.projectId,
+            ref: String(updated.suministro ?? updated.id),
+            ocurrioEn: ahora,
+            eventoFecha: ahora,
+          });
+        }
       }
       // El cambio de etapa se audita aparte sólo si no vino con un hito: si vino
       // con uno, el hito ya lo cuenta y esto sería el mismo hecho dos veces.

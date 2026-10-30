@@ -158,6 +158,8 @@ enum AuditEntityType {
   cierre_mes
   documento_intranet
   legajo
+  aviso_automatico
+  instagram_conversacion
 }
 
 enum AuditAction {
@@ -360,6 +362,10 @@ enum Module {
   // ver la mesa y recibir las alertas; EDIT = resolver, descartar y avisar al
   // cliente. Por ahora solo ADMIN; después, el rol de Soporte.
   SOPORTE
+  // Marketing: bandeja de privados de Instagram (y más adelante WhatsApp de los
+  // anuncios). VIEW = ver las conversaciones; EDIT = contestar, tomar la
+  // conversación (que el asistente se calle) y crear el lead.
+  MARKETING
 }
 
 enum Moneda {
@@ -694,6 +700,9 @@ model User {
   whatsappMensajesEnviados       WhatsAppMensaje[]              @relation("WhatsAppMensajeEnviadoPor")
   whatsappNumerosResponsable     WhatsAppNumero[]               @relation("WhatsAppNumeroResponsable")
   whatsappNumerosConectados      WhatsAppNumero[]               @relation("WhatsAppNumeroConectadoPor")
+  avisosAutomaticosCreados       AvisoAutomatico[]              @relation("AvisoAutomaticoCreadoPor")
+  instagramConversacionesTomadas InstagramConversacion[]        @relation("InstagramConversacionTomadaPor")
+  instagramMensajesEnviados      InstagramMensaje[]             @relation("InstagramMensajeEnviadoPor")
   cierresMes                     CierreMes[]                    @relation("CierreMesCerradoPor")
   reaperturasMes                 CierreMes[]                    @relation("CierreMesReabiertoPor")
 
@@ -764,6 +773,7 @@ model Project {
   stockMovements                  StockMovement[]
   installationSchedule            InstallationSchedule?
   uteProcesses                    UteProcess[]
+  avisosEnvios                    AvisoEnvio[]                   @relation("AvisoEnvioProject")
   clients                         ProjectClient[]
   unifilarVersions                UnifilarVersion[]
   cabinetDesigns                  CabinetDesign[]
@@ -1860,65 +1870,66 @@ model Setting {
 }
 
 model SalesLead {
-  id                    String               @id @default(cuid())
-  code                  String               @unique
-  tenantId              String?
-  clientName            String
-  clientEmail           String?
-  clientPhone           String?
-  address               String?
-  stage                 SalesStage           @default(NUEVO_LEAD)
+  id                      String                  @id @default(cuid())
+  code                    String                  @unique
+  tenantId                String?
+  clientName              String
+  clientEmail             String?
+  clientPhone             String?
+  address                 String?
+  stage                   SalesStage              @default(NUEVO_LEAD)
   // Residencial o empresa. Clasifica al cliente potencial y precarga el
   // cotizador correspondiente; NO restringe: desde cualquier lead se puede
   // abrir cualquiera de los dos cotizadores.
-  tipoCliente           ProposalVariante     @default(RESIDENCIAL)
-  estimatedKwp          Decimal?             @db.Decimal(10, 2)
-  estimatedBudgetUsd    Decimal?             @db.Decimal(14, 2)
-  uteBillMonthlyUsd     Decimal?             @db.Decimal(10, 2)
-  roofType              String?
-  notes                 String?
-  lostReason            String?
+  tipoCliente             ProposalVariante        @default(RESIDENCIAL)
+  estimatedKwp            Decimal?                @db.Decimal(10, 2)
+  estimatedBudgetUsd      Decimal?                @db.Decimal(14, 2)
+  uteBillMonthlyUsd       Decimal?                @db.Decimal(10, 2)
+  roofType                String?
+  notes                   String?
+  lostReason              String?
   // Contador de reclamos (insistencias) hechos al lead. Es transversal a la
   // etapa: un lead en cualquier stage puede acumular reclamos. Se muestra como
   // "xR" en la tarjeta y se incrementa con el botón "+" desde el kanban.
-  reclamosCount         Int                  @default(0)
+  reclamosCount           Int                     @default(0)
   // El cliente contrata el seguro de granizo. Al convertir el lead en proyecto
   // se crea la póliza (pendiente de inicio hasta la habilitación UTE).
-  contrataSeguroGranizo Boolean              @default(false)
+  contrataSeguroGranizo   Boolean                 @default(false)
   // "¿Cómo nos conoció?". Obligatorio al crear desde la pantalla de Ventas;
   // opcional por API y conector. OTRO exige `origenDetalle`, que en el resto
   // de los valores es una aclaración libre (quién lo recomendó, qué marca).
-  origen                OrigenLead?
-  origenDetalle         String?
-  lastReclamoAt         DateTime?            @db.Timestamptz(6)
+  origen                  OrigenLead?
+  origenDetalle           String?
+  instagramConversaciones InstagramConversacion[]
+  lastReclamoAt           DateTime?               @db.Timestamptz(6)
   // Fecha de "alta comercial" del lead. Por default copia createdAt en
   // los registros nuevos (auto-fill en el handler de POST), pero es
   // editable desde el panel "Fechas del proceso" para corregir backfills
   // manuales o fechas históricas.
-  leadCreatedAt         DateTime?            @db.Timestamptz(6)
-  proposalSentAt        DateTime?            @db.Timestamptz(6)
-  visitScheduledAt      DateTime?            @db.Timestamptz(6)
-  visitCompletedAt      DateTime?            @db.Timestamptz(6)
-  closedAt              DateTime?            @db.Timestamptz(6)
-  assignedToId          String?
-  assignedTo            User?                @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
-  convertedToProjectId  String?
-  convertedToProject    Project?             @relation("LeadConvertedTo", fields: [convertedToProjectId], references: [id], onDelete: SetNull)
-  convertedAt           DateTime?            @db.Timestamptz(6)
-  createdById           String
-  createdBy             User                 @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  activities            SalesActivity[]
-  proposals             ProposalGeneration[] @relation("ProposalLead")
-  proposalV2Drafts      ProposalV2Draft[]
-  proposalV2Versions    ProposalV2Version[]
-  commission            Commission?
-  comments              Comment[]
-  tasks                 Task[]
-  attachments           FileAttachment[]     @relation("LeadAttachments")
-  videos                ProjectVideo[]       @relation("SalesLeadVideos")
-  deletedAt             DateTime?            @db.Timestamptz(6)
-  createdAt             DateTime             @default(now()) @db.Timestamptz(6)
-  updatedAt             DateTime             @updatedAt @db.Timestamptz(6)
+  leadCreatedAt           DateTime?               @db.Timestamptz(6)
+  proposalSentAt          DateTime?               @db.Timestamptz(6)
+  visitScheduledAt        DateTime?               @db.Timestamptz(6)
+  visitCompletedAt        DateTime?               @db.Timestamptz(6)
+  closedAt                DateTime?               @db.Timestamptz(6)
+  assignedToId            String?
+  assignedTo              User?                   @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  convertedToProjectId    String?
+  convertedToProject      Project?                @relation("LeadConvertedTo", fields: [convertedToProjectId], references: [id], onDelete: SetNull)
+  convertedAt             DateTime?               @db.Timestamptz(6)
+  createdById             String
+  createdBy               User                    @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  activities              SalesActivity[]
+  proposals               ProposalGeneration[]    @relation("ProposalLead")
+  proposalV2Drafts        ProposalV2Draft[]
+  proposalV2Versions      ProposalV2Version[]
+  commission              Commission?
+  comments                Comment[]
+  tasks                   Task[]
+  attachments             FileAttachment[]        @relation("LeadAttachments")
+  videos                  ProjectVideo[]          @relation("SalesLeadVideos")
+  deletedAt               DateTime?               @db.Timestamptz(6)
+  createdAt               DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime                @updatedAt @db.Timestamptz(6)
 
   @@index([stage])
   @@index([origen])
@@ -2875,10 +2886,10 @@ model Payment {
   supplierId String
   supplier   Supplier @relation(fields: [supplierId], references: [id])
 
-  fecha  DateTime @db.Date
+  fecha       DateTime @db.Date
   // En la moneda de la deuda: es lo que se descuenta de las facturas.
-  monto  Decimal  @db.Decimal(14, 2)
-  moneda Moneda   @default(USD)
+  monto       Decimal  @db.Decimal(14, 2)
+  moneda      Moneda   @default(USD)
   // Pago desde una cuenta de otra moneda (deuda en pesos pagada desde dólares o
   // al revés): lo que salió de la cuenta, en la moneda de la cuenta, y la
   // cotización usada (pesos por dólar). Null = misma moneda (sale `monto`).
@@ -2955,26 +2966,26 @@ model Account {
 // editado o borrado después se refleja solo. Lo único que se guarda es el
 // "No va" (ignoradoAt) de lo que no se carga a propósito.
 model BankMovement {
-  id          String         @id @default(cuid())
-  accountId   String
-  account     Account        @relation(fields: [accountId], references: [id])
-  fecha       DateTime       @db.Date
-  descripcion String
-  documento   String?
+  id             String         @id @default(cuid())
+  accountId      String
+  account        Account        @relation(fields: [accountId], references: [id])
+  fecha          DateTime       @db.Date
+  descripcion    String
+  documento      String?
   // Lo que dice el detalle del movimiento en el home banking: a quién se le
   // pagó o quién transfirió, y el concepto. Clave para saber qué es.
-  asunto      String?
+  asunto         String?
   // Lo que la IA interpretó que es (cuando el parecido no alcanzó): la opción
   // elegida, la razón y la confianza. Se recalcula a pedido.
   sugerenciaIa   Json?
   sugerenciaIaAt DateTime?
-  dependencia String?
-  tipo        TipoMovimiento
-  monto       Decimal        @db.Decimal(14, 2)
+  dependencia    String?
+  tipo           TipoMovimiento
+  monto          Decimal        @db.Decimal(14, 2)
   // Llave de deduplicación: cuenta + fecha + descripción + documento + monto +
   // ordinal entre iguales del mismo día (dos comisiones idénticas son dos
   // movimientos). El robot relee varios días por vez y esto evita repetirlos.
-  claveUnica  String         @unique
+  claveUnica     String         @unique
 
   ignoradoAt     DateTime?
   ignoradoMotivo String?
@@ -5815,40 +5826,40 @@ model WhatsAppMensaje {
 /// Meta. En coexistencia el número sigue andando en la aplicación WhatsApp
 /// Business del celular. Ver docs/manual/15-whatsapp.md.
 model WhatsAppNumero {
-  id                 String    @id @default(cuid())
-  phoneNumberId      String    @unique
-  wabaId             String
-  businessId         String?
+  id                String    @id @default(cuid())
+  phoneNumberId     String    @unique
+  wabaId            String
+  businessId        String?
   /// Como lo muestra Meta: "+598 98 123 456".
-  telefono           String
-  nombreVerificado   String?
+  telefono          String
+  nombreVerificado  String?
   /// Token de la integración (usuario del sistema del negocio), cifrado con
   /// SMTP_ENCRYPTION_KEY. Nunca sale del servidor.
-  tokenCifrado       String
+  tokenCifrado      String
   /// true si el número sigue en la aplicación WhatsApp Business del celular.
-  coexistencia       Boolean   @default(false)
+  coexistencia      Boolean   @default(false)
   /// Para qué se usa: "Ventas", "Experiencia Solar"…
-  etiqueta           String?
-  responsableId      String?
-  responsable        User?     @relation("WhatsAppNumeroResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  etiqueta          String?
+  responsableId     String?
+  responsable       User?     @relation("WhatsAppNumeroResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
   /// CONECTADO | DESCONECTADO
-  estado             String    @default("CONECTADO")
+  estado            String    @default("CONECTADO")
   /// Sincronización de contactos e historial (solo coexistencia): se puede
   /// pedir una sola vez por conexión y dentro de las 24 h.
-  syncContactosId    String?
-  syncContactosEn    DateTime? @db.Timestamptz(6)
-  syncHistorialId    String?
-  syncHistorialEn    DateTime? @db.Timestamptz(6)
+  syncContactosId   String?
+  syncContactosEn   DateTime? @db.Timestamptz(6)
+  syncHistorialId   String?
+  syncHistorialEn   DateTime? @db.Timestamptz(6)
   /// Avance que informa Meta mientras manda el historial (0-100).
-  historialProgreso  Int?
+  historialProgreso Int?
   /// Si el dueño no compartió el historial, el motivo que da Meta.
-  historialError     String?
-  syncError          String?
-  conectadoPorId     String?
-  conectadoPor       User?     @relation("WhatsAppNumeroConectadoPor", fields: [conectadoPorId], references: [id], onDelete: SetNull)
-  conectadoEn        DateTime  @default(now()) @db.Timestamptz(6)
-  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt          DateTime  @updatedAt @db.Timestamptz(6)
+  historialError    String?
+  syncError         String?
+  conectadoPorId    String?
+  conectadoPor      User?     @relation("WhatsAppNumeroConectadoPor", fields: [conectadoPorId], references: [id], onDelete: SetNull)
+  conectadoEn       DateTime  @default(now()) @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(6)
 
   @@map("whatsapp_numeros")
 }
@@ -5984,22 +5995,22 @@ enum DocumentoOrigen {
 }
 
 model Documento {
-  id          String          @id @default(cuid())
+  id              String          @id @default(cuid())
   // Solo los sincronizados: la clave del manifiesto ("manual-ventas").
-  slug        String?         @unique
-  titulo      String
-  descripcion String?
+  slug            String?         @unique
+  titulo          String
+  descripcion     String?
   // Agrupador visible: "Procedimientos", "Manuales de trabajo", "Reglamentos"…
-  categoria   String
-  origen      DocumentoOrigen @default(SUBIDO)
+  categoria       String
+  origen          DocumentoOrigen @default(SUBIDO)
   // Si es true, cada versión nueva le pide a su gente que confirme la lectura.
-  requiereLectura Boolean     @default(false)
-  orden       Int             @default(0)
+  requiereLectura Boolean         @default(false)
+  orden           Int             @default(0)
   // Inactivo = solo lo ve quien gestiona.
-  activo      Boolean         @default(true)
-  deletedAt   DateTime?       @db.Timestamptz(6)
-  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+  activo          Boolean         @default(true)
+  deletedAt       DateTime?       @db.Timestamptz(6)
+  createdAt       DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(6)
 
   roles     DocumentoRol[]
   versiones DocumentoVersion[]
@@ -6083,23 +6094,23 @@ model Legajo {
   vinculo VinculoLaboral @default(DEPENDIENTE)
 
   // ── Datos personales: los carga la persona ──
-  cedula                 String?
-  fechaNacimiento        DateTime? @db.Date
-  direccion              String?
-  telefonoPersonal       String?
-  emailPersonal          String?
-  emergenciaNombre       String?
-  emergenciaTelefono     String?
-  emergenciaVinculo      String?
-  mutualista             String?
-  emergenciaMovil        String?
+  cedula                    String?
+  fechaNacimiento           DateTime? @db.Date
+  direccion                 String?
+  telefonoPersonal          String?
+  emailPersonal             String?
+  emergenciaNombre          String?
+  emergenciaTelefono        String?
+  emergenciaVinculo         String?
+  mutualista                String?
+  emergenciaMovil           String?
   // Opcionales a propósito: dato de salud.
-  grupoSanguineo         String?
-  alergias               String?
-  banco                  String?
-  cuentaBancaria         String?
-  talleRopa              String?
-  talleCalzado           String?
+  grupoSanguineo            String?
+  alergias                  String?
+  banco                     String?
+  cuentaBancaria            String?
+  talleRopa                 String?
+  talleCalzado              String?
   licenciaConducirCategoria String?
 
   // ── Datos de la empresa: solo RRHH:EDIT los ve y los edita ──
@@ -6115,10 +6126,10 @@ model Legajo {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
-  documentos  LegajoDocumento[]
-  licencias   Licencia[]
+  documentos   LegajoDocumento[]
+  licencias    Licencia[]
   contingentes LicenciaContingente[]
-  entregas    EntregaMateriales[]
+  entregas     EntregaMateriales[]
 
   @@map("legajos")
 }
@@ -6209,25 +6220,25 @@ enum LicenciaEstado {
 }
 
 model Licencia {
-  id            String         @id @default(cuid())
-  legajoId      String
-  legajo        Legajo         @relation(fields: [legajoId], references: [id], onDelete: Cascade)
-  tipo          LicenciaTipo
-  desde         DateTime       @db.Date
-  hasta         DateTime       @db.Date
+  id              String         @id @default(cuid())
+  legajoId        String
+  legajo          Legajo         @relation(fields: [legajoId], references: [id], onDelete: Cascade)
+  tipo            LicenciaTipo
+  desde           DateTime       @db.Date
+  hasta           DateTime       @db.Date
   // Los días que cuenta. Se propone (lunes a viernes sin feriados) y RRHH lo
   // puede corregir: es el número que descuenta del contingente.
-  dias          Int
-  nota          String?
-  estado        LicenciaEstado @default(SOLICITADA)
-  motivoRechazo String?
+  dias            Int
+  nota            String?
+  estado          LicenciaEstado @default(SOLICITADA)
+  motivoRechazo   String?
   solicitadaPorId String
-  solicitadaPor User           @relation("LicenciaSolicitadaPor", fields: [solicitadaPorId], references: [id], onDelete: Restrict)
-  resueltaPorId String?
-  resueltaPor   User?          @relation("LicenciaResueltaPor", fields: [resueltaPorId], references: [id], onDelete: SetNull)
-  resueltaAt    DateTime?      @db.Timestamptz(6)
-  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+  solicitadaPor   User           @relation("LicenciaSolicitadaPor", fields: [solicitadaPorId], references: [id], onDelete: Restrict)
+  resueltaPorId   String?
+  resueltaPor     User?          @relation("LicenciaResueltaPor", fields: [resueltaPorId], references: [id], onDelete: SetNull)
+  resueltaAt      DateTime?      @db.Timestamptz(6)
+  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(6)
 
   @@index([legajoId, desde])
   @@index([estado])
@@ -6263,25 +6274,25 @@ enum EntregaEstado {
 }
 
 model EntregaMateriales {
-  id             String        @id @default(cuid())
-  legajoId       String
-  legajo         Legajo        @relation(fields: [legajoId], references: [id], onDelete: Cascade)
-  fecha          DateTime      @db.Date
+  id              String        @id @default(cuid())
+  legajoId        String
+  legajo          Legajo        @relation(fields: [legajoId], references: [id], onDelete: Cascade)
+  fecha           DateTime      @db.Date
   // [{ descripcion, cantidad, detalle? }]
-  items          Json
-  observaciones  String?
-  estado         EntregaEstado @default(PENDIENTE_FIRMA)
-  entregadoPorId String
-  entregadoPor   User          @relation("EntregaEntregadaPor", fields: [entregadoPorId], references: [id], onDelete: Restrict)
+  items           Json
+  observaciones   String?
+  estado          EntregaEstado @default(PENDIENTE_FIRMA)
+  entregadoPorId  String
+  entregadoPor    User          @relation("EntregaEntregadaPor", fields: [entregadoPorId], references: [id], onDelete: Restrict)
   // Firma dibujada (PNG) y constancia (PDF), en el storage.
-  firmaUrl       String?
-  firmadaAt      DateTime?     @db.Timestamptz(6)
+  firmaUrl        String?
+  firmadaAt       DateTime?     @db.Timestamptz(6)
   // true = firmó en el dispositivo de quien entregó, en persona.
-  firmaPresencial Boolean      @default(false)
+  firmaPresencial Boolean       @default(false)
   // La constancia que queda en el legajo.
-  documentoId    String?       @unique
-  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
+  documentoId     String?       @unique
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
 
   @@index([legajoId, fecha])
   @@map("entregas_materiales")
@@ -6325,15 +6336,15 @@ model AsistenteMensaje {
 // Se suben antes de mandar el mensaje (quedan sin `mensajeId`) y se atan al
 // mensaje cuando la respuesta se guarda. Viven en storage/asistente/<userId>/.
 model AsistenteAdjunto {
-  id         String            @id @default(cuid())
-  userId     String
-  mensajeId  String?
-  mensaje    AsistenteMensaje? @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
-  nombre     String
-  mimeType   String
-  ruta       String
-  sizeBytes  Int
-  createdAt  DateTime          @default(now()) @db.Timestamptz(6)
+  id        String            @id @default(cuid())
+  userId    String
+  mensajeId String?
+  mensaje   AsistenteMensaje? @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  nombre    String
+  mimeType  String
+  ruta      String
+  sizeBytes Int
+  createdAt DateTime          @default(now()) @db.Timestamptz(6)
 
   @@index([userId, createdAt])
   @@index([mensajeId])
@@ -6344,10 +6355,10 @@ model AsistenteAdjunto {
 // respondan, en qué trabaja). Lo escribe la IA resumiendo sus conversaciones
 // cada tanto; va al prompt de cada consulta de esa persona.
 model AsistentePerfil {
-  userId                    String   @id
-  notas                     String   @db.Text
-  mensajesDesdeActualizacion Int     @default(0)
-  updatedAt                 DateTime @updatedAt @db.Timestamptz(6)
+  userId                     String   @id
+  notas                      String   @db.Text
+  mensajesDesdeActualizacion Int      @default(0)
+  updatedAt                  DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("asistente_perfiles")
 }
@@ -6358,18 +6369,18 @@ model AsistentePerfil {
 // suscripciones. Si el servicio de push del navegador responde que la
 // suscripción ya no existe (404/410), se borra.
 model PushSuscripcion {
-  id       String @id @default(cuid())
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// URL del servicio de push del navegador (Google, Apple, Mozilla…). Única.
-  endpoint String @unique
-  p256dh   String
-  auth     String
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
   /// Navegador y sistema, para que se entienda qué dispositivo es.
-  userAgent String?
-  fallos    Int       @default(0)
+  userAgent     String?
+  fallos        Int       @default(0)
   ultimoEnvioEn DateTime? @db.Timestamptz(6)
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
 
   @@index([userId])
   @@map("push_suscripciones")
@@ -6381,9 +6392,9 @@ model PushSuscripcion {
 // abre casos cuando una planta no genera o no comunica mientras las demás sí.
 
 enum SoporteCasoTipo {
-  SIN_GENERACION   // comunica pero no genera con sol (la llave, una falla)
+  SIN_GENERACION // comunica pero no genera con sol (la llave, una falla)
   SIN_COMUNICACION // desconectada de Growatt con sol (wifi, datalogger, corte)
-  FALLA_INVERSOR   // el inversor informa un código de falla
+  FALLA_INVERSOR // el inversor informa un código de falla
   BAJO_RENDIMIENTO // genera bastante menos que lo normal para ella (cartera como referencia)
 }
 
@@ -6395,59 +6406,59 @@ enum SoporteCasoEstado {
 
 /// Última lectura de cada planta Growatt vinculada. Una fila por planta.
 model SoporteEstadoPlanta {
-  growattPlantId BigInt   @id
+  growattPlantId BigInt  @id
   projectId      String
-  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   /// Estado crudo de plant/list: 1 = en línea, 4 = desconectada.
-  status          Int?
-  potenciaW       Float?
-  energiaTotalKwh Float?
+  status              Int?
+  potenciaW           Float?
+  energiaTotalKwh     Float?
   /// Energía total al primer sondeo del día (para "energía de hoy").
   energiaInicioDiaKwh Float?
-  diaInicio       DateTime? @db.Date
-  leidoEn         DateTime  @db.Timestamptz(6)
+  diaInicio           DateTime? @db.Date
+  leidoEn             DateTime  @db.Timestamptz(6)
   /// Cuánto rinde normalmente esta planta respecto de la mediana de la cartera
   /// (promedio móvil). Absorbe orientación y sombras: 1 = como la mediana.
-  factorNormal    Float?
+  factorNormal        Float?
   /// Sondeos seguidos sin generar / desconectada mientras la cartera genera.
-  ceroConSol         Int @default(0)
-  desconectadaConSol Int @default(0)
-  ultimaGeneracionEn DateTime? @db.Timestamptz(6)
+  ceroConSol          Int       @default(0)
+  desconectadaConSol  Int       @default(0)
+  ultimaGeneracionEn  DateTime? @db.Timestamptz(6)
 
   @@index([projectId])
   @@map("soporte_estado_plantas")
 }
 
 model SoporteCaso {
-  id             String            @id @default(cuid())
-  projectId      String
-  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  growattPlantId BigInt?
-  huaweiPlantCode String?
-  tipo           SoporteCasoTipo
-  estado         SoporteCasoEstado @default(ABIERTO)
-  titulo         String
+  id                String            @id @default(cuid())
+  projectId         String
+  project           Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  growattPlantId    BigInt?
+  huaweiPlantCode   String?
+  tipo              SoporteCasoTipo
+  estado            SoporteCasoEstado @default(ABIERTO)
+  titulo            String
   /// Qué se vio, en lenguaje del equipo (con la evidencia: hora, potencia, código).
-  detalle        String
-  codigoFalla    Int?
+  detalle           String
+  codigoFalla       Int?
   /// El inversor no ve la red con los paneles con tensión: casi siempre la
   /// llave de microgeneración, que la puede subir el cliente.
-  llaveDelCliente Boolean          @default(false)
+  llaveDelCliente   Boolean           @default(false)
   /// La misma falla se repite (alarmas del inversor del último mes, o casos
   /// de los últimos 7 días): no se cierra solo cuando vuelve a generar, porque
   /// vuelve mañana. Caso Martín González: aislación baja (203) todas las mañanas.
-  recurrente      Boolean          @default(false)
+  recurrente        Boolean           @default(false)
   /// "Genera menos": último día que ya se fue a mirar (no se investiga dos veces).
-  ultimoDiaRevisado DateTime?       @db.Date
-  detectadoEn    DateTime          @default(now()) @db.Timestamptz(6)
-  ultimaVezEn    DateTime          @default(now()) @db.Timestamptz(6)
+  ultimoDiaRevisado DateTime?         @db.Date
+  detectadoEn       DateTime          @default(now()) @db.Timestamptz(6)
+  ultimaVezEn       DateTime          @default(now()) @db.Timestamptz(6)
 
-  resueltoEn     DateTime?         @db.Timestamptz(6)
-  resueltoPorId  String?
-  resueltoPor    User?             @relation("SoporteCasoResueltoPor", fields: [resueltoPorId], references: [id], onDelete: SetNull)
+  resueltoEn    DateTime? @db.Timestamptz(6)
+  resueltoPorId String?
+  resueltoPor   User?     @relation("SoporteCasoResueltoPor", fields: [resueltoPorId], references: [id], onDelete: SetNull)
   /// "Volvió a generar" (automático) o lo que escribió quien lo cerró.
-  motivoCierre   String?
+  motivoCierre  String?
 
   clienteAvisadoEn    DateTime? @db.Timestamptz(6)
   clienteAvisadoPorId String?
@@ -6477,11 +6488,143 @@ model SoporteEstadoHuawei {
   leidoEn    DateTime  @db.Timestamptz(6)
   diaLectura DateTime? @db.Date
 
-  sinComunicacionConSol Int @default(0)
-  conFallaConSol        Int @default(0)
-  sinSumarConSol        Int @default(0)
+  sinComunicacionConSol Int       @default(0)
+  conFallaConSol        Int       @default(0)
+  sinSumarConSol        Int       @default(0)
   ultimaGeneracionEn    DateTime? @db.Timestamptz(6)
 
   @@index([projectId])
   @@map("soporte_estado_huawei")
+}
+
+/// Aviso automático al cliente: cuando pasa un hecho del flujo (el disparador),
+/// Voltia PM le manda al cliente un mensaje por WhatsApp o por mail. Se arma en
+/// Administración → Avisos automáticos. En WhatsApp el mensaje es una plantilla
+/// que Meta tiene que aprobar antes de poder activarlo.
+/// Ver docs/manual/20-avisos-automaticos.md.
+model AvisoAutomatico {
+  id                 String       @id @default(cuid())
+  nombre             String
+  /// Clave del catálogo de disparadores (avisos/disparadores.ts), ej.
+  /// "obra.fecha_confirmada", "ute.hito:solicitudSentAt", "etapa.completada:EJECUCION_OBRA".
+  disparador         String
+  /// Solo para disparadores con días (ej. "la obra es en N días").
+  dias               Int?
+  /// WHATSAPP | EMAIL
+  canal              String
+  /// BORRADOR | EN_REVISION (Meta) | RECHAZADO (Meta) | LISTO | ACTIVO | PAUSADO
+  estado             String       @default("BORRADOR")
+  /// Asunto del mail (solo EMAIL).
+  asunto             String?
+  /// El texto con variables {{cliente.nombre}}.
+  cuerpo             String       @db.Text
+  /// Plantilla de Meta (solo WHATSAPP): nombre, idioma, estado y, si la
+  /// rechazaron, el motivo. `variables` es el orden de {{1}}, {{2}}… en Meta.
+  plantillaNombre    String?
+  plantillaIdioma    String       @default("es")
+  plantillaId        String?
+  plantillaEstado    String?
+  plantillaMotivo    String?
+  plantillaVariables Json?
+  /// Paso del recorrido de Experiencia Solar que el aviso deja hecho al salir
+  /// (código de RecorridoCheck), para que nadie lo mande dos veces.
+  cierraCheck        String?
+  /// Desde cuándo está activo: solo cuentan los hechos posteriores.
+  activadoEn         DateTime?    @db.Timestamptz(6)
+  creadoPorId        String?
+  creadoPor          User?        @relation("AvisoAutomaticoCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  envios             AvisoEnvio[]
+  createdAt          DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(6)
+  deletedAt          DateTime?    @db.Timestamptz(6)
+
+  @@index([disparador])
+  @@map("avisos_automaticos")
+}
+
+/// Cada vez que un aviso automático se disparó para un cliente: lo que salió,
+/// lo que falló y lo que no se mandó (y por qué). La clave del hecho evita que
+/// el mismo hecho mande el aviso dos veces (se reabre una etapa, se vuelve a
+/// cargar una fecha…).
+model AvisoEnvio {
+  id          String          @id @default(cuid())
+  avisoId     String
+  aviso       AvisoAutomatico @relation(fields: [avisoId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?        @relation("AvisoEnvioProject", fields: [projectId], references: [id], onDelete: SetNull)
+  /// Identifica el hecho: "<disparador>|<proyecto>|<referencia>".
+  claveHecho  String
+  canal       String
+  /// Teléfono o mail al que salió (o al que se iba a mandar).
+  destino     String?
+  /// ENVIADO | FALLIDO | OMITIDO
+  estado      String
+  /// Por qué falló o por qué no se mandó.
+  detalle     String?
+  /// El texto tal como salió, ya con los datos del cliente.
+  texto       String?         @db.Text
+  waMessageId String?
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@unique([avisoId, claveHecho])
+  @@index([projectId])
+  @@index([createdAt])
+  @@map("avisos_envios")
+}
+
+// ── Marketing: privados de Instagram ──────────────────────────────────────────
+// Copia de las conversaciones del contestador de Instagram, que vive en el
+// servidor del conector de indicadores (indicadores.voltia.com.uy): ahí llega el
+// webhook de Meta y ahí contesta Claude. El conector le manda a Voltia PM la
+// conversación entera cada vez que cambia (/webhooks/instagram-conector), y las
+// respuestas a mano salen por él. Ver docs/manual/20-marketing.md.
+
+model InstagramConversacion {
+  id              String             @id @default(cuid())
+  /// Id de la persona en Instagram (IGSID). Es la llave con el conector.
+  persona         String             @unique
+  /// @usuario, sin la arroba.
+  usuario         String?
+  nombre          String?
+  /// Escribió por un anuncio de mensajes: la ventana de Meta es de 7 días.
+  desdeAnuncio    Boolean            @default(false)
+  /// El asistente la derivó a una persona (no vuelve a contestar en 7 días).
+  derivadaEn      DateTime?          @db.Timestamptz(6)
+  derivadaMotivo  String?
+  /// Alguien de Voltia la tomó desde Voltia PM: el asistente se calla hasta que la devuelva.
+  tomadaEn        DateTime?          @db.Timestamptz(6)
+  tomadaPorId     String?
+  tomadaPor       User?              @relation("InstagramConversacionTomadaPor", fields: [tomadaPorId], references: [id], onDelete: SetNull)
+  /// Último mensaje de cualquiera, y último del cliente (abre la ventana de Meta).
+  ultimoMensajeEn DateTime?          @db.Timestamptz(6)
+  ultimoClienteEn DateTime?          @db.Timestamptz(6)
+  /// Hasta dónde se leyó en Voltia PM (uno solo para todo el equipo).
+  vistaHasta      DateTime?          @db.Timestamptz(6)
+  leadId          String?
+  lead            SalesLead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  mensajes        InstagramMensaje[]
+  createdAt       DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime           @updatedAt @db.Timestamptz(6)
+
+  @@index([ultimoMensajeEn])
+  @@map("instagram_conversaciones")
+}
+
+model InstagramMensaje {
+  id             String                @id @default(cuid())
+  conversacionId String
+  conversacion   InstagramConversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+  /// Id del mensaje en Meta; si el conector no lo tiene, uno armado con el momento y el texto.
+  clave          String
+  /// CLIENTE | ASISTENTE | PERSONA (desde Voltia PM) | OTRO (ManyChat o el celular)
+  autor          String
+  texto          String
+  enviadoEn      DateTime              @db.Timestamptz(6)
+  enviadoPorId   String?
+  enviadoPor     User?                 @relation("InstagramMensajeEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: SetNull)
+  createdAt      DateTime              @default(now()) @db.Timestamptz(6)
+
+  @@unique([conversacionId, clave])
+  @@index([conversacionId, enviadoEn])
+  @@map("instagram_mensajes")
 }

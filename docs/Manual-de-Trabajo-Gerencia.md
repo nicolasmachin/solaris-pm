@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.27 — 28 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.28 — 29 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -971,6 +971,43 @@ se miden con este dato.
 **A qué manuales afecta.** Al Manual de trabajo de Ventas (la primera charla y la
 carga del lead).
 
+### Voltia PM le avisa solo al cliente los hechos de su proyecto
+
+**Qué se decidió.** Voltia PM puede mandarle mensajes al cliente **por su
+cuenta**, por WhatsApp o por mail, cuando pasa un hecho del proyecto: la venta
+cerrada, la fecha de obra confirmada o cambiada, los días que faltan para la
+obra, la obra terminada, cada paso del trámite con UTE, la habilitación, una
+visita o un mantenimiento agendado. Qué avisos hay y qué dice cada uno lo define
+Gerencia en Voltia PM; en WhatsApp, el texto lo tiene que aprobar Meta antes de
+usarse. Las condiciones:
+
+- Solo se avisan los hechos que pasan **después de activar** cada aviso: nada
+  de lo viejo.
+- Cada hecho se avisa **una sola vez**, aunque después se corrija una fecha.
+- **Todo envío queda registrado**: a quién, cuándo, qué texto, y si llegó, falló
+  o no salió y por qué. Lo que sale va también al historial del cliente.
+- **Nada se manda dos veces**: si el aviso automático cubre un paso del recorrido
+  de Experiencia Solar, ese paso queda hecho y nadie lo repite a mano.
+- No hay período de prueba: el aviso se activa y sale.
+
+**Por qué.** Los avisos al cliente dependían de que alguien se acordara de
+mandarlos, y no siempre salían a tiempo. Automatizar lo que es siempre igual (una
+fecha, un paso de UTE) asegura que el cliente se entere, y deja a Experiencia
+Solar para lo que necesita una persona. Se busca que el cliente tenga un solo
+punto de contacto: de qué número de WhatsApp salen los avisos se define al
+conectar los números del equipo.
+
+**Qué reemplaza.** Desde el incidente de mayo de 2026 (información interna que
+le llegó a clientes por un envío automático) regía que **el sistema no le escribe
+al cliente por su cuenta**, con la única excepción del reporte mensual. Esa
+regla queda reemplazada por esta: el sistema le escribe solo con los avisos que
+se configuran, y con el texto que se aprobó.
+
+**Desde cuándo rige.** 29 de octubre de 2026.
+
+**A qué manuales afecta.** Al de Posventa (Experiencia Solar): los avisos que
+salen solos y la regla del anexo D.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -1002,6 +1039,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.28 | 29 de octubre de 2026 | Se registra que Voltia PM le avisa solo al cliente los hechos de su proyecto (venta, obra, UTE, habilitación, agenda), con avisos que define Gerencia, sin repetir hechos viejos ni mandar dos veces lo mismo, y con registro de cada envío. Reemplaza la regla de que el sistema nunca le escribe al cliente por su cuenta. |
 | 0.27 | 28 de octubre de 2026 | Se registra que al cliente ya no se le da el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia, que pasa a ser el único lugar donde mira su planta. Se registra que Voltia se instala en el celular desde el navegador, con avisos, y que por ahora no va a las tiendas. Se registra que Voltia vigila las plantas y que al cliente le avisa siempre una persona; por ahora sin responsable de Soporte. |
 | 0.26 | 26 de octubre de 2026 | Se registra que los manuales vigentes se consultan en Documentación de Voltia PM, sin avisos ni confirmación de lectura en cada versión nueva; que la licencia se pide y se controla en Voltia PM y que lo que se entrega se firma; y que el legajo de cada persona lo ven solo ella, la Dirección, el Gerente de Finanzas y Finanzas, con un legajo reducido para los instaladores tercerizados. |
 | 0.25 | 22 de octubre de 2026 | Se registra que las cuotas del plan de pagos se cobran por momento de la obra y no por fecha: la del 50 % desde diez días antes de la obra, la del 30 % con la obra terminada y la del 20 % con la habilitación, y que cada una vence a los diez días de poder cobrarse. Se registra también que lo que se le factura al cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo, guardado sin IVA), y se corrige la decisión de las facturas al cliente, que ya no parte de la cotización. |

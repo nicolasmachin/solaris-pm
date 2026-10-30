@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import { Menu } from "lucide-react";
 import { AdminSidebar, ADMIN_TAB_IDS } from "../components/admin/AdminSidebar";
 import { TabPlantillasEmail } from "../components/admin/TabPlantillasEmail";
+import { TabAvisosAutomaticos } from "../components/admin/TabAvisosAutomaticos";
 import { TabTarifasUte } from "../components/admin/TabTarifasUte";
 import { apiClient } from "../api/axios";
 import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
@@ -506,6 +507,7 @@ const MODULE_LABELS: Record<string, string> = {
   CAPACITACION: "Capacitación",
   DOCUMENTACION: "Documentación (intranet)",
   SOPORTE: "Soporte (mesa de monitoreo de plantas)",
+  MARKETING: "Marketing (privados de Instagram)",
   RRHH: "Recursos Humanos",
   METRICAS: "Métricas",
   CONFIGURACION: "Configuración",
@@ -3358,6 +3360,7 @@ export function Admin() {
           {activeTab === "clientes" && <TabClientes />}
           {activeTab === "checklist-obra" && <TabChecklistTemplates />}
           {activeTab === "plantillas-email" && <TabPlantillasEmail />}
+          {activeTab === "avisos-automaticos" && <TabAvisosAutomaticos />}
           {activeTab === "tarifas-ute" && <TabTarifasUte />}
           {activeTab === "proposal-defaults" && <ProposalDefaultsPage />}
         </div>

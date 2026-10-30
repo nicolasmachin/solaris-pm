@@ -73,7 +73,7 @@ async function registrarSaliente(params: {
   tipo: string;
   texto: string | null;
   plantilla: string | null;
-  userId: string;
+  userId: string | null;
 }) {
   const waMessageId = params.respuesta.messages?.[0]?.id;
   if (!waMessageId) throw new MetaApiError("Meta no devolvió el id del mensaje", 502, params.respuesta);
@@ -114,7 +114,9 @@ export async function enviarPlantilla(params: {
   nombre: string;
   idioma: string;
   variables?: string[];
-  userId: string;
+  userId: string | null;
+  /** El texto tal como le llega al cliente, si se conoce (los avisos automáticos lo arman). */
+  texto?: string;
 }) {
   const telefono = normalizarTelefono(params.telefono);
   const c = whatsappConfig();
@@ -138,7 +140,7 @@ export async function enviarPlantilla(params: {
     respuesta,
     telefono,
     tipo: "template",
-    texto: variables.length > 0 ? variables.join(" · ") : null,
+    texto: params.texto ?? (variables.length > 0 ? variables.join(" · ") : null),
     plantilla: params.nombre,
     userId: params.userId,
   });

@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.35 · del 29/10/26
+**Voltia · Uruguay** · Versión 1.36 · del 29/10/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1071,6 +1071,30 @@ tentativa · fecha confirmada · reprogramación · visita a la propiedad · obr
 terminada · encuesta de instalación · ya podés encender + capacitación · encuesta
 de habilitación · material de capacitación · acceso al inversor · alta en reportes.
 
+### Los avisos que salen solos
+
+Además de los mensajes modelo, que manda una persona, Voltia PM puede mandarle
+**avisos automáticos** al cliente, por WhatsApp o por mail, cuando pasa un hecho
+del proyecto: se confirma la fecha de obra, faltan unos días para la obra, UTE
+aprobó un paso del trámite, UTE habilitó. Qué avisos hay y qué dicen lo define
+Gerencia en Voltia PM (Administración → Avisos automáticos); en WhatsApp, cada
+texto lo aprueba antes Meta, la empresa dueña de WhatsApp.
+
+Lo que Experiencia Solar tiene que saber:
+
+- **Cuando sale un aviso automático, queda en el historial del cliente** como
+  "Aviso automático" con el texto que le llegó. Antes de escribirle, se mira el
+  historial: si el aviso ya salió, no se le manda lo mismo a mano.
+- **Si el aviso deja hecho un paso del recorrido, ese paso aparece tildado solo.**
+  Por ejemplo, si el aviso de la fecha confirmada está activo, el paso de avisar
+  la fecha queda hecho cuando sale.
+- **El aviso automático no reemplaza a la persona.** Si el cliente contesta,
+  contesta Experiencia Solar como siempre. Y lo que no está en un aviso
+  automático se sigue mandando con el mensaje modelo.
+- **Si al cliente le falta el celular o el mail en el proyecto, el aviso no
+  sale.** Queda registrado como "no se mandó" con el motivo: es una razón más
+  para tener los datos de contacto completos.
+
 Aparte, el **Plan de Protección contra Granizo** tiene sus ocho mensajes, que se
 abren desde el plan y no desde una etapa (cap. 12.1): plan activo · aviso de
 vencimiento · vencido sin pago · plan suspendido · recibimos el aviso de daño ·
@@ -1592,9 +1616,11 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 **Decisiones tomadas a propósito:**
 
-- **El sistema no le escribe al cliente por su cuenta.** Toda comunicación
-  saliente la hace una persona; el sistema arma el mensaje y recuerda cuándo. La
-  única excepción es el reporte mensual de generación. Vale también para el plan
+- **El sistema le escribe al cliente solo con los avisos automáticos que define
+  Gerencia** (cap. 9, desde el 29-10-2026) y con el reporte mensual de
+  generación. Toda otra comunicación saliente la hace una persona; el sistema
+  arma el mensaje y recuerda cuándo. Hasta el 29-10-2026 la regla era que el
+  sistema no le escribía nunca por su cuenta. Vale también para el plan
   de granizo: el aviso de vencimiento que prometen las condiciones lo manda
   Experiencia Solar con el mensaje modelo (28-09-2026).
 - **El sistema no agenda los mantenimientos solo.** La iniciativa es de Voltia —
@@ -1999,6 +2025,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.36 | 29 de octubre de 2026 | Voltia PM puede mandarle avisos automáticos al cliente cuando pasa un hecho del proyecto; los define Gerencia. Se agrega qué tiene que saber Experiencia Solar: el aviso queda en el historial, puede dejar hecho un paso del recorrido y no reemplaza a la persona. Cambia la regla de que el sistema nunca le escribe solo al cliente. |
 | 1.35 | 29 de octubre de 2026 | En la lista de Cobros, Experiencia Solar ve a qué clientes les toca pagar una cuota ahora, cuánto, y cuáles están vencidas, con el total abajo. Con financiación bancaria, el cliente tiene una sola cuota «Financiación bancaria» que se marca pagada cuando deposita el banco. |
 | 1.34 | 28 de octubre de 2026 | Ya no se le da al cliente el acceso a la aplicación del inversor: todo lo que mostraba está en el portal de Voltia. Sale el paso de E3 "Entrega del acceso a la plataforma del inversor" con su mensaje, y el aviso de "Ya podés encender" le dice que mire su generación en el portal. Lo primero que ve el cliente en el portal, una vez habilitado, es su planta en ese momento; el trámite queda en el menú. En el portal, los tickets pasan a llamarse reclamos. El cliente ve en el portal sus documentos firmados (contrato y papeles de UTE) y su Plan de Protección contra Granizo, con el estado, las fechas y el próximo pago. El portal y Voltia PM se instalan en el celular y mandan avisos: al cliente se le pide que lo instale y active los avisos al mandarle el acceso. Nueva mesa de Soporte: detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y desde ahí se le avisa al cliente con un toque. |
 | 1.33 | 27 de octubre de 2026 | Desde el chat de Claude: el registro de alarmas y el detalle del inversor cada 5 minutos (todos los Growatt, con las horas en falla y el aislamiento), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con lo técnico en la nota interna. |

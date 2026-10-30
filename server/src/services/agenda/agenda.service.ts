@@ -15,6 +15,7 @@ import {
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
+import { emitirHecho } from "../avisos/emitir.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 
 /** Color del bloque cuando el evento no tiene equipo asignado. */
@@ -187,6 +188,14 @@ export async function crearAgendaEvento(input: CrearEventoInput): Promise<Serial
   });
 
   await auditar(evento, input.userId, AuditAction.agenda_evento_creado);
+  if (evento.projectId && (evento.tipo === TipoEventoAgenda.VISITA_TECNICA || evento.tipo === TipoEventoAgenda.MANTENIMIENTO)) {
+    emitirHecho({
+      disparador: `agenda.creado:${evento.tipo}`,
+      projectId: evento.projectId,
+      ref: evento.id,
+      eventoFecha: dedupFechas(input.fechas)[0],
+    });
+  }
   return serializeAgendaEvento(evento);
 }
 

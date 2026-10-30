@@ -34,6 +34,9 @@ services:
       # API key del modelo Claude (Anthropic). Se lee del .env del host
       # (raíz del repo) — agregar `ANTHROPIC_API_KEY=sk-ant-...` ahí.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Marketing → Instagram: conexión con el contestador (conector de indicadores).
+      INSTAGRAM_CONECTOR_URL: ${INSTAGRAM_CONECTOR_URL:-}
+      INSTAGRAM_CONECTOR_SECRETO: ${INSTAGRAM_CONECTOR_SECRETO:-}
       # Notificaciones push (Web Push) a celulares y computadoras. Sin las dos
       # claves, Voltia PM no ofrece activar los avisos y no manda nada. Se
       # generan una vez con `npx web-push generate-vapid-keys`; si se cambian,

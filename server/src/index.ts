@@ -18,6 +18,7 @@ import { startAvisoHabilitacionJob } from "./services/clientes/aviso-habilitacio
 import { startEncuestasAniversarioJob } from "./services/encuestas/aniversario.job.js";
 import { startReportesFvJobs } from "./services/reportesFv/reportes-fv.job.js";
 import { startFvMonitorJob } from "./services/reportesFv/monitor/monitor.job.js";
+import { startAvisosJobs } from "./services/avisos/avisos.job.js";
 import { startVinculacionPlantasJob } from "./services/reportesFv/vinculacion-automatica.job.js";
 import { startReporteSemanalJob } from "./services/reporteSemanal/reporte-semanal.job.js";
 import { startReporteMensualJob } from "./services/reporteSemanal/reporte-mensual.job.js";
@@ -108,6 +109,7 @@ async function start() {
   startReportesFvJobs();
   startFvMonitorJob();
   startVinculacionPlantasJob();
+  startAvisosJobs();
   startReporteSemanalJob();
   startReporteMensualJob();
   startDailyDigestJob();

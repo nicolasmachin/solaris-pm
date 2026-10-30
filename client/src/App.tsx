@@ -98,6 +98,7 @@ const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) =
 const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
 const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
 const Soporte = lazy(() => import("./pages/Soporte").then((module) => ({ default: module.Soporte })));
+const Marketing = lazy(() => import("./pages/Marketing").then((module) => ({ default: module.Marketing })));
 const PortalDocumentos = lazy(() => import("./pages/PortalDocumentos").then((module) => ({ default: module.PortalDocumentos })));
 const PortalInicio = lazy(() => import("./pages/PortalInicio").then((module) => ({ default: module.PortalInicio })));
 const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
@@ -529,6 +530,14 @@ export function App() {
           element={
             <PermissionRoute module="SOPORTE" action="VIEW">
               <Soporte />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/marketing"
+          element={
+            <PermissionRoute module="MARKETING" action="VIEW">
+              <Marketing />
             </PermissionRoute>
           }
         />
