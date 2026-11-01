@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { nombreArchivo } from "./archivos.js";
 import { comentariosDelAviso, mensajesDelAviso, textoDe } from "./aviso.js";
 import { type Automatizacion, carpetaArchivos, coincide, elegirParaComentario, leerArchivo, normalizar } from "./automatizaciones.js";
 import { pedido } from "./comentarios.js";
@@ -281,4 +282,43 @@ test("derivada por una duda: si después manda la factura, el asistente la atien
     false,
     "ya le escribió alguien de Voltia",
   );
+});
+
+test("los archivos del aviso traen el link para bajarlos; lo que no se baja, no", () => {
+  const [m] = mensajesDelAviso({
+    entry: [
+      {
+        messaging: [
+          {
+            sender: { id: "111" },
+            recipient: { id: "999" },
+            timestamp: 1,
+            message: {
+              mid: "x",
+              attachments: [
+                { type: "image", payload: { url: "https://lookaside.fbsbx.com/factura" } },
+                { type: "file", payload: { url: "https://lookaside.fbsbx.com/factura.pdf" } },
+                { type: "share", payload: { url: "https://instagram.com/p/1" } },
+                { type: "image", payload: {} },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(m.adjuntos, ["image", "file", "share", "image"]);
+  assert.deepEqual(m.archivos, [
+    { tipo: "image", url: "https://lookaside.fbsbx.com/factura" },
+    { tipo: "file", url: "https://lookaside.fbsbx.com/factura.pdf" },
+  ]);
+});
+
+test("el nombre del archivo: qué es, cuándo llegó (hora de Uruguay) y la extensión", () => {
+  const momento = new Date("2026-11-01T12:07:00.000Z"); // 09:07 en Uruguay
+  assert.equal(nombreArchivo("image", "image/jpeg", momento), "foto-01-11-0907.jpg");
+  assert.equal(nombreArchivo("file", "application/pdf; charset=binary", momento), "archivo-01-11-0907.pdf");
+  assert.equal(nombreArchivo("image", "image/png", momento, 1), "foto-01-11-0907-2.png");
+  assert.equal(nombreArchivo("image", "application/octet-stream", momento), "foto-01-11-0907.jpg");
+  assert.equal(nombreArchivo("file", "application/x-raro", momento), "archivo-01-11-0907.bin");
 });

@@ -36,6 +36,7 @@ export const LATEST_RELEASE: Release = {
       title: "Ventas → Instagram",
       items: [
         "Las conversaciones de Instagram de potenciales clientes se contestan desde Voltia PM, sin usar Instagram. Arriba de Ventas se ve quién espera respuesta y cuánto queda para contestarle.",
+        "La factura y las fotos que mandan por Instagram llegan adjuntas en el mail, se ven en la conversación y quedan en los adjuntos del lead.",
       ],
     },
   ],

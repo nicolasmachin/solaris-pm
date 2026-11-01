@@ -32,6 +32,15 @@ export interface InstagramMensaje {
   texto: string;
   enviadoEn: string;
   enviadoPor: string | null;
+  /** La factura, fotos: lo que mandó la persona, ya bajado de Meta. */
+  archivos?: InstagramArchivo[];
+}
+
+export interface InstagramArchivo {
+  id: string;
+  tipo: string;
+  nombre: string;
+  mimeType: string;
 }
 
 export interface InstagramEstadoAsistente {
@@ -158,4 +167,10 @@ export async function crearLeadInstagram(
 ) {
   const { data } = await apiClient.post<{ id: string; code: string }>(`/api/${de}/instagram/conversaciones/${id}/lead`, body);
   return data;
+}
+
+/** El archivo como blob (el <img> no puede mandar el header de autorización). */
+export async function getArchivoInstagram(id: string, de: BandejaDe = "marketing") {
+  const { data } = await apiClient.get<Blob>(`/api/${de}/instagram/archivos/${id}`, { responseType: "blob" });
+  return URL.createObjectURL(data);
 }

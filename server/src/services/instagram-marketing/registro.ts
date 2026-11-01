@@ -7,7 +7,7 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { diaManualUruguay, hoyUruguay } from "../../utils/uruguay.js";
-import { sendEmail } from "../email.service.js";
+import { type EmailAttachment, sendEmail } from "../email.service.js";
 import { asistenteConfig } from "./config.js";
 
 export type Evento = {
@@ -105,7 +105,7 @@ function escapar(t: string): string {
 }
 
 /** Un aviso a `para` (si hay) con copia a INSTAGRAM_AVISOS_MAIL. Solo a usuarios de Voltia PM. */
-export async function avisar(asunto: string, cuerpo: string, para: string[] = []): Promise<boolean> {
+export async function avisar(asunto: string, cuerpo: string, para: string[] = [], adjuntos: EmailAttachment[] = []): Promise<boolean> {
   const destinos = [...new Set([...para, asistenteConfig().avisosMail].map((d) => d.trim().toLowerCase()).filter(Boolean))];
   try {
     return await sendEmail({
@@ -113,6 +113,7 @@ export async function avisar(asunto: string, cuerpo: string, para: string[] = []
       subject: asunto,
       text: cuerpo,
       html: `<div style="white-space:pre-wrap;font-family:sans-serif;font-size:14px">${escapar(cuerpo)}</div>`,
+      ...(adjuntos.length ? { attachments: adjuntos } : {}),
     });
   } catch (err) {
     console.error("[instagram] no salió el mail de aviso:", err instanceof Error ? err.message : err);

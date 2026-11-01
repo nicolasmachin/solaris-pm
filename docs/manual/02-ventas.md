@@ -1070,7 +1070,11 @@ prefieren seguir por Instagram.
   último mensaje de la persona, 7 días si vino de un anuncio.
 - Si dejó el celular, arriba dice «Cel. … (WhatsApp)»: mejor seguir por WhatsApp.
 - **Crear lead**: queda a nombre de quien lo crea (no pasa por «Leads sin
-  tomar»), con el origen de Instagram y el celular precargado si lo dejó.
+  tomar»), con el origen de Instagram y el celular precargado si lo dejó. La
+  factura y las fotos que mandó por Instagram quedan en los adjuntos del lead.
+- **Lo que mandó** (la factura, fotos del techo, PDF) se ve en el chat: la foto
+  en miniatura, que se abre grande al tocarla, y el PDF para abrir. También
+  llega adjunto en el mail de la derivación.
 - No se ve lo que decidió el asistente ni el modo sombra: eso es de Marketing.
 
 ## Cómo funciona

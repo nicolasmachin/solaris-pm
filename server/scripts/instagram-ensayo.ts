@@ -14,6 +14,7 @@ import { prisma } from "../src/lib/prisma.js";
 import { sembrarAutomatizaciones } from "../src/services/instagram-marketing/automatizaciones.js";
 import * as comentarios from "../src/services/instagram-marketing/comentarios.js";
 import * as privados from "../src/services/instagram-marketing/privados.js";
+import { crearLeadDesdeVentas } from "../src/services/instagram-marketing/bandeja.service.js";
 import { consultasPorDia } from "../src/services/instagram-marketing/metricas.js";
 
 if (process.env.NODE_ENV === "production") {
@@ -25,6 +26,9 @@ const PERSONA = "999000111222";
 const enviados: string[] = [];
 const mails: string[] = [];
 const cuerpos: string[] = [];
+const adjuntosMail: number[] = [];
+// Una "foto" de mentira en lugar de bajar de Meta.
+const bajarFalso = async () => ({ datos: Buffer.from("factura de prueba"), mimeType: "image/jpeg" });
 
 function deps(respuestas: privados.ResultadoPrivado[]): privados.Deps {
   return {
@@ -36,15 +40,25 @@ function deps(respuestas: privados.ResultadoPrivado[]): privados.Deps {
     escribiendo: async () => undefined,
     dormir: async () => undefined,
     perfil: async () => ({ username: "ensayo.persona", name: "Ana Ensayo", is_user_follow_business: false }),
-    avisar: async (asunto, cuerpo) => {
+    avisar: async (asunto, cuerpo, _para, adjuntos) => {
       mails.push(asunto);
       cuerpos.push(cuerpo);
+      adjuntosMail.push(adjuntos?.length ?? 0);
       return true;
     },
   };
 }
 
 async function limpiar() {
+  const leads = await prisma.salesLead.findMany({ where: { clientName: "Ana Ensayo (borrar)" }, select: { id: true } });
+  const ids = leads.map((l) => l.id);
+  if (ids.length) {
+    await prisma.instagramConversacion.updateMany({ where: { leadId: { in: ids } }, data: { leadId: null } });
+    await prisma.instagramContacto.updateMany({ where: { leadId: { in: ids } }, data: { leadId: null } });
+    await prisma.fileAttachment.deleteMany({ where: { leadId: { in: ids } } });
+    await prisma.salesActivity.deleteMany({ where: { leadId: { in: ids } } });
+    await prisma.salesLead.deleteMany({ where: { id: { in: ids } } });
+  }
   await prisma.instagramConversacion.deleteMany({ where: { persona: PERSONA } });
   await prisma.instagramEvento.deleteMany({ where: { OR: [{ persona: { in: [PERSONA, "888"] } }, { comentarioId: { startsWith: "17999" } }] } });
   await prisma.instagramComentario.deleteMany({ where: { id: { startsWith: "17999" } } });
@@ -83,13 +97,20 @@ async function main() {
   assert.equal(await privados.registrarMensaje({ mid, de: "17841449732396009", para: PERSONA, momentoMs: Date.now(), texto: "eco", adjuntos: [], esEco: true, anuncio: false }), null);
 
   // 4. Manda la factura: es lead, se deriva y se avisa a Martín.
-  await privados.registrarMensaje({ mid: "ens-3", de: PERSONA, para: "17841449732396009", momentoMs: Date.now(), texto: "", adjuntos: ["image"], esEco: false, anuncio: false });
+  await privados.registrarMensaje(
+    { mid: "ens-3", de: PERSONA, para: "17841449732396009", momentoMs: Date.now(), texto: "", adjuntos: ["image"], archivos: [{ tipo: "image", url: "https://lookaside.fbsbx.com/prueba" }], esEco: false, anuncio: false },
+    new Date(),
+    bajarFalso,
+  );
+  assert.equal(await prisma.instagramArchivo.count({ where: { mensaje: { conversacionId: conv.id } } }), 1, "la factura quedó bajada");
   const r2 = await privados.atender(conv.id, deps([{ mensajes: ["¡Gracias Ana! Con eso Martín te arma la propuesta"], derivar: true, lead: true, speech: false, temas: ["precio"], motivo: "mandó la factura" }]));
   assert.equal(r2, "derivado");
   assert.match(enviados[enviados.length - 1], /365 636/, "se agregó el WhatsApp");
   assert.equal(mails.length, 1);
   assert.match(mails[0], /LEAD/);
   assert.match(cuerpos[0], /No dejó teléfono/, "a Martín se le dice hasta cuándo contestar por Instagram");
+  assert.equal(adjuntosMail[0], 1, "la factura va adjunta en el mail a Martín");
+  assert.match(cuerpos[0], /Van adjuntos 1 archivo/);
 
   // 5. Derivada: si vuelve a escribir, el asistente no contesta.
   await privados.registrarMensaje({ mid: "ens-4", de: PERSONA, para: "17841449732396009", momentoMs: Date.now(), texto: "gracias!", adjuntos: [], esEco: false, anuncio: false });
@@ -105,6 +126,13 @@ async function main() {
   assert.equal(conv.telefono, "099123456");
   await privados.registrarMensaje({ mid: "ens-6", de: PERSONA, para: "17841449732396009", momentoMs: Date.now() + 1000, texto: "o al 099 765 432", adjuntos: [], esEco: false, anuncio: false });
   assert.equal(await privados.atender(conv.id, deps([])), "derivada", "el teléfono se avisa una sola vez");
+
+  // 5c. Martín crea el lead desde Ventas → Instagram: queda a su nombre y con la factura en los adjuntos.
+  const admin = await prisma.user.findFirstOrThrow({ select: { id: true, name: true } });
+  const lead = await crearLeadDesdeVentas(conv.id, { clientName: "Ana Ensayo (borrar)", clientPhone: "099123456" }, admin);
+  const delLead = await prisma.salesLead.findUniqueOrThrow({ where: { id: lead.id }, include: { attachments: true } });
+  assert.equal(delLead.assignedToId, admin.id);
+  assert.equal(delLead.attachments.length, 1, "la factura se copió al lead");
 
   // 6. Contacto con sus etiquetas.
   const contacto = await prisma.instagramContacto.findUniqueOrThrow({ where: { persona: PERSONA }, include: { etiquetas: true } });

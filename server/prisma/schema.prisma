@@ -6649,11 +6649,33 @@ model InstagramMensaje {
   /// Vino de la carga del historial (antes de que Voltia PM atendiera Instagram):
   /// se muestra, pero no cuenta para las métricas.
   importado      Boolean               @default(false)
+  archivos       InstagramArchivo[]
   createdAt      DateTime              @default(now()) @db.Timestamptz(6)
 
   @@unique([conversacionId, clave])
   @@index([conversacionId, enviadoEn])
   @@map("instagram_mensajes")
+}
+
+/// Lo que mandó la persona por Instagram (la factura, fotos del techo),
+/// bajado de Meta apenas llega: el link de Meta vence. Se guarda en el storage
+/// (`instagram/<conversacionId>/…`), va adjunto en el mail de derivación y se
+/// copia a los adjuntos del lead cuando se crea desde la conversación.
+model InstagramArchivo {
+  id        String           @id @default(cuid())
+  mensajeId String
+  mensaje   InstagramMensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  /// El tipo que dice Meta: image | file | video | audio
+  tipo      String
+  nombre    String
+  mimeType  String
+  sizeBytes Int
+  /// Relativa al storage, como FileAttachment.url
+  url       String
+  creadoEn  DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@index([mensajeId])
+  @@map("instagram_archivos")
 }
 
 /// Lo que hizo (o en modo sombra, lo que habría hecho) el asistente de

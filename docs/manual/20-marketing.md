@@ -140,6 +140,18 @@ apretados como si fueran texto, los ecos, el anuncio y los adjuntos como
    hasta cuándo se le puede contestar por Instagram (24 h desde su último
    mensaje, 7 días si vino de un anuncio).
 
+**Archivos** (`archivos.ts`, tabla `instagram_archivos`; pedido de Nicolás del
+1-nov-2026): las fotos, PDF, videos y audios que manda la persona traen en el
+aviso de Meta un link que vence, así que `registrarMensaje()` los baja **antes**
+de agendar la respuesta (`guardarArchivos()`, hasta 25 MB cada uno, 30 s de
+espera) al storage, en `instagram/<conversacionId>/`, con nombre
+`foto-DD-MM-HHMM.jpg` o `archivo-….pdf`. Si falla, queda en el log y el mensaje
+igual dice "[Mandó: image]". El mail de derivación los lleva adjuntos
+(`adjuntosParaMail()`: los más nuevos, hasta 10 y 18 MB). En el chat se ven con
+`GET /api/marketing|ventas/instagram/archivos/:id` (la foto en miniatura, el PDF
+para abrir). `crearLeadDesdeConversacion()` los copia a los adjuntos del lead
+(`copiarAlLead()`, en `leads/<leadId>/`).
+
 **Seguimiento** (`revisarSeguimientos()`, cada 10 minutos): `tocaSeguimiento()`
 (lógica pura) pide speech mandado, nada del cliente ni de nadie después, no
 derivada ni tomada, un solo seguimiento por speech, entre 20 y 23,5 h desde el

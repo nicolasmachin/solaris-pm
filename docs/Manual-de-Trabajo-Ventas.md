@@ -643,8 +643,8 @@ cómo funciona el servicio, le da el orden de precio y le pide una foto de la
 factura de UTE y cómo es el techo. **Cuando la persona manda eso, el asistente la
 pasa al asesor comercial designado**: le pide su celular para que el asesor le
 escriba por WhatsApp (y le ofrece, si quiere ir más rápido, escribirle directo al
-WhatsApp del asesor), y al asesor le llega un mail con la conversación entera y
-el celular. **Si dejó el celular, el asesor le escribe por WhatsApp**, que es
+WhatsApp del asesor), y al asesor le llega un mail con la conversación entera, el
+celular y, adjuntas, la factura y las fotos que mandó. **Si dejó el celular, el asesor le escribe por WhatsApp**, que es
 donde sigue la venta. Si no lo dejó y tampoco le escribió, **el asesor le contesta
 por Instagram desde Voltia PM, en Ventas → Instagram**, sin usar Instagram:
 arriba de Ventas se avisa quién espera respuesta y cuánto queda, porque Instagram

@@ -19,6 +19,13 @@
 - Al contestar, la conversación pasa a ser tuya y el asistente no le escribe más. **Crear lead** lo deja a tu nombre, con el celular si lo dejó.
 - El mail de cada derivación trae el link a esta pantalla.
 
+#### Instagram: la factura que mandan llega a Ventas
+
+- Las fotos y los PDF que manda la persona por Instagram (la factura de UTE, el techo) se guardan en Voltia PM apenas llegan.
+- Van **adjuntos en el mail** que le llega a Martín cuando el asistente se la pasa.
+- Se ven en la conversación: la foto en miniatura (tocándola se abre grande) y el PDF para abrir.
+- Al crear el lead desde la conversación, quedan en los **adjuntos del lead**.
+
 ## v13.7
 
 ### 30 de octubre de 2026

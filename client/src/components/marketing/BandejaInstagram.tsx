@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bot, Hand, Megaphone, Search, Send, UserPlus } from "lucide-react";
+import { ArrowLeft, Bot, FileText, Hand, Megaphone, Search, Send, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 
 import {
   crearLeadInstagram,
   enviarInstagram,
+  getArchivoInstagram,
   getInstagramConversacion,
   getInstagramConversaciones,
   tomarInstagram,
   type BandejaDe,
+  type InstagramArchivo,
   type InstagramConversacion,
   type InstagramEvento,
   type InstagramMensaje,
@@ -98,7 +100,37 @@ function Decision({ e }: { e: InstagramEvento }) {
   );
 }
 
-function Burbuja({ m }: { m: InstagramMensaje }) {
+/** Una foto en miniatura (tocarla la abre grande) o un PDF/archivo para abrir. */
+function Archivo({ a, de }: { a: InstagramArchivo; de: BandejaDe }) {
+  const { data: src, isError } = useQuery({
+    queryKey: ["instagram-archivo", de, a.id],
+    queryFn: () => getArchivoInstagram(a.id, de),
+    staleTime: Infinity,
+  });
+  if (isError) return <p className="text-[11px] opacity-75">No se pudo abrir {a.nombre}</p>;
+  if (a.mimeType.startsWith("image/")) {
+    return src ? (
+      <a href={src} target="_blank" rel="noreferrer" title={a.nombre}>
+        <img src={src} alt={a.nombre} className="max-h-56 max-w-full rounded-lg" />
+      </a>
+    ) : (
+      <div className="h-24 w-32 animate-pulse rounded-lg bg-black/20" />
+    );
+  }
+  return (
+    <a
+      href={src}
+      target="_blank"
+      rel="noreferrer"
+      download={a.mimeType === "application/pdf" ? undefined : a.nombre}
+      className="inline-flex items-center gap-1.5 rounded-md bg-black/20 px-2 py-1 text-[12px] hover:bg-black/30"
+    >
+      <FileText size={14} /> {a.nombre}
+    </a>
+  );
+}
+
+function Burbuja({ m, de }: { m: InstagramMensaje; de: BandejaDe }) {
   const nuestro = m.autor !== "CLIENTE";
   const color =
     m.autor === "ASISTENTE"
@@ -109,6 +141,8 @@ function Burbuja({ m }: { m: InstagramMensaje }) {
           ? "bg-zinc-600/80 text-white"
           : "bg-[var(--color-bg-card)] text-[var(--color-text-primary)]";
   const quien = m.autor === "PERSONA" ? m.enviadoPor ?? "Voltia" : AUTOR_LABEL[m.autor];
+  // Con los archivos a la vista, el "[Mandó: image]" sobra.
+  const texto = m.archivos?.length ? m.texto.replace(/\[Mandó: [^\]]+\]/g, "").trim() : m.texto || "[sin texto]";
   return (
     <div className={`flex ${nuestro ? "justify-end" : "justify-start"}`}>
       <div
@@ -116,7 +150,14 @@ function Burbuja({ m }: { m: InstagramMensaje }) {
           nuestro ? "rounded-br-sm" : "rounded-bl-sm"
         }`}
       >
-        <p className="whitespace-pre-wrap break-words">{m.texto || "[sin texto]"}</p>
+        {m.archivos?.length ? (
+          <div className="mb-1 flex flex-wrap items-start gap-1.5">
+            {m.archivos.map((a) => (
+              <Archivo key={a.id} a={a} de={de} />
+            ))}
+          </div>
+        ) : null}
+        {texto && <p className="whitespace-pre-wrap break-words">{texto}</p>}
         <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-75">
           {quien && <span>{quien} ·</span>}
           <span>{hora(m.enviadoEn)}</span>
@@ -280,7 +321,7 @@ function Chat({ id, de, puedeEditar, onVolver }: { id: string; de: BandejaDe; pu
         {mensajes.length === 0 && (
           <p className="py-10 text-center text-[12px] text-[var(--color-text-muted)]">Todavía no hay mensajes.</p>
         )}
-        {linea.map((x) => (x.m ? <Burbuja key={x.m.id} m={x.m} /> : <Decision key={x.e!.id} e={x.e!} />))}
+        {linea.map((x) => (x.m ? <Burbuja key={x.m.id} m={x.m} de={de} /> : <Decision key={x.e!.id} e={x.e!} />))}
         <div ref={fin} />
       </div>
 

@@ -12,6 +12,8 @@ export type MensajeAviso = {
   texto: string;
   /** Fotos, audios, videos, historias compartidas: solo el tipo. */
   adjuntos: string[];
+  /** Lo que se puede bajar (link de Meta, vence): la factura, fotos. */
+  archivos?: Array<{ tipo: string; url: string }>;
   /** Lo que manda la propia cuenta (el asistente, ManyChat o el celular) vuelve como eco. */
   esEco: boolean;
   /** La conversación empezó en un anuncio que lleva a Instagram Direct. */
@@ -47,6 +49,9 @@ export function mensajesDelAviso(datos: Aviso): MensajeAviso[] {
         momentoMs: Number(m.timestamp ?? Date.now()),
         texto: mensaje.text ?? "",
         adjuntos: (mensaje.attachments ?? []).map((a: any) => a?.type ?? "archivo"),
+        archivos: (mensaje.attachments ?? [])
+          .filter((a: any) => ["image", "file", "video", "audio"].includes(a?.type) && typeof a?.payload?.url === "string")
+          .map((a: any) => ({ tipo: String(a.type), url: String(a.payload.url) })),
         esEco: Boolean(mensaje.is_echo),
         anuncio: Boolean((mensaje.referral ?? m.referral ?? {}).ad_id),
       });

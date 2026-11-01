@@ -36,6 +36,8 @@ import { IG, asistenteConfig, modoInstagram, type ModoInstagram } from "./config
 import { ETIQUETA, TEMAS, etiquetar } from "./contactos.js";
 import { claveDe, PAUSA_DERIVADA_MS, VENTANA_ANUNCIO_MS, VENTANA_MS } from "./conversacion.js";
 import * as meta from "./meta.js";
+import type { EmailAttachment } from "../email.service.js";
+import { adjuntosParaMail, type Bajar, bajarDeMeta, guardarArchivos } from "./archivos.js";
 import { anotar, avisar, avisarGasto, type Evento, superoElTope } from "./registro.js";
 
 export const MAXIMO_CARACTERES = 1000; // el límite de Instagram por mensaje
@@ -81,7 +83,7 @@ export type Deps = {
   escribiendo: (persona: string) => Promise<void>;
   dormir: (ms: number) => Promise<void>;
   perfil: (persona: string) => Promise<meta.Perfil>;
-  avisar: (asunto: string, cuerpo: string, para?: string[]) => Promise<boolean>;
+  avisar: (asunto: string, cuerpo: string, para?: string[], adjuntos?: EmailAttachment[]) => Promise<boolean>;
 };
 
 export const depsReales: Deps = {
@@ -111,7 +113,7 @@ function alAzar([minimo, maximo]: [number, number]): number {
  * una persona desde el celular ("OTRO"). Devuelve el id de la conversación si
  * lo escribió un cliente.
  */
-export async function registrarMensaje(m: MensajeAviso, ahora = new Date()): Promise<string | null> {
+export async function registrarMensaje(m: MensajeAviso, ahora = new Date(), bajar: Bajar = bajarDeMeta): Promise<string | null> {
   const esEco = m.esEco || m.de === IG.cuenta;
   const persona = esEco ? m.para : m.de;
   if (!/^\d+$/.test(persona) || persona === IG.cuenta) return null;
@@ -130,6 +132,11 @@ export async function registrarMensaje(m: MensajeAviso, ahora = new Date()): Pro
     skipDuplicates: true,
   });
   if (nuevo.count === 0) return null; // Meta reintenta, o es el eco de algo nuestro
+  if (!esEco && m.archivos?.length) {
+    // Se baja antes de contestar: el mail de derivación los lleva adjuntos.
+    const guardado = await prisma.instagramMensaje.findUnique({ where: { conversacionId_clave: { conversacionId: conv.id, clave } } });
+    if (guardado) await guardarArchivos(guardado, m.archivos, bajar);
+  }
 
   const datos: Prisma.InstagramConversacionUpdateInput = {
     ultimoMensajeEn: !conv.ultimoMensajeEn || enviadoEn > conv.ultimoMensajeEn ? enviadoEn : undefined,
@@ -552,6 +559,7 @@ function limiteParaContestar(conv: Conv): Date {
 
 async function avisarDerivacion(conv: Conv, motivo: string, lead: boolean, deps: Deps) {
   const c = asistenteConfig();
+  const { adjuntos, afuera } = await adjuntosParaMail(conv.id);
   let quien = conv.usuario ? `@${conv.usuario}` : `la persona ${conv.persona}`;
   if (conv.nombre) quien += ` (${conv.nombre})`;
   const nombres: Record<string, string> = { CLIENTE: quien, ASISTENTE: "Asistente", PERSONA: "Voltia PM", OTRO: "Voltia (ManyChat o celular)" };
@@ -561,13 +569,16 @@ async function avisarDerivacion(conv: Conv, motivo: string, lead: boolean, deps:
     conv.telefono
       ? `Dejó su teléfono: ${conv.telefono}. Escribile por WhatsApp.`
       : `No dejó teléfono (se le pidió). Si no te escribe al WhatsApp, contestale por Instagram desde Voltia PM antes del ${fechaCorta(limiteParaContestar(conv))}: después Meta no deja.`,
+    ...(adjuntos.length || afuera
+      ? ["", `Van adjuntos ${adjuntos.length === 1 ? "1 archivo que mandó" : `${adjuntos.length} archivos que mandó`} (la factura, fotos)${afuera ? `; ${afuera} más se ven en Voltia PM` : ""}.`]
+      : []),
     "",
     "La conversación:",
     ...conv.mensajes.slice(-HISTORIA).map((m) => `${fechaCorta(m.enviadoEn)} ${nombres[m.autor] ?? m.autor}: ${m.texto}`),
     "",
     `Para verla y contestarle por Instagram: Voltia PM → Ventas → Instagram, ${process.env.PUBLIC_APP_URL || "https://app.voltia.com.uy"}/ventas/instagram`,
   ];
-  await deps.avisar(`Instagram: ${lead ? "LEAD" : "derivado"} ${quien} a ${c.derivarA}`, lineas.join("\n"), [c.derivarMail]);
+  await deps.avisar(`Instagram: ${lead ? "LEAD" : "derivado"} ${quien} a ${c.derivarA}`, lineas.join("\n"), [c.derivarMail], adjuntos);
 }
 
 // ── Seguimiento (el "reclamo" de ManyChat al día siguiente) ─────────────────

@@ -6,12 +6,15 @@
  */
 
 import { Action, Module } from "@prisma/client";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import { createReadStream } from "node:fs";
+
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import {
+  archivoDeConversacion,
   contestarDesdeVentas,
   crearLeadDesdeConversacion,
   crearLeadDesdeVentas,
@@ -110,6 +113,19 @@ export async function registerMarketingRoutes(app: FastifyInstance) {
     reply.code(201);
     return crearLeadDesdeVentas(id, body, actor(request));
   });
+
+  // Los archivos que mandó la persona (la factura, fotos), para verlos en el chat.
+  const servirArchivo = (de: "marketing" | "ventas") => async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = idParams.parse(request.params);
+    const a = await archivoDeConversacion(id, de);
+    const nombre = encodeURIComponent(a.nombre);
+    reply.header("Content-Type", a.mimeType);
+    reply.header("Content-Disposition", `inline; filename*=UTF-8''${nombre}`);
+    reply.header("Cache-Control", "private, max-age=3600");
+    return reply.send(createReadStream(a.ruta));
+  };
+  app.get("/marketing/instagram/archivos/:id", ver, servirArchivo("marketing"));
+  app.get("/ventas/instagram/archivos/:id", verVentas, servirArchivo("ventas"));
 
   app.get("/marketing/instagram/automatizaciones", ver, async () => listarAutomatizaciones());
 

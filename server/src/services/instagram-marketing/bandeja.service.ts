@@ -5,6 +5,8 @@
  * del historial del contestador de indicadores usa `guardarDesdeConector`.
  */
 
+import { existsSync } from "node:fs";
+
 import { AuditAction, AuditEntityType, OrigenLead, Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
@@ -12,6 +14,8 @@ import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
 import { avisarLeadSinTomar } from "../sales/leads-sin-tomar.service.js";
 import { crearLead } from "../sales/leads.service.js";
+import { getStoredFilePath } from "../file-storage.service.js";
+import { copiarAlLead } from "./archivos.js";
 import { vincularLead } from "./contactos.js";
 import { enviarMensaje as enviarAMeta } from "./meta.js";
 import {
@@ -211,6 +215,16 @@ async function calificaOFalla(id: string) {
   if (!f) throw notFound("CONVERSACION_NO_ENCONTRADA", "No existe esa conversación");
 }
 
+/** Un archivo que mandó la persona, para verlo o bajarlo. Desde Ventas, solo de las que califican. */
+export async function archivoDeConversacion(archivoId: string, de: "marketing" | "ventas") {
+  const a = await prisma.instagramArchivo.findUnique({ where: { id: archivoId }, include: { mensaje: { select: { conversacionId: true } } } });
+  if (!a) throw notFound("ARCHIVO_NO_ENCONTRADO", "No existe ese archivo");
+  if (de === "ventas") await calificaOFalla(a.mensaje.conversacionId);
+  const ruta = getStoredFilePath(a.url);
+  if (!existsSync(ruta)) throw notFound("ARCHIVO_NO_ENCONTRADO", "El archivo no está guardado");
+  return { ruta, nombre: a.nombre, mimeType: a.mimeType };
+}
+
 /** Igual que en Marketing, sin lo que decidió el asistente (eso es de Marketing). */
 export async function verConversacionVentas(id: string) {
   await calificaOFalla(id);
@@ -253,7 +267,10 @@ export async function verConversacion(id: string) {
   const mensajes = await prisma.instagramMensaje.findMany({
     where: { conversacionId: id },
     orderBy: { enviadoEn: "asc" },
-    include: { enviadoPor: { select: { name: true } } },
+    include: {
+      enviadoPor: { select: { name: true } },
+      archivos: { select: { id: true, tipo: true, nombre: true, mimeType: true }, orderBy: { creadoEn: "asc" } },
+    },
   });
   const ultimo = mensajes.at(-1)?.enviadoEn ?? null;
   if (ultimo && (!c.vistaHasta || c.vistaHasta < ultimo)) {
@@ -283,6 +300,7 @@ export async function verConversacion(id: string) {
       texto: m.texto,
       enviadoEn: m.enviadoEn,
       enviadoPor: m.enviadoPor?.name ?? null,
+      archivos: m.archivos,
     })),
   };
 }
@@ -371,6 +389,8 @@ export async function crearLeadDesdeConversacion(
     metadata: { instagramConversacionId: id },
   });
   await prisma.instagramConversacion.update({ where: { id }, data: { leadId: lead.id } });
+  // La factura y las fotos que mandó por Instagram quedan en los adjuntos del lead.
+  await copiarAlLead(id, lead.id, actor.id);
   // Sin vendedor: queda en la bandeja de Ventas hasta que alguien lo tome.
   if (!opciones.asignarA) await avisarLeadSinTomar(lead, "Instagram");
   return { id: lead.id, code: lead.code };
