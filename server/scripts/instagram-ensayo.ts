@@ -24,6 +24,7 @@ if (process.env.NODE_ENV === "production") {
 const PERSONA = "999000111222";
 const enviados: string[] = [];
 const mails: string[] = [];
+const cuerpos: string[] = [];
 
 function deps(respuestas: privados.ResultadoPrivado[]): privados.Deps {
   return {
@@ -35,8 +36,9 @@ function deps(respuestas: privados.ResultadoPrivado[]): privados.Deps {
     escribiendo: async () => undefined,
     dormir: async () => undefined,
     perfil: async () => ({ username: "ensayo.persona", name: "Ana Ensayo", is_user_follow_business: false }),
-    avisar: async (asunto) => {
+    avisar: async (asunto, cuerpo) => {
       mails.push(asunto);
+      cuerpos.push(cuerpo);
       return true;
     },
   };
@@ -87,10 +89,22 @@ async function main() {
   assert.match(enviados[enviados.length - 1], /365 636/, "se agregó el WhatsApp");
   assert.equal(mails.length, 1);
   assert.match(mails[0], /LEAD/);
+  assert.match(cuerpos[0], /No dejó teléfono/, "a Martín se le dice hasta cuándo contestar por Instagram");
 
   // 5. Derivada: si vuelve a escribir, el asistente no contesta.
   await privados.registrarMensaje({ mid: "ens-4", de: PERSONA, para: "17841449732396009", momentoMs: Date.now(), texto: "gracias!", adjuntos: [], esEco: false, anuncio: false });
   assert.equal(await privados.atender(conv.id, deps([])), "derivada");
+
+  // 5b. Ya derivada, deja su celular: se le confirma y a Martín le llega con el número. Una sola vez.
+  await privados.registrarMensaje({ mid: "ens-5", de: PERSONA, para: "17841449732396009", momentoMs: Date.now(), texto: "mi cel es 099 123 456", adjuntos: [], esEco: false, anuncio: false });
+  assert.equal(await privados.atender(conv.id, deps([])), "telefono");
+  assert.match(enviados[enviados.length - 1], /te escribe por WhatsApp/);
+  assert.equal(mails.length, 2);
+  assert.match(cuerpos[1], /099123456/);
+  conv = await prisma.instagramConversacion.findUniqueOrThrow({ where: { id: conv.id }, include: { mensajes: true } });
+  assert.equal(conv.telefono, "099123456");
+  await privados.registrarMensaje({ mid: "ens-6", de: PERSONA, para: "17841449732396009", momentoMs: Date.now() + 1000, texto: "o al 099 765 432", adjuntos: [], esEco: false, anuncio: false });
+  assert.equal(await privados.atender(conv.id, deps([])), "derivada", "el teléfono se avisa una sola vez");
 
   // 6. Contacto con sus etiquetas.
   const contacto = await prisma.instagramContacto.findUniqueOrThrow({ where: { persona: PERSONA }, include: { etiquetas: true } });

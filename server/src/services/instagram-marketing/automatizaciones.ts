@@ -91,7 +91,11 @@ export function leerArchivo(nombreArchivo: string, texto: string) {
   };
 }
 
-/** Crea las que falten desde los archivos. Nunca pisa lo que ya está en la base. */
+/**
+ * Crea las que falten desde los archivos. Las que nadie tocó desde la pantalla
+ * (sin actualizadoPor) siguen al archivo: si cambió el flujo, se actualiza.
+ * Lo que se editó a mano nunca se pisa.
+ */
 export async function sembrarAutomatizaciones(): Promise<string[]> {
   const carpeta = carpetaArchivos();
   let archivos: string[];
@@ -100,15 +104,21 @@ export async function sembrarAutomatizaciones(): Promise<string[]> {
   } catch {
     return [];
   }
-  const existentes = new Set((await prisma.marketingAutomatizacion.findMany({ select: { id: true } })).map((a) => a.id));
-  const creadas: string[] = [];
+  const filas = await prisma.marketingAutomatizacion.findMany({ select: { id: true, flujo: true, actualizadoPorId: true } });
+  const existentes = new Map(filas.map((a) => [a.id, a]));
+  const cambiadas: string[] = [];
   for (const archivo of archivos) {
     const datos = leerArchivo(archivo, readFileSync(join(carpeta, archivo), "utf8"));
-    if (existentes.has(datos.id)) continue;
-    await prisma.marketingAutomatizacion.create({ data: datos });
-    creadas.push(datos.id);
+    const fila = existentes.get(datos.id);
+    if (!fila) {
+      await prisma.marketingAutomatizacion.create({ data: datos });
+      cambiadas.push(datos.id);
+    } else if (!fila.actualizadoPorId && fila.flujo !== datos.flujo) {
+      await prisma.marketingAutomatizacion.update({ where: { id: datos.id }, data: { flujo: datos.flujo } });
+      cambiadas.push(`${datos.id} (flujo nuevo)`);
+    }
   }
-  return creadas;
+  return cambiadas;
 }
 
 // ── Lectura ─────────────────────────────────────────────────────────────────

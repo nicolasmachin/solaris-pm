@@ -36,7 +36,7 @@ import { IG, asistenteConfig, modoInstagram, type ModoInstagram } from "./config
 import { ETIQUETA, TEMAS, etiquetar } from "./contactos.js";
 import { claveDe, PAUSA_DERIVADA_MS, VENTANA_ANUNCIO_MS, VENTANA_MS } from "./conversacion.js";
 import * as meta from "./meta.js";
-import { anotar, avisar, avisarGasto, superoElTope } from "./registro.js";
+import { anotar, avisar, avisarGasto, type Evento, superoElTope } from "./registro.js";
 
 export const MAXIMO_CARACTERES = 1000; // el límite de Instagram por mensaje
 export const MAXIMO_MENSAJES = 6;
@@ -240,11 +240,49 @@ export function mensajesDe(r: ResultadoPrivado): string[] {
 
 const digitos = (t: string) => t.replace(/\D/g, "");
 
-/** Si deriva y Claude no puso el WhatsApp, se agrega. */
-export function conWhatsapp(textos: string[], derivar: boolean): string[] {
+/**
+ * Un teléfono uruguayo en el texto (celular 09…, fijo 2…/4…, con o sin +598),
+ * normalizado a dígitos. Ignora el WhatsApp de Voltia y los números que no
+ * tienen forma de teléfono (montos, kW).
+ */
+export function telefonoEn(texto: string | null | undefined): string | null {
+  const nuestro = digitos(asistenteConfig().derivarWhatsapp);
+  for (const m of (texto ?? "").matchAll(/\+?\d[\d\s.\-]{6,16}\d/g)) {
+    let d = digitos(m[0]);
+    if (d.startsWith("598")) d = d.slice(3);
+    if (/^9\d{7}$/.test(d)) d = `0${d}`;
+    if (!/^(09\d{7}|[24]\d{7})$/.test(d)) continue;
+    if (nuestro && d === nuestro) continue;
+    return d;
+  }
+  return null;
+}
+
+/** El último teléfono que escribió la persona (desde una fecha, si se da). */
+export function telefonoDe(mensajes: MensajeLite[], desde?: Date): string | null {
+  for (const m of [...mensajes].reverse()) {
+    if (desde && m.enviadoEn <= desde) break;
+    if (m.autor !== "CLIENTE") continue;
+    const t = telefonoEn(m.texto);
+    if (t) return t;
+  }
+  return null;
+}
+
+/**
+ * Si deriva sin el teléfono de la persona y Claude no nombró el WhatsApp de
+ * Voltia, se le ofrece (opcional: decisión de Nicolás del 1-nov-2026, no se
+ * la manda a otro lado). Si ya dejó su número, no hace falta.
+ */
+export function conWhatsapp(textos: string[], derivar: boolean, telefono: string | null = null): string[] {
   const c = asistenteConfig();
-  if (!derivar || !c.derivarWhatsapp || textos.some((t) => digitos(t).includes(digitos(c.derivarWhatsapp)))) return textos;
-  return [...textos, `Te paso con ${c.derivarA} por WhatsApp al ${c.derivarWhatsapp}.`];
+  if (!derivar || telefono || !c.derivarWhatsapp) return textos;
+  if (textos.length === 0) {
+    // Claude falló o no escribió nada: que no quede sin respuesta.
+    return [`Te paso con ${c.derivarA}, el asesor comercial. Pasame tu celular y te escribe por WhatsApp, o si preferís escribile directo al ${c.derivarWhatsapp}.`];
+  }
+  if (textos.some((t) => digitos(t).includes(digitos(c.derivarWhatsapp)))) return textos;
+  return [...textos, `Si te queda más cómodo, también le podés escribir directo a ${c.derivarA} al WhatsApp ${c.derivarWhatsapp}, que suele contestar más rápido.`];
 }
 
 // ── Claude ──────────────────────────────────────────────────────────────────
@@ -358,6 +396,10 @@ async function atenderSinCandado(id: string, deps: Deps, ahora: Date): Promise<s
     pausaOtroMs: asistenteConfig().pausaOtroMin * 60_000,
     topeSuperado,
   });
+  if (razon === "derivada") {
+    const nuevo = conv.telefono ? null : telefonoDe(conv.mensajes, conv.derivadaEn ?? undefined);
+    if (nuevo) return await recibirTelefono(conv, nuevo, base, sombra, deps);
+  }
   if (razon) {
     if (razon !== "ya_contestado" && razon !== "sin_mensajes" && razon !== "apagado") {
       await anotar({ ...base, usuario: conv.usuario, resultado: "no_contestado", razon });
@@ -387,8 +429,9 @@ async function atenderSinCandado(id: string, deps: Deps, ahora: Date): Promise<s
   const derivar = Boolean(r.derivar) || lead;
   const motivo = (r.motivo ?? "").trim();
   const temas = (r.temas ?? []).filter((t) => (TEMAS as readonly string[]).includes(t));
-  const textos = conWhatsapp(mensajesDe(r), derivar);
-  const evento = { ...base, usuario: conv.usuario, costoUsd, lead, derivado: derivar, datos: { motivo, temas, mensajes: textos } };
+  const telefono = conv.telefono ?? telefonoDe(conv.mensajes);
+  const textos = conWhatsapp(mensajesDe(r), derivar, telefono);
+  const evento = { ...base, usuario: conv.usuario, costoUsd, lead, derivado: derivar, datos: { motivo, temas, mensajes: textos, telefono } };
 
   if (sombra) {
     await anotar({ ...evento, resultado: textos.length ? (derivar ? "derivado" : "contestado") : "sin_respuesta", speech: Boolean(r.speech) });
@@ -414,6 +457,7 @@ async function atenderSinCandado(id: string, deps: Deps, ahora: Date): Promise<s
     data: {
       ...(derivar ? { derivadaEn: ahora, derivadaMotivo: motivo || null, derivadaLead: lead } : {}),
       ...(speech ? { speechEn: ahora } : {}),
+      ...(telefono ? { telefono } : {}),
     },
     include: { mensajes: { orderBy: { enviadoEn: "asc" } } },
   });
@@ -426,6 +470,29 @@ async function atenderSinCandado(id: string, deps: Deps, ahora: Date): Promise<s
   await etiquetar({ persona: final.persona, usuario: final.usuario, nombre: final.nombre, sigue: final.sigue, momento: ahora }, etiquetas);
   if (derivar) await avisarDerivacion(final, motivo, lead, deps);
   return decision;
+}
+
+/**
+ * Ya derivada, la persona deja su teléfono (se lo pidió el asistente): se le
+ * confirma con un mensaje y se le avisa a quien la atiende. Una sola vez.
+ */
+async function recibirTelefono(conv: Conv, telefono: string, base: Omit<Evento, "resultado">, sombra: boolean, deps: Deps): Promise<string> {
+  const c = asistenteConfig();
+  const texto = `Perfecto, ya se lo paso a ${c.derivarA} y te escribe por WhatsApp a ese número.`;
+  const evento = { ...base, usuario: conv.usuario, derivado: true, datos: { motivo: "dejó su teléfono", mensajes: [texto], telefono } };
+  if (sombra) {
+    await anotar({ ...evento, resultado: "telefono" });
+    return "sombra";
+  }
+  const final = await prisma.instagramConversacion.update({
+    where: { id: conv.id },
+    data: { telefono },
+    include: { mensajes: { orderBy: { enviadoEn: "asc" } } },
+  });
+  await mandar(final, [texto], final.mensajes[final.mensajes.length - 1].enviadoEn, deps);
+  await anotar({ ...evento, resultado: "telefono" });
+  await avisarDerivacion(final, "dejó su teléfono", final.derivadaLead, deps);
+  return "telefono";
 }
 
 /** Manda los mensajes de a uno, con pausas de "escribiendo…". Devuelve cuántos salieron. */
@@ -458,6 +525,13 @@ function fechaCorta(d: Date): string {
   return d.toLocaleString("es-UY", { timeZone: "America/Montevideo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+/** Hasta cuándo deja Meta contestarle: 24 h (7 días si vino de un anuncio) desde su último mensaje. */
+function limiteParaContestar(conv: Conv): Date {
+  const delCliente = conv.mensajes.filter((m) => m.autor === "CLIENTE");
+  const ultimo = delCliente.length ? delCliente[delCliente.length - 1].enviadoEn : new Date();
+  return new Date(ultimo.getTime() + (conv.desdeAnuncio ? VENTANA_ANUNCIO_MS : VENTANA_MS));
+}
+
 async function avisarDerivacion(conv: Conv, motivo: string, lead: boolean, deps: Deps) {
   const c = asistenteConfig();
   let quien = conv.usuario ? `@${conv.usuario}` : `la persona ${conv.persona}`;
@@ -466,6 +540,9 @@ async function avisarDerivacion(conv: Conv, motivo: string, lead: boolean, deps:
   const lineas = [
     `${lead ? "LEAD: mandó la factura o los datos del techo. " : ""}El asistente de Instagram derivó a ${quien} con ${c.derivarA} (WhatsApp ${c.derivarWhatsapp}).`,
     `Motivo: ${motivo || "sin motivo"}.`,
+    conv.telefono
+      ? `Dejó su teléfono: ${conv.telefono}. Escribile por WhatsApp.`
+      : `No dejó teléfono (se le pidió). Si no te escribe al WhatsApp, contestale por Instagram desde Voltia PM antes del ${fechaCorta(limiteParaContestar(conv))}: después Meta no deja.`,
     "",
     "La conversación:",
     ...conv.mensajes.slice(-HISTORIA).map((m) => `${fechaCorta(m.enviadoEn)} ${nombres[m.autor] ?? m.autor}: ${m.texto}`),

@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.8",
+  date: "1 de noviembre de 2026",
+  sections: [
+    {
+      title: "Instagram: no mandamos a nadie a otro lado",
+      items: [
+        "Cuando alguien manda la factura por Instagram, el asistente le pide el celular para que Martín le escriba por WhatsApp; escribirle directo a Martín queda como opción para ir más rápido. Si deja el número, a Martín le llega por mail y se ve en la conversación.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_7: Release = {
   version: "13.7",
   date: "30 de octubre de 2026",
   sections: [
@@ -1024,6 +1037,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.7",
+    shortDate: "30 oct",
+    highlights: RELEASE_13_7.sections.map((sec) => sec.title),
+  },
   {
     version: "13.6",
     shortDate: "29 oct",

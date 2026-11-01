@@ -6616,6 +6616,8 @@ model InstagramConversacion {
   sigue           Boolean?
   /// Si la derivación fue porque mandó la factura o el techo (un lead).
   derivadaLead    Boolean            @default(false)
+  /// El teléfono que dejó la persona en el chat, para escribirle por WhatsApp.
+  telefono        String?
   /// Cuándo se le mandó el speech, y cuándo el seguimiento del día siguiente.
   speechEn        DateTime?          @db.Timestamptz(6)
   seguimientoEn   DateTime?          @db.Timestamptz(6)

@@ -14,6 +14,8 @@ export interface InstagramConversacion {
   desdeAnuncio: boolean;
   estado: InstagramEstado;
   derivadaMotivo: string | null;
+  /** El celular que dejó en el chat, para seguir por WhatsApp. */
+  telefono: string | null;
   tomadaPor: string | null;
   ultimoMensajeEn: string | null;
   ultimoTexto: string | null;

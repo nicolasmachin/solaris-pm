@@ -133,6 +133,7 @@ type FilaConversacion = {
   desdeAnuncio: boolean;
   derivadaEn: Date | null;
   derivadaMotivo: string | null;
+  telefono: string | null;
   tomadaEn: Date | null;
   tomadaPor: string | null;
   ultimoMensajeEn: Date | null;
@@ -154,6 +155,7 @@ function presentar(f: FilaConversacion, ahora = new Date()) {
     desdeAnuncio: f.desdeAnuncio,
     estado: estadoAsistente(f, ahora),
     derivadaMotivo: f.derivadaMotivo,
+    telefono: f.telefono,
     tomadaPor: f.tomadaPor,
     ultimoMensajeEn: f.ultimoMensajeEn,
     ultimoTexto: f.ultimoTexto,
@@ -167,7 +169,7 @@ function presentar(f: FilaConversacion, ahora = new Date()) {
 
 async function filas(where: Prisma.Sql = Prisma.sql`TRUE`): Promise<FilaConversacion[]> {
   return prisma.$queryRaw<FilaConversacion[]>`
-    SELECT c."id", c."persona", c."usuario", c."nombre", c."desdeAnuncio", c."derivadaEn", c."derivadaMotivo",
+    SELECT c."id", c."persona", c."usuario", c."nombre", c."desdeAnuncio", c."derivadaEn", c."derivadaMotivo", c."telefono",
            c."tomadaEn", u."name" AS "tomadaPor", c."ultimoMensajeEn", c."ultimoClienteEn",
            c."leadId", l."code" AS "leadCode", l."clientName" AS "leadNombre",
            ult."texto" AS "ultimoTexto", ult."autor" AS "ultimoAutor",

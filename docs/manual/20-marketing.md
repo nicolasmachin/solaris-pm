@@ -110,19 +110,28 @@ apretados como si fueran texto, los ecos, el anuncio y los adjuntos como
 3. `porQueNo()` (lógica pura) decide si no contesta: apagado, ya contestado,
    fuera de la ventana (24 h, 7 días si vino de un anuncio), **tomada**,
    escribió ManyChat o una persona hace menos de 30 minutos, derivada hace
-   menos de 7 días, o tope de gasto.
+   menos de 7 días, o tope de gasto. Excepción: si está derivada, todavía no
+   se tiene su celular y en lo nuevo que escribió hay un teléfono uruguayo
+   (`telefonoEn()`), se guarda en `telefono`, se le contesta una vez «ya se lo
+   paso a Martín y te escribe por WhatsApp» (texto fijo, sin Claude) y a Martín
+   le llega otro mail con el número (`recibirTelefono()`).
 4. Pide el perfil a Meta (usuario, nombre, si sigue a la cuenta) y le pasa a
    Claude la conversación (últimos 30 mensajes; lo de ManyChat y de personas
    como "[Escribió Voltia por otro lado]") con el flujo de la automatización y
    los datos de Voltia (con caché), y aparte lo propio de la conversación (de
    dónde vino, si sigue, si ya recibió el speech, la hora en Uruguay).
 5. Claude devuelve JSON: `mensajes`, `derivar`, `lead`, `speech`, `temas`,
-   `motivo` (`ESQUEMA`). Si deriva y no puso el WhatsApp, se agrega.
+   `motivo` (`ESQUEMA`). Si deriva sin el celular de la persona y no nombró el
+   WhatsApp de Martín, se agrega como opción («si te queda más cómodo…»);
+   si Claude no escribió nada, se manda un mensaje que pide el celular
+   (`conWhatsapp()`). Si la persona ya dejó su celular, no se agrega nada.
 6. Si mientras pensaba escribió alguien más, no manda. Si no, manda de a uno con
    "escribiendo…" y pausas según el largo (2 a 9 s), y corta si alguien se mete.
 7. Guarda el speech y la derivación, etiqueta el contacto y, si derivó, manda
    mail a `INSTAGRAM_DERIVAR_MAIL` (Martín) con copia a `INSTAGRAM_AVISOS_MAIL`
-   (Nicolás) con la conversación entera.
+   (Nicolás) con la conversación entera y el celular que dejó; si no lo dejó,
+   hasta cuándo se le puede contestar por Instagram (24 h desde su último
+   mensaje, 7 días si vino de un anuncio).
 
 **Seguimiento** (`revisarSeguimientos()`, cada 10 minutos): `tocaSeguimiento()`
 (lógica pura) pide speech mandado, nada del cliente ni de nadie después, no
@@ -155,8 +164,11 @@ sábado de 8 a 21 (Uruguay). Se marca antes de mandar. Hasta 2 mensajes.
 **Automatizaciones** (`automatizaciones.ts`): tabla `marketing_automatizaciones`.
 Al arrancar el server, `sembrarAutomatizaciones()` crea las que falten desde
 `server/config/instagram/*.md` (encabezado entre `+++`, una `clave = valor` por
-línea con valores JSON, y el flujo debajo). **Nunca pisa** lo que ya está en la
-base: lo que se edita en la pantalla manda. Los que empiezan con "_" son los
+línea con valores JSON, y el flujo debajo). Las que nadie editó desde la
+pantalla (`actualizadoPorId` vacío) siguen al archivo: si su flujo cambió, se
+actualiza al arrancar. **Nunca pisa** lo que se tocó en la pantalla (editar o
+prender/apagar): ahí manda la pantalla, y un cambio en el archivo hay que
+pasarlo a mano. Los que empiezan con "_" son los
 textos comunes. En el flujo, `{DATOS}`, `{FLUJO}`, `{LINK}`, `{DERIVAR_A}` y
 `{DERIVAR_WHATSAPP}` los completa Voltia PM.
 
@@ -260,6 +272,12 @@ protege la firma; lo que lee indicadores, el secreto compartido.
   "escribiendo…", el nombre de la persona, frases distintas cada vez. Pero si
   le preguntan si es un robot, no miente.
 - **Lead = mandó la factura o los datos del techo.** Ahí se deriva a Ventas.
+- **La venta sigue por WhatsApp, sin mandar a nadie a otro lado** (decisión de
+  Nicolás del 1-nov-2026: cada salto pierde gente). En orden: lo ideal, que le
+  escriba directo a Martín por WhatsApp, ofrecido como lo más rápido, nunca
+  como única salida; si no, que mande la factura por Instagram **y deje su
+  celular** (se le pide siempre) para que Martín le escriba; lo último, si no
+  quiere dar el número, se sigue por Instagram dentro de la ventana de Meta.
 - **Crear el lead no pide `VENTAS:CREATE`**: pasar a Ventas lo que entra por
   redes es trabajo de Marketing.
 - El "leído" es uno solo para todo el equipo.

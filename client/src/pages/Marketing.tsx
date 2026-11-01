@@ -240,6 +240,7 @@ function Chat({ id, puedeEditar, onVolver }: { id: string; puedeEditar: boolean;
             <span className={`mr-1.5 rounded px-1.5 py-0.5 ${e.clase}`}>{e.label}</span>
             {c.estado === "TOMADA" && c.tomadaPor && `${c.tomadaPor} · `}
             {c.estado === "DERIVADA" && c.derivadaMotivo && `${c.derivadaMotivo} · `}
+            {c.telefono && `Cel. ${c.telefono} (WhatsApp) · `}
             {c.desdeAnuncio && "Vino de un anuncio · "}
             {c.ventanaAbierta
               ? `Se le puede escribir hasta el ${hora(c.ventanaHasta!)}`

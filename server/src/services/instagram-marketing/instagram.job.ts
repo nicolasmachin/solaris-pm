@@ -58,7 +58,7 @@ export function startInstagramJobs() {
   if (iniciado) return;
   iniciado = true;
   void sembrarAutomatizaciones()
-    .then((creadas) => creadas.length && console.log(`[instagram] automatizaciones sembradas: ${creadas.join(", ")}`))
+    .then((cambiadas) => cambiadas.length && console.log(`[instagram] automatizaciones sembradas: ${cambiadas.join(", ")}`))
     .catch((err) => console.error("[instagram] no se pudieron sembrar las automatizaciones:", err));
   // Lo que quedó a medias por un reinicio vuelve a la cola.
   void prisma.instagramComentario

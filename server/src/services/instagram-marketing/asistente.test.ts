@@ -7,7 +7,7 @@ import { comentariosDelAviso, mensajesDelAviso, textoDe } from "./aviso.js";
 import { type Automatizacion, carpetaArchivos, coincide, elegirParaComentario, leerArchivo, normalizar } from "./automatizaciones.js";
 import { pedido } from "./comentarios.js";
 import { secretoValido } from "./conector.js";
-import { conWhatsapp, escribioOtro, mensajesDe, mensajesParaClaude, pidioMasInfo, porQueNo, tocaSeguimiento } from "./privados.js";
+import { conWhatsapp, escribioOtro, mensajesDe, mensajesParaClaude, pidioMasInfo, porQueNo, telefonoDe, telefonoEn, tocaSeguimiento } from "./privados.js";
 
 const MIN = 60_000;
 const HORA = 60 * MIN;
@@ -159,13 +159,36 @@ test("los mensajes de Claude se limpian; acepta la forma vieja", () => {
   assert.equal(mensajesDe({ mensajes: ["a".repeat(2000)] })[0].length, 1000);
 });
 
-test("si deriva y no puso el WhatsApp, se agrega", () => {
+test("si deriva sin teléfono, el WhatsApp se ofrece como opción, no como única salida", () => {
   assert.deepEqual(conWhatsapp(["hola"], false), ["hola"]);
   const con = conWhatsapp(["hola"], true);
   assert.equal(con.length, 2);
   assert.match(con[1], /365 636/);
+  assert.match(con[1], /si te queda más cómodo/i);
+  assert.doesNotMatch(con[1], /te paso con/i);
   assert.deepEqual(conWhatsapp(["escribile al 092365636"], true), ["escribile al 092365636"]);
-  assert.equal(conWhatsapp([], true).length, 1);
+  // Ya dejó su celular: no hace falta mandarlo a otro lado.
+  assert.deepEqual(conWhatsapp(["gracias, Martín te escribe"], true, "099123456"), ["gracias, Martín te escribe"]);
+  // Claude no escribió nada: igual se le contesta, pidiéndole el celular.
+  const vacio = conWhatsapp([], true);
+  assert.equal(vacio.length, 1);
+  assert.match(vacio[0], /celular/);
+});
+
+test("el teléfono que deja la persona se reconoce; montos y nuestro número no", () => {
+  assert.equal(telefonoEn("mi cel es 099 123 456"), "099123456");
+  assert.equal(telefonoEn("+598 98 765 432"), "098765432");
+  assert.equal(telefonoEn("98765432"), "098765432");
+  assert.equal(telefonoEn("fijo 2600-1234"), "26001234");
+  assert.equal(telefonoEn("ya le escribí al 092 365 636"), null);
+  assert.equal(telefonoEn("gasto $ 8.500 por mes, 15.000 dólares"), null);
+  assert.equal(telefonoEn("pago 12345678 de UTE"), null);
+  assert.equal(telefonoEn(null), null);
+  const m = (autor: string, texto: string, min: number) => ({ autor, texto, enviadoEn: new Date(ahora.getTime() + min * 60_000) });
+  const charla = [m("CLIENTE", "099 111 222", 0), m("ASISTENTE", "gracias", 1), m("CLIENTE", "mejor al 099 333 444", 5)];
+  assert.equal(telefonoDe(charla), "099333444");
+  assert.equal(telefonoDe(charla, new Date(ahora.getTime() + 10 * 60_000)), null);
+  assert.equal(telefonoDe(charla, new Date(ahora.getTime() + 2 * 60_000)), "099333444");
 });
 
 test("la conversación para Claude: turnos alternados, empezando por el cliente", () => {

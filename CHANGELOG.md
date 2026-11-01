@@ -1,5 +1,16 @@
 # Novedades
 
+## v13.8
+
+### 1 de noviembre de 2026
+
+#### Marketing: el asistente de Instagram ya no manda a la gente a otro lado
+
+- Cuando alguien manda la factura (o pasa a Ventas por otro motivo), el asistente **le pide su celular** para que Martín le escriba por WhatsApp, y le ofrece escribirle directo a Martín **solo como opción**, para ir más rápido. Antes le decía «te paso con Martín por WhatsApp al…», y eso obligaba a la persona a ir a otra app.
+- Si la persona deja su número después, el asistente le confirma que Martín le escribe y a Martín le llega un mail con el número. El celular se ve también en la conversación, en Marketing → Instagram.
+- En el mail a Martín dice si dejó el celular o, si no, hasta cuándo Instagram deja contestarle por ahí.
+- Los textos del asistente que nadie editó desde la pantalla se actualizan solos con cada versión nueva.
+
 ## v13.7
 
 ### 30 de octubre de 2026
