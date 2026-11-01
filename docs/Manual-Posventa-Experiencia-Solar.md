@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.37 · del 30/10/26
+**Voltia · Uruguay** · Versión 1.38 · del 01/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1097,6 +1097,51 @@ Lo que Experiencia Solar tiene que saber:
   sale.** Queda registrado como "no se mandó" con el motivo: es una razón más
   para tener los datos de contacto completos.
 
+### El WhatsApp general dentro de Voltia PM
+
+El número de WhatsApp general de Voltia, el que tiene el cliente para escribir,
+se usa también **desde Voltia PM**, en **Experiencia Solar → WhatsApp**. Lo puede
+usar cualquiera que entre a Experiencia Solar, no solo su responsable: así un
+mensaje no queda sin ver porque la persona de siempre no está. El número sigue
+andando en el celular como siempre; lo que se escribe en un lado aparece en el
+otro.
+
+**La bandeja.** A la izquierda están todas las conversaciones, la más nueva
+arriba, con el nombre del cliente cuando su celular está cargado en la ficha. Las
+que no se abrieron están en negrita, y las que tienen un mensaje del cliente sin
+contestar llevan la marca roja **Sin contestar**; el filtro *Sin contestar* deja
+solo esas, y la pestaña muestra cuántas son. A la derecha, la conversación. Para
+escribirle a alguien que todavía no tiene conversación, se escribe su número en el
+buscador.
+
+**Qué se le puede mandar.** Si el cliente escribió en las últimas 24 horas, se le
+contesta con texto libre, como en el celular. Si pasó más tiempo, WhatsApp solo
+deja mandar un **mensaje aprobado por Meta** (lo que la pantalla llama
+"plantilla"): es una regla de WhatsApp, no de Voltia.
+
+**Cuando el cliente escribe desde otro número** (el de un familiar, el de la
+empresa), la conversación aparece como *Sin cliente*. Con **Asociar a un
+cliente** se elige de quién es, y desde ahí se ve en su ficha.
+
+**Cuando no hace falta contestar** (un "gracias", un "ok"), **No hace falta
+contestar** saca la marca roja. Vuelve a aparecer si el cliente escribe de nuevo.
+
+**En la ficha del cliente:**
+
+- Al lado del teléfono hay un botón **WhatsApp** que abre su conversación.
+- La tarjeta **WhatsApp** muestra los últimos mensajes.
+- **Si el cliente escribió y nadie le contestó**, la tarjeta lo dice en rojo
+  ("Escribió hace 3 h y nadie le contestó", con su mensaje) y arriba de la ficha
+  aparece la marca **WhatsApp sin contestar**. Se contesta en el día, igual que un
+  reclamo.
+
+**Lo que queda en el historial.** El primer mensaje del día que se le manda al
+cliente desde Voltia PM queda en su historial como contacto, así que cuenta para
+la cadencia. Lo que se le escribe desde el celular **no** queda en el historial:
+si fue un contacto importante, se registra a mano. Mandar un mensaje desde la
+bandeja no deja hecho ningún paso del recorrido; para eso siguen los mensajes
+modelo.
+
 Aparte, el **Plan de Protección contra Granizo** tiene sus ocho mensajes, que se
 abren desde el plan y no desde una etapa (cap. 12.1): plan activo · aviso de
 vencimiento · vencido sin pago · plan suspendido · recibimos el aviso de daño ·
@@ -1116,7 +1161,7 @@ el cliente nunca queda sin respuesta.**
 | Vía | Qué pasa |
 |---|---|
 | **Portal del cliente** (tickets) | Queda registrado, **avisa a Experiencia Solar en el momento** en la campanita de Voltia PM, y **aparece en el correo de la mañana** si no se respondió |
-| **WhatsApp** | Es por donde entra la mayoría hoy. **No queda registrado solo**: hay que abrirlo como ticket o al menos registrarlo en la bitácora |
+| **WhatsApp** | Es por donde entra la mayoría hoy. Lo que llega al número general se ve en Voltia PM (Experiencia Solar → WhatsApp), y la ficha avisa si nadie le contestó; pero **no es un reclamo registrado**: hay que abrirlo como ticket. Lo que llega al celular de otra persona no se ve en ningún lado |
 
 **Un reclamo cuenta como sin responder** cuando está abierto, lo abrió el cliente
 desde el portal y **no tiene ningún comentario de alguien de Voltia**. Eso es lo
@@ -2027,6 +2072,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.38 | 1 de noviembre de 2026 | Se agrega el WhatsApp general dentro de Voltia PM: la bandeja de Experiencia Solar que puede usar cualquiera del área, qué se le puede mandar al cliente, cómo se asocia una conversación de otro número, y la alerta de la ficha cuando el cliente escribió y nadie le contestó. |
 | 1.37 | 30 de octubre de 2026 | El mensaje «Alta en los reportes mensuales» ya no le dice al cliente que es el único correo automático que va a recibir, porque ahora también puede recibir avisos automáticos. |
 | 1.36 | 29 de octubre de 2026 | Voltia PM puede mandarle avisos automáticos al cliente cuando pasa un hecho del proyecto; los define Gerencia. Se agrega qué tiene que saber Experiencia Solar: el aviso queda en el historial, puede dejar hecho un paso del recorrido y no reemplaza a la persona. Cambia la regla de que el sistema nunca le escribe solo al cliente. |
 | 1.35 | 29 de octubre de 2026 | En la lista de Cobros, Experiencia Solar ve a qué clientes les toca pagar una cuota ahora, cuánto, y cuáles están vencidas, con el total abajo. Con financiación bancaria, el cliente tiene una sola cuota «Financiación bancaria» que se marca pagada cuando deposita el banco. |

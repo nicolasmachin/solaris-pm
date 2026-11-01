@@ -174,7 +174,11 @@ export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
       const orden = Array.isArray(aviso.plantillaVariables)
         ? (aviso.plantillaVariables as string[])
         : variablesDelTexto(aviso.cuerpo);
+      const { bandejaExperienciaSolar } = await import("../whatsapp-cloud/bandejas.service.js");
+      const { cuenta } = await bandejaExperienciaSolar();
+      if (!cuenta) return cerrar({ estado: "FALLIDO", texto, destino: real, detalle: "No hay un número de WhatsApp para Experiencia Solar." });
       const msg = await enviarPlantilla({
+        cuenta,
         telefono: destino,
         nombre: aviso.plantillaNombre,
         idioma: aviso.plantillaIdioma,

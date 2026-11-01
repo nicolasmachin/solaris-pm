@@ -75,6 +75,7 @@ export async function conectarNumero(params: {
   businessId?: string;
   etiqueta?: string;
   responsableId?: string;
+  uso?: "EXPERIENCIA_SOLAR" | "VENTAS";
   userId: string;
 }) {
   const faltan = faltantesParaConectar();
@@ -103,6 +104,7 @@ export async function conectarNumero(params: {
     coexistencia,
     etiqueta: params.etiqueta?.trim() || null,
     responsableId: params.responsableId ?? null,
+    uso: params.uso ?? null,
     estado: "CONECTADO",
     conectadoPorId: params.userId,
     conectadoEn: new Date(),
@@ -115,6 +117,8 @@ export async function conectarNumero(params: {
     historialError: null,
     syncError: null,
   };
+  // El número general de Experiencia Solar es uno solo.
+  if (params.uso === "EXPERIENCIA_SOLAR") await soltarExperienciaSolar(params.phoneNumberId);
   const numero = await prisma.whatsAppNumero.upsert({
     where: { phoneNumberId: params.phoneNumberId },
     create: { phoneNumberId: params.phoneNumberId, ...data },
@@ -196,15 +200,43 @@ export async function listarNumeros() {
   }));
 }
 
-export async function actualizarNumero(id: string, cambios: { etiqueta?: string | null; responsableId?: string | null }) {
+/** Saca la bandeja de Experiencia Solar a los demás números: es una sola. */
+async function soltarExperienciaSolar(salvoPhoneNumberId: string) {
+  await prisma.whatsAppNumero.updateMany({
+    where: { uso: "EXPERIENCIA_SOLAR", phoneNumberId: { not: salvoPhoneNumberId } },
+    data: { uso: null },
+  });
+}
+
+const NOMBRE_USO: Record<string, string> = { EXPERIENCIA_SOLAR: "Experiencia Solar", VENTAS: "Ventas" };
+
+export async function actualizarNumero(
+  id: string,
+  cambios: { etiqueta?: string | null; responsableId?: string | null; uso?: "EXPERIENCIA_SOLAR" | "VENTAS" | null },
+  userId: string,
+) {
   const numero = await prisma.whatsAppNumero.findUnique({ where: { id } });
   if (!numero) throw notFound("NUMERO_NO_ENCONTRADO", "El número no existe");
-  return prisma.whatsAppNumero.update({
+  if (cambios.uso === "EXPERIENCIA_SOLAR") await soltarExperienciaSolar(numero.phoneNumberId);
+  const actualizado = await prisma.whatsAppNumero.update({
     where: { id },
     data: {
       ...(cambios.etiqueta !== undefined ? { etiqueta: cambios.etiqueta?.trim() || null } : {}),
       ...(cambios.responsableId !== undefined ? { responsableId: cambios.responsableId } : {}),
+      ...(cambios.uso !== undefined ? { uso: cambios.uso } : {}),
     },
-    select: { id: true, etiqueta: true, responsableId: true },
+    select: { id: true, etiqueta: true, responsableId: true, uso: true },
   });
+  // Cambiar la bandeja cambia quién ve las conversaciones y por dónde salen los
+  // avisos automáticos: queda en auditoría.
+  if (cambios.uso !== undefined && cambios.uso !== numero.uso) {
+    await createAuditEntry({
+      entityType: AuditEntityType.user,
+      entityId: userId,
+      userId,
+      action: AuditAction.updated,
+      description: `Cambió la bandeja del número de WhatsApp ${numero.telefono}: ${NOMBRE_USO[numero.uso ?? ""] ?? "ninguna"} → ${NOMBRE_USO[cambios.uso ?? ""] ?? "ninguna"}`,
+    });
+  }
+  return actualizado;
 }

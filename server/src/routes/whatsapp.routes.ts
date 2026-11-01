@@ -1,8 +1,10 @@
 /**
- * WhatsApp (Cloud API): mandar mensajes, ver conversaciones y manejar
- * plantillas. Por ahora solo para Administración → WhatsApp, que es donde se
- * prueba la conexión y se graban los videos para la revisión de Meta. Permiso:
+ * WhatsApp (Cloud API), lo que se configura desde Administración → WhatsApp:
+ * números conectados (y para qué bandeja es cada uno) y plantillas. Permiso:
  * CONFIGURACION:EDIT.
+ *
+ * Las conversaciones NO están acá: viven en la bandeja de cada área
+ * (`whatsapp-bandejas.routes.ts`).
  */
 
 import { Action, AuditAction, AuditEntityType, Module } from "@prisma/client";
@@ -12,15 +14,8 @@ import { z } from "zod";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
-import {
-  MetaApiError,
-  crearPlantilla,
-  enviarPlantilla,
-  enviarTexto,
-  listarConversaciones,
-  listarPlantillas,
-  mensajesDe,
-} from "../services/whatsapp-cloud/api.service.js";
+import { MetaApiError, crearPlantilla, listarPlantillas } from "../services/whatsapp-cloud/api.service.js";
+import { USOS_NUMERO, bandejaExperienciaSolar } from "../services/whatsapp-cloud/bandejas.service.js";
 import { faltantesParaConectar, faltantesParaEnviar, whatsappConfig } from "../services/whatsapp-cloud/config.js";
 import {
   actualizarNumero,
@@ -28,7 +23,7 @@ import {
   listarNumeros,
   sincronizarNumero,
 } from "../services/whatsapp-cloud/numeros.service.js";
-import { AppError, unauthorized } from "../utils/errors.js";
+import { AppError, badRequest, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -36,7 +31,7 @@ function ensureUser(request: FastifyRequest) {
 }
 
 /** Los errores de Meta se devuelven con su mensaje: es lo que hay que corregir. */
-async function conMeta<T>(fn: () => Promise<T>): Promise<T> {
+export async function conMeta<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
@@ -61,48 +56,15 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get("/whatsapp/conversaciones", puede, async () => listarConversaciones());
+  // Las plantillas son de la cuenta del número general (el de Experiencia
+  // Solar), que es por donde salen los avisos automáticos.
+  async function cuentaGeneral() {
+    const b = await bandejaExperienciaSolar();
+    if (!b.cuenta) throw badRequest("SIN_NUMERO", "No hay un número de WhatsApp para Experiencia Solar.");
+    return b.cuenta;
+  }
 
-  app.get("/whatsapp/conversaciones/:telefono", puede, async (request) => {
-    const { telefono } = z.object({ telefono: z.string().min(6).max(20) }).parse(request.params);
-    return mensajesDe(telefono);
-  });
-
-  app.post("/whatsapp/enviar", puede, async (request, reply) => {
-    const user = ensureUser(request);
-    const body = z
-      .discriminatedUnion("tipo", [
-        z.object({
-          tipo: z.literal("plantilla"),
-          telefono: z.string().min(6).max(20),
-          plantilla: z.string().min(1).max(512),
-          idioma: z.string().min(2).max(10),
-          variables: z.array(z.string().max(1024)).max(20).optional(),
-        }),
-        z.object({
-          tipo: z.literal("texto"),
-          telefono: z.string().min(6).max(20),
-          texto: z.string().trim().min(1).max(4096),
-        }),
-      ])
-      .parse(request.body);
-
-    const mensaje = await conMeta(() =>
-      body.tipo === "plantilla"
-        ? enviarPlantilla({
-            telefono: body.telefono,
-            nombre: body.plantilla,
-            idioma: body.idioma,
-            variables: body.variables,
-            userId: user.id,
-          })
-        : enviarTexto({ telefono: body.telefono, texto: body.texto, userId: user.id }),
-    );
-    reply.code(201);
-    return { id: mensaje.id, waMessageId: mensaje.waMessageId, estado: mensaje.estado, telefono: mensaje.telefono };
-  });
-
-  app.get("/whatsapp/plantillas", puede, async () => conMeta(() => listarPlantillas()));
+  app.get("/whatsapp/plantillas", puede, async () => conMeta(async () => listarPlantillas(await cuentaGeneral())));
 
   app.post("/whatsapp/plantillas", puede, async (request, reply) => {
     const user = ensureUser(request);
@@ -116,7 +78,7 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
         ejemplos: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
       })
       .parse(request.body);
-    const creada = await conMeta(() => crearPlantilla(body));
+    const creada = await conMeta(async () => crearPlantilla(body, await cuentaGeneral()));
     await createAuditEntry({
       entityType: AuditEntityType.user,
       entityId: user.id,
@@ -154,6 +116,7 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
         businessId: z.string().regex(/^\d{5,30}$/).optional(),
         etiqueta: z.string().max(60).optional(),
         responsableId: z.string().min(1).max(40).optional(),
+        uso: z.enum(USOS_NUMERO).optional(),
       })
       .parse(request.body);
     const numero = await conMeta(() => conectarNumero({ ...body, userId: user.id }));
@@ -174,8 +137,9 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
       .object({
         etiqueta: z.string().max(60).nullable().optional(),
         responsableId: z.string().min(1).max(40).nullable().optional(),
+        uso: z.enum(USOS_NUMERO).nullable().optional(),
       })
       .parse(request.body);
-    return actualizarNumero(id, body);
+    return actualizarNumero(id, body, ensureUser(request).id);
   });
 }

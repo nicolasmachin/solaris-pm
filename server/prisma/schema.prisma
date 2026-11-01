@@ -706,6 +706,7 @@ model User {
   updatedAt                      DateTime                       @updatedAt @db.Timestamptz(6)
   whatsappMensajesEnviados       WhatsAppMensaje[]              @relation("WhatsAppMensajeEnviadoPor")
   whatsappNumerosResponsable     WhatsAppNumero[]               @relation("WhatsAppNumeroResponsable")
+  whatsappConversacionesLeidas   WhatsAppConversacion[]         @relation("WhatsAppConversacionLeidaPor")
   whatsappNumerosConectados      WhatsAppNumero[]               @relation("WhatsAppNumeroConectadoPor")
   avisosAutomaticosCreados       AvisoAutomatico[]              @relation("AvisoAutomaticoCreadoPor")
   instagramConversacionesTomadas InstagramConversacion[]        @relation("InstagramConversacionTomadaPor")
@@ -782,6 +783,7 @@ model Project {
   installationSchedule            InstallationSchedule?
   uteProcesses                    UteProcess[]
   avisosEnvios                    AvisoEnvio[]                   @relation("AvisoEnvioProject")
+  whatsappConversaciones          WhatsAppConversacion[]         @relation("WhatsAppConversacionProject")
   clients                         ProjectClient[]
   unifilarVersions                UnifilarVersion[]
   cabinetDesigns                  CabinetDesign[]
@@ -1935,6 +1937,7 @@ model SalesLead {
   comments                Comment[]
   tasks                   Task[]
   attachments             FileAttachment[]        @relation("LeadAttachments")
+  whatsappConversaciones  WhatsAppConversacion[]  @relation("WhatsAppConversacionLead")
   videos                  ProjectVideo[]          @relation("SalesLeadVideos")
   deletedAt               DateTime?               @db.Timestamptz(6)
   createdAt               DateTime                @default(now()) @db.Timestamptz(6)
@@ -5849,6 +5852,10 @@ model WhatsAppNumero {
   coexistencia      Boolean   @default(false)
   /// Para qué se usa: "Ventas", "Experiencia Solar"…
   etiqueta          String?
+  /// En qué bandeja de Voltia PM se ven sus conversaciones: EXPERIENCIA_SOLAR (el
+  /// número general, uno solo) | VENTAS (el número de un asesor: el responsable).
+  /// null = conectado pero sin bandeja.
+  uso               String?
   responsableId     String?
   responsable       User?     @relation("WhatsAppNumeroResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
   /// CONECTADO | DESCONECTADO
@@ -5871,6 +5878,35 @@ model WhatsAppNumero {
   updatedAt         DateTime  @updatedAt @db.Timestamptz(6)
 
   @@map("whatsapp_numeros")
+}
+
+/// Lo que Voltia PM sabe de una conversación de un número de Voltia con un
+/// teléfono, además de los mensajes: hasta dónde se leyó en la bandeja, si se
+/// decidió que no hacía falta contestar, y a qué cliente o lead se asoció a mano
+/// (cuando escribe desde un número que no está cargado en la ficha).
+model WhatsAppConversacion {
+  id             String       @id @default(cuid())
+  phoneNumberId  String
+  /// Teléfono del otro lado, en formato internacional sin "+" (598…).
+  telefono       String
+  /// Lo leído en la bandeja: los entrantes posteriores cuentan como no leídos.
+  leidoHasta     DateTime?    @db.Timestamptz(6)
+  leidoPorId     String?
+  leidoPor       User?        @relation("WhatsAppConversacionLeidaPor", fields: [leidoPorId], references: [id], onDelete: SetNull)
+  /// "No hace falta contestar": apaga la alerta de sin contestar hasta el próximo
+  /// mensaje del cliente.
+  resueltoHasta  DateTime?    @db.Timestamptz(6)
+  projectId      String?
+  project        Project?     @relation("WhatsAppConversacionProject", fields: [projectId], references: [id], onDelete: SetNull)
+  leadId         String?
+  lead           SalesLead?   @relation("WhatsAppConversacionLead", fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
+
+  @@unique([phoneNumberId, telefono])
+  @@index([projectId])
+  @@index([leadId])
+  @@map("whatsapp_conversaciones")
 }
 
 /// Cada cambio de estado de un saliente, tal como lo informa Meta. El estado

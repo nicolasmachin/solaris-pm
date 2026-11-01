@@ -165,9 +165,13 @@ export async function mandarAMeta(id: string, userId: string) {
     throw badRequest("YA_ENVIADO", "Este texto ya se mandó a Meta. Para cambiarlo, editá el mensaje.");
   }
   const { crearPlantilla } = await import("../whatsapp-cloud/api.service.js");
+  // La plantilla se crea en la cuenta del número general: es por donde sale el aviso.
+  const { bandejaExperienciaSolar } = await import("../whatsapp-cloud/bandejas.service.js");
+  const { cuenta } = await bandejaExperienciaSolar();
+  if (!cuenta) throw badRequest("SIN_NUMERO", "No hay un número de WhatsApp para Experiencia Solar.");
   const { cuerpo, variables, ejemplos } = aFormatoMeta(a.cuerpo);
   const nombre = nombrePlantilla(a.nombre, randomBytes(2).toString("hex"));
-  const r = await crearPlantilla({ nombre, categoria: "UTILITY", idioma: a.plantillaIdioma, cuerpo, ejemplos });
+  const r = await crearPlantilla({ nombre, categoria: "UTILITY", idioma: a.plantillaIdioma, cuerpo, ejemplos }, cuenta);
   const estadoMeta = r.status?.toUpperCase() ?? "PENDING";
   const actualizado = await prisma.avisoAutomatico.update({
     where: { id },
@@ -190,10 +194,11 @@ export async function refrescarPlantillas() {
     where: { deletedAt: null, canal: "WHATSAPP", plantillaNombre: { not: null } },
   });
   if (pendientes.length === 0) return 0;
-  const { faltantesParaEnviar } = await import("../whatsapp-cloud/config.js");
-  if (faltantesParaEnviar().length > 0) return 0;
+  const { bandejaExperienciaSolar } = await import("../whatsapp-cloud/bandejas.service.js");
+  const { cuenta } = await bandejaExperienciaSolar();
+  if (!cuenta) return 0;
   const { listarPlantillas } = await import("../whatsapp-cloud/api.service.js");
-  const deMeta = new Map((await listarPlantillas()).map((p) => [p.name, p]));
+  const deMeta = new Map((await listarPlantillas(cuenta)).map((p) => [p.name, p]));
   let cambios = 0;
   for (const a of pendientes) {
     const p = deMeta.get(a.plantillaNombre!);

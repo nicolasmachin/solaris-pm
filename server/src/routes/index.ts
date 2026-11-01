@@ -46,6 +46,7 @@ import { registerUnifilarRoutes } from "./unifilar.routes.js";
 import { registerUteSuministroRoutes } from "./ute-suministro.routes.js";
 import { registerVisitasRoutes } from "./visitas.routes.js";
 import { registerWhatsAppRoutes } from "./whatsapp.routes.js";
+import { registerWhatsAppBandejasRoutes } from "./whatsapp-bandejas.routes.js";
 import { registerAvisosRoutes } from "./avisos.routes.js";
 import { registerWhatsAppWebhookRoutes } from "./whatsapp-webhook.routes.js";
 import { registerInstagramConectorWebhookRoutes } from "./instagram-conector-webhook.routes.js";
@@ -68,6 +69,7 @@ export async function registerRoutes(app: FastifyInstance) {
   // Webhook de WhatsApp (Meta): público, sin prefijo, con firma propia.
   await app.register(registerWhatsAppWebhookRoutes);
   await app.register(registerWhatsAppRoutes, { prefix: "/api" });
+  await app.register(registerWhatsAppBandejasRoutes, { prefix: "/api" });
   // Instagram: el webhook de Meta (firma de la app) y lo que lee indicadores (secreto compartido).
   await app.register(registerInstagramConectorWebhookRoutes);
   await app.register(registerInstagramWebhookRoutes);

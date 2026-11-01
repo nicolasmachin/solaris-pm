@@ -4,6 +4,15 @@
 
 ### 1 de noviembre de 2026
 
+#### Experiencia Solar: el WhatsApp general dentro de Voltia PM
+
+- Pestaña nueva **WhatsApp** en Experiencia Solar, con todas las conversaciones del número general de Voltia. La puede usar cualquiera del área: se lee y se contesta desde ahí, y lo que se escribe en el celular también aparece.
+- Cada conversación muestra el **nombre del cliente** cuando su celular está cargado en la ficha. Las no leídas van en negrita y las que tienen un mensaje del cliente sin respuesta, con la marca roja **Sin contestar**. La pestaña dice cuántas son.
+- Si el cliente escribe desde otro número, **Asociar a un cliente** lo une a su ficha. Para un "gracias" o un "ok", **No hace falta contestar** saca la marca.
+- En la **ficha del cliente**: un botón **WhatsApp** al lado del teléfono que abre su conversación, una tarjeta con los últimos mensajes y, si escribió y nadie le contestó, una alerta en rojo con su mensaje.
+- El primer mensaje del día que se le manda al cliente desde Voltia PM queda en su historial como contacto.
+- **Administración → WhatsApp** queda solo para configurar: ahí se elige qué número es el general y cuál es de cada asesor. Los avisos automáticos salen por el número general.
+
 #### Marketing: el asistente de Instagram ya no manda a la gente a otro lado
 
 - Cuando alguien manda la factura (o pasa a Ventas por otro motivo), el asistente **le pide su celular** para que Martín le escriba por WhatsApp, y le ofrece escribirle directo a Martín **solo como opción**, para ir más rápido. Antes le decía «te paso con Martín por WhatsApp al…», y eso obligaba a la persona a ir a otra app.

@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.30 — 30 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.31 — 1 de noviembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -1056,6 +1056,33 @@ par del anterior, sin contestar, para compararlo).
 
 **A qué manuales afecta.** Al de Ventas.
 
+### WhatsApp: un número general para Experiencia Solar y uno por asesor
+
+**Qué se decidió.** Las conversaciones de WhatsApp con los clientes se ven y se
+contestan **dentro de Voltia PM**, en el módulo de cada área, y no solo en el
+celular:
+
+- **El número general de Voltia** (el que publica Voltia, a cargo del
+  responsable de Experiencia Solar) se usa desde Experiencia Solar. **Lo puede
+  usar cualquiera que entre a Experiencia Solar**: es de Voltia, no de una
+  persona. Por ese número salen también los avisos automáticos.
+- **Cada asesor comercial tiene su número**, y lo usa solo él, desde Ventas.
+- Desde la ficha del cliente (o desde el lead) se abre su conversación, y la
+  ficha avisa cuando el cliente escribió y nadie le contestó.
+- Administración solo configura qué número es de quién; ahí no se conversa.
+
+**Por qué.** Lo que se habla con el cliente por WhatsApp quedaba en el celular
+de una persona: si esa persona no está, nadie sabe qué se le dijo ni si quedó
+algo sin contestar. Con las conversaciones en Voltia PM, lo que el cliente
+escribe se ve en su ficha, un mensaje sin respuesta salta a la vista, y lo que se
+le contesta cuenta como contacto. El número general es de todo el equipo para
+que el cliente tenga un solo lugar donde escribir aunque cambie quién lo atiende.
+
+**Desde cuándo rige.** Desde que se conecta el número general a Voltia PM. El
+número de cada asesor, desde que se conecta el suyo.
+
+**A qué manuales afecta.** Al de Posventa (Experiencia Solar) y al de Ventas.
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -1087,6 +1114,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.31 | 1 de noviembre de 2026 | Se registra que las conversaciones de WhatsApp con los clientes se usan dentro de Voltia PM: el número general de Voltia desde Experiencia Solar, para cualquiera del área, y el de cada asesor solo por él, desde Ventas; la ficha del cliente avisa cuando escribió y nadie le contestó. |
 | 0.30 | 30 de octubre de 2026 | Se registra que Instagram lo atiende primero un asistente con inteligencia artificial dentro de Voltia PM, con las reglas de la Dirección (contestar, dar el orden de precio, pedir factura y techo, pasar el lead al asesor comercial), y que sus cifras se cuentan desde que lo atiende Voltia PM. |
 | 0.29 | 30 de octubre de 2026 | Se registra que los leads que entran sin vendedor (por ejemplo, desde Marketing) los ve todo Ventas y el primero que lo toma se lo queda, sin reparto. |
 | 0.28 | 29 de octubre de 2026 | Se registra que Voltia PM le avisa solo al cliente los hechos de su proyecto (venta, obra, UTE, habilitación, agenda), con avisos que define Gerencia, sin repetir hechos viejos ni mandar dos veces lo mismo, y con registro de cada envío. Reemplaza la regla de que el sistema nunca le escribe al cliente por su cuenta. |

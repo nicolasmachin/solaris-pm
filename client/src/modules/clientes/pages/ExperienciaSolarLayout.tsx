@@ -1,4 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+
+import { getBandejaES } from "../../../api/whatsapp.api";
 
 // Layout de "Experiencia Solar" con tabs por URL: Generadores (índice) y
 // Encuestas. Cada tab es una ruta hija (ver App.tsx). El acceso al módulo está
@@ -6,9 +9,18 @@ import { NavLink, Outlet } from "react-router-dom";
 // además ENCUESTAS:VIEW en el backend (todos los roles con acceso al módulo la
 // tienen).
 export function ExperienciaSolarLayout() {
+  // Mismo pedido que la bandeja (misma clave): el número de la pestaña son las
+  // conversaciones con un mensaje del cliente sin contestar.
+  const { data: bandeja } = useQuery({
+    queryKey: ["whatsapp-es", "bandeja"],
+    queryFn: getBandejaES,
+    refetchInterval: 30000,
+  });
+  const sinContestar = bandeja?.conversaciones.filter((c) => c.sinContestar).length ?? 0;
   const tabs = [
     { to: "", label: "Generadores", end: true },
     { to: "recorrido", label: "Recorrido", end: false },
+    { to: "whatsapp", label: "WhatsApp", end: false, contador: sinContestar },
     { to: "reportes", label: "Reportes FV", end: false },
     { to: "monitoreo", label: "Monitoreo", end: false },
     { to: "cobros", label: "Cobros", end: false },
@@ -40,6 +52,14 @@ export function ExperienciaSolarLayout() {
             }
           >
             {tab.label}
+            {"contador" in tab && tab.contador ? (
+              <span
+                className="ml-1.5 rounded-full bg-[var(--color-danger-bg)] px-1.5 text-[11px] font-semibold text-[var(--color-danger-text)]"
+                title="Conversaciones con un mensaje del cliente sin contestar"
+              >
+                {tab.contador}
+              </span>
+            ) : null}
           </NavLink>
         ))}
       </div>

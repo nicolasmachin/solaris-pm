@@ -1,8 +1,55 @@
 # Novedades
 
+## v13.8
+
+### 1 de noviembre de 2026
+
+#### Experiencia Solar: el WhatsApp general dentro de Voltia PM
+
+- Pestaña nueva **WhatsApp** en Experiencia Solar, con todas las conversaciones del número general de Voltia. La puede usar cualquiera del área: se lee y se contesta desde ahí, y lo que se escribe en el celular también aparece.
+- Cada conversación muestra el **nombre del cliente** cuando su celular está cargado en la ficha. Las no leídas van en negrita y las que tienen un mensaje del cliente sin respuesta, con la marca roja **Sin contestar**. La pestaña dice cuántas son.
+- Si el cliente escribe desde otro número, **Asociar a un cliente** lo une a su ficha. Para un "gracias" o un "ok", **No hace falta contestar** saca la marca.
+- En la **ficha del cliente**: un botón **WhatsApp** al lado del teléfono que abre su conversación, una tarjeta con los últimos mensajes y, si escribió y nadie le contestó, una alerta en rojo con su mensaje.
+- El primer mensaje del día que se le manda al cliente desde Voltia PM queda en su historial como contacto.
+- **Administración → WhatsApp** queda solo para configurar: ahí se elige qué número es el general y cuál es de cada asesor. Los avisos automáticos salen por el número general.
+
+#### Marketing: el asistente de Instagram ya no manda a la gente a otro lado
+
+- Cuando alguien manda la factura (o pasa a Ventas por otro motivo), el asistente **le pide su celular** para que Martín le escriba por WhatsApp, y le ofrece escribirle directo a Martín **solo como opción**, para ir más rápido. Antes le decía «te paso con Martín por WhatsApp al…», y eso obligaba a la persona a ir a otra app.
+- Si la persona deja su número después, el asistente le confirma que Martín le escribe y a Martín le llega un mail con el número. El celular se ve también en la conversación, en Marketing → Instagram.
+- En el mail a Martín dice si dejó el celular o, si no, hasta cuándo Instagram deja contestarle por ahí.
+- Los textos del asistente que nadie editó desde la pantalla se actualizan solos con cada versión nueva.
+- Si el asistente pasó a alguien a Ventas por una duda (por ejemplo, la zona) y después la persona manda la factura o una foto, ahora igual le contesta. Antes se quedaba callado y la factura quedaba sin respuesta.
+
+#### Ventas: Instagram sin usar Instagram
+
+- Nueva pantalla **Ventas → Instagram**: las conversaciones de Instagram de potenciales clientes (las que el asistente pasó a Ventas, con lead o con celular), para contestarlas desde Voltia PM. Las demás no aparecen.
+- Arriba de Ventas, una franja avisa cuántas personas esperan respuesta y cuánto falta para que Instagram no deje contestarles (24 horas desde su último mensaje).
+- Al contestar, la conversación pasa a ser tuya y el asistente no le escribe más. **Crear lead** lo deja a tu nombre, con el celular si lo dejó.
+- El mail de cada derivación trae el link a esta pantalla.
+
+#### Instagram: la factura que mandan llega a Ventas
+
+- Las fotos y los PDF que manda la persona por Instagram (la factura de UTE, el techo) se guardan en Voltia PM apenas llegan.
+- Van **adjuntos en el mail** que le llega a Martín cuando el asistente se la pasa.
+- Se ven en la conversación: la foto en miniatura (tocándola se abre grande) y el PDF para abrir.
+- Al crear el lead desde la conversación, quedan en los **adjuntos del lead**.
+
 ## v13.7
 
 ### 30 de octubre de 2026
+
+#### Marketing: el asistente de Instagram pasa a Voltia PM
+
+- El asistente que contesta los privados de @voltia_uy ahora vive en Voltia PM: espera un rato, contesta en varios mensajes cortos con el nombre de la persona, cuenta el speech adaptado a lo que preguntó, da el rango de precio y pide la factura de UTE y el techo. Cuando la persona los manda, la deriva a Ventas y a Martín le llega un mail con la conversación.
+- También contesta los **comentarios** y hace los **lead magnets**: quien comenta «AHORRO» recibe por privado los números de la obra y una respuesta pública distinta cada vez. Al día siguiente del speech, si la persona no contestó, le escribe un mensaje corto para retomar.
+- Arriba de Marketing se ve si el asistente está **contestando**, **en sombra** (arma las respuestas sin mandarlas, para comparar) o **apagado**, y cuánto se gastó en el mes.
+- Pestaña **Automatizaciones**: cada rutina con su flujo escrito en palabras, **PRENDIDA** o **APAGADA** bien a la vista, lo que hizo en la semana, y para prenderla, apagarla o editarla.
+- Pestaña **Contactos**: todas las personas que escribieron o comentaron, con etiquetas de lo que hicieron (escribió, recibió el speech, lead, derivado, comentó AHORRO…). Lo que viene de ManyChat se marca como historial.
+- Pestaña **Consultas por día**: cuántos escribieron (por anuncio u orgánico), a cuántos se les contó el speech, derivados, leads y lead magnets. Se cuenta desde que Voltia PM atiende Instagram.
+- En cada conversación se ve, entre los mensajes, por qué el asistente no contestó cuando no lo hizo.
+- Lo que se contesta a mano desde la bandeja sale directo por Instagram.
+- Todavía no está prendido: primero corre unos días en sombra al lado del contestador anterior.
 
 #### Ventas: leads sin tomar
 

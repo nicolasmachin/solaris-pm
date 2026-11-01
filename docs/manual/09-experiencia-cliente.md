@@ -268,6 +268,11 @@ el celular, en segundos. **Si registrar cuesta, no se registra.**
 
 - **Experiencia Solar y Comercial** cargan en la **bitácora del cliente**
   (`ClientInteraction`), desde la ficha. Es lo que mueve "Último contacto".
+- **WhatsApp por el número general** (Experiencia Solar → WhatsApp): el primer
+  mensaje del día que se le manda al cliente desde Voltia PM queda solo en la
+  bitácora como contacto. Lo que el cliente escribe no va a la bitácora: se ve en
+  la tarjeta **WhatsApp** de la ficha, que además avisa en rojo si escribió y
+  nadie le contestó (detalle en `15-whatsapp.md`).
 - **Operaciones e Ingeniería** registran **comentando el proyecto**. El endpoint de
   comentarios no exige un permiso de módulo, así que cualquier usuario interno
   puede hacerlo desde donde ya trabaja, y esos comentarios **aparecen en el

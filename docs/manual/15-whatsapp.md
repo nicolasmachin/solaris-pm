@@ -6,9 +6,12 @@
 > conexión de números reales (registro integrado, coexistencia) está hecha en
 > desarrollo, **sin deploy**, y depende de que Voltia sea proveedor tecnológico
 > de Meta. Todavía no hay ningún número real conectado. Los envíos siguen saliendo
-> por el número de las variables de entorno. El plan completo (números por área,
-> conversaciones dentro de la ficha, avisos automáticos) está en el informe de
-> indicadores y en `docs/pendientes/`.
+> por el número de las variables de entorno.
+>
+> **1-nov-2026, en desarrollo sin deploy:** las conversaciones salieron de
+> Administración a la **bandeja de Experiencia Solar** (número general), con el
+> botón y la alerta en la ficha del cliente. La bandeja de **Ventas** (un número
+> por asesor, botón en el lead) es la parte siguiente.
 
 ## Para qué existe
 
@@ -29,25 +32,53 @@ de plantillas de esta pantalla.
 
 ## Cómo se usa
 
-**Administración → WhatsApp** (pestaña del grupo Sistema):
+Hay dos lugares, y se separan a propósito: **Administración solo configura**; las
+conversaciones se usan desde el módulo de cada área.
 
-- **Conversaciones**: lista por número, con el último mensaje; a la derecha, el
-  hilo con las tildes de enviado, entregado y leído (se refresca cada 3 s). Se abre
-  una conversación nueva escribiendo un número.
-- **Mandar**: una plantilla aprobada (con un campo por cada `{{n}}`) o texto libre.
-  El texto libre solo se habilita si el número escribió en las últimas 24 horas.
-- **Plantillas**: la lista de Meta con su estado (aprobada, en revisión, rechazada
-  con el motivo, pausada) y el formulario para crear una y mandarla a aprobar.
+**Experiencia Solar → WhatsApp** (la bandeja del número general):
 
-- **Números conectados** (arriba de todo): los números reales de Voltia conectados
-  a Voltia PM, con para qué se usa cada uno, su responsable y cómo va la
-  sincronización del historial. Abajo, **Conectar número**: se completa para qué
-  es y el responsable, y se abre la ventana de Meta. El dueño del número entra
-  con su Facebook, elige el portafolio de Voltia, elige "conectar la aplicación
-  WhatsApp Business que ya usás" y escanea el código QR con el celular.
+- A la izquierda, las conversaciones del número, la más reciente arriba. Cada una
+  muestra el **nombre del cliente** si su teléfono está cargado en un proyecto (o
+  se asoció a mano), y si no, el número con la etiqueta *Sin cliente*. En negrita
+  y con punto verde, las **no leídas**; en rojo, las **sin contestar**. Filtro
+  *Todas* / *Sin contestar*, y un buscador que también sirve para escribir un
+  número y empezar una conversación nueva.
+- A la derecha, el chat (se refresca cada 4 s) con las tildes de enviado,
+  entregado y leído; lo escrito desde el celular lleva un ícono de teléfono. El
+  nombre del cliente lleva a su ficha.
+- **Mandar**: texto libre si el cliente escribió en las últimas 24 horas (la
+  pantalla arranca ahí cuando se puede), o una plantilla aprobada fuera de esa
+  ventana.
+- **Asociar a un cliente**: para una conversación *Sin cliente* (escribe desde un
+  número que no está en la ficha). Se busca el cliente por nombre o teléfono. Se
+  puede *quitar* después.
+- **No hace falta contestar**: apaga la alerta de sin contestar (un "gracias", un
+  "ok") hasta que el cliente vuelva a escribir.
+- La pestaña muestra cuántas conversaciones tienen un mensaje sin contestar.
 
-Las conversaciones y las plantillas son la pantalla que se graba para la revisión
-de la aplicación en Meta.
+**En la ficha del cliente** (Experiencia Solar → un generador):
+
+- Al lado del teléfono, **WhatsApp**: abre la bandeja con su conversación.
+- Tarjeta **WhatsApp** en la columna izquierda: los últimos 6 mensajes y el botón
+  *Abrir conversación* (o *Escribirle* si nunca hubo mensajes).
+- Si el cliente escribió y nadie le contestó: en la tarjeta, **"Escribió hace X y
+  nadie le contestó"** con su mensaje, y en el encabezado la marca roja
+  **WhatsApp sin contestar**, que también lleva a la conversación.
+
+**Administración → WhatsApp** (configuración):
+
+- **Números conectados**: los números reales de Voltia conectados a Voltia PM,
+  con su **bandeja** (*Experiencia Solar* = el número general, uno solo; *Ventas*
+  = el número de un asesor, que es el responsable), el responsable y cómo va la
+  sincronización del historial. Poner un número como general pide confirmación,
+  porque cambia quién ve sus conversaciones y por dónde salen los avisos
+  automáticos. Abajo, **Conectar número**: se elige la bandeja y el responsable,
+  y se abre la ventana de Meta. El dueño del número entra con su Facebook, elige
+  el portafolio de Voltia, elige "conectar la aplicación WhatsApp Business que ya
+  usás" y escanea el código QR con el celular.
+- **Plantillas**: las de la cuenta del número general, con su estado (aprobada,
+  en revisión, rechazada con el motivo, pausada) y el formulario para crear una y
+  mandarla a aprobar.
 
 ## Cómo funciona
 
@@ -108,11 +139,45 @@ prefijo `/api` y sin login:
 - El log del webhook ya no imprime el cuerpo: solo los campos y el tamaño, porque
   el historial trae conversaciones enteras.
 
-**Envío** (`api.service.ts`): `POST /{GRAPH_API_VERSION}/{PHONE_NUMBER_ID}/messages`.
+**Bandejas** (`bandejas.service.ts`):
+
+- **Qué número es cada bandeja**: `bandejaExperienciaSolar()` toma el número con
+  `uso = EXPERIENCIA_SOLAR` y estado `CONECTADO` (el más nuevo; al marcar uno, el
+  resto pierde ese uso: `soltarExperienciaSolar()`). **Si no hay ninguno, cae al
+  número de las variables de entorno.** Devuelve una `Cuenta` (phone number id,
+  WABA y token descifrado) que se pasa a todas las llamadas a Meta.
+- **Conversaciones**: `listarConversaciones()` agrupa `whatsapp_mensajes` por
+  teléfono **dentro del número de la bandeja** (`phoneNumberId`), con el último
+  mensaje y la hora del último del cliente.
+- **Cliente de la conversación**: primero la asociación a mano
+  (`whatsapp_conversaciones.projectId`); si no hay, el proyecto cuyo
+  `clientPhone` normalizado coincide (`telefonosDe()` parte el campo si trae más
+  de un número; si dos proyectos comparten teléfono gana el más nuevo). **Nunca
+  por nombre.**
+- **No leída**: hay un mensaje del cliente posterior a `leidoHasta`. Abrir la
+  conversación en la bandeja la marca leída **para todos** (la bandeja es
+  compartida). Mirar la ficha no la marca.
+- **Sin contestar**: el último mensaje de la conversación es del cliente y es
+  posterior a `resueltoHasta` (*No hace falta contestar*). Un mensaje escrito
+  desde el celular (eco de coexistencia) cuenta como respuesta.
+- **Contacto en el historial**: el primer mensaje del día que se le manda a un
+  cliente desde la bandeja crea una interacción `WHATSAPP` saliente ("WhatsApp
+  desde Voltia PM: …") en su historial (`registrarContactoDelDia()`), para que
+  cuente como contacto en la cadencia sin llenar el historial con cada renglón.
+  Sin motivo: no cierra pasos del recorrido. Lo escrito desde el celular y lo que
+  escribe el cliente **no** pasan al historial.
+- `whatsappDeProyecto()`: lo que muestra la ficha. Usa los teléfonos de la ficha
+  (salvo los asociados a mano a otro cliente) más los asociados a mano a este.
+
+**Envío** (`api.service.ts`): `POST /{GRAPH_API_VERSION}/{phone_number_id}/messages`
+con el token de la cuenta que se le pasa (`Cuenta`); sin cuenta, la de las
+variables de entorno (`cuentaDelServidor()`).
 
 - `enviarPlantilla()` arma `template` con `components.body.parameters`.
-- `enviarTexto()` exige la **ventana de 24 h**: un mensaje entrante de ese número
-  en las últimas 24 horas (`ventanaAbierta()`); si no, `WHATSAPP_VENTANA_CERRADA`.
+- `enviarTexto()` exige la **ventana de 24 h**: un mensaje entrante de ese
+  teléfono **a ese número de Voltia** en las últimas 24 horas (`ventanaAbierta()`);
+  si no, `WHATSAPP_VENTANA_CERRADA`. Escribirle a un asesor no abre la ventana del
+  número general.
 - Cada saliente se guarda con el id que devuelve Meta (`registrarSaliente()`).
   Si el webhook avisó un estado antes de que la fila existiera, se le aplica al
   crearla: esa carrera existe y por eso los estados viven en su propia tabla.
@@ -120,7 +185,11 @@ prefijo `/api` y sin login:
 
 **Plantillas**: `crearPlantilla()` (`POST /{WABA_ID}/message_templates`, categoría
 UTILITY o MARKETING, cuerpo con `{{n}}` y un ejemplo por hueco) y
-`listarPlantillas()` (en vivo, sin tabla propia).
+`listarPlantillas()` (en vivo, sin tabla propia). **Las plantillas son de la
+cuenta (WABA), no de Voltia**: un número conectado con el registro integrado
+puede tener su propia cuenta. Administración y los avisos automáticos usan la
+cuenta del número general. Si se cambia el número general por otro de otra
+cuenta, las plantillas de los avisos hay que volver a mandarlas a aprobar.
 
 **Errores de Meta**: se devuelven como `502 META_ERROR` con el mensaje de Meta,
 porque es lo que hay que corregir (una plantilla mal escrita, un número sin
@@ -131,13 +200,17 @@ ventana).
 payload) y `whatsapp_estados` (cada cambio de estado con el precio que informa
 Meta, base para medir el gasto). La migración `whatsapp_numeros_coexistencia`
 (aditiva) suma `whatsapp_numeros` y la columna `whatsapp_mensajes.origen`
-(`API` | `CELULAR` | `HISTORIAL`).
+(`API` | `CELULAR` | `HISTORIAL`). La migración `whatsapp_bandejas` (aditiva)
+suma `whatsapp_numeros.uso` y `whatsapp_conversaciones` (por número y teléfono:
+`leidoHasta`, `resueltoHasta`, cliente o lead asociado a mano; `leadId` queda
+listo para la bandeja de Ventas).
 
 ## Permisos
 
 | Qué | Permiso |
 |---|---|
-| Ver y usar Administración → WhatsApp (estado, conversaciones, enviar, plantillas) | `CONFIGURACION:EDIT` |
+| Bandeja de Experiencia Solar: ver, mandar, marcar, asociar a un cliente; la tarjeta de la ficha | `EXPERIENCIA_CLIENTES:VIEW` (escribirle al cliente es el trabajo del módulo: no se pide EDIT) |
+| Administración → WhatsApp (estado, números, plantillas) | `CONFIGURACION:EDIT` |
 | Conectar números, editar responsable y para qué, reintentar la sincronización | `CONFIGURACION:EDIT` |
 | Webhook | público, protegido por la firma de Meta |
 
@@ -170,9 +243,16 @@ Crear una plantilla y conectar un número quedan en auditoría.
 - **Sin variables configuradas** la pantalla avisa qué falta y no manda nada; el
   webhook rechaza todo POST (sin `META_APP_SECRET` no hay firma válida posible).
 - **Un número que nunca escribió** solo puede recibir plantillas.
-- **Las conversaciones no están vinculadas todavía a leads ni a clientes**: se
-  listan por teléfono. Vincularlas (por teléfono exacto, nunca por nombre) es el
-  paso siguiente, junto con la pantalla de Conversaciones de Experiencia Solar.
+- **Un cliente que escribe desde otro número** aparece *Sin cliente* hasta que
+  alguien lo asocia a mano. La asociación vale solo para ese número de Voltia.
+- **Si Meta no devuelve las plantillas**, la bandeja sigue andando sin ellas (se
+  loguea el error): el texto libre no las necesita.
+- **Mensajes que no son texto** (fotos, audios, documentos) se muestran como
+  `[image]`, `[audio]`… con el pie de foto si lo tiene: todavía no se bajan ni se
+  ven. Tampoco se puede mandar un archivo desde la bandeja.
+- **No hay aviso cuando entra un mensaje** (ni campanita ni push): se ve en la
+  pestaña, en la bandeja y en la ficha.
+- **Las conversaciones de Ventas** todavía no tienen bandeja (parte siguiente).
 - **Anuncios "click to WhatsApp"**: el primer mensaje trae un bloque `referral`
   (id y título del anuncio, URL, `ctwa_clid`), que hoy queda solo en
   `whatsapp_mensajes.payload`. Al vincular la conversación con un lead (o crearlo
@@ -184,12 +264,17 @@ Crear una plantilla y conectar un número quedan en auditoría.
 ## Archivos
 
 - `server/src/services/whatsapp-cloud/`: `config.ts`, `firma.ts`,
-  `webhook.service.ts`, `api.service.ts`, `whatsapp-cloud.test.ts`
-  (`npm run test:whatsapp`).
-- `server/src/routes/whatsapp-webhook.routes.ts`, `server/src/routes/whatsapp.routes.ts`.
+  `webhook.service.ts`, `api.service.ts`, `numeros.service.ts`,
+  `bandejas.service.ts`, tests (`npm run test:whatsapp`).
+- `server/src/routes/whatsapp-webhook.routes.ts`, `server/src/routes/whatsapp.routes.ts`
+  (configuración), `server/src/routes/whatsapp-bandejas.routes.ts` (bandejas).
 - `server/scripts/whatsapp-suscribir-app.ts`: suscribe la aplicación a la cuenta
   de WhatsApp (`--ver` para solo listar).
-- `client/src/pages/admin/WhatsAppAdminPage.tsx`, `client/src/api/whatsapp.api.ts`.
+- `client/src/pages/admin/WhatsAppAdminPage.tsx`, `WhatsAppNumeros.tsx`,
+  `client/src/api/whatsapp.api.ts`.
+- `client/src/components/whatsapp/BandejaWhatsApp.tsx` (la bandeja, reutilizable
+  por área vía `BandejaApi`), `client/src/modules/clientes/pages/WhatsAppESPage.tsx`,
+  `client/src/modules/clientes/components/ClienteWhatsAppCard.tsx`.
 
 ## Variables de entorno
 

@@ -9,8 +9,10 @@ import {
   getWhatsAppNumeros,
   getWhatsAppRegistro,
   sincronizarWhatsAppNumero,
+  NOMBRE_USO,
   type WhatsAppNumero,
   type WhatsAppRegistroConfig,
+  type WhatsAppUso,
 } from "../../api/whatsapp.api";
 import { getAssignableUsers } from "../../api/users.api";
 import { Button } from "../../components/ui/Button";
@@ -140,11 +142,29 @@ function EstadoSync({ n }: { n: WhatsAppNumero }) {
   return <span>Trayendo historial… {n.historialProgreso ?? 0}%</span>;
 }
 
+/** En qué bandeja de Voltia PM se ven las conversaciones del número. */
+function SelectUso({ value, onChange }: { value: WhatsAppUso | null; onChange: (uso: WhatsAppUso | null) => void }) {
+  return (
+    <select className={INPUT} value={value ?? ""} onChange={(e) => onChange((e.target.value || null) as WhatsAppUso | null)}>
+      <option value="">Sin bandeja</option>
+      {(Object.keys(NOMBRE_USO) as WhatsAppUso[]).map((u) => (
+        <option key={u} value={u}>
+          {NOMBRE_USO[u]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function FilaNumero({ n, usuarios }: { n: WhatsAppNumero; usuarios: Array<{ id: string; name: string }> }) {
   const qc = useQueryClient();
   const actualizar = useMutation({
-    mutationFn: (body: { etiqueta?: string | null; responsableId?: string | null }) => actualizarWhatsAppNumero(n.id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["whatsapp-numeros"] }),
+    mutationFn: (body: { etiqueta?: string | null; responsableId?: string | null; uso?: WhatsAppUso | null }) =>
+      actualizarWhatsAppNumero(n.id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["whatsapp-numeros"] });
+      qc.invalidateQueries({ queryKey: ["whatsapp-es"] });
+    },
     onError: (e) => toast.error(getApiErr(e) ?? "No se pudo guardar"),
   });
   const sincronizar = useMutation({
@@ -165,12 +185,20 @@ function FilaNumero({ n, usuarios }: { n: WhatsAppNumero; usuarios: Array<{ id: 
         )}
       </td>
       <td className="px-3 py-2">
-        <input
-          className={INPUT}
-          defaultValue={n.etiqueta ?? ""}
-          placeholder="Ventas, Experiencia Solar…"
-          onBlur={(e) => e.target.value !== (n.etiqueta ?? "") && actualizar.mutate({ etiqueta: e.target.value || null })}
+        <SelectUso
+          value={n.uso}
+          onChange={(uso) => {
+            if (
+              uso === "EXPERIENCIA_SOLAR" &&
+              !window.confirm(
+                "Este pasa a ser el número general: lo ven todos los de Experiencia Solar y por él salen los avisos automáticos. Si otro número tenía ese lugar, lo pierde. ¿Seguir?",
+              )
+            )
+              return;
+            actualizar.mutate({ uso });
+          }}
         />
+        {n.etiqueta && <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">{n.etiqueta}</p>}
       </td>
       <td className="px-3 py-2">
         <select
@@ -213,7 +241,7 @@ export function WhatsAppNumeros() {
   });
   const { data: usuarios = [] } = useQuery({ queryKey: ["usuarios-asignables"], queryFn: getAssignableUsers });
 
-  const [etiqueta, setEtiqueta] = useState("");
+  const [uso, setUso] = useState<WhatsAppUso | null>(null);
   const [responsableId, setResponsableId] = useState("");
   const [conectando, setConectando] = useState(false);
   const listo = !!cfg && cfg.faltan.length === 0;
@@ -229,11 +257,11 @@ export function WhatsAppNumeros() {
         phoneNumberId: sesion.phone_number_id,
         wabaId: sesion.waba_id,
         businessId: sesion.business_id,
-        etiqueta: etiqueta || undefined,
+        uso: uso ?? undefined,
         responsableId: responsableId || undefined,
       });
       toast.success(`Número ${n.telefono} conectado`);
-      setEtiqueta("");
+      setUso(null);
       setResponsableId("");
       qc.invalidateQueries({ queryKey: ["whatsapp-numeros"] });
     } catch (e) {
@@ -254,6 +282,11 @@ export function WhatsAppNumeros() {
           traen sus chats de los últimos 6 meses. Los dispositivos vinculados (WhatsApp Web, la computadora) se
           desvinculan y hay que volver a vincularlos.
         </p>
+        <p className="mt-1 text-[12px] text-[var(--color-text-muted)]">
+          <strong>Bandeja</strong>: dónde se ven sus conversaciones. El de <em>Experiencia Solar</em> es el número general
+          (uno solo): lo usa todo el que entra a Experiencia Solar y por él salen los avisos automáticos. Los de{" "}
+          <em>Ventas</em> son de un asesor: el responsable.
+        </p>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
@@ -261,7 +294,7 @@ export function WhatsAppNumeros() {
           <thead className="text-[var(--color-text-muted)]">
             <tr className="border-b border-[var(--color-border)]">
               <th className="px-3 py-2 font-medium">Número</th>
-              <th className="px-3 py-2 font-medium">Para qué</th>
+              <th className="px-3 py-2 font-medium">Bandeja</th>
               <th className="px-3 py-2 font-medium">Responsable</th>
               <th className="px-3 py-2 font-medium">Historial</th>
               <th className="px-3 py-2 font-medium">Conectado</th>
@@ -283,7 +316,7 @@ export function WhatsAppNumeros() {
       </div>
 
       <div className="grid gap-2 rounded-xl border border-[var(--color-border)] p-3 md:grid-cols-[1fr_1fr_auto]">
-        <input className={INPUT} placeholder="Para qué (ej. Ventas)" value={etiqueta} onChange={(e) => setEtiqueta(e.target.value)} />
+        <SelectUso value={uso} onChange={setUso} />
         <select className={INPUT} value={responsableId} onChange={(e) => setResponsableId(e.target.value)}>
           <option value="">Responsable</option>
           {usuarios.map((u) => (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, Check, Mail, MapPin, Phone, User, Wrench, Zap } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check, Mail, MapPin, MessageCircle, Phone, User, Wrench, Zap } from "lucide-react";
 
 import { getChecks, type ClienteRecorrido } from "../../../api/clientes.api";
 import { EnlacesModulos } from "../../../components/layout/EnlacesModulos";
@@ -14,6 +14,7 @@ import { ComentariosYArchivos } from "../../../components/area/ComentariosYArchi
 import { EnergiaPlanta } from "../../../components/energia/EnergiaPlanta";
 import { fuentesInternas } from "../../../api/energiaFv.api";
 import { ClienteTramiteUteCard } from "../components/ClienteTramiteUteCard";
+import { ClienteWhatsAppCard, useAbrirWhatsApp, useWhatsAppDeProyecto } from "../components/ClienteWhatsAppCard";
 import { EditableCell } from "../components/EditableCell";
 import { RecorridoChecks } from "../components/RecorridoChecks";
 import { RecorridoPipeline } from "../components/RecorridoPipeline";
@@ -57,6 +58,8 @@ export function ClienteFichaPage() {
   }
 
   const { data: ficha, isLoading, isError } = useClienteFicha(projectId);
+  const { data: whatsapp } = useWhatsAppDeProyecto(projectId);
+  const abrirWhatsApp = useAbrirWhatsApp();
   const { data: checks } = useQuery({
     queryKey: ["cliente-checks", projectId],
     queryFn: () => getChecks(projectId as string),
@@ -159,6 +162,16 @@ export function ClienteFichaPage() {
                 ⚠ Avisar que puede encender
               </span>
             )}
+            {whatsapp?.sinContestar && (
+              <button
+                type="button"
+                onClick={() => abrirWhatsApp(whatsapp.sinContestar!.telefono)}
+                title={`«${whatsapp.sinContestar.texto}»`}
+                className="inline-flex items-center gap-1 rounded-full bg-[var(--color-danger-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-danger-text)] hover:underline"
+              >
+                <MessageCircle className="h-3 w-3" /> WhatsApp sin contestar
+              </button>
+            )}
           </div>
           {/* Todos los datos del cliente acá arriba, chicos: estaban plegados al
               fondo de la pantalla, que es donde nadie los busca. El orden es el
@@ -179,6 +192,16 @@ export function ClienteFichaPage() {
                 <a href={`tel:${ficha.telefono}`} className="hover:text-[var(--color-text-primary)]">
                   {ficha.telefono}
                 </a>
+                {whatsapp?.hayNumero && whatsapp.telefono && (
+                  <button
+                    type="button"
+                    onClick={() => abrirWhatsApp(whatsapp.telefono!)}
+                    className="inline-flex items-center gap-0.5 text-emerald-500 hover:underline"
+                    title="Abrir la conversación en la bandeja de WhatsApp"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                  </button>
+                )}
               </span>
             )}
             {(ficha.direccion || ficha.departamento) && (
@@ -264,6 +287,8 @@ export function ClienteFichaPage() {
               </div>
             )}
           </div>
+
+          {projectId && <ClienteWhatsAppCard projectId={projectId} />}
 
           <ClienteTramiteUteCard projectId={projectId ?? ""} tramiteUte={ficha.tramiteUte} />
 

@@ -129,11 +129,13 @@ del proyecto.
 
 ## Casos borde
 
-- **Desde qué número sale el WhatsApp**: hoy, del número configurado en el
-  servidor (`WHATSAPP_PHONE_NUMBER_ID`). Los números conectados desde
-  Administración → WhatsApp (el de Experiencia Solar, etc.) todavía no se pueden
-  elegir como remitente; la plantilla además tiene que estar en la cuenta de
-  WhatsApp de ese número.
+- **Desde qué número sale el WhatsApp**: del **número general**, el que tiene la
+  bandeja *Experiencia Solar* en Administración → WhatsApp
+  (`bandejas.service.ts` → `bandejaExperienciaSolar()`); si no hay ninguno
+  conectado, del número de las variables de entorno. La plantilla se crea y se
+  consulta en la cuenta de ese número. **Si se cambia el número general por uno
+  de otra cuenta de WhatsApp, las plantillas de los avisos ya aprobadas no están
+  en la cuenta nueva**: hay que editarlas y volver a mandarlas a Meta.
 - **Cliente sin celular o sin mail** cargado en el proyecto → "No se mandó" con el
   motivo. El celular se normaliza a 598…; menos de 10 dígitos se considera
   inválido.

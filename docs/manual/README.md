@@ -49,7 +49,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 12 | [Infraestructura](12-infraestructura.md) | Docker, base de datos, storage, jobs, correo, IA, respaldos | 🟡 Parcial (resumen diario por correo, con contratos pendientes de firma · gasto de IA) |
 | 13 | [Conector MCP](13-conector-mcp.md) | Voltia PM dentro del chat de Claude: autorización, herramientas, permisos | ✅ Completo |
 | 14 | [Capacitación](14-capacitacion.md) | Videos (Bunny Stream) y documentos por área, permisos por sección, progreso y seguimiento; videos para clientes en el portal | ✅ Completo |
-| 15 | [WhatsApp](15-whatsapp.md) | Cloud API de Meta: webhook, envío, plantillas, Administración → WhatsApp | 🟡 Parcial (base para la revisión de Meta; sin números reales conectados) |
+| 15 | [WhatsApp](15-whatsapp.md) | Cloud API de Meta: webhook, envío, plantillas, números por bandeja (Administración), bandeja de Experiencia Solar y alerta de sin contestar en la ficha | 🟡 Parcial (falta la bandeja de Ventas; sin números reales conectados) |
 | 16 | [Documentación (intranet)](16-documentacion.md) | Manuales y procedimientos con versiones, publicación automática en cada deploy, confirmación de lectura | ✅ Completo |
 | 17 | [Recursos Humanos](17-rrhh.md) | Mi legajo, legajos completos, validación de documentos, vencimientos, recibos en lote, licencias y saldo, entregas de materiales con firma, privacidad | ✅ Completo |
 | 18 | [Asistente del equipo](18-asistente.md) | Chat con IA dentro de Voltia PM: base de conocimiento, herramientas del conector en solo lectura, modelos, topes de gasto | ✅ Completo |

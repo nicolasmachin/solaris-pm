@@ -24,16 +24,28 @@ export class MetaApiError extends Error {
   }
 }
 
-async function llamarMeta<T>(path: string, init: { method: "GET" | "POST"; body?: unknown }): Promise<T> {
+/**
+ * El número de Voltia por el que se manda y su cuenta de WhatsApp en Meta, con el
+ * token para hablar con ella. Las plantillas son de la cuenta (WABA): un número
+ * conectado aparte tiene las suyas. Ver `bandejas.service.ts`.
+ */
+export type Cuenta = { phoneNumberId: string; wabaId: string; token: string };
+
+/** La cuenta de las variables de entorno (el número con el que se probó la conexión). */
+export function cuentaDelServidor(): Cuenta {
   const c = whatsappConfig();
   const faltan = faltantesParaEnviar(c);
   if (faltan.length > 0) {
     throw badRequest("WHATSAPP_NO_CONFIGURADO", `Falta configurar en el servidor: ${faltan.join(", ")}.`);
   }
-  const res = await fetch(graphUrl(path, c), {
+  return { phoneNumberId: c.phoneNumberId, wabaId: c.wabaId, token: c.token };
+}
+
+async function llamarMeta<T>(path: string, init: { method: "GET" | "POST"; body?: unknown }, cuenta: Cuenta): Promise<T> {
+  const res = await fetch(graphUrl(path), {
     method: init.method,
     headers: {
-      Authorization: `Bearer ${c.token}`,
+      Authorization: `Bearer ${cuenta.token}`,
       ...(init.body ? { "Content-Type": "application/json" } : {}),
     },
     body: init.body ? JSON.stringify(init.body) : undefined,
@@ -55,10 +67,13 @@ export function normalizarTelefono(telefono: string): string {
   return d;
 }
 
-/** ¿Está abierta la ventana de 24 h? Se abre cuando el cliente nos escribe. */
-export async function ventanaAbierta(telefono: string, ahora: Date = new Date()): Promise<boolean> {
+/**
+ * ¿Está abierta la ventana de 24 h? Se abre cuando el cliente nos escribe, y es
+ * por número: escribirle a un asesor no abre la del número general.
+ */
+export async function ventanaAbierta(telefono: string, phoneNumberId: string, ahora: Date = new Date()): Promise<boolean> {
   const ultimo = await prisma.whatsAppMensaje.findFirst({
-    where: { telefono, direccion: "ENTRANTE" },
+    where: { telefono, phoneNumberId, direccion: "ENTRANTE" },
     orderBy: { ocurridoEn: "desc" },
     select: { ocurridoEn: true },
   });
@@ -74,16 +89,16 @@ async function registrarSaliente(params: {
   texto: string | null;
   plantilla: string | null;
   userId: string | null;
+  phoneNumberId: string;
 }) {
   const waMessageId = params.respuesta.messages?.[0]?.id;
   if (!waMessageId) throw new MetaApiError("Meta no devolvió el id del mensaje", 502, params.respuesta);
-  const c = whatsappConfig();
   const mensaje = await prisma.whatsAppMensaje.create({
     data: {
       waMessageId,
       direccion: "SALIENTE",
       telefono: params.respuesta.contacts?.[0]?.wa_id ?? params.telefono,
-      phoneNumberId: c.phoneNumberId,
+      phoneNumberId: params.phoneNumberId,
       tipo: params.tipo,
       texto: params.texto,
       plantilla: params.plantilla,
@@ -117,11 +132,13 @@ export async function enviarPlantilla(params: {
   userId: string | null;
   /** El texto tal como le llega al cliente, si se conoce (los avisos automáticos lo arman). */
   texto?: string;
+  /** Por qué número sale. Sin cuenta, el de las variables de entorno. */
+  cuenta?: Cuenta;
 }) {
   const telefono = normalizarTelefono(params.telefono);
-  const c = whatsappConfig();
+  const cuenta = params.cuenta ?? cuentaDelServidor();
   const variables = (params.variables ?? []).filter((v) => v.trim() !== "");
-  const respuesta = await llamarMeta<RespuestaEnvio>(`${c.phoneNumberId}/messages`, {
+  const respuesta = await llamarMeta<RespuestaEnvio>(`${cuenta.phoneNumberId}/messages`, {
     method: "POST",
     body: {
       messaging_product: "whatsapp",
@@ -135,7 +152,7 @@ export async function enviarPlantilla(params: {
           : {}),
       },
     },
-  });
+  }, cuenta);
   return registrarSaliente({
     respuesta,
     telefono,
@@ -143,24 +160,33 @@ export async function enviarPlantilla(params: {
     texto: params.texto ?? (variables.length > 0 ? variables.join(" · ") : null),
     plantilla: params.nombre,
     userId: params.userId,
+    phoneNumberId: cuenta.phoneNumberId,
   });
 }
 
 /** Manda texto libre. Solo dentro de la ventana de 24 h: fuera de ella Meta lo rechaza. */
-export async function enviarTexto(params: { telefono: string; texto: string; userId: string }) {
+export async function enviarTexto(params: { telefono: string; texto: string; userId: string; cuenta?: Cuenta }) {
   const telefono = normalizarTelefono(params.telefono);
-  if (!(await ventanaAbierta(telefono))) {
+  const cuenta = params.cuenta ?? cuentaDelServidor();
+  if (!(await ventanaAbierta(telefono, cuenta.phoneNumberId))) {
     throw badRequest(
       "WHATSAPP_VENTANA_CERRADA",
       "Este número no escribió en las últimas 24 horas: solo se le puede mandar una plantilla aprobada.",
     );
   }
-  const c = whatsappConfig();
-  const respuesta = await llamarMeta<RespuestaEnvio>(`${c.phoneNumberId}/messages`, {
+  const respuesta = await llamarMeta<RespuestaEnvio>(`${cuenta.phoneNumberId}/messages`, {
     method: "POST",
     body: { messaging_product: "whatsapp", to: telefono, type: "text", text: { body: params.texto } },
+  }, cuenta);
+  return registrarSaliente({
+    respuesta,
+    telefono,
+    tipo: "text",
+    texto: params.texto,
+    plantilla: null,
+    userId: params.userId,
+    phoneNumberId: cuenta.phoneNumberId,
   });
-  return registrarSaliente({ respuesta, telefono, tipo: "text", texto: params.texto, plantilla: null, userId: params.userId });
 }
 
 export type PlantillaMeta = {
@@ -174,11 +200,11 @@ export type PlantillaMeta = {
 };
 
 /** Las plantillas de la cuenta de WhatsApp, con su estado de aprobación. Se consultan en vivo. */
-export async function listarPlantillas(): Promise<PlantillaMeta[]> {
-  const c = whatsappConfig();
+export async function listarPlantillas(cuenta: Cuenta = cuentaDelServidor()): Promise<PlantillaMeta[]> {
   const data = await llamarMeta<{ data?: PlantillaMeta[] }>(
-    `${c.wabaId}/message_templates?fields=id,name,status,category,language,rejected_reason,components&limit=100`,
+    `${cuenta.wabaId}/message_templates?fields=id,name,status,category,language,rejected_reason,components&limit=100`,
     { method: "GET" },
+    cuenta,
   );
   return data.data ?? [];
 }
@@ -187,13 +213,16 @@ export async function listarPlantillas(): Promise<PlantillaMeta[]> {
  * Crea una plantilla y la manda a revisión de Meta. El cuerpo lleva los huecos
  * como {{1}}, {{2}}…, y Meta exige un ejemplo para cada uno.
  */
-export async function crearPlantilla(params: {
-  nombre: string;
-  categoria: "UTILITY" | "MARKETING";
-  idioma: string;
-  cuerpo: string;
-  ejemplos: string[];
-}) {
+export async function crearPlantilla(
+  params: {
+    nombre: string;
+    categoria: "UTILITY" | "MARKETING";
+    idioma: string;
+    cuerpo: string;
+    ejemplos: string[];
+  },
+  cuenta: Cuenta = cuentaDelServidor(),
+) {
   const huecos = [...params.cuerpo.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
   const cantidad = huecos.length > 0 ? Math.max(...huecos) : 0;
   if (cantidad !== params.ejemplos.length) {
@@ -202,8 +231,7 @@ export async function crearPlantilla(params: {
       `El texto tiene ${cantidad} hueco(s) y se cargaron ${params.ejemplos.length} ejemplo(s): Meta pide uno por hueco.`,
     );
   }
-  const c = whatsappConfig();
-  return llamarMeta<{ id: string; status: string; category: string }>(`${c.wabaId}/message_templates`, {
+  return llamarMeta<{ id: string; status: string; category: string }>(`${cuenta.wabaId}/message_templates`, {
     method: "POST",
     body: {
       name: params.nombre,
@@ -217,52 +245,5 @@ export async function crearPlantilla(params: {
         },
       ],
     },
-  });
-}
-
-/** Las conversaciones: un renglón por teléfono, con el último mensaje. */
-export async function listarConversaciones() {
-  const ultimos = await prisma.$queryRaw<
-    Array<{ telefono: string; texto: string | null; tipo: string; direccion: string; ocurridoEn: Date; total: bigint }>
-  >`
-    SELECT DISTINCT ON (m.telefono)
-      m.telefono, m.texto, m.tipo, m.direccion, m."ocurridoEn",
-      (SELECT count(*) FROM whatsapp_mensajes x WHERE x.telefono = m.telefono) AS total
-    FROM whatsapp_mensajes m
-    ORDER BY m.telefono, m."ocurridoEn" DESC
-  `;
-  const ahora = Date.now();
-  const filas = await Promise.all(
-    ultimos.map(async (u) => ({
-      telefono: u.telefono,
-      ultimoTexto: u.texto ?? `[${u.tipo}]`,
-      ultimaDireccion: u.direccion,
-      ultimoEn: u.ocurridoEn.toISOString(),
-      total: Number(u.total),
-      ventanaAbierta: await ventanaAbierta(u.telefono, new Date(ahora)),
-    })),
-  );
-  return filas.sort((a, b) => (a.ultimoEn < b.ultimoEn ? 1 : -1));
-}
-
-export async function mensajesDe(telefono: string) {
-  const filas = await prisma.whatsAppMensaje.findMany({
-    where: { telefono: normalizarTelefono(telefono) },
-    orderBy: { ocurridoEn: "asc" },
-    take: 500,
-    include: { enviadoPor: { select: { name: true } } },
-  });
-  return filas.map((m) => ({
-    id: m.id,
-    waMessageId: m.waMessageId,
-    direccion: m.direccion,
-    tipo: m.tipo,
-    texto: m.texto,
-    plantilla: m.plantilla,
-    estado: m.estado,
-    estadoEn: m.estadoEn?.toISOString() ?? null,
-    error: m.errorDetalle ? `${m.errorCodigo ?? ""} ${m.errorDetalle}`.trim() : null,
-    enviadoPor: m.enviadoPor?.name ?? null,
-    ocurridoEn: m.ocurridoEn.toISOString(),
-  }));
+  }, cuenta);
 }
