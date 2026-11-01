@@ -65,6 +65,7 @@ import { PriorityView } from "../components/sales/PriorityView";
 import { LeadRow } from "../components/sales/LeadRow";
 import { LeadCard } from "../components/sales/LeadCard";
 import { LeadsSinTomar } from "../components/sales/LeadsSinTomar";
+import { InstagramParaVentas } from "../components/sales/InstagramParaVentas";
 
 const WON_STAGE = "CERRADO_GANADO";
 const LOST_STAGE = "CERRADO_PERDIDO";
@@ -1242,6 +1243,7 @@ export function Sales() {
       </div>
 
       <LeadsSinTomar onOpenLead={setSelectedLeadId} />
+      <InstagramParaVentas />
 
       {view === "list" ? (
         <LeadsListView onOpenLead={setSelectedLeadId} />

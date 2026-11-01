@@ -126,20 +126,23 @@ export async function getConsultasInstagram(dias = 14) {
   return data;
 }
 
-export async function getInstagramConversaciones() {
-  const { data } = await apiClient.get<InstagramConversacion[]>("/api/marketing/instagram/conversaciones");
+/** La misma bandeja se ve desde Marketing (todas) y desde Ventas (solo las que califican). */
+export type BandejaDe = "marketing" | "ventas";
+
+export async function getInstagramConversaciones(de: BandejaDe = "marketing") {
+  const { data } = await apiClient.get<InstagramConversacion[]>(`/api/${de}/instagram/conversaciones`);
   return data;
 }
 
-export async function getInstagramConversacion(id: string) {
+export async function getInstagramConversacion(id: string, de: BandejaDe = "marketing") {
   const { data } = await apiClient.get<{ conversacion: InstagramConversacion; mensajes: InstagramMensaje[]; eventos: InstagramEvento[] }>(
-    `/api/marketing/instagram/conversaciones/${id}`,
+    `/api/${de}/instagram/conversaciones/${id}`,
   );
   return data;
 }
 
-export async function enviarInstagram(id: string, texto: string) {
-  const { data } = await apiClient.post<{ mid: string }>(`/api/marketing/instagram/conversaciones/${id}/enviar`, { texto });
+export async function enviarInstagram(id: string, texto: string, de: BandejaDe = "marketing") {
+  const { data } = await apiClient.post<{ mid: string }>(`/api/${de}/instagram/conversaciones/${id}/enviar`, { texto });
   return data;
 }
 
@@ -151,10 +154,8 @@ export async function tomarInstagram(id: string, tomada: boolean) {
 export async function crearLeadInstagram(
   id: string,
   body: { clientName: string; clientPhone?: string | null; notes?: string | null },
+  de: BandejaDe = "marketing",
 ) {
-  const { data } = await apiClient.post<{ id: string; code: string }>(
-    `/api/marketing/instagram/conversaciones/${id}/lead`,
-    body,
-  );
+  const { data } = await apiClient.post<{ id: string; code: string }>(`/api/${de}/instagram/conversaciones/${id}/lead`, body);
   return data;
 }

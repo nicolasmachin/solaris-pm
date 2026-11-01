@@ -4,8 +4,8 @@
 > "Origen del lead (¿Cómo nos conoció?)", "Cotizador de propuestas: precargas y saludo de la carta", "Varias
 > instalaciones en una misma propuesta", "Costeo a medida de una cotización",
 > "Cotizador B2B: propuestas a empresas", "Qué se le factura: se define al
-> crear el proyecto", "Comisión del asesor: cómo se registra al ganar" y
-> "Leads sin tomar". El resto del módulo funciona en producción pero
+> crear el proyecto", "Comisión del asesor: cómo se registra al ganar",
+> "Leads sin tomar" e "Instagram: contestar desde Ventas". El resto del módulo funciona en producción pero
 > todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
@@ -1041,3 +1041,44 @@ pendientes en el resumen diario. También se sacó del código la subetapa
 "Registro en planilla de operaciones", que Nicolás ya había borrado de la
 plantilla en producción. Para la plantilla guardada y los proyectos con
 Onboarding abierto: `prisma/scripts/contrato-firmado-no-bloquea.ts` (`--apply`).
+
+# Instagram: contestar desde Ventas
+
+## Para qué existe
+
+Decidido por Nicolás el 1-nov-2026: el asesor comercial no usa Instagram. Las
+personas que el asistente de Instagram (capítulo 20) pasa a Ventas se contestan
+desde Voltia PM, sin abrir Instagram. **Solo se ven las que califican** como
+potencial cliente, no todas las que contesta el asistente. La venta sigue por
+WhatsApp cuando la persona deja su celular; esta pantalla es para las que
+prefieren seguir por Instagram.
+
+## Cómo se usa
+
+- **Arriba de Ventas**, debajo de «Leads sin tomar», una franja **Instagram**.
+  En ámbar si alguien espera respuesta: cuántos, quiénes y cuánto le queda a la
+  primera para que Instagram deje contestarle. Si nadie espera, en gris con
+  cuántas conversaciones hay. Sin ninguna, no aparece. Lleva a
+  **Ventas → Instagram** (`/ventas/instagram`).
+- La pantalla es la misma bandeja de Marketing: lista a la izquierda y el chat a
+  la derecha. Filtros **Por contestar** (escribió la persona, nadie le contestó y
+  la ventana sigue abierta; es el que arranca elegido) · **Sin leer** · **Todas**.
+  En la lista, las que esperan dicen «quedan N h».
+- **Contestar**: sale por Instagram como mensaje de Voltia. Al contestar, la
+  conversación **pasa a ser de quien contestó** (queda «Tomada») y el asistente
+  no le escribe más. Solo con la ventana de Instagram abierta: 24 horas desde el
+  último mensaje de la persona, 7 días si vino de un anuncio.
+- Si dejó el celular, arriba dice «Cel. … (WhatsApp)»: mejor seguir por WhatsApp.
+- **Crear lead**: queda a nombre de quien lo crea (no pasa por «Leads sin
+  tomar»), con el origen de Instagram y el celular precargado si lo dejó.
+- No se ve lo que decidió el asistente ni el modo sombra: eso es de Marketing.
+
+## Cómo funciona
+
+`bandeja.service.ts` (Marketing), con los permisos de Ventas: `GET
+/api/ventas/instagram/conversaciones` (VIEW), `GET …/:id` (VIEW), `POST
+…/:id/enviar` (EDIT) y `POST …/:id/lead` (CREATE). **Califica** (`CALIFICA`):
+`derivadaEn`, `leadId` o `telefono` no vacíos; una que no califica da 404.
+`contestarDesdeVentas()` manda con `enviarMensaje()` y marca `tomadaEn` y
+`tomadaPorId` si no estaba tomada. El "leído" es el mismo que en Marketing. El
+mail de derivación del asistente trae el link a esta pantalla.

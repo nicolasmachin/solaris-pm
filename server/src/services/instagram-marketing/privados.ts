@@ -258,6 +258,23 @@ export function telefonoEn(texto: string | null | undefined): string | null {
   return null;
 }
 
+/**
+ * Derivada por una duda (no por lead), después mandó una foto o un archivo
+ * (la factura o el techo, casi siempre) y nadie de Voltia escribió desde
+ * entonces: el asistente la atiende igual, para que no quede sin respuesta.
+ * Pasó el 1-nov-2026: preguntó por la zona, se derivó y la factura quedó sin
+ * contestar.
+ */
+export function mandoArchivoDespuesDeDerivar(
+  conv: Pick<InstagramConversacion, "derivadaEn" | "derivadaLead">,
+  mensajes: MensajeLite[],
+): boolean {
+  if (!conv.derivadaEn || conv.derivadaLead) return false;
+  const despues = mensajes.filter((m) => m.enviadoEn > conv.derivadaEn!);
+  if (despues.some((m) => m.autor === "PERSONA" || m.autor === "OTRO")) return false;
+  return despues.some((m) => m.autor === "CLIENTE" && /\[Mandó: (?!audio)/.test(m.texto ?? ""));
+}
+
 /** El último teléfono que escribió la persona (desde una fecha, si se da). */
 export function telefonoDe(mensajes: MensajeLite[], desde?: Date): string | null {
   for (const m of [...mensajes].reverse()) {
@@ -390,7 +407,7 @@ async function atenderSinCandado(id: string, deps: Deps, ahora: Date): Promise<s
   const base = { tipo: "privado" as const, automatizacion: auto?.id ?? "privados", persona: conv.persona, sombra, desdeAnuncio: conv.desdeAnuncio };
 
   const topeSuperado = await superoElTope(ahora);
-  const razon = porQueNo(conv, conv.mensajes, ahora, {
+  let razon = porQueNo(conv, conv.mensajes, ahora, {
     modo,
     activa: Boolean(auto?.activa),
     pausaOtroMs: asistenteConfig().pausaOtroMin * 60_000,
@@ -399,6 +416,7 @@ async function atenderSinCandado(id: string, deps: Deps, ahora: Date): Promise<s
   if (razon === "derivada") {
     const nuevo = conv.telefono ? null : telefonoDe(conv.mensajes, conv.derivadaEn ?? undefined);
     if (nuevo) return await recibirTelefono(conv, nuevo, base, sombra, deps);
+    if (mandoArchivoDespuesDeDerivar(conv, conv.mensajes)) razon = null;
   }
   if (razon) {
     if (razon !== "ya_contestado" && razon !== "sin_mensajes" && razon !== "apagado") {
@@ -547,7 +565,7 @@ async function avisarDerivacion(conv: Conv, motivo: string, lead: boolean, deps:
     "La conversación:",
     ...conv.mensajes.slice(-HISTORIA).map((m) => `${fechaCorta(m.enviadoEn)} ${nombres[m.autor] ?? m.autor}: ${m.texto}`),
     "",
-    "Para verla y contestarle: Voltia PM → Marketing → Instagram.",
+    `Para verla y contestarle por Instagram: Voltia PM → Ventas → Instagram, ${process.env.PUBLIC_APP_URL || "https://app.voltia.com.uy"}/ventas/instagram`,
   ];
   await deps.avisar(`Instagram: ${lead ? "LEAD" : "derivado"} ${quien} a ${c.derivarA}`, lineas.join("\n"), [c.derivarMail]);
 }

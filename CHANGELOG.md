@@ -10,6 +10,14 @@
 - Si la persona deja su número después, el asistente le confirma que Martín le escribe y a Martín le llega un mail con el número. El celular se ve también en la conversación, en Marketing → Instagram.
 - En el mail a Martín dice si dejó el celular o, si no, hasta cuándo Instagram deja contestarle por ahí.
 - Los textos del asistente que nadie editó desde la pantalla se actualizan solos con cada versión nueva.
+- Si el asistente pasó a alguien a Ventas por una duda (por ejemplo, la zona) y después la persona manda la factura o una foto, ahora igual le contesta. Antes se quedaba callado y la factura quedaba sin respuesta.
+
+#### Ventas: Instagram sin usar Instagram
+
+- Nueva pantalla **Ventas → Instagram**: las conversaciones de Instagram de potenciales clientes (las que el asistente pasó a Ventas, con lead o con celular), para contestarlas desde Voltia PM. Las demás no aparecen.
+- Arriba de Ventas, una franja avisa cuántas personas esperan respuesta y cuánto falta para que Instagram no deje contestarles (24 horas desde su último mensaje).
+- Al contestar, la conversación pasa a ser tuya y el asistente no le escribe más. **Crear lead** lo deja a tu nombre, con el celular si lo dejó.
+- El mail de cada derivación trae el link a esta pantalla.
 
 ## v13.7
 

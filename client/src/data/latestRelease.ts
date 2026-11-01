@@ -32,6 +32,12 @@ export const LATEST_RELEASE: Release = {
         "Cuando alguien manda la factura por Instagram, el asistente le pide el celular para que Martín le escriba por WhatsApp; escribirle directo a Martín queda como opción para ir más rápido. Si deja el número, a Martín le llega por mail y se ve en la conversación.",
       ],
     },
+    {
+      title: "Ventas → Instagram",
+      items: [
+        "Las conversaciones de Instagram de potenciales clientes se contestan desde Voltia PM, sin usar Instagram. Arriba de Ventas se ve quién espera respuesta y cuánto queda para contestarle.",
+      ],
+    },
   ],
 };
 

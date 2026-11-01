@@ -194,6 +194,53 @@ export async function listarConversaciones() {
   return (await filas()).map((f) => presentar(f, ahora));
 }
 
+// ── Ventas → Instagram ──────────────────────────────────────────────────────
+// Decisión de Nicolás del 1-nov-2026: el asesor comercial no usa Instagram,
+// contesta desde Voltia PM. Ve solo las que califican como potencial cliente:
+// las que el asistente derivó, las que tienen lead o dejaron su celular.
+
+const CALIFICA = Prisma.sql`(c."derivadaEn" IS NOT NULL OR c."leadId" IS NOT NULL OR c."telefono" IS NOT NULL)`;
+
+export async function listarParaVentas() {
+  const ahora = new Date();
+  return (await filas(CALIFICA)).map((f) => presentar(f, ahora));
+}
+
+async function calificaOFalla(id: string) {
+  const [f] = await filas(Prisma.sql`c."id" = ${id} AND ${CALIFICA}`);
+  if (!f) throw notFound("CONVERSACION_NO_ENCONTRADA", "No existe esa conversación");
+}
+
+/** Igual que en Marketing, sin lo que decidió el asistente (eso es de Marketing). */
+export async function verConversacionVentas(id: string) {
+  await calificaOFalla(id);
+  return { ...(await verConversacion(id)), eventos: [] };
+}
+
+/**
+ * Contesta y se queda con la conversación: desde que escribe el asesor, el
+ * asistente no le escribe más (no se pisan).
+ */
+export async function contestarDesdeVentas(id: string, texto: string, actor: Actor) {
+  await calificaOFalla(id);
+  const r = await enviarMensaje(id, texto, actor);
+  await prisma.instagramConversacion.updateMany({
+    where: { id, tomadaEn: null },
+    data: { tomadaEn: new Date(), tomadaPorId: actor.id, responderDesde: null },
+  });
+  return r;
+}
+
+/** El lead desde Ventas queda a nombre de quien lo crea (no pasa por «sin tomar»). */
+export async function crearLeadDesdeVentas(
+  id: string,
+  input: { clientName: string; clientPhone?: string | null; notes?: string | null },
+  actor: Actor,
+) {
+  await calificaOFalla(id);
+  return crearLeadDesdeConversacion(id, input, actor, { asignarA: actor.id });
+}
+
 async function conversacionOFalla(id: string) {
   const c = await prisma.instagramConversacion.findUnique({ where: { id } });
   if (!c) throw notFound("CONVERSACION_NO_ENCONTRADA", "No existe esa conversación");
@@ -306,6 +353,7 @@ export async function crearLeadDesdeConversacion(
   id: string,
   input: { clientName: string; clientPhone?: string | null; notes?: string | null },
   actor: Actor,
+  opciones: { asignarA?: string } = {},
 ) {
   const c = await conversacionOFalla(id);
   if (c.leadId) throw conflict("YA_TIENE_LEAD", "Esta conversación ya tiene un lead");
@@ -317,12 +365,13 @@ export async function crearLeadDesdeConversacion(
       notes: input.notes?.trim() || null,
       origen: c.desdeAnuncio ? OrigenLead.ANUNCIO_META : OrigenLead.REDES_ORGANICO,
       origenDetalle: `Instagram${c.usuario ? ` @${c.usuario}` : ""}`,
+      assignedToId: opciones.asignarA ?? null,
     },
     actor,
     metadata: { instagramConversacionId: id },
   });
   await prisma.instagramConversacion.update({ where: { id }, data: { leadId: lead.id } });
-  // Nace sin vendedor: queda en la bandeja de Ventas hasta que alguien lo tome.
-  await avisarLeadSinTomar(lead, "Instagram");
+  // Sin vendedor: queda en la bandeja de Ventas hasta que alguien lo tome.
+  if (!opciones.asignarA) await avisarLeadSinTomar(lead, "Instagram");
   return { id: lead.id, code: lead.code };
 }

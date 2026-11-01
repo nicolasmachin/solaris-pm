@@ -46,8 +46,11 @@ Cuatro pestañas:
 - Izquierda, las conversaciones, la más reciente arriba: nombre o @usuario, el
   último mensaje ("Asistente:" o "Voltia:" si no lo escribió el cliente), un
   megáfono si escribió por un anuncio, **Derivada** o **Tomada**, y los no
-  leídos. Buscador y filtros **Todas · Sin leer · Derivadas · Tomadas**. Se
-  refresca cada 10 segundos.
+  leídos. Buscador y filtros **Todas · Sin leer · Por contestar · Derivadas ·
+  Tomadas**. Se refresca cada 10 segundos. La misma bandeja, con solo las que
+  califican, la usa Ventas → Instagram (capítulo 02): el comercial contesta
+  desde ahí sin usar Instagram (`components/marketing/BandejaInstagram.tsx`,
+  con `de="marketing"` o `de="ventas"`).
 - Derecha, la conversación, con colores por autor (cliente a la izquierda;
   asistente en celeste; una persona de Voltia en verde, con su nombre; ManyChat
   o el celular en gris). Entre los mensajes, en recuadros punteados, lo que
@@ -110,7 +113,11 @@ apretados como si fueran texto, los ecos, el anuncio y los adjuntos como
 3. `porQueNo()` (lógica pura) decide si no contesta: apagado, ya contestado,
    fuera de la ventana (24 h, 7 días si vino de un anuncio), **tomada**,
    escribió ManyChat o una persona hace menos de 30 minutos, derivada hace
-   menos de 7 días, o tope de gasto. Excepción: si está derivada, todavía no
+   menos de 7 días, o tope de gasto. Excepciones a "derivada": si se derivó
+   por una duda (no por lead), después mandó una foto o un archivo (no un
+   audio) y nadie de Voltia escribió desde entonces, se la atiende igual
+   (`mandoArchivoDespuesDeDerivar()`; pasó el 1-nov: preguntó por la zona, se
+   derivó y la factura quedó sin contestar). Y si está derivada, todavía no
    se tiene su celular y en lo nuevo que escribió hay un teléfono uruguayo
    (`telefonoEn()`), se guarda en `telefono`, se le contesta una vez «ya se lo
    paso a Martín y te escribe por WhatsApp» (texto fijo, sin Claude) y a Martín

@@ -12,11 +12,15 @@ import { z } from "zod";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import {
+  contestarDesdeVentas,
   crearLeadDesdeConversacion,
+  crearLeadDesdeVentas,
   enviarMensaje,
   listarConversaciones,
+  listarParaVentas,
   tomarConversacion,
   verConversacion,
+  verConversacionVentas,
 } from "../services/instagram-marketing/bandeja.service.js";
 import {
   consultas,
@@ -73,6 +77,38 @@ export async function registerMarketingRoutes(app: FastifyInstance) {
       .parse(request.body);
     reply.code(201);
     return crearLeadDesdeConversacion(id, body, actor(request));
+  });
+
+  // Ventas → Instagram: solo las que califican, con los permisos de Ventas.
+  const verVentas = { preHandler: authorize(Module.VENTAS, Action.VIEW) };
+  const editarVentas = { preHandler: authorize(Module.VENTAS, Action.EDIT) };
+  const crearVentas = { preHandler: authorize(Module.VENTAS, Action.CREATE) };
+
+  app.get("/ventas/instagram/conversaciones", verVentas, async () => listarParaVentas());
+
+  app.get("/ventas/instagram/conversaciones/:id", verVentas, async (request) => {
+    const { id } = idParams.parse(request.params);
+    return verConversacionVentas(id);
+  });
+
+  app.post("/ventas/instagram/conversaciones/:id/enviar", editarVentas, async (request, reply) => {
+    const { id } = idParams.parse(request.params);
+    const { texto } = z.object({ texto: z.string().trim().min(1).max(1000) }).parse(request.body);
+    reply.code(201);
+    return contestarDesdeVentas(id, texto, actor(request));
+  });
+
+  app.post("/ventas/instagram/conversaciones/:id/lead", crearVentas, async (request, reply) => {
+    const { id } = idParams.parse(request.params);
+    const body = z
+      .object({
+        clientName: z.string().trim().min(1).max(200),
+        clientPhone: z.string().trim().max(40).nullish(),
+        notes: z.string().trim().max(4000).nullish(),
+      })
+      .parse(request.body);
+    reply.code(201);
+    return crearLeadDesdeVentas(id, body, actor(request));
   });
 
   app.get("/marketing/instagram/automatizaciones", ver, async () => listarAutomatizaciones());

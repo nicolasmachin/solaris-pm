@@ -7,7 +7,7 @@ import { comentariosDelAviso, mensajesDelAviso, textoDe } from "./aviso.js";
 import { type Automatizacion, carpetaArchivos, coincide, elegirParaComentario, leerArchivo, normalizar } from "./automatizaciones.js";
 import { pedido } from "./comentarios.js";
 import { secretoValido } from "./conector.js";
-import { conWhatsapp, escribioOtro, mensajesDe, mensajesParaClaude, pidioMasInfo, porQueNo, telefonoDe, telefonoEn, tocaSeguimiento } from "./privados.js";
+import { conWhatsapp, escribioOtro, mandoArchivoDespuesDeDerivar, mensajesDe, mensajesParaClaude, pidioMasInfo, porQueNo, telefonoDe, telefonoEn, tocaSeguimiento } from "./privados.js";
 
 const MIN = 60_000;
 const HORA = 60 * MIN;
@@ -265,4 +265,20 @@ test("el secreto compartido: sin secreto configurado no pasa nada", () => {
   assert.ok(!secretoValido("abc123"));
   assert.ok(!secretoValido(undefined));
   process.env.INSTAGRAM_CONECTOR_SECRETO = antes ?? "";
+});
+
+test("derivada por una duda: si después manda la factura, el asistente la atiende igual", () => {
+  const m = (autor: string, texto: string, min: number) => ({ autor, texto, enviadoEn: new Date(ahora.getTime() + min * 60_000) });
+  const derivadaEn = new Date(ahora.getTime() + 2 * 60_000);
+  const duda = { derivadaEn, derivadaLead: false };
+  const base = [m("CLIENTE", "¿llegan a Balneario Buenos Aires?", 0), m("ASISTENTE", "lo confirma Martín", 2)];
+  assert.equal(mandoArchivoDespuesDeDerivar(duda, [...base, m("CLIENTE", "[Mandó: image] [Mandó: image]", 4)]), true);
+  assert.equal(mandoArchivoDespuesDeDerivar(duda, [...base, m("CLIENTE", "gracias", 4)]), false, "sin archivo, sigue callado");
+  assert.equal(mandoArchivoDespuesDeDerivar(duda, [...base, m("CLIENTE", "[Mandó: audio]", 4)]), false, "un audio no es la factura");
+  assert.equal(mandoArchivoDespuesDeDerivar({ derivadaEn, derivadaLead: true }, [...base, m("CLIENTE", "[Mandó: image]", 4)]), false, "ya era lead");
+  assert.equal(
+    mandoArchivoDespuesDeDerivar(duda, [...base, m("PERSONA", "hola, soy Martín", 3), m("CLIENTE", "[Mandó: image]", 4)]),
+    false,
+    "ya le escribió alguien de Voltia",
+  );
 });

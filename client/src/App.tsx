@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard").then((module) => ({ def
 const Projects = lazy(() => import("./pages/Projects").then((module) => ({ default: module.Projects })));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail").then((module) => ({ default: module.ProjectDetail })));
 const Sales = lazy(() => import("./pages/Sales").then((module) => ({ default: module.Sales })));
+const VentasInstagram = lazy(() => import("./pages/VentasInstagram").then((module) => ({ default: module.VentasInstagram })));
 const Metrics = lazy(() => import("./pages/Metrics").then((module) => ({ default: module.Metrics })));
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })));
 const ComisionesAsesor = lazy(() =>
@@ -315,6 +316,14 @@ export function App() {
           element={
             <PermissionRoute module="VENTAS" action="VIEW">
               <Sales />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/ventas/instagram"
+          element={
+            <PermissionRoute module="VENTAS" action="VIEW">
+              <VentasInstagram />
             </PermissionRoute>
           }
         />

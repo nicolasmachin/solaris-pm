@@ -645,10 +645,12 @@ pasa al asesor comercial designado**: le pide su celular para que el asesor le
 escriba por WhatsApp (y le ofrece, si quiere ir más rápido, escribirle directo al
 WhatsApp del asesor), y al asesor le llega un mail con la conversación entera y
 el celular. **Si dejó el celular, el asesor le escribe por WhatsApp**, que es
-donde sigue la venta. Si no lo dejó y tampoco le escribió, se le contesta por
-Instagram desde Marketing → Instagram, dentro del plazo que dice el mail (Instagram
-deja contestar solo hasta 24 horas después de su último mensaje). A nadie se lo
-obliga a cambiar de canal. Desde ahí la atiende el asesor como cualquier
+donde sigue la venta. Si no lo dejó y tampoco le escribió, **el asesor le contesta
+por Instagram desde Voltia PM, en Ventas → Instagram**, sin usar Instagram:
+arriba de Ventas se avisa quién espera respuesta y cuánto queda, porque Instagram
+deja contestar solo hasta 24 horas después de su último mensaje. Ahí aparecen
+solo los que califican, no todas las consultas. A nadie se lo obliga a cambiar
+de canal. Desde ahí la atiende el asesor como cualquier
 lead, empezando por la regla 1. También pasa al asesor a quien pide un
 presupuesto con sus datos, a los clientes de Voltia con un problema y lo que el
 asistente no sabe contestar. La conversación completa se ve en Voltia PM, en
@@ -1155,7 +1157,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.9 | 1 de noviembre de 2026 | Los leads de Instagram: el asistente ya no manda a la persona al WhatsApp del asesor; le pide el celular para que el asesor le escriba, y escribirle directo queda como opción. Si no deja el celular, el asesor le contesta por Instagram dentro de las 24 horas. |
+| 1.9 | 1 de noviembre de 2026 | Los leads de Instagram: el asistente ya no manda a la persona al WhatsApp del asesor; le pide el celular para que el asesor le escriba, y escribirle directo queda como opción. Si no deja el celular, el asesor le contesta por Instagram desde Voltia PM (Ventas → Instagram) dentro de las 24 horas. |
 | 1.8 | 30 de octubre de 2026 | Se explica cómo llegan los leads de Instagram: los atiende primero el asistente automático de Voltia, que cuando la persona manda la factura y el techo la pasa al asesor comercial designado por WhatsApp, con un mail con la conversación. |
 | 1.7 | 30 de octubre de 2026 | Los leads que entran sin vendedor (los que pasa Marketing desde Instagram) aparecen en violeta arriba de Ventas y en el tablero; les llega un aviso a todos los asesores y el primero que toca **Tomar** se lo queda. |
 | 1.6 | 29 de octubre de 2026 | Con financiación bancaria no se arma plan de pagos: Voltia PM deja prevista una sola cuota «Financiación bancaria» por lo que falta cobrar, que se marca pagada cuando deposita el banco. |
