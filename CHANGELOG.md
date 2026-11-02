@@ -1,5 +1,14 @@
 # Novedades
 
+## v13.9
+
+### 2 de noviembre de 2026
+
+#### Peso de las obras desde el chat
+
+- Desde el chat de Claude conectado a Voltia PM se puede preguntar **cuánto vale cada obra** en las obras ponderadas: cuántas valen 1, 2, 3…, cuáles valen más de 1, o solo las obras realizadas en un año con su total ponderado.
+- Un **administrador** también puede cambiar el peso de una obra desde el chat. Primero muestra el cambio y lo aplica solo cuando se confirma; queda en el historial del proyecto con el motivo.
+
 ## v13.8
 
 ### 1 de noviembre de 2026

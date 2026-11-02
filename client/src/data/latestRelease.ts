@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "13.9",
+  date: "2 de noviembre de 2026",
+  sections: [
+    {
+      title: "Peso de las obras desde el chat",
+      items: [
+        "Desde el chat de Claude conectado a Voltia PM se puede consultar cuánto vale cada obra en las obras ponderadas, y un administrador lo puede cambiar.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_8: Release = {
   version: "13.8",
   date: "1 de noviembre de 2026",
   sections: [
@@ -1044,6 +1057,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.8",
+    shortDate: "1 nov",
+    highlights: RELEASE_13_8.sections.map((sec) => sec.title),
+  },
   {
     version: "13.7",
     shortDate: "30 oct",

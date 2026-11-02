@@ -415,8 +415,14 @@ resultados), y lo dice al pie de la respuesta.
 | `leads_por_origen` | `METRICAS:VIEW` | Por cada respuesta a "¿Cómo nos conoció?": leads, propuestas, ventas ganadas y monto vendido del período, con su porcentaje. Mismas definiciones que `indicadores`, así que los totales coinciden. Los leads sin el dato salen como "Sin dato", al final. |
 | `metas` | `METRICAS:VIEW` | Avance de las metas trimestrales y anuales: objetivo, logrado, % y "en ritmo" / "atrasada"; si el período ya cerró, "cumplida" / "no cumplida". |
 | `tiempos_etapas` | `METRICAS:VIEW` | Duración real de cada etapa de obra y cumplimiento del plazo. Sin período, todo el histórico. |
+| `peso_obras` | `METRICAS:VIEW` | Cuánto vale cada obra (`Project.pesoObra`) en las obras ponderadas: reparto (cuántas valen 1, 2…) y lista de las que valen distinto de 1. `buscar` (cliente o código) o `todas` listan también las de peso 1; `anio` filtra a las obras realizadas ese año con la misma definición que las métricas (`listarObrasRealizadas()`). Los proyectos excluidos de métricas se listan pero no suman. |
+| `cambiar_peso_obra` | `METRICAS:VIEW` + rol `ADMIN` | Cambia el peso (entero 1–999). Vista previa sin `confirmar: true`. Deja una entrada de auditoría "peso de la obra" con el valor viejo, el nuevo y el motivo. |
 
-Las tres llaman a los servicios de `services/metricas/`, los mismos del
+**El peso de la obra lo cambia solo un ADMIN**, igual que en la ficha del
+proyecto (`PATCH /projects/:id`): es una regla por rol, no de la matriz de
+permisos, y la herramienta la copia tal cual (`tools/peso-obras.ts`).
+
+Las de indicadores llaman a los servicios de `services/metricas/`, los mismos del
 dashboard y del mail (cap. 11, "Definiciones compartidas"). Se verificó contra
 la pantalla para el año 2026 y el 2.º trimestre: leads, propuestas, ventas,
 obras, kWp, tiempos del embudo y tiempos por etapa coinciden.
