@@ -322,3 +322,22 @@ test("el nombre del archivo: qué es, cuándo llegó (hora de Uruguay) y la exte
   assert.equal(nombreArchivo("image", "application/octet-stream", momento), "foto-01-11-0907.jpg");
   assert.equal(nombreArchivo("file", "application/x-raro", momento), "archivo-01-11-0907.bin");
 });
+
+test("adjuntos de un mensaje viejo (Graph API): fotos, videos, PDF y audio; lo demás no", async () => {
+  const { archivosDeAdjuntos } = await import("./meta.js");
+  assert.deepEqual(
+    archivosDeAdjuntos([
+      { image_data: { url: "https://x/foto.jpg" } },
+      { video_data: { url: "https://x/v.mp4" } },
+      { file_url: "https://x/f.pdf", mime_type: "application/pdf" },
+      { file_url: "https://x/a.m4a", mime_type: "audio/mp4" },
+      { generic_template: { title: "historia" } },
+    ]),
+    [
+      { tipo: "image", url: "https://x/foto.jpg" },
+      { tipo: "video", url: "https://x/v.mp4" },
+      { tipo: "file", url: "https://x/f.pdf" },
+      { tipo: "audio", url: "https://x/a.m4a" },
+    ],
+  );
+});

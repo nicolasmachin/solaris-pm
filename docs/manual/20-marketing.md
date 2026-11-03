@@ -143,7 +143,8 @@ apretados como si fueran texto, los ecos, el anuncio y los adjuntos como
 **Archivos** (`archivos.ts`, tabla `instagram_archivos`; pedido de Nicolás del
 1-nov-2026): las fotos, PDF, videos y audios que manda la persona traen en el
 aviso de Meta un link que vence, así que `registrarMensaje()` los baja **antes**
-de agendar la respuesta (`guardarArchivos()`, hasta 25 MB cada uno, 30 s de
+de agendar la respuesta (también los de los ecos: lo que manda Voltia desde
+ManyChat o el celular) (`guardarArchivos()`, hasta 25 MB cada uno, 30 s de
 espera) al storage, en `instagram/<conversacionId>/`, con nombre
 `foto-DD-MM-HHMM.jpg` o `archivo-….pdf`. Si falla, queda en el log y el mensaje
 igual dice "[Mandó: image]". El mail de derivación los lleva adjuntos
@@ -151,6 +152,18 @@ igual dice "[Mandó: image]". El mail de derivación los lleva adjuntos
 `GET /api/marketing|ventas/instagram/archivos/:id` (la foto en miniatura, el PDF
 para abrir). `crearLeadDesdeConversacion()` los copia a los adjuntos del lead
 (`copiarAlLead()`, en `leads/<leadId>/`).
+
+**Recuperar los que faltan** (`recuperarArchivos()`, script
+`scripts/instagram-recuperar-archivos.ts`, ensayo por defecto y `--aplicar` para
+guardar): busca los mensajes que dicen "[Mandó: image|file|video|audio]" sin
+ningún archivo —los anteriores al 1-nov-2026 o los que fallaron— y le pide a
+Meta links nuevos por el id del mensaje (`meta.ts` → `adjuntosDeMensaje()`,
+`GET /{mid}?fields=attachments` con el token de la página). Es idempotente. Meta
+solo devuelve los mensajes recientes de cada conversación: de los viejos puede
+no dar nada, y esos se quedan con el "[Mandó: …]". Los mensajes sin id de Meta
+(llave armada por momento y texto) no se pueden pedir. **Suposición sin
+verificar**: que Meta devuelva los adjuntos de mensajes de más de unos días; se
+ve al correr el ensayo en producción.
 
 **Seguimiento** (`revisarSeguimientos()`, cada 10 minutos): `tocaSeguimiento()`
 (lógica pura) pide speech mandado, nada del cliente ni de nadie después, no
@@ -314,8 +327,9 @@ protege la firma; lo que lee indicadores, el secreto compartido.
 - No está confirmado que el id de quien comenta sea el mismo que el de los
   privados: por eso las etiquetas de comentarios se ponen por usuario, y se
   unen cuando sale el privado.
-- Los adjuntos llegan como "[Mandó: image]": no se ven las imágenes. Una foto
-  después de pedirle la factura cuenta como lead.
+- Un adjunto que no se pudo bajar ni recuperar queda solo como "[Mandó: image]"
+  en el chat. Las historias o publicaciones compartidas ("share") no se bajan.
+- Una foto después de pedirle la factura cuenta como lead.
 - Una persona que nunca escribió (solo le escribió Voltia) tiene la ventana
   cerrada.
 - La bandeja muestra hasta 300 conversaciones y los contactos hasta 200 por

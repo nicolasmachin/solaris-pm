@@ -1,5 +1,13 @@
 # Novedades
 
+## v14.0
+
+### 3 de noviembre de 2026
+
+#### Arreglos
+
+- **Instagram: las fotos y los archivos que manda el cliente se ven en el chat.** Los que llegaron antes del 1 de noviembre no se habían guardado y solo decían «[Mandó: image]»; se pueden recuperar mientras Instagram los siga teniendo. También se guardan los que manda Voltia desde ManyChat o el celular.
+
 ## v13.9
 
 ### 2 de noviembre de 2026

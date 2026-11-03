@@ -132,8 +132,9 @@ export async function registrarMensaje(m: MensajeAviso, ahora = new Date(), baja
     skipDuplicates: true,
   });
   if (nuevo.count === 0) return null; // Meta reintenta, o es el eco de algo nuestro
-  if (!esEco && m.archivos?.length) {
-    // Se baja antes de contestar: el mail de derivación los lleva adjuntos.
+  if (m.archivos?.length) {
+    // Se baja antes de contestar: el mail de derivación los lleva adjuntos. Lo
+    // que manda Voltia (ManyChat o el celular) también, para verlo en el chat.
     const guardado = await prisma.instagramMensaje.findUnique({ where: { conversacionId_clave: { conversacionId: conv.id, clave } } });
     if (guardado) await guardarArchivos(guardado, m.archivos, bajar);
   }

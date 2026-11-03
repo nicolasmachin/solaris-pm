@@ -100,6 +100,35 @@ function id(texto: string): string {
 
 // ── Privados ────────────────────────────────────────────────────────────────
 
+/**
+ * Los adjuntos de un mensaje ya recibido, con links nuevos. Sirve para
+ * recuperar los archivos de mensajes que llegaron antes de que Voltia PM los
+ * bajara (el link del webhook vence). Meta solo devuelve los mensajes recientes
+ * de cada conversación: de los muy viejos puede no dar nada.
+ */
+export async function adjuntosDeMensaje(mid: string): Promise<Array<{ tipo: string; url: string }>> {
+  if (!/^[A-Za-z0-9_\-=:.]+$/.test(mid)) throw new ErrorMeta(`'${mid}' no es un id de mensaje.`);
+  const datos = await get(mid, { fields: "attachments" }, await tokenDePagina());
+  return archivosDeAdjuntos(datos.attachments?.data ?? []);
+}
+
+/** De los adjuntos que devuelve la Graph API, lo que se puede bajar. Lógica pura. */
+export function archivosDeAdjuntos(adjuntos: any[]): Array<{ tipo: string; url: string }> {
+  const salida: Array<{ tipo: string; url: string }> = [];
+  for (const a of adjuntos) {
+    const imagen = a?.image_data?.url;
+    const video = a?.video_data?.url;
+    const archivo = a?.file_url;
+    if (typeof imagen === "string") salida.push({ tipo: "image", url: imagen });
+    else if (typeof video === "string") salida.push({ tipo: "video", url: video });
+    else if (typeof archivo === "string") {
+      const mime = String(a?.mime_type ?? "");
+      salida.push({ tipo: mime.startsWith("audio/") ? "audio" : mime.startsWith("video/") ? "video" : "file", url: archivo });
+    }
+  }
+  return salida;
+}
+
 /** Manda un mensaje privado. Devuelve el id del mensaje en Meta. */
 export async function enviarMensaje(persona: string, texto: string): Promise<string> {
   const datos = await postPagina({ recipient: { id: id(persona) }, message: { text: texto } });

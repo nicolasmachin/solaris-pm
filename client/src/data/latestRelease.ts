@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "14.0",
+  date: "3 de noviembre de 2026",
+  sections: [
+    {
+      title: "Arreglos",
+      items: [
+        "Instagram: las fotos y los archivos que manda el cliente se ven en el chat, también los que llegaron antes del 1 de noviembre (mientras Instagram los siga teniendo).",
+      ],
+    },
+  ],
+};
+
+const RELEASE_13_9: Release = {
   version: "13.9",
   date: "2 de noviembre de 2026",
   sections: [
@@ -1057,6 +1070,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "13.9",
+    shortDate: "2 nov",
+    highlights: RELEASE_13_9.sections.map((sec) => sec.title),
+  },
   {
     version: "13.8",
     shortDate: "1 nov",

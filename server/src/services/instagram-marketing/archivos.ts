@@ -150,3 +150,58 @@ export async function copiarAlLead(conversacionId: string, leadId: string, usuar
   }
   return copiados;
 }
+
+export type ObtenerAdjuntos = (mid: string) => Promise<Array<{ tipo: string; url: string }>>;
+
+/**
+ * Recupera los archivos de los mensajes que dicen "[Mandó: foto/archivo…]" y no
+ * tienen ninguno guardado: los que llegaron antes de que se bajaran (1-nov-2026)
+ * o cuando falló la bajada. Le pide a Meta links nuevos por el id del mensaje.
+ * Idempotente. Sin `aplicar`, solo cuenta lo que haría.
+ */
+export async function recuperarArchivos(opciones: {
+  aplicar: boolean;
+  obtener: ObtenerAdjuntos;
+  bajar?: Bajar;
+  log?: (linea: string) => void;
+}) {
+  const log = opciones.log ?? (() => {});
+  const mensajes = await prisma.instagramMensaje.findMany({
+    where: {
+      archivos: { none: {} },
+      OR: ["image", "file", "video", "audio"].map((t) => ({ texto: { contains: `[Mandó: ${t}]` } })),
+    },
+    orderBy: { enviadoEn: "asc" },
+    include: { conversacion: { select: { usuario: true, persona: true } } },
+  });
+  const r = { revisados: 0, sinId: 0, metaSinDatos: 0, errores: 0, archivos: 0 };
+  for (const m of mensajes) {
+    r.revisados += 1;
+    const quien = m.conversacion.usuario ? `@${m.conversacion.usuario}` : m.conversacion.persona;
+    // Sin el id de Meta (llave armada por momento y texto) no hay a quién pedírselo.
+    if (/^t\d+-/.test(m.clave)) {
+      r.sinId += 1;
+      continue;
+    }
+    try {
+      const archivos = await opciones.obtener(m.clave);
+      if (archivos.length === 0) {
+        r.metaSinDatos += 1;
+        log(`${quien} ${m.enviadoEn.toISOString()}: Meta no devolvió adjuntos`);
+        continue;
+      }
+      if (!opciones.aplicar) {
+        r.archivos += archivos.length;
+        log(`${quien} ${m.enviadoEn.toISOString()}: ${archivos.length} para bajar`);
+        continue;
+      }
+      const n = await guardarArchivos(m, archivos, opciones.bajar);
+      r.archivos += n;
+      log(`${quien} ${m.enviadoEn.toISOString()}: ${n} de ${archivos.length} guardados`);
+    } catch (err) {
+      r.errores += 1;
+      log(`${quien} ${m.enviadoEn.toISOString()}: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+  return r;
+}
