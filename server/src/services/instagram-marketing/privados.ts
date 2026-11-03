@@ -55,11 +55,12 @@ export const ESQUEMA = {
     mensajes: { type: "array", items: { type: "string" } },
     derivar: { type: "boolean" },
     lead: { type: "boolean" },
+    interesado: { type: "boolean" },
     speech: { type: "boolean" },
     temas: { type: "array", items: { type: "string", enum: [...TEMAS] } },
     motivo: { type: "string" },
   },
-  required: ["mensajes", "derivar", "lead", "speech", "temas", "motivo"],
+  required: ["mensajes", "derivar", "lead", "interesado", "speech", "temas", "motivo"],
   additionalProperties: false,
 };
 
@@ -68,6 +69,8 @@ export type ResultadoPrivado = {
   respuesta?: string;
   derivar?: boolean;
   lead?: boolean;
+  /** Potencial cliente: le interesa instalar (lo ve Ventas). */
+  interesado?: boolean;
   speech?: boolean;
   temas?: string[];
   motivo?: string;
@@ -384,6 +387,58 @@ async function preguntarAClaude(conv: Conv, aparte = "") {
   });
 }
 
+/**
+ * Marca como potencial cliente las conversaciones que ya existían (antes del
+ * 3-nov-2026 no se marcaban, y en sombra no se marcaba nada): le pregunta al
+ * asistente por cada una, con las mismas instrucciones, y no le manda nada a
+ * nadie. Solo las que tienen algún mensaje del cliente en los últimos `dias`.
+ * Sin `aplicar`, solo cuenta.
+ */
+export async function clasificarPotenciales(opciones: {
+  aplicar: boolean;
+  dias: number;
+  claude?: Deps["claude"];
+  log?: (linea: string) => void;
+}) {
+  const claude = opciones.claude ?? ((conv: Conv) => preguntarAClaude(conv));
+  const log = opciones.log ?? (() => {});
+  const desde = new Date(Date.now() - opciones.dias * 24 * 3600_000);
+  const convs = await prisma.instagramConversacion.findMany({
+    where: { potencialEn: null, leadId: null, ultimoClienteEn: { gte: desde } },
+    include: { mensajes: { orderBy: { enviadoEn: "asc" } } },
+  });
+  const r = { revisadas: 0, potenciales: 0, conCelular: 0, errores: 0, costoUsd: 0 };
+  for (const conv of convs) {
+    if (!conv.mensajes.some((m) => m.autor === "CLIENTE")) continue;
+    r.revisadas += 1;
+    const quien = conv.usuario ? `@${conv.usuario}` : conv.persona;
+    try {
+      const { resultado, problema, costoUsd } = await claude(conv);
+      r.costoUsd += costoUsd;
+      if (!resultado) {
+        r.errores += 1;
+        log(`${quien}: ${problema ?? "sin respuesta"}`);
+        continue;
+      }
+      const potencial = Boolean(resultado.lead || resultado.interesado);
+      const telefono = conv.telefono ? null : telefonoDe(conv.mensajes);
+      if (potencial) r.potenciales += 1;
+      if (telefono) r.conCelular += 1;
+      log(`${quien}: ${potencial ? "POTENCIAL" : "no"}${telefono ? " · dejó celular" : ""} · ${resultado.motivo ?? ""}`);
+      if (opciones.aplicar && (potencial || telefono)) {
+        await prisma.instagramConversacion.update({
+          where: { id: conv.id },
+          data: { ...(potencial ? { potencialEn: conv.ultimoClienteEn ?? new Date() } : {}), ...(telefono ? { telefono } : {}) },
+        });
+      }
+    } catch (err) {
+      r.errores += 1;
+      log(`${quien}: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+  return r;
+}
+
 // ── Atender ─────────────────────────────────────────────────────────────────
 
 const atendiendo = new Set<string>();
@@ -457,7 +512,21 @@ async function atenderSinCandado(id: string, deps: Deps, ahora: Date): Promise<s
   const temas = (r.temas ?? []).filter((t) => (TEMAS as readonly string[]).includes(t));
   const telefono = conv.telefono ?? telefonoDe(conv.mensajes);
   const textos = conWhatsapp(mensajesDe(r), derivar, telefono);
-  const evento = { ...base, usuario: conv.usuario, costoUsd, lead, derivado: derivar, datos: { motivo, temas, mensajes: textos, telefono } };
+  const evento = { ...base, usuario: conv.usuario, costoUsd, lead, derivado: derivar, datos: { motivo, temas, mensajes: textos, telefono, interesado: Boolean(r.interesado) } };
+
+  // Potencial cliente y celular: se guardan también en sombra. No le escriben a
+  // nadie; sirven para que la conversación le aparezca a Ventas, que tiene
+  // 24 horas para escribirle por Instagram.
+  const potencial = lead || Boolean(r.interesado);
+  if ((potencial && !conv.potencialEn) || (telefono && !conv.telefono)) {
+    await prisma.instagramConversacion.update({
+      where: { id },
+      data: {
+        ...(potencial && !conv.potencialEn ? { potencialEn: ahora } : {}),
+        ...(telefono && !conv.telefono ? { telefono } : {}),
+      },
+    });
+  }
 
   if (sombra) {
     await anotar({ ...evento, resultado: textos.length ? (derivar ? "derivado" : "contestado") : "sin_respuesta", speech: Boolean(r.speech) });
@@ -507,6 +576,8 @@ async function recibirTelefono(conv: Conv, telefono: string, base: Omit<Evento, 
   const texto = `Perfecto, ya se lo paso a ${c.derivarA} y te escribe por WhatsApp a ese número.`;
   const evento = { ...base, usuario: conv.usuario, derivado: true, datos: { motivo: "dejó su teléfono", mensajes: [texto], telefono } };
   if (sombra) {
+    // El celular se guarda igual (no le escribe a nadie): lo usa Ventas.
+    await prisma.instagramConversacion.update({ where: { id: conv.id }, data: { telefono } });
     await anotar({ ...evento, resultado: "telefono" });
     return "sombra";
   }

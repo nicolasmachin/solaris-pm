@@ -4,6 +4,12 @@
 
 ### 3 de noviembre de 2026
 
+#### Instagram: más potenciales clientes para Ventas, y el celular siempre
+
+- El asistente de Instagram **pide el celular siempre y apenas la persona muestra interés**, sin esperar a que mande la factura. Instagram solo deja escribirle hasta 24 horas después de su último mensaje: con el celular, el asesor le puede seguir escribiendo por WhatsApp.
+- En **Ventas → Instagram** aparecen todos los potenciales clientes: los que el asistente ve interesados en instalar (preguntaron el precio, cómo funciona para su casa, contaron su consumo o su techo), además de los que mandaron la factura, dejaron el celular o fueron derivados. Quedan afuera los curiosos, los que buscan trabajo, los proveedores y los clientes con un problema.
+- Eso se marca también mientras el asistente está en modo sombra (sin contestar), así Ventas los ve desde ahora.
+
 #### Arreglos
 
 - **Instagram: las fotos y los archivos que manda el cliente se ven en el chat.** Los que llegaron antes del 1 de noviembre no se habían guardado y solo decían «[Mandó: image]»; se pueden recuperar mientras Instagram los siga teniendo. También se guardan los que manda Voltia desde ManyChat o el celular.

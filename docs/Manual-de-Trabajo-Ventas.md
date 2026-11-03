@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.9 · del 01/11/26
+**Voltia · Uruguay** · Versión 1.10 · del 03/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -640,7 +640,10 @@ reinician.
 privado de Instagram las contesta primero un asistente automático de Voltia (lo
 maneja Marketing, en el módulo de Marketing de Voltia PM). Le cuenta a la persona
 cómo funciona el servicio, le da el orden de precio y le pide una foto de la
-factura de UTE y cómo es el techo. **Cuando la persona manda eso, el asistente la
+factura de UTE, cómo es el techo y **su celular**. El celular se pide siempre y
+desde el primer momento en que la persona muestra interés, sin esperar la
+factura: Instagram solo deja escribirle hasta 24 horas después de su último
+mensaje, y sin el celular, si deja de contestar, se pierde. **Cuando la persona manda eso, el asistente la
 pasa al asesor comercial designado**: le pide su celular para que el asesor le
 escriba por WhatsApp (y le ofrece, si quiere ir más rápido, escribirle directo al
 WhatsApp del asesor), y al asesor le llega un mail con la conversación entera, el
@@ -649,7 +652,12 @@ donde sigue la venta. Si no lo dejó y tampoco le escribió, **el asesor le cont
 por Instagram desde Voltia PM, en Ventas → Instagram**, sin usar Instagram:
 arriba de Ventas se avisa quién espera respuesta y cuánto queda, porque Instagram
 deja contestar solo hasta 24 horas después de su último mensaje. Ahí aparecen
-solo los que califican, no todas las consultas. A nadie se lo obliga a cambiar
+solo los potenciales clientes, no todas las consultas: los que el asistente ve
+interesados en instalar (preguntaron el precio, cómo funciona para su casa,
+contaron su consumo o su techo), los que mandaron la factura o el techo, los
+que dejaron el celular y los que el asistente le pasó al asesor. Quedan afuera
+los curiosos, los que buscan trabajo, los proveedores y los clientes con un
+problema. A nadie se lo obliga a cambiar
 de canal. Desde ahí la atiende el asesor como cualquier
 lead, empezando por la regla 1. También pasa al asesor a quien pide un
 presupuesto con sus datos, a los clientes de Voltia con un problema y lo que el
@@ -1157,6 +1165,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.10 | 3 de noviembre de 2026 | El asistente de Instagram pide el celular siempre y desde el primer interés, sin esperar la factura. En Ventas → Instagram aparecen todos los potenciales clientes (los interesados en instalar), no solo los que mandaron la factura o dejaron el celular. |
 | 1.9 | 1 de noviembre de 2026 | Los leads de Instagram: el asistente ya no manda a la persona al WhatsApp del asesor; le pide el celular para que el asesor le escriba, y escribirle directo queda como opción. Si no deja el celular, el asesor le contesta por Instagram desde Voltia PM (Ventas → Instagram) dentro de las 24 horas. |
 | 1.8 | 30 de octubre de 2026 | Se explica cómo llegan los leads de Instagram: los atiende primero el asistente automático de Voltia, que cuando la persona manda la factura y el techo la pasa al asesor comercial designado por WhatsApp, con un mail con la conversación. |
 | 1.7 | 30 de octubre de 2026 | Los leads que entran sin vendedor (los que pasa Marketing desde Instagram) aparecen en violeta arriba de Ventas y en el tablero; les llega un aviso a todos los asesores y el primero que toca **Tomar** se lo queda. |

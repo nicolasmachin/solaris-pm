@@ -36,6 +36,19 @@ export const VOLTIA_EMPRESA = {
   soporteHorario: "lunes a viernes de 9:00 a 17:00 horas",
 } as const;
 
+// Plazos de garantía por defecto (cláusula 7), en años. Se pueden cambiar por
+// contrato desde el formulario de Onboarding; estos son los vigentes.
+export const GARANTIAS_DEFAULT = {
+  panelesAnios: 10,
+  inversorAnios: 5,
+  componentesAnios: 3,
+  manoObraAnios: 3,
+} as const;
+
+function anios(n: number): string {
+  return n === 1 ? "1 año" : `${n} años`;
+}
+
 function esc(s: string | number | undefined | null): string {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -93,6 +106,7 @@ export function renderContractHtml(data: ContractDataPublish): string {
   const e = VOLTIA_EMPRESA;
   const f = partesFecha(data.contrato.fecha);
   const inicioObra = partesFecha(data.contrato.fechaInicioObra).largo;
+  const g = { ...GARANTIAS_DEFAULT, ...data.garantias };
 
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><style>${STYLES}</style></head><body>
   <h1>CONTRATO DE INSTALACIÓN DE SISTEMA SOLAR FOTOVOLTAICO</h1>
@@ -201,10 +215,10 @@ export function renderContractHtml(data: ContractDataPublish): string {
   <h2>7. Garantías</h2>
   <p>Los equipos y trabajos realizados cuentan con las siguientes garantías:</p>
   <ul>
-    <li>Paneles solares: 10 años.</li>
-    <li>Inversor: 5 años.</li>
-    <li>Componentes eléctricos: 3 años.</li>
-    <li>Mano de obra e instalación: 3 años.</li>
+    <li>Paneles solares: ${anios(g.panelesAnios)}.</li>
+    <li>Inversor: ${anios(g.inversorAnios)}.</li>
+    <li>Componentes eléctricos: ${anios(g.componentesAnios)}.</li>
+    <li>Mano de obra e instalación: ${anios(g.manoObraAnios)}.</li>
   </ul>
   <p>La vida útil estimada del sistema fotovoltaico es de aproximadamente 25 años.</p>
 

@@ -27,6 +27,12 @@ export const LATEST_RELEASE: Release = {
   date: "3 de noviembre de 2026",
   sections: [
     {
+      title: "Instagram: más potenciales clientes para Ventas, y el celular siempre",
+      items: [
+        "El asistente pide el celular apenas la persona muestra interés, sin esperar la factura, y en Ventas → Instagram aparecen todos los interesados en instalar, no solo los que mandaron la factura.",
+      ],
+    },
+    {
       title: "Arreglos",
       items: [
         "Instagram: las fotos y los archivos que manda el cliente se ven en el chat, también los que llegaron antes del 1 de noviembre (mientras Instagram los siga teniendo).",

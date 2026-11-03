@@ -127,8 +127,10 @@ apretados como si fueran texto, los ecos, el anuncio y los adjuntos como
    como "[Escribió Voltia por otro lado]") con el flujo de la automatización y
    los datos de Voltia (con caché), y aparte lo propio de la conversación (de
    dónde vino, si sigue, si ya recibió el speech, la hora en Uruguay).
-5. Claude devuelve JSON: `mensajes`, `derivar`, `lead`, `speech`, `temas`,
-   `motivo` (`ESQUEMA`). Si deriva sin el celular de la persona y no nombró el
+5. Claude devuelve JSON: `mensajes`, `derivar`, `lead`, `interesado`, `speech`,
+   `temas`, `motivo` (`ESQUEMA`). `interesado` (desde el 3-nov-2026) dice si es
+   un potencial cliente; con eso o con `lead` se marca `potencialEn` y la
+   conversación aparece en Ventas → Instagram, también en sombra. Si deriva sin el celular de la persona y no nombró el
    WhatsApp de Martín, se agrega como opción («si te queda más cómodo…»);
    si Claude no escribió nada, se manda un mensaje que pide el celular
    (`conWhatsapp()`). Si la persona ya dejó su celular, no se agrega nada.
@@ -237,7 +239,10 @@ de la planilla.
 
 **Modo** (`INSTAGRAM_MODO`): `apagado` (default: guarda los mensajes y nada
 más), `sombra` (todo menos mandar: ni mensajes, ni etiquetas, ni mails; lo que
-habría contestado queda como evento con `sombra = true`) o `envio`. En sombra
+habría contestado queda como evento con `sombra = true`) o `envio`. Lo único
+que sí guarda en sombra es lo interno que sirve a Ventas: `potencialEn` (el
+asistente la marcó interesada o lead) y el celular si lo dejó escrito; ninguno de
+los dos le escribe a nadie. En sombra
 no se aplica la pausa por "escribió otro", porque las respuestas del contestador
 de indicadores llegan como ecos y lo callarían siempre; tampoco hay seguimientos.
 
@@ -308,8 +313,14 @@ protege la firma; lo que lee indicadores, el secreto compartido.
   Nicolás del 1-nov-2026: cada salto pierde gente). En orden: lo ideal, que le
   escriba directo a Martín por WhatsApp, ofrecido como lo más rápido, nunca
   como única salida; si no, que mande la factura por Instagram **y deje su
-  celular** (se le pide siempre) para que Martín le escriba; lo último, si no
-  quiere dar el número, se sigue por Instagram dentro de la ventana de Meta.
+  celular** para que Martín le escriba; lo último, si no quiere dar el número,
+  se sigue por Instagram dentro de la ventana de Meta.
+- **El celular se pide siempre y temprano** (regla 1c de `privados.md`, pedido
+  de Nicolás del 3-nov-2026): en la primera respuesta en que la persona muestra
+  interés, sin esperar la factura, y en el seguimiento si todavía no lo dio.
+  Pasadas 24 horas de su último mensaje Instagram no deja escribirle, y el
+  asesor no usa Instagram: sin el celular, si deja de contestar, se pierde. Si
+  dice que prefiere seguir por Instagram, no se le pide más.
 - **Crear el lead no pide `VENTAS:CREATE`**: pasar a Ventas lo que entra por
   redes es trabajo de Marketing.
 - El "leído" es uno solo para todo el equipo.

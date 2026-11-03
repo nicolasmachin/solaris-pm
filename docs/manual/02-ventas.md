@@ -1082,7 +1082,15 @@ prefieren seguir por Instagram.
 `bandeja.service.ts` (Marketing), con los permisos de Ventas: `GET
 /api/ventas/instagram/conversaciones` (VIEW), `GET …/:id` (VIEW), `POST
 …/:id/enviar` (EDIT) y `POST …/:id/lead` (CREATE). **Califica** (`CALIFICA`):
-`derivadaEn`, `leadId` o `telefono` no vacíos; una que no califica da 404.
+`potencialEn`, `derivadaEn`, `leadId` o `telefono` no vacíos; una que no
+califica da 404. `potencialEn` lo pone el asistente cuando marca a la persona
+como **interesada** (le interesa instalar: preguntó el precio, cómo funciona
+para su caso, contó su consumo o su techo) o como lead, y **también en modo
+sombra** junto con el celular, porque no le escribe a nadie. Antes del
+3-nov-2026 no existía y en sombra no se marcaba nada, así que Ventas veía muy
+pocas; para las viejas está `scripts/instagram-clasificar.ts` (ensayo por
+defecto, `--aplicar`, `--dias 30`), que le pregunta al asistente por cada una y
+no manda nada.
 `contestarDesdeVentas()` manda con `enviarMensaje()` y marca `tomadaEn` y
 `tomadaPorId` si no estaba tomada. El "leído" es el mismo que en Marketing. El
 mail de derivación del asistente trae el link a esta pantalla.

@@ -57,6 +57,17 @@ export const contractDataPublishSchema = z
         fechaInicioObra: z.string().optional(),
       })
       .strict(),
+    // Plazos de garantía en años (cláusula 7). Opcional: los contratos
+    // guardados antes no lo traen y el template usa GARANTIAS_DEFAULT.
+    garantias: z
+      .object({
+        panelesAnios: z.number().int().min(0).max(30),
+        inversorAnios: z.number().int().min(0).max(30),
+        componentesAnios: z.number().int().min(0).max(30),
+        manoObraAnios: z.number().int().min(0).max(30),
+      })
+      .strict()
+      .optional(),
     notas: z.string().optional(),
   })
   .strict();

@@ -201,9 +201,11 @@ export async function listarConversaciones() {
 // ── Ventas → Instagram ──────────────────────────────────────────────────────
 // Decisión de Nicolás del 1-nov-2026: el asesor comercial no usa Instagram,
 // contesta desde Voltia PM. Ve solo las que califican como potencial cliente:
-// las que el asistente derivó, las que tienen lead o dejaron su celular.
+// las que el asistente marcó como interesadas (también en sombra), las que
+// derivó, las que tienen lead o dejaron su celular. Ajustado el 3-nov-2026:
+// antes no contaba "interesado" y en sombra no se marcaba nada.
 
-const CALIFICA = Prisma.sql`(c."derivadaEn" IS NOT NULL OR c."leadId" IS NOT NULL OR c."telefono" IS NOT NULL)`;
+const CALIFICA = Prisma.sql`(c."potencialEn" IS NOT NULL OR c."derivadaEn" IS NOT NULL OR c."leadId" IS NOT NULL OR c."telefono" IS NOT NULL)`;
 
 export async function listarParaVentas() {
   const ahora = new Date();

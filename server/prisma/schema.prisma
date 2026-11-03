@@ -6645,6 +6645,10 @@ model InstagramConversacion {
   ultimoClienteEn DateTime?          @db.Timestamptz(6)
   /// Hasta dónde se leyó en Voltia PM (uno solo para todo el equipo).
   vistaHasta      DateTime?          @db.Timestamptz(6)
+  /// El asistente la marcó como potencial cliente (le interesa instalar, o mandó
+  /// la factura o el techo). Se marca también en modo sombra: no le escribe a
+  /// nadie, solo hace que la vea Ventas.
+  potencialEn       DateTime? @db.Timestamptz(6)
   leadId          String?
   lead            SalesLead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   mensajes        InstagramMensaje[]
