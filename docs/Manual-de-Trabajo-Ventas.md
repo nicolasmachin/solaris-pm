@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.10 · del 03/11/26
+**Voltia · Uruguay** · Versión 1.11 · del 03/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -317,6 +317,12 @@ día de la obra, pero es lo menos cómodo). **Voltia firma último**, con firma
 digital, y se lo devuelve: si firmara primero, la firma del cliente encima
 invalidaría la digital. El intercambio lo hace **el asesor que cerró la venta**,
 que también firma por Voltia.
+
+**Las garantías del contrato.** El contrato sale con los plazos de garantía
+vigentes: paneles solares 10 años, inversor 5 años, componentes eléctricos 3 años
+y mano de obra e instalación 3 años. Si con el cliente se acordó otro plazo, el
+asesor lo cambia en el formulario del contrato, en **Garantías (años)**, antes de
+generarlo. Si no se acordó nada distinto, se dejan como vienen.
 
 > *Pendiente:* para que los asesores firmen por Voltia SAS hace falta darles un
 > poder (o el mecanismo que indiquen el escribano o el contador) y que cada uno
@@ -1165,6 +1171,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.11 | 3 de noviembre de 2026 | Los plazos de garantía del contrato vienen con los vigentes y se pueden cambiar en el formulario del contrato cuando se acordó otra cosa con el cliente. |
 | 1.10 | 3 de noviembre de 2026 | El asistente de Instagram pide el celular siempre y desde el primer interés, sin esperar la factura. En Ventas → Instagram aparecen todos los potenciales clientes (los interesados en instalar), no solo los que mandaron la factura o dejaron el celular. |
 | 1.9 | 1 de noviembre de 2026 | Los leads de Instagram: el asistente ya no manda a la persona al WhatsApp del asesor; le pide el celular para que el asesor le escriba, y escribirle directo queda como opción. Si no deja el celular, el asesor le contesta por Instagram desde Voltia PM (Ventas → Instagram) dentro de las 24 horas. |
 | 1.8 | 30 de octubre de 2026 | Se explica cómo llegan los leads de Instagram: los atiende primero el asistente automático de Voltia, que cuando la persona manda la factura y el techo la pasa al asesor comercial designado por WhatsApp, con un mail con la conversación. |

@@ -31,6 +31,13 @@ export interface ContractData {
     fecha: string;
     fechaInicioObra: string;
   };
+  /** Plazos de garantía en años (cláusula 7). */
+  garantias: {
+    panelesAnios: number;
+    inversorAnios: number;
+    componentesAnios: number;
+    manoObraAnios: number;
+  };
   notas: string;
 }
 

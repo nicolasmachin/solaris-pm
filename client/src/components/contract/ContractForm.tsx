@@ -1,4 +1,5 @@
 import { NumberField, TextAreaField, TextField } from "../proposals-v2/fields";
+import { GARANTIAS_DEFAULT } from "../../lib/contractDraft";
 import type { ContractData } from "../../types/contract";
 
 const H2 = "text-sm font-bold uppercase tracking-wide text-[var(--color-text-primary)]";
@@ -21,6 +22,10 @@ export function ContractForm({
   const setSistema = (p: Partial<ContractData["sistema"]>) => onChange({ ...data, sistema: { ...data.sistema, ...p } });
   const setComercial = (p: Partial<ContractData["comercial"]>) => onChange({ ...data, comercial: { ...data.comercial, ...p } });
   const setContrato = (p: Partial<ContractData["contrato"]>) => onChange({ ...data, contrato: { ...data.contrato, ...p } });
+  const setGarantias = (p: Partial<ContractData["garantias"]>) => onChange({ ...data, garantias: { ...data.garantias, ...p } });
+  const garantiasCambiadas = (Object.keys(GARANTIAS_DEFAULT) as (keyof ContractData["garantias"])[]).some(
+    (k) => data.garantias[k] !== GARANTIAS_DEFAULT[k],
+  );
 
   return (
     <div className="space-y-8">
@@ -117,7 +122,32 @@ export function ContractForm({
             />
           </label>
         </div>
-        <div className="mt-3">
+      </section>
+
+      {/* 5 · Garantías */}
+      <section id="seccion-garantias" className="scroll-mt-28">
+        <h2 className={H2}>Garantías (años)</h2>
+        <p className={SUB}>Vienen con los plazos vigentes; cambiarlos solo si se acordó otra cosa con el cliente</p>
+        <div className={GRID}>
+          <NumberField label="Paneles solares" value={data.garantias.panelesAnios} onChange={(v) => setGarantias({ panelesAnios: v })} min={0} max={30} />
+          <NumberField label="Inversor" value={data.garantias.inversorAnios} onChange={(v) => setGarantias({ inversorAnios: v })} min={0} max={30} />
+          <NumberField label="Componentes eléctricos" value={data.garantias.componentesAnios} onChange={(v) => setGarantias({ componentesAnios: v })} min={0} max={30} />
+          <NumberField label="Mano de obra e instalación" value={data.garantias.manoObraAnios} onChange={(v) => setGarantias({ manoObraAnios: v })} min={0} max={30} />
+        </div>
+        {garantiasCambiadas ? (
+          <button
+            type="button"
+            className="mt-2 text-xs text-[var(--color-accent)] hover:underline"
+            onClick={() => onChange({ ...data, garantias: { ...GARANTIAS_DEFAULT } })}
+          >
+            Volver a los plazos vigentes
+          </button>
+        ) : null}
+      </section>
+
+      {/* 6 · Observaciones */}
+      <section>
+        <div>
           <TextAreaField label="Observaciones (opcional)" value={data.notas} onChange={(v) => onChange({ ...data, notas: v })} placeholder="Cláusulas particulares, aclaraciones…" />
         </div>
       </section>

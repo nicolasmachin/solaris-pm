@@ -33,6 +33,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Onboarding: plazos de garantía en el contrato",
+      items: [
+        "El contrato tiene una sección Garantías con los plazos de paneles, inversor, componentes y mano de obra: vienen con los vigentes y se cambian solo si se acordó otra cosa con el cliente.",
+      ],
+    },
+    {
       title: "Arreglos",
       items: [
         "Instagram: las fotos y los archivos que manda el cliente se ven en el chat, también los que llegaron antes del 1 de noviembre (mientras Instagram los siga teniendo).",

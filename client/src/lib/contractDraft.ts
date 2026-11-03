@@ -4,6 +4,14 @@
 
 import type { ContractContext, ContractData } from "../types/contract";
 
+// Plazos de garantía vigentes (espeja GARANTIAS_DEFAULT del template del backend).
+export const GARANTIAS_DEFAULT: ContractData["garantias"] = {
+  panelesAnios: 10,
+  inversorAnios: 5,
+  componentesAnios: 3,
+  manoObraAnios: 3,
+};
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -45,6 +53,7 @@ export function buildInitialContractData(context: ContractContext | undefined): 
       fecha: todayIso(),
       fechaInicioObra: "",
     },
+    garantias: { ...GARANTIAS_DEFAULT },
     notas: "",
   };
 }
@@ -61,6 +70,7 @@ export function mergeContractDraft(
     sistema: { ...base.sistema, ...stored.sistema },
     comercial: { ...base.comercial, ...stored.comercial },
     contrato: { ...base.contrato, ...stored.contrato },
+    garantias: { ...base.garantias, ...stored.garantias },
     notas: stored.notas ?? base.notas,
   };
 }
@@ -88,6 +98,13 @@ const REQUIRED: (MissingField & { ok: (d: ContractData) => boolean })[] = [
   { path: "sistema.tipoTecho", section: "sistema", sectionLabel: "Sistema", label: "Tipo de techo", ok: (d) => d.sistema.tipoTecho.trim().length > 0 },
   { path: "contrato.lugar", section: "contrato", sectionLabel: "Contrato", label: "Lugar", ok: (d) => d.contrato.lugar.trim().length > 0 },
   { path: "contrato.fecha", section: "contrato", sectionLabel: "Contrato", label: "Fecha", ok: (d) => d.contrato.fecha.trim().length > 0 },
+  {
+    path: "garantias",
+    section: "garantias",
+    sectionLabel: "Garantías",
+    label: "Plazos de garantía (años enteros, de 0 a 30)",
+    ok: (d) => Object.values(d.garantias).every((n) => Number.isInteger(n) && n >= 0 && n <= 30),
+  },
 ];
 
 export function validateContract(d: ContractData): { ok: boolean; missing: MissingField[] } {

@@ -502,6 +502,25 @@ apareciendo, con su plazo vencido en rojo.
 
 ---
 
+## Contrato: plazos de garantía editables
+
+La cláusula 7 del contrato (Garantías) tenía los plazos fijos en
+`contract/template.ts`. Desde el 3-nov-2026 son campos del formulario del
+contrato (subetapa Contrato del onboarding, `ContractForm.tsx`, sección
+"Garantías (años)"):
+
+- Datos: `garantias` en `contract.schema.ts` (`panelesAnios`, `inversorAnios`,
+  `componentesAnios`, `manoObraAnios`, enteros de 0 a 30). **Opcional**: los
+  borradores y versiones guardados antes no lo traen y siguen validando.
+- Valores por defecto: `GARANTIAS_DEFAULT` en `template.ts` (10 / 5 / 3 / 3), con
+  su espejo en `client/src/lib/contractDraft.ts`. El template hace
+  `{ ...GARANTIAS_DEFAULT, ...data.garantias }`, así que un contrato sin el campo
+  sale con los plazos vigentes. **Si cambian los plazos vigentes, se cambian en
+  los dos lugares.**
+- El formulario muestra "Volver a los plazos vigentes" cuando alguno difiere, y
+  `validateContract()` exige enteros de 0 a 30 antes de publicar.
+- "1 año" en singular, el resto "N años" (`anios()` en `template.ts`).
+
 ## Documentos comerciales en Documentos del proyecto, y el contrato firmado
 
 ### Para qué existe

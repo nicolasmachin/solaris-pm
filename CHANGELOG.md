@@ -10,6 +10,10 @@
 - En **Ventas → Instagram** aparecen todos los potenciales clientes: los que el asistente ve interesados en instalar (preguntaron el precio, cómo funciona para su casa, contaron su consumo o su techo), además de los que mandaron la factura, dejaron el celular o fueron derivados. Quedan afuera los curiosos, los que buscan trabajo, los proveedores y los clientes con un problema.
 - Eso se marca también mientras el asistente está en modo sombra (sin contestar), así Ventas los ve desde ahora.
 
+#### Onboarding: plazos de garantía en el contrato
+
+- En el formulario del contrato hay una sección nueva, **Garantías (años)**, con los plazos de paneles, inversor, componentes eléctricos y mano de obra. Vienen con los vigentes (10, 5, 3 y 3 años) y se cambian solo si se acordó otra cosa con el cliente; **Volver a los plazos vigentes** los restablece.
+
 #### Arreglos
 
 - **Instagram: las fotos y los archivos que manda el cliente se ven en el chat.** Los que llegaron antes del 1 de noviembre no se habían guardado y solo decían «[Mandó: image]»; se pueden recuperar mientras Instagram los siga teniendo. También se guardan los que manda Voltia desde ManyChat o el celular.
