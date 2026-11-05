@@ -1520,10 +1520,16 @@ desde su último dato de ayer**, no desde la medianoche. Se verificó de dos for
 
 - Yamandú Ramos, 3 días seguidos: último − primero del medidor = lo que dice el
   inversor, exacto (por ejemplo 13,1 − 6,6 = 6,5).
+- Yamandú Ramos, 3 noches, con el contador total del historial del medidor en la
+  web (`/device/getMeterHistory`, `activeEnergy`): lo que sube durante la noche es
+  igual al primer valor del día (6,6 / 11,0 / 6,0 kWh).
 - Susana Guerrico, octubre: el medidor suma 380 kWh comprados, la factura de UTE
-  383 y el inversor 144. Que cierre con la factura es lo que indica que el primer
-  valor trae toda la noche (si arrancara a la medianoche, faltaría lo de la tarde).
-  Es una deducción, no algo que documente Growatt.
+  383 y el inversor 144.
+
+**El medidor no tiene registros de noche en ningún lado**: ni la Open API, ni el
+gráfico ni el historial de la web traen filas entre el atardecer y el amanecer.
+Sigue contando, pero se lee a través del datalogger, que está apagado. Por eso de
+la noche hay un total y no una curva.
 
 La corrida del monitoreo de las 8, después de las curvas de ayer, guarda en
 `FvNoche` la noche que terminó hoy y la de ayer (`reconstruirNoches()`; se apaga
