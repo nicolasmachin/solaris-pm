@@ -332,6 +332,12 @@ export function EnergiaPlanta({
           Esta planta no mide el consumo (no tiene medidor, o el medidor no le llega al inversor): se muestra solo la producción.
         </p>
       )}
+      {pestania === "hora" && curva?.nocheKwh != null && !ocultas.has("consumo") && (
+        <p className="mx-4 mb-2 text-[11px] text-[var(--color-text-muted)]">
+          La línea punteada es el consumo de la noche ({curva.nocheKwh.toLocaleString("es-UY", { maximumFractionDigits: 1 })} kWh): el inversor se
+          apaga sin sol y no manda datos, pero el medidor sí lo cuenta. Se sabe cuánto se consumió, no a qué hora: se dibuja el promedio de esas horas.
+        </p>
+      )}
       {consumoParcial && cobertura && (
         <p className="px-4 pb-2 text-center text-[11px] text-[var(--color-text-muted)]">
           El consumo está medido en {cobertura.conConsumo} de {cobertura.conProduccion} {pestania === "dia" ? "días" : "meses"}: los
@@ -392,8 +398,10 @@ function suavizar(vals: (number | null)[]): (number | null)[] {
 
 function GraficoHora({ puntos, ocultas, conMedicion }: { puntos: PuntoCurva[]; ocultas: Set<Serie>; conMedicion: boolean }) {
   const { datos, dominio, ticks } = useMemo(() => {
+    // Las horas de noche no se suavizan ni entran en las líneas medidas: van en
+    // su propia línea punteada, que se apoya en el dato real de cada borde.
     const suaves = Object.fromEntries(
-      (["gen", "consumo", "aRed", "deRed"] as const).map((k) => [k, suavizar(puntos.map((p) => p[k]))]),
+      (["gen", "consumo", "aRed", "deRed"] as const).map((k) => [k, suavizar(puntos.map((p) => (p.estimado ? null : p[k])))]),
     ) as Record<Serie, (number | null)[]>;
     const datos = puntos.map((p, i) => ({
       ...p,
@@ -402,6 +410,11 @@ function GraficoHora({ puntos, ocultas, conMedicion }: { puntos: PuntoCurva[]; o
       consumo_s: suaves.consumo[i],
       aRed_s: suaves.aRed[i],
       deRed_s: suaves.deRed[i],
+      noche_s: p.estimado
+        ? p.consumo
+        : puntos[i - 1]?.estimado || puntos[i + 1]?.estimado
+          ? suaves.consumo[i]
+          : null,
     }));
     // Solo las horas con datos (una planta sin consumo medido no tiene nada de
     // noche), redondeadas a la hora, con un mínimo de 8 horas de ancho.
@@ -460,6 +473,9 @@ function GraficoHora({ puntos, ocultas, conMedicion }: { puntos: PuntoCurva[]; o
         {ver("consumo") && (
           <Line type="monotoneX" dataKey="consumo_s" stroke="var(--en-cons)" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--color-bg-card)" }} isAnimationActive={false} connectNulls />
         )}
+        {ver("consumo") && (
+          <Line type="linear" dataKey="noche_s" stroke="var(--en-cons)" strokeWidth={2} strokeDasharray="5 4" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--color-bg-card)" }} isAnimationActive={false} />
+        )}
       </ComposedChart>
     </ResponsiveContainer>
     </>
@@ -482,6 +498,7 @@ function TooltipHora({ active, payload, conMedicion }: { active?: boolean; paylo
   return (
     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-[12px] shadow-xl">
       <p className="mb-1 font-semibold text-[var(--color-text-primary)]">{p.h}</p>
+      {p.estimado && <p className="mb-1 text-[11px] text-[var(--color-text-muted)]">Promedio de la noche</p>}
       {filas.map(([s, v]) => (
         <p key={s} className="flex items-center gap-2 text-[var(--color-text-secondary)]">
           <span className="inline-block h-2 w-2 rounded-full" style={{ background: SERIES[s].color }} />
@@ -609,7 +626,7 @@ function TablaDatos({ pestania, curva, barras }: { pestania: Pestania; curva: Cu
     pestania === "hora"
       ? (curva?.puntos ?? [])
           .filter((p) => minutos(p.h) % 30 === 0)
-          .map((p) => ({ k: p.h, gen: kw(p.gen), cons: kw(p.consumo), exp: kw(p.aRed), imp: kw(p.deRed) }))
+          .map((p) => ({ k: p.estimado ? `${p.h} (promedio)` : p.h, gen: kw(p.gen), cons: kw(p.consumo), exp: kw(p.aRed), imp: kw(p.deRed) }))
       : barras.map((b) => ({
           k: pestania === "dia" ? b.clave.slice(8, 10) : pestania === "mes" ? MESES_CORTOS[Number(b.clave.slice(5, 7)) - 1] : b.clave,
           gen: kwh(b.generacionKwh),

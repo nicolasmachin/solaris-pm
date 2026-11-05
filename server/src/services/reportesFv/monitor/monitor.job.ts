@@ -7,7 +7,8 @@ import { CRON_DEFAULT, monitorHabilitado } from "./config.js";
 import { enviarDigest } from "./digest.email.js";
 import { ejecutarMonitorDiario } from "./monitor.service.js";
 import { sincronizarPlantas } from "../growatt/plantas.service.js";
-import { guardarCurvasDelDia } from "../energia/curva.service.js";
+import { guardarCurvasDelDia, hoyUy } from "../energia/curva.service.js";
+import { reconstruirNoches } from "../energia/noche.service.js";
 import { diaAEvaluar } from "./dias.js";
 
 /**
@@ -57,6 +58,13 @@ export function startFvMonitorJob() {
         if (process.env.ENERGIA_CURVA_NOCTURNA !== "false") {
           const c = await guardarCurvasDelDia(diaAEvaluar(new Date()));
           console.log(`[fv-monitor] curvas de ayer: ${c.guardadas} guardadas, ${c.fallidas} con error`);
+        }
+
+        // Y con las curvas ya guardadas, la noche que acaba de terminar: lo que el
+        // medidor contó con el inversor apagado. Se apaga con ENERGIA_NOCHE=false.
+        if (process.env.ENERGIA_NOCHE !== "false") {
+          const n = await reconstruirNoches(hoyUy());
+          console.log(`[fv-monitor] noches: ${n.plantas} plantas, ${n.fallidas} con error`);
         }
       } catch (err) {
         console.error("[fv-monitor] error:", err);

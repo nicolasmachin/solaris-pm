@@ -29,6 +29,8 @@ export interface PuntoCurva {
   consumo: number | null;
   deRed: number | null;
   aRed: number | null;
+  /** Tramo de noche sin datos del inversor: el promedio de esas horas, no una medición. */
+  estimado?: true;
 }
 
 export interface TotalesDia {
@@ -275,6 +277,54 @@ export function armarCurva(input: {
       exportacionKwh: r(exportacionKwh),
     },
     origenMedicion: origen,
+  };
+}
+
+/** La noche que termina en un día: lo que el medidor contó con el inversor apagado. */
+export interface TramoNoche {
+  kwh: number;
+  desde: Date;
+  hasta: Date;
+}
+
+/**
+ * Agrega a la curva de un día las horas de noche que el inversor no reporta.
+ * `antes` es la noche que termina ese día (madrugada) y `despues` la que termina
+ * el siguiente (lo que queda del día a partir del último dato).
+ *
+ * Solo se sabe cuánto se compró en toda la noche, no cómo se repartió: cada
+ * tramo lleva la potencia promedio de la noche, y el kWh se reparte entre los
+ * dos días según las horas que caen en cada uno. De noche no hay producción ni
+ * exportación, así que consumo = compra.
+ */
+export function completarNoche(
+  dia: string,
+  puntos: PuntoCurva[],
+  antes: TramoNoche | null,
+  despues: TramoNoche | null,
+): { puntos: PuntoCurva[]; kwh: number } {
+  const inicio = new Date(`${dia}T00:00:00-03:00`).getTime();
+  const fin = inicio + 24 * 60 * 60 * 1000;
+  const conDato = new Set(puntos.map((p) => p.h));
+  const nuevos: PuntoCurva[] = [];
+  let kwh = 0;
+  for (const t of [antes, despues]) {
+    if (!t) continue;
+    const total = t.hasta.getTime() - t.desde.getTime();
+    if (total <= 0) continue;
+    const desde = Math.max(t.desde.getTime(), inicio);
+    const hasta = Math.min(t.hasta.getTime(), fin);
+    if (hasta <= desde) continue;
+    kwh += (t.kwh * (hasta - desde)) / total;
+    const w = Math.round((t.kwh * 1000 * 3_600_000) / total);
+    for (let k = Math.ceil(desde / TRAMO_MS) * TRAMO_MS; k < hasta; k += TRAMO_MS) {
+      const h = horaUy(k);
+      if (!conDato.has(h)) nuevos.push({ h, gen: 0, consumo: w, deRed: w, aRed: 0, estimado: true });
+    }
+  }
+  return {
+    puntos: [...puntos, ...nuevos].sort((a, b) => a.h.localeCompare(b.h)),
+    kwh: redondear2(kwh),
   };
 }
 

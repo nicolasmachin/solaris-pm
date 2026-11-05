@@ -26,7 +26,8 @@ import {
 } from "../growatt/client.js";
 import { guardarDispositivos, resolverMedidor } from "../monitor/monitor.service.js";
 import { dateADia, diaADate, esDiaValido, type Dia } from "../monitor/dias.js";
-import { armarCurva, resumenEnergia, type OrigenMedicion, type PuntoCurva } from "./curva.js";
+import { armarCurva, completarNoche, resumenEnergia, type OrigenMedicion, type PuntoCurva } from "./curva.js";
+import { nochesDeLaCurva } from "./noche.service.js";
 
 /** Tipos de inversor de los que Growatt da curva: 7 = MIN (TLX), 4 = MAX. */
 const TIPOS_CON_CURVA = new Set([7, 4]);
@@ -60,6 +61,8 @@ export interface CurvaDiaRespuesta {
   origenMedicion: OrigenMedicion | null;
   completo: boolean;
   actualizadoEn: string | null;
+  /** kWh de la noche agregados a la curva (con el inversor apagado), si los hay. */
+  nocheKwh: number | null;
 }
 
 const VACIO = resumenEnergia({ generacionKwh: null, consumoKwh: null, importacionKwh: null, exportacionKwh: null });
@@ -96,6 +99,7 @@ function respuestaDesdeFila(
     origenMedicion: (fila.origenMedicion as OrigenMedicion | null) ?? null,
     completo: fila.completo,
     actualizadoEn: fila.updatedAt.toISOString(),
+    nocheKwh: null,
   };
 }
 
@@ -107,13 +111,40 @@ const sinMedidor = new Map<string, number>();
 const enCurso = new Map<string, Promise<CurvaDiaRespuesta>>();
 
 /**
- * Curva de un día. `forzar` vuelve a pedir el día en curso aunque el dato sea
+ * Curva de un día, con la noche que el inversor no reporta agregada (ver
+ * noche.service.ts). `forzar` vuelve a pedir el día en curso aunque el dato sea
  * reciente (botón "Actualizar"); un día cerrado nunca se vuelve a pedir.
  */
 export async function obtenerCurvaDia(
   projectId: string,
   dia: Dia,
   opts: { forzar?: boolean; ahora?: Date } = {},
+): Promise<CurvaDiaRespuesta> {
+  const curva = await curvaSinNoche(projectId, dia, opts);
+  if (!curva.disponible || curva.puntos.length === 0) return curva;
+  const { antes, despues } = await nochesDeLaCurva(projectId, dia);
+  if (!antes && !despues) return curva;
+  const { puntos, kwh } = completarNoche(dia, curva.puntos, antes, despues);
+  // Con el medidor aparte (MAX) el total ya trae la noche; el del inversor, no.
+  const suma = curva.origenMedicion === "INVERSOR" ? kwh : 0;
+  const mas = (v: number | null) => (v === null ? null : Math.round((v + suma) * 100) / 100);
+  return {
+    ...curva,
+    puntos,
+    nocheKwh: kwh,
+    resumen: resumenEnergia({
+      generacionKwh: curva.resumen.generacionKwh,
+      consumoKwh: mas(curva.resumen.consumoKwh),
+      importacionKwh: mas(curva.resumen.importacionKwh),
+      exportacionKwh: curva.resumen.exportacionKwh,
+    }),
+  };
+}
+
+async function curvaSinNoche(
+  projectId: string,
+  dia: Dia,
+  opts: { forzar?: boolean; ahora?: Date },
 ): Promise<CurvaDiaRespuesta> {
   if (!esDiaValido(dia)) throw badRequest("DIA_INVALIDO", "La fecha tiene que ser AAAA-MM-DD");
   const ahora = opts.ahora ?? new Date();
@@ -127,7 +158,7 @@ export async function obtenerCurvaDia(
       motivo: marca === "HUAWEI"
         ? "La curva por hora todavía no está disponible para inversores Huawei."
         : "El proyecto no tiene una planta de monitoreo vinculada.",
-      puntos: [], resumen: VACIO, origenMedicion: null, completo: false, actualizadoEn: null,
+      puntos: [], resumen: VACIO, origenMedicion: null, completo: false, actualizadoEn: null, nocheKwh: null,
     };
   }
 
@@ -150,7 +181,7 @@ export async function obtenerCurvaDia(
       return {
         dia, marca, disponible: false,
         motivo: `No hay datos de este día: el primero de la planta es del ${dateADia(primero.fecha).split("-").reverse().join("/")}.`,
-        puntos: [], resumen: VACIO, origenMedicion: null, completo: false, actualizadoEn: null,
+        puntos: [], resumen: VACIO, origenMedicion: null, completo: false, actualizadoEn: null, nocheKwh: null,
       };
     }
   }
@@ -188,7 +219,7 @@ async function pedirYGuardar(projectId: string, plantId: bigint, dia: Dia, diaCe
     return {
       dia, marca: "GROWATT", disponible: false,
       motivo: "Growatt no da la curva de este modelo de inversor.",
-      puntos: [], resumen: VACIO, origenMedicion: null, completo, actualizadoEn: null,
+      puntos: [], resumen: VACIO, origenMedicion: null, completo, actualizadoEn: null, nocheKwh: null,
     };
   }
 

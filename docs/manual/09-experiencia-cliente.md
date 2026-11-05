@@ -1497,7 +1497,8 @@ están, se piden una vez y se guardan (`guardarDispositivos`).
 
 - `INVERSOR` (MIN con el medidor conectado): cada registro trae `pacToLocalLoad`
   (consumo), `pacToUserTotal` (de la red) y `pacToGridTotal` (a la red). Curva
-  completa, también de noche.
+  completa de noche solo en los equipos que siguen prendidos; la mayoría se apaga
+  sin sol (ver *La noche*).
 - `MEDIDOR` (MAX, o MIN cuyo medidor no reporta): el medidor da `activePower`,
   que **es solo lo que se toma de la red: al exportar marca 0, no negativo**. Lo
   exportado se deduce de cuánto sube `reverseActiveTodayEnergy`, que avanza de a
@@ -1507,6 +1508,43 @@ están, se piden una vez y se guardan (`guardarDispositivos`).
 - `null`: sin medidor, o medidor que no le llega al inversor (todo en 0 en el
   día). Consumo, red y exportado quedan null y la pantalla lo dice. Caso real:
   Pablo Stratta.
+
+**La noche** (`energia/noche.service.ts`, modelo `FvNoche`, `completarNoche()`
+en `curva.ts`). El datalogger se alimenta del inversor: en la mayoría de las
+plantas (55 de las 66 con medición, contadas el 3-nov-2026) deja
+de mandar datos al atardecer y vuelve al amanecer. Los contadores del inversor
+**no suman la noche**, ni los "de hoy" ni los totales (`elocalLoadTotal` queda
+igual de 19:30 a 05:40). El medidor sí la cuenta, en `meter_data`, y la informa al
+amanecer: **su primer `positiveActiveTodayEnergy` del día es todo lo comprado
+desde su último dato de ayer**, no desde la medianoche. Se verificó de dos formas:
+
+- Yamandú Ramos, 3 días seguidos: último − primero del medidor = lo que dice el
+  inversor, exacto (por ejemplo 13,1 − 6,6 = 6,5).
+- Susana Guerrico, octubre: el medidor suma 380 kWh comprados, la factura de UTE
+  383 y el inversor 144. Que cierre con la factura es lo que indica que el primer
+  valor trae toda la noche (si arrancara a la medianoche, faltaría lo de la tarde).
+  Es una deducción, no algo que documente Growatt.
+
+La corrida del monitoreo de las 8, después de las curvas de ayer, guarda en
+`FvNoche` la noche que terminó hoy y la de ayer (`reconstruirNoches()`; se apaga
+con `ENERGIA_NOCHE=false`). Se salta las plantas que reportan de noche, un primer
+dato después de las 11 (estuvo sin comunicar) y huecos de menos de 2 o más de 20
+horas. Son hasta 3 consultas por planta, con perpage=1.
+
+La curva guardada **no cambia**: `obtenerCurvaDia()` agrega los tramos al leerla,
+con la potencia promedio de la noche y `estimado: true`. **Es un promedio: se sabe
+cuánto, no a qué hora.** Un termotanque de madrugada se ve como un consumo parejo.
+Un día usa dos noches: la que termina ese día y la que termina el siguiente,
+repartidas por horas (por eso lo de la tarde de hoy aparece recién mañana). El
+flujo de energía usa el último dato real, nunca un tramo estimado.
+
+Con medidor en el inversor, el kWh de la noche se suma al consumo y a la compra
+del día (`actualizarTotalesConNoche()`, en `ReporteFvGeneracionDiaria`; se puede
+repetir porque parte de los totales de la curva). Con medidor aparte no se suma:
+ese contador ya la trae, aunque quede en el día en que amanece. **Limitación:** el
+medidor marca más exportación que el inversor (Guerrico, octubre: 378 contra
+331 kWh) y esto no lo corrige: la exportación sigue saliendo del inversor. Para ir
+hacia atrás, `scripts/reportes-fv/backfill-noches.ts`.
 
 **Los totales del día** (`totalDelContador`). Salen de los contadores "de hoy"
 del equipo (`eacToday`, `elocalLoadToday`, `etoUserToday`, `etoGridToday`; en el

@@ -287,6 +287,7 @@ export function registerPlantasTools(server: McpServer, user: McpUser) {
           ["Totales del día", `genera ${kwh(c.resumen.generacionKwh)} · consumo ${kwh(c.resumen.consumoKwh)} · compra ${kwh(c.resumen.importacionKwh)} · exporta ${kwh(c.resumen.exportacionKwh)}`],
           ["Medición de consumo", conMedidor ? (c.origenMedicion === "INVERSOR" ? "medidor conectado al inversor (curva completa)" : "medidor aparte (menos fino)") : "sin medidor: solo generación"],
           ["Día completo", c.completo ? "sí" : "no, es el día en curso"],
+          ["Consumo de la noche", c.nocheKwh != null ? `${kwh(c.nocheKwh)}: el inversor estaba apagado; en las horas de noche se muestra el promedio, no la forma real` : null],
           ["⚠️ Exporta sin generar", nocturnas.length ? `${nocturnas.length} puntos de 5 min: imposible, el medidor está al revés o mal conectado` : null],
           ["⚠️ Consumo cero sin sol", consumoCeroNoche > 12 ? `${consumoCeroNoche} puntos de 5 min: una casa nunca consume cero; el medidor no está midiendo la casa` : null],
         ]),
@@ -298,7 +299,7 @@ export function registerPlantasTools(server: McpServer, user: McpUser) {
       if (detalle_5_min) {
         bloques.push(
           "CADA 5 MINUTOS (W): hora · genera · consumo · compra · exporta\n" +
-            (c.puntos as any[]).map((p) => `${p.h} · ${p.gen ?? "—"} · ${p.consumo ?? "—"} · ${p.deRed ?? "—"} · ${p.aRed ?? "—"}`).join("\n"),
+            (c.puntos as any[]).map((p) => `${p.h} · ${p.gen ?? "—"} · ${p.consumo ?? "—"} · ${p.deRed ?? "—"} · ${p.aRed ?? "—"}${p.estimado ? " · promedio de la noche" : ""}`).join("\n"),
         );
       }
       return texto(...bloques);

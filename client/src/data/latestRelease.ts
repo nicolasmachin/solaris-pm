@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "14.1",
+  date: "5 de noviembre de 2026",
+  sections: [
+    {
+      title: "Generación y consumo: ahora se ve la noche",
+      items: [
+        "En los inversores que se apagan sin sol, la curva muestra el consumo de la noche en una línea punteada, y el consumo y la compra a UTE de cada día ya incluyen la noche.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_14_0: Release = {
   version: "14.0",
   date: "3 de noviembre de 2026",
   sections: [
@@ -1082,6 +1095,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.0",
+    shortDate: "3 nov",
+    highlights: RELEASE_14_0.sections.map((sec) => sec.title),
+  },
   {
     version: "13.9",
     shortDate: "2 nov",

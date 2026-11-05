@@ -162,7 +162,10 @@ export function FlujoEnergia({ fuentes, claveCache }: { fuentes: FuentesEnergia;
 
   if (!curva || !curva.disponible || curva.puntos.length === 0) return null;
 
-  const p: PuntoCurva = curva.puntos[curva.puntos.length - 1];
+  // El último dato real: las horas de noche son un promedio, no "ahora".
+  const reales = curva.puntos.filter((x) => !x.estimado);
+  if (reales.length === 0) return null;
+  const p: PuntoCurva = reales[reales.length - 1];
   const conMedicion = curva.origenMedicion !== null;
   const atraso = minutosAhoraUy() - (minutos(p.h) + 5);
   const viejo = atraso > VIEJO_MIN;

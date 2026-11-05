@@ -607,6 +607,40 @@ export async function muestrasMedidorCurva(
   return out.sort((a, b) => a.ts.getTime() - b.ts.getTime());
 }
 
+/** Una lectura del medidor aparte: cuándo y cuánto lleva comprado "hoy". */
+export interface LecturaMedidor {
+  ts: Date;
+  deRedHoyKwh: number;
+}
+
+/**
+ * Lectura más nueva del medidor en un día y cuántas tiene. Growatt devuelve las
+ * más nuevas primero, así que con perpage=1 alcanza una consulta (y la última
+ * página es la más vieja).
+ */
+async function lecturaMedidor(datalogSn: string, address: string, dia: string, page: number) {
+  const data = await enFila(() =>
+    get("device/ammeter/meter_data", { datalog_sn: datalogSn, address, start_date: dia, end_date: dia, page, perpage: 1 }),
+  );
+  const r = data?.meter_data?.[0];
+  const ts = parsearFechaGrowatt(r?.timeText ?? r?.time);
+  const deRedHoyKwh = numOrNull(r?.positiveActiveTodayEnergy);
+  const count = Number(data?.count ?? 0);
+  return { count, lectura: ts && deRedHoyKwh !== null ? ({ ts, deRedHoyKwh } as LecturaMedidor) : null };
+}
+
+/** Última lectura del medidor en un día (null si ese día no mandó nada). */
+export async function ultimaLecturaMedidor(datalogSn: string, address: string, dia: string) {
+  return (await lecturaMedidor(datalogSn, address, dia, 1)).lectura;
+}
+
+/** Primera lectura del medidor en un día (null si ese día no mandó nada). */
+export async function primeraLecturaMedidor(datalogSn: string, address: string, dia: string) {
+  const { count, lectura } = await lecturaMedidor(datalogSn, address, dia, 1);
+  if (count <= 1) return lectura;
+  return (await lecturaMedidor(datalogSn, address, dia, count)).lectura;
+}
+
 export const growattPausaCurvaMs = PAUSA_CURVA_MS;
 export { enFila as growattEnFilaCurva };
 

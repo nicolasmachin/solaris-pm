@@ -23,6 +23,8 @@ export interface PuntoCurva {
   consumo: number | null;
   deRed: number | null;
   aRed: number | null;
+  /** Hora de noche sin datos del inversor: el promedio de la noche, no una medición. */
+  estimado?: true;
 }
 
 export interface CurvaDia {
@@ -35,6 +37,7 @@ export interface CurvaDia {
   origenMedicion: OrigenMedicion | null;
   completo: boolean;
   actualizadoEn: string | null;
+  nocheKwh: number | null;
 }
 
 export interface BarraEnergia {

@@ -1,5 +1,14 @@
 # Novedades
 
+## v14.1
+
+### 5 de noviembre de 2026
+
+#### Generación y consumo: ahora se ve la noche
+
+- En los inversores que se apagan sin sol, la curva del día cortaba al atardecer y volvía al amanecer. Ahora, en **Generación y consumo → Hora**, también en el portal, se ve el consumo de la noche en una **línea punteada**: el medidor lo cuenta aunque el inversor esté apagado. Se sabe cuánto se consumió, no a qué hora, así que se dibuja el promedio de esas horas.
+- El consumo y la compra a UTE de cada día **ahora incluyen la noche**: antes quedaban muy por debajo de la factura. Se actualiza solo todas las mañanas, para todas las plantas Growatt.
+
 ## v14.0
 
 ### 3 de noviembre de 2026

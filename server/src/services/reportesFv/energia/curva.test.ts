@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { acumuladoDelDia, armarCurva, medidorEnInversor, resumenEnergia, totalDelContador } from "./curva.js";
+import { acumuladoDelDia, armarCurva, medidorEnInversor, resumenEnergia, totalDelContador, completarNoche } from "./curva.js";
 import type { MuestraInversor, MuestraMedidorCurva } from "../growatt/client.js";
 
 // 12:00 de Uruguay = 15:00 UTC.
@@ -109,4 +109,26 @@ test("inversor que manda varios registros por tramo: la producción no se infla"
   ];
   const c = armarCurva({ inversores: [muestras], medidor: null });
   assert.equal(c.totales.generacionKwh, 0.5);
+});
+
+test("noche: la madrugada y lo que queda del día llevan el promedio, y el kWh se reparte por horas", () => {
+  const real = [{ h: "06:00", gen: 100, consumo: 300, deRed: 200, aRed: 0 }];
+  const antes = { kwh: 10, desde: new Date("2026-11-02T19:00:00-03:00"), hasta: new Date("2026-11-03T05:00:00-03:00") };
+  const despues = { kwh: 5, desde: new Date("2026-11-03T22:00:00-03:00"), hasta: new Date("2026-11-04T07:00:00-03:00") };
+  const { puntos, kwh } = completarNoche("2026-11-03", real, antes, despues);
+  // 10 kWh en 10 h: 1000 W, y 5 de esas horas caen en el día. 5 kWh en 9 h: 2 h en el día.
+  assert.equal(kwh, 6.11);
+  assert.deepEqual(puntos[0], { h: "00:00", gen: 0, consumo: 1000, deRed: 1000, aRed: 0, estimado: true });
+  assert.equal(puntos.find((p) => p.h === "04:55")?.consumo, 1000);
+  assert.equal(puntos.find((p) => p.h === "05:00"), undefined);
+  assert.equal(puntos.find((p) => p.h === "06:00")?.estimado, undefined);
+  assert.equal(puntos.find((p) => p.h === "22:00")?.consumo, 556);
+  assert.equal(puntos[puntos.length - 1].h, "23:55");
+});
+
+test("noche: no pisa un dato real, y sin noche la curva queda igual", () => {
+  const real = [{ h: "04:00", gen: 0, consumo: 7, deRed: 7, aRed: 0 }];
+  const antes = { kwh: 1, desde: new Date("2026-11-03T03:00:00-03:00"), hasta: new Date("2026-11-03T05:00:00-03:00") };
+  assert.equal(completarNoche("2026-11-03", real, antes, null).puntos.find((p) => p.h === "04:00")?.consumo, 7);
+  assert.deepEqual(completarNoche("2026-11-03", real, null, null), { puntos: real, kwh: 0 });
 });

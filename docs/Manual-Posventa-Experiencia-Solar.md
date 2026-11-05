@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.38 · del 01/11/26
+**Voltia · Uruguay** · Versión 1.39 · del 05/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -2056,7 +2056,7 @@ capítulo aparte: repiten lo que ya se explicó, con la pantalla al lado.
 | Los pasos de la etapa | La lista de pasos, con los que tienen plazo resaltados, y el botón de plantillas | Dentro de la ficha |
 | Los mensajes modelo | El panel de plantillas: se elige a la izquierda, se lee a la derecha, se copia | Botón **Plantillas** de la etapa |
 | El trámite de UTE | Los hitos con sus fechas — lo mismo que ve el cliente | Dentro de la ficha |
-| La generación y el consumo | La curva del día, los días, los meses y los años, con el flujo de energía de ese momento arriba y cuánto se autoconsume, se exporta y se importa | Dentro de la ficha (**Generación y consumo**) |
+| La generación y el consumo | La curva del día, los días, los meses y los años, con el flujo de energía de ese momento arriba y cuánto se autoconsume, se exporta y se importa. De noche la mayoría de los inversores se apaga: el consumo de esas horas va en línea punteada y es un promedio, porque se sabe cuánto se consumió pero no a qué hora | Dentro de la ficha (**Generación y consumo**) |
 | El portal del cliente | Su pantalla tal cual la ve él | Se abre en modo cliente desde el listado (el ojito) o desde la ficha (**Ver como el cliente**) |
 | Los reportes mensuales | El tablero desde donde salen, con los tres pasos numerados | Experiencia Solar → Reportes FV |
 | El listado de clientes | Agrupado por etapa y ordenado por prioridad de contacto | Experiencia Solar → Generadores |
@@ -2072,6 +2072,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.39 | 5 de noviembre de 2026 | En la curva del día se ve el consumo de la noche, en línea punteada, y el consumo y la compra a UTE de cada día ya la incluyen. |
 | 1.38 | 1 de noviembre de 2026 | Se agrega el WhatsApp general dentro de Voltia PM: la bandeja de Experiencia Solar que puede usar cualquiera del área, qué se le puede mandar al cliente, cómo se asocia una conversación de otro número, y la alerta de la ficha cuando el cliente escribió y nadie le contestó. |
 | 1.37 | 30 de octubre de 2026 | El mensaje «Alta en los reportes mensuales» ya no le dice al cliente que es el único correo automático que va a recibir, porque ahora también puede recibir avisos automáticos. |
 | 1.36 | 29 de octubre de 2026 | Voltia PM puede mandarle avisos automáticos al cliente cuando pasa un hecho del proyecto; los define Gerencia. Se agrega qué tiene que saber Experiencia Solar: el aviso queda en el historial, puede dejar hecho un paso del recorrido y no reemplaza a la persona. Cambia la regla de que el sistema nunca le escribe solo al cliente. |

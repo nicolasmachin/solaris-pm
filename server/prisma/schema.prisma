@@ -808,6 +808,7 @@ model Project {
   reporteFvEmisiones              ReporteFvEmision[]
   reporteFvGeneracionesDiarias    ReporteFvGeneracionDiaria[]
   fvCurvasDia                     FvCurvaDia[]
+  fvNoches FvNoche[]
   growattPlant                    GrowattPlant?
   soporteEstados                  SoporteEstadoPlanta[]
   soporteEstadosHuawei            SoporteEstadoHuawei[]
@@ -4946,6 +4947,25 @@ model FvCurvaDia {
 
   @@unique([projectId, fecha])
   @@map("fv_curvas_dia")
+}
+
+// La noche de una planta cuyo inversor se apaga sin sol: `fecha` es el día en
+// que TERMINA (el amanecer). El inversor no manda nada entre `desde` y `hasta`,
+// pero el medidor sigue contando: su primer "comprado hoy" del día es lo que se
+// compró en todo ese hueco. Se guarda una sola vez. Ver energia/noche.service.ts.
+model FvNoche {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fecha     DateTime @db.Date
+  kwh       Decimal  @db.Decimal(10, 2)
+  // Último dato del medidor antes de la noche y primero después.
+  desde     DateTime @db.Timestamptz(6)
+  hasta     DateTime @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([projectId, fecha])
+  @@map("fv_noches")
 }
 
 enum FvDiagnostico {
