@@ -792,6 +792,15 @@ Ahora el identificador de ingreso sale de una cascada (`resolverIdentificador`):
 3. **Un alias derivado del nombre** (`maria.fernandez`), con sufijo numérico si ya
    está tomado.
 
+**Alta masiva** (`server/scripts/alta-masiva-portal.ts`). Crea el usuario a los
+proyectos no archivados que no lo tienen, sin escribirle a nadie. Por defecto
+simula; escribe con `--aplicar --actor=<mail>` y se saltea códigos con
+`--excluir=`. Se puede volver a correr. El mail sale del proyecto, del lead o del
+destinatario del reporte. Con mail, la contraseña es al azar y **sin la marca de
+temporal**, porque entra con el código por mail: con la marca, el portal lo obliga a
+cambiarla y le pide la actual, que no conoce. Sin mail, queda con la marca y
+necesita **Reenviar acceso** para entrar.
+
 Detalles que importan:
 
 - El campo `User.email` pasó a ser **opcional**, y se agregó `User.username`

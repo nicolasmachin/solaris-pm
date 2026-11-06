@@ -31,6 +31,8 @@ export type CreatePortalUserParams = {
   /** Alias explícito. Si viene, gana sobre la cascada automática. */
   username?: string | null;
   temporaryPassword: string;
+  /** false cuando nadie conoce la contraseña y el cliente entra con el código por mail. */
+  passwordTemporary?: boolean;
   phone?: string | null;
   actorUserId: string;
 };
@@ -234,7 +236,7 @@ export async function createPortalUserForProject(
         password: hashed,
         phone: params.phone?.trim() || null,
         roleId: role.id,
-        passwordTemporary: true,
+        passwordTemporary: params.passwordTemporary ?? true,
       },
     });
     await tx.projectClient.create({
