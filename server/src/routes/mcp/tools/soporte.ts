@@ -83,4 +83,43 @@ export function registerSoporteTools(server: McpServer, user: McpUser) {
       );
     },
   );
+
+  server.registerTool(
+    "responder_ticket",
+    {
+      title: "Responder dentro de un ticket",
+      description:
+        "Agrega un comentario a un ticket ya abierto. Por defecto es interno: solo lo ve el equipo. " +
+        "Con `para_el_cliente: true` lo ve el cliente en el portal y, si él abrió el reclamo, le llega " +
+        "un aviso: escribirlo para él. Sin `confirmar: true` solo muestra cómo quedaría.",
+      inputSchema: {
+        ticket_id: z.string().min(1),
+        comentario: z.string().trim().min(1).max(4000),
+        para_el_cliente: z.boolean().optional().describe("Si lo ve el cliente. Por defecto, no."),
+        confirmar: z.boolean().optional().describe("true para comentar de verdad."),
+      },
+    },
+    async ({ ticket_id, comentario, para_el_cliente, confirmar }) => {
+      await requireAnyPermission(user, [
+        { module: Module.TICKETS, action: Action.COMMENT },
+        { module: Module.TICKETS, action: Action.EDIT },
+      ]);
+      const t = await prisma.ticket.findFirst({
+        where: { id: ticket_id, deletedAt: null },
+        select: { titulo: true, estado: true, project: { select: { clientName: true } } },
+      });
+      if (!t) return texto(`No encontré ningún ticket con el id ${ticket_id}.`);
+
+      const vista = campos([
+        ["Cliente", t.project.clientName],
+        ["Ticket", `"${t.titulo}" (${t.estado.toLowerCase()})`],
+        ["Quién lo ve", para_el_cliente ? "EL CLIENTE, en el portal" : "Solo el equipo"],
+        ["Comentario", comentario],
+      ]);
+      if (!confirmar) return texto(vista, "Vista previa: no se comentó nada. Para comentar, volver a llamar con confirmar: true.");
+
+      await agregarComentario({ ticketId: ticket_id, autorId: user.id, contenido: comentario, esInterno: !para_el_cliente });
+      return texto(vista, "Listo: comentario agregado.");
+    },
+  );
 }

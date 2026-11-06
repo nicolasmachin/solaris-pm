@@ -80,7 +80,8 @@ invalidar un token antes de que expire**.
 |---|---|---|
 | `POST /auth/login` | Devuelve `{ token, user }` | ninguno |
 | `POST /auth/login-code/request` | Manda el código al mail; devuelve el mail tapado | ninguno |
-| `POST /auth/login-code/verify` | Con el código correcto devuelve `{ token, user }` | ninguno |
+| `POST /auth/login-code/sugerencias` | Con el nombre, devuelve el comienzo de hasta 3 mails de clientes del portal que coinciden. Límite de 10 pedidos cada 10 minutos por IP | ninguno |
+| `POST /auth/login-code/verify` | Con el código correcto devuelve `{ token, user }`. Si tenía contraseña temporal, la reemplaza por una al azar y baja la marca | ninguno |
 | `POST /auth/change-password` | Cambia la contraseña y baja `passwordTemporary` | `authenticate` |
 
 Se registran **sin el prefijo `/api`** (`server/src/routes/index.ts`). No hay

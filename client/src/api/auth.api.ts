@@ -13,6 +13,11 @@ export async function requestLoginCode(email: string): Promise<{ sentTo: string;
   return data;
 }
 
+export async function suggestLoginEmails(nombre: string): Promise<string[]> {
+  const { data } = await apiClient.post<{ sugerencias: string[] }>("/auth/login-code/sugerencias", { nombre });
+  return data.sugerencias;
+}
+
 export async function verifyLoginCode(email: string, code: string): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>("/auth/login-code/verify", { email, code });
   return data;

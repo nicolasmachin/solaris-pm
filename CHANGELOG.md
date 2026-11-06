@@ -4,6 +4,15 @@
 
 ### 5 de noviembre de 2026
 
+#### Portal: más fácil entrar sin acordarse de nada
+
+- Si un cliente escribe un mail que no reconocemos, la pantalla le ofrece buscar por **su nombre y apellido** y le muestra el comienzo de su mail, para que se dé cuenta cuál es.
+- Quien entra con el **código por mail** ya no queda trabado pidiéndole la contraseña temporal.
+
+#### Asesores
+
+- Se puede responder dentro de un ticket desde el chat conectado a Voltia PM, con nota interna o visible para el cliente.
+
 #### Generación y consumo: ahora se ve la noche
 
 - En los inversores que se apagan sin sol, la curva del día cortaba al atardecer y volvía al amanecer. Ahora, en **Generación y consumo → Hora**, también en el portal, se ve el consumo de la noche en una **línea punteada**: el medidor lo cuenta aunque el inversor esté apagado. Se sabe cuánto se consumió, no a qué hora, así que se dibuja el promedio de esas horas.

@@ -284,6 +284,7 @@ Es la única herramienta que responde sin que haya que nombrar un cliente. Con
 | `historial_proyecto` | `OPERACIONES:VIEW` | El timeline unificado: etapas, comentarios, interacciones, traspasos, tickets y encuestas. Los comentarios salen **enteros** (`getClienteTimeline()` no los recorta; verificado el 21/10/2026): lo que limita es la cantidad de eventos, 20 por defecto y hasta 50 con `limite`. |
 | `pendientes_proyecto` | `OPERACIONES:VIEW` | Los pendientes de la obra **de todo el equipo**, no solo los propios. |
 | `comentar_proyecto` | `OPERACIONES:COMMENT` | Deja un comentario en el historial de la obra. |
+| `responder_ticket` | `TICKETS:COMMENT` o `TICKETS:EDIT` | Comenta un ticket abierto. Interno por defecto; con `para_el_cliente` lo ve el cliente. Sin `confirmar`, solo vista previa. |
 
 Se leen los modelos con los mismos servicios que usa la aplicación
 (`getDisplayStage`, `countdownForStage`, `serializeUteProcess`,

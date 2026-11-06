@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, getMe, requestLoginCode, verifyLoginCode } from "../api/auth.api";
+import { login, getMe, requestLoginCode, suggestLoginEmails, verifyLoginCode } from "../api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { Button } from "../components/ui/Button";
 import type { ApiError, AuthResponse } from "../types/api.types";
@@ -18,6 +18,10 @@ export function Login() {
   const [mode, setMode] = useState<"password" | "code">("password");
   const [code, setCode] = useState("");
   const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
+  // Cuando el mail no existe: con su nombre le mostramos el comienzo de los que coinciden.
+  const [mostrarAyudaMail, setMostrarAyudaMail] = useState(false);
+  const [nombre, setNombre] = useState("");
+  const [sugerencias, setSugerencias] = useState<string[] | null>(null);
 
   // Already authenticated → ruteo según rol
   useEffect(() => {
@@ -47,6 +51,21 @@ export function Login() {
       const r = await requestLoginCode(email);
       setCodeSentTo(r.sentTo);
       setCode("");
+      setMostrarAyudaMail(false);
+    } catch (err) {
+      mostrarError(err);
+      if (axios.isAxiosError(err) && err.response?.status !== 429) setMostrarAyudaMail(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function buscarMail() {
+    if (!nombre.trim()) return;
+    setError(null);
+    setLoading(true);
+    try {
+      setSugerencias(await suggestLoginEmails(nombre));
     } catch (err) {
       mostrarError(err);
     } finally {
@@ -59,6 +78,8 @@ export function Login() {
     setError(null);
     setCodeSentTo(null);
     setCode("");
+    setMostrarAyudaMail(false);
+    setSugerencias(null);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -239,6 +260,54 @@ export function Login() {
               {mode === "code" && !codeSentTo ? "Mandarme el código" : "Entrar"}
             </Button>
           </form>
+
+          {mode === "code" && !codeSentTo && mostrarAyudaMail && (
+            <div className="mt-4 pt-4 border-t border-[var(--color-border)] space-y-2">
+              <label
+                htmlFor="nombre"
+                className="block text-xs font-medium text-[var(--color-text-secondary)]"
+              >
+                ¿No te acordás de tu mail? Escribí tu nombre y apellido
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="nombre"
+                  type="text"
+                  autoComplete="name"
+                  value={nombre}
+                  onChange={(e) => {
+                    setNombre(e.target.value);
+                    setSugerencias(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void buscarMail();
+                    }
+                  }}
+                  className="flex-1 min-w-0 px-3 py-2 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)]"
+                />
+                <Button type="button" onClick={() => void buscarMail()} disabled={loading} size="sm">
+                  Buscar
+                </Button>
+              </div>
+              {sugerencias && sugerencias.length > 0 && (
+                <div className="text-xs text-[var(--color-text-secondary)]">
+                  <p>Tu mail podría ser uno de estos. Escribilo completo arriba:</p>
+                  <ul className="mt-1 space-y-0.5 font-medium text-[var(--color-text-primary)]">
+                    {sugerencias.map((s) => (
+                      <li key={s}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sugerencias && sugerencias.length === 0 && (
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  No encontramos ese nombre. Escribile a tu contacto de Voltia y te ayudamos.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="mt-4 text-center text-xs space-y-2">
             {mode === "password" ? (

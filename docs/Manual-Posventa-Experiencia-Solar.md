@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.39 · del 05/11/26
+**Voltia · Uruguay** · Versión 1.40 · del 05/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -374,9 +374,9 @@ que resetearla con el botón de reenviar acceso.
 **Si el cliente se olvida la contraseña y tiene mail, no hace falta resetearla.**
 En la pantalla de entrada del portal puede tocar **Entrar con un código por
 mail, sin contraseña**: escribe su mail, le llega un código de 6 números y entra
-con eso. El código vence a los 10 minutos y sirve una sola vez. Si escribe mal el
-usuario, la pantalla le avisa que ese usuario no existe; si erra la contraseña, le
-avisa eso. Y la sesión ya no se cierra a la semana: dura mientras lo use, y solo
+con eso. El código vence a los 10 minutos y sirve una sola vez. Si no se acuerda de
+su mail, al errarlo la pantalla le ofrece buscar por su nombre y apellido y le muestra
+el comienzo de los que coinciden. Si erra la contraseña, le avisa eso. Y la sesión ya no se cierra a la semana: dura mientras lo use, y solo
 le pide entrar de nuevo si pasan 10 días sin abrirlo.
 
 **Qué gana el cliente con el portal:** ve el avance de su trámite, la
@@ -2072,6 +2072,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.40 | 5 de noviembre de 2026 | El cliente que no se acuerda de su mail lo puede buscar con su nombre en la pantalla de entrada. Quien entra con el código ya no queda obligado a cambiar la contraseña temporal. |
 | 1.39 | 5 de noviembre de 2026 | En la curva del día se ve el consumo de la noche, en línea punteada, y el consumo y la compra a UTE de cada día ya la incluyen. |
 | 1.38 | 1 de noviembre de 2026 | Se agrega el WhatsApp general dentro de Voltia PM: la bandeja de Experiencia Solar que puede usar cualquiera del área, qué se le puede mandar al cliente, cómo se asocia una conversación de otro número, y la alerta de la ficha cuando el cliente escribió y nadie le contestó. |
 | 1.37 | 30 de octubre de 2026 | El mensaje «Alta en los reportes mensuales» ya no le dice al cliente que es el único correo automático que va a recibir, porque ahora también puede recibir avisos automáticos. |

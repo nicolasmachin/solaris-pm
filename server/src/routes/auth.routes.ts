@@ -9,6 +9,8 @@ import { authenticate, signToken } from "../middleware/auth.middleware.js";
 import { sendEmail } from "../services/email.service.js";
 import { registrarIntento } from "../services/login-attempts.service.js";
 import { AppError, badRequest, unauthorized } from "../utils/errors.js";
+import { sugerirMails, taparMail } from "../utils/sugerir-mail.js";
+import { tooManyAttempts } from "./mcp/rate-limit.js";
 
 // El campo se sigue llamando `email` por compatibilidad con el cliente y con
 // cualquier integración vieja, pero acepta las dos cosas: el mail completo o el
@@ -23,6 +25,8 @@ const loginSchema = z
 const pedirCodigoSchema = z
   .object({ email: z.string().trim().min(1, "Ingresá tu usuario o tu email") })
   .strict();
+
+const sugerirMailSchema = z.object({ nombre: z.string().trim().min(1).max(200) }).strict();
 
 const verificarCodigoSchema = z
   .object({
@@ -202,9 +206,21 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     }
 
     // Se muestra el mail parcialmente tapado, para que la persona sepa a dónde mirar.
-    const [local, dominio] = user.email.split("@");
-    const tapado = `${local.slice(0, 2)}${"•".repeat(Math.max(local.length - 2, 1))}@${dominio}`;
-    return { sentTo: tapado, minutes: CODIGO_MINUTOS };
+    return { sentTo: taparMail(user.email), minutes: CODIGO_MINUTOS };
+  });
+
+  // El cliente no se acuerda de su mail: con su nombre le mostramos el comienzo de
+  // los que coinciden. Solo clientes del portal, nunca el equipo, y con límite por IP.
+  app.post("/auth/login-code/sugerencias", async (request) => {
+    const body = sugerirMailSchema.parse(request.body);
+    if (tooManyAttempts(`sugerencias:${request.ip}`)) {
+      throw new AppError(429, "DEMASIADOS_INTENTOS", "Probaste muchas veces. Esperá unos minutos o escribile a Voltia.");
+    }
+    const clientes = await prisma.user.findMany({
+      where: { deletedAt: null, email: { not: null }, role: { name: "CLIENT" } },
+      select: { name: true, email: true },
+    });
+    return { sugerencias: sugerirMails(clientes, body.nombre) };
   });
 
   // Entrar sin contraseña, paso 2: con el código correcto entra igual que con la contraseña.
@@ -255,6 +271,17 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
     await prisma.loginCode.update({ where: { id: pendiente.id }, data: { usedAt: new Date() } });
     await registrarIntento(request, { ...intento, userId: user.id, reason: null });
+
+    // Probó que el mail es suyo. Si seguía con la contraseña temporal, la app lo
+    // obligaría a cambiarla pidiéndole la actual, que puede no conocer: se la
+    // reemplazamos por una al azar y deja de ser temporal.
+    if (user.passwordTemporary) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { password: await bcrypt.hash(crypto.randomBytes(24).toString("base64url"), 10), passwordTemporary: false },
+      });
+      return respuestaDeIngreso({ ...user, passwordTemporary: false });
+    }
     return respuestaDeIngreso(user);
   });
 

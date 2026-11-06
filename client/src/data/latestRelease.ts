@@ -27,6 +27,17 @@ export const LATEST_RELEASE: Release = {
   date: "5 de noviembre de 2026",
   sections: [
     {
+      title: "Portal: más fácil entrar sin acordarse de nada",
+      items: [
+        "Si un cliente escribe un mail que no reconocemos, la pantalla le ofrece buscar por su nombre y apellido y le muestra el comienzo de su mail.",
+        "Quien entra con el código por mail ya no queda trabado pidiéndole la contraseña temporal.",
+      ],
+    },
+    {
+      title: "Asesores",
+      items: ["Se puede responder dentro de un ticket desde el chat conectado a Voltia PM, con nota interna o visible para el cliente."],
+    },
+    {
       title: "Generación y consumo: ahora se ve la noche",
       items: [
         "En los inversores que se apagan sin sol, la curva muestra el consumo de la noche en una línea punteada, y el consumo y la compra a UTE de cada día ya incluyen la noche.",
