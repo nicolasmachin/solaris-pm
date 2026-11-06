@@ -8,6 +8,10 @@
 
 - Los clientes que vinieron de la planilla ahora muestran su **próximo mantenimiento** y reciben la encuesta de aniversario, contando desde la fecha de entrega.
 
+
+#### Arreglos
+
+- **Pagos a instaladores:** una obra que tuvo un pago de la regla vieja, borrado en la limpieza de octubre, ahora recupera su pago cuando se agenda con un equipo tercerizado. Antes quedaba sin pago y no aparecía en la pantalla.
 ## v14.1
 
 ### 5 de noviembre de 2026

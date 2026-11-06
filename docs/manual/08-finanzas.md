@@ -1277,6 +1277,14 @@ falla, la agenda igual queda guardada).
   instaladores.
 - Si el proyecto ya tuvo un pago alguna vez, **aunque esté borrado**, no se crea
   otro (`projectId` es `@unique`, y además es la regla: solo la primera vez).
+- **Excepción:** los pagos de la regla vieja (nacidos antes del 10-oct-2026, al
+  ganar la venta) que se borraron en la limpieza del 16-oct: esa obra nunca tuvo
+  pago por agendarse, así que al agendarla con un tercerizado **se recupera** ese
+  pago con el monto de la propuesta, quien cobra por el equipo y el primer día de
+  obra (`pagoBorradoRecuperable()`). Lo que alguien borra a mano después de esa
+  fecha no vuelve solo.
+- **Lo que se ve en "Sin asignar":** solo pagos ya creados y sin instalador. Una
+  obra sin pago creado no aparece en ningún filtro.
 - Al configurar quién cobra por un equipo (`PATCH /teams/:id`),
   `asignarPagosSinInstaladorDelEquipo()` asigna los pagos de sus obras que
   nacieron **sin** instalador. Los ya asignados no se tocan.

@@ -7,7 +7,7 @@ import { test } from "node:test";
 
 import { Prisma } from "@prisma/client";
 
-import { calcularSaldo, readManoDeObraFromSnapshot } from "./installer-payment.service.js";
+import { calcularSaldo, pagoBorradoRecuperable, readManoDeObraFromSnapshot } from "./installer-payment.service.js";
 
 // ─── Monto congelado de la propuesta ─────────────────────────────────────────
 
@@ -84,4 +84,16 @@ test("si se pagó de más el saldo queda negativo pero el estado es PAGADO", () 
   const r = calcularSaldo(500, [mov(600)]);
   assert.equal(r.status, "PAGADO");
   assert.equal(r.saldoUsd, -100);
+});
+
+// ─── Pago borrado que vuelve al agendar ──────────────────────────────────────
+
+test("se recupera solo el pago borrado de la regla vieja", () => {
+  const borrado = new Date("2026-10-16T16:41:00Z");
+  // Nació al ganar la venta y se borró en la limpieza.
+  assert.equal(pagoBorradoRecuperable({ createdAt: new Date("2026-09-29"), deletedAt: borrado }), true);
+  // Nació con el calendario y alguien lo borró a mano: no vuelve solo.
+  assert.equal(pagoBorradoRecuperable({ createdAt: new Date("2026-10-20"), deletedAt: new Date("2026-10-25") }), false);
+  // Vivo: nada que recuperar.
+  assert.equal(pagoBorradoRecuperable({ createdAt: new Date("2026-09-29"), deletedAt: null }), false);
 });

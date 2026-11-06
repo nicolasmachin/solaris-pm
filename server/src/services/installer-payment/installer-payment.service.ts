@@ -366,6 +366,17 @@ export async function createInstallerPaymentForProject(input: {
 
 export type PagoAlAgendarResult = "creado" | "ya_tenia_pago" | "no_es_tercerizado";
 
+/** Desde esta fecha el pago lo crea el calendario; antes nacía al ganar la venta. */
+const INICIO_PAGO_POR_CALENDARIO = new Date("2026-10-10T00:00:00-03:00");
+
+/**
+ * ¿Es un pago borrado de la regla vieja? Los que nacieron con el calendario y
+ * después alguien borró a mano no vuelven solos: esa decisión se respeta.
+ */
+export function pagoBorradoRecuperable(p: { deletedAt: Date | null; createdAt: Date }): boolean {
+  return p.deletedAt !== null && p.createdAt < INICIO_PAGO_POR_CALENDARIO;
+}
+
 /**
  * La PRIMERA vez que una obra queda agendada con un equipo TERCERIZADO se crea
  * su pago, asignado a quien cobra por ese equipo (`Team.installerUserId`; sin
@@ -376,6 +387,11 @@ export type PagoAlAgendarResult = "creado" | "ya_tenia_pago" | "no_es_tercerizad
  * cambiar de equipo o borrar la agenda no mueve ni quita el pago; si hay que
  * corregirlo, se corrige a mano en Pagos a instaladores. Por eso si el proyecto
  * ya tuvo un pago alguna vez —aunque esté borrado— no se crea otro.
+ *
+ * La excepción son los pagos de la regla vieja que se borraron en la limpieza
+ * del 16-oct-2026 (`pagoBorradoRecuperable`): nacieron al ganar la venta, no por
+ * agendar, así que esa obra nunca se agendó con pago. Como `projectId` es único,
+ * no se crea otro: se recupera ese, con los datos de hoy.
  */
 export async function crearPagoAlAgendar(input: {
   projectId: string;
@@ -393,15 +409,42 @@ export async function crearPagoAlAgendar(input: {
         segments: { orderBy: { startDate: "asc" }, take: 1, select: { startDate: true } },
       },
     }),
-    prisma.installerPayment.findUnique({ where: { projectId }, select: { id: true } }),
+    prisma.installerPayment.findUnique({ where: { projectId }, select: { id: true, deletedAt: true, createdAt: true } }),
   ]);
 
-  if (payment) return "ya_tenia_pago";
+  const recuperable = payment !== null && pagoBorradoRecuperable(payment);
+  if (payment && !recuperable) return "ya_tenia_pago";
   if (!schedule || (schedule.team?.type ?? schedule.teamType) !== "TERCERIZADO") return "no_es_tercerizado";
   if (dryRun) return "creado";
 
   const installerId = schedule.team?.installerUserId ?? null;
   const fechaTrabajo = schedule.segments[0]?.startDate ?? new Date();
+  if (payment) {
+    const propuesta = await buscarManoDeObraPropuesta(projectId);
+    await prisma.installerPayment.update({
+      where: { id: payment.id },
+      data: {
+        deletedAt: null,
+        installerId,
+        fechaTrabajo,
+        dueDate: firstDayOfNextMonth(fechaTrabajo),
+        montoUsd: propuesta?.montoUsd ?? 0,
+        proposalVersionId: propuesta?.proposalVersionId ?? null,
+        origenManual: propuesta === null,
+      },
+    });
+    await recalcularStatus(payment.id);
+    await createAuditEntry({
+      entityType: AuditEntityType.installer_payment,
+      entityId: payment.id,
+      projectId,
+      userId,
+      action: AuditAction.updated,
+      description: `Pago a instalador recuperado al agendar la obra con el equipo ${schedule.teamName}`,
+      metadata: { installerId, montoUsd: propuesta?.montoUsd ?? 0 },
+    });
+    return "creado";
+  }
   const { payment: creado } = await createInstallerPaymentForProject({ projectId, userId });
   await prisma.installerPayment.update({
     where: { id: creado.id },
