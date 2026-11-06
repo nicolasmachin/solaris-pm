@@ -1,0 +1,8 @@
+# Credenciales — NUNCA se commitean
+service-account.json
+*.key.json
+.env
+.env.local
+
+# Deps
+node_modules/
