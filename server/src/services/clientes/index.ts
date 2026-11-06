@@ -26,7 +26,7 @@ import { UTE_PRINCIPAL } from "../suministros.service.js";
 import { getStageLabel } from "../pipeline-definitions.js";
 import { getCurrentStage } from "../project.service.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../../utils/serialization.js";
-import { getAnclaMantenimiento, proximoMantenimiento } from "../../utils/aniversario.js";
+import { getAnclaAniversario, proximoMantenimiento } from "../../utils/aniversario.js";
 import { businessDaysBetween } from "../../utils/business-days.js";
 import { lastActionAt } from "../uteProcess.service.js";
 import { TRASPASO_CATALOGO, TRASPASO_LABEL } from "../traspasos/catalogo.js";
@@ -53,8 +53,8 @@ export type ClienteSortBy =
 export type SortDir = "asc" | "desc";
 
 // Próximo mantenimiento = próximo aniversario de la puesta en marcha (año 0 =
-// postHabilitacionInicioEn, fallback actualUteEnd). null si el cliente aún no
-// está habilitado. Se calcula al vuelo, no se persiste.
+// postHabilitacionInicioEn, fallback actualUteEnd; en los importados de planilla,
+// la fecha de entrega). null si el cliente aún no está habilitado. Se calcula al vuelo, no se persiste.
 export type MantenimientoInfo = {
   aniosQueCumple: number; // qué aniversario cumple (1°, 2°, 3°…)
   proximoAniversario: string; // ISO date (YYYY-MM-DD)
@@ -200,6 +200,7 @@ const LIST_SELECT = {
   capacityKwp: true,
   actualEndDate: true,
   plannedEndDate: true,
+  importedFromCsv: true,
   saleDate: true,
   status: true,
   salesperson: { select: { id: true, name: true } },
@@ -377,9 +378,11 @@ function diasDesde(d: Date | null): number | null {
 }
 
 function buildMantenimiento(p: ProjectListRow): MantenimientoInfo | null {
-  const ancla = getAnclaMantenimiento({
+  const ancla = getAnclaAniversario({
     postHabilitacionInicioEn: p.postHabilitacionInicioEn,
     actualUteEnd: p.actualUteEnd,
+    plannedEndDate: p.plannedEndDate,
+    importedFromCsv: p.importedFromCsv,
   });
   if (!ancla) return null;
   const prox = proximoMantenimiento(ancla);

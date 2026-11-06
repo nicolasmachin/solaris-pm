@@ -25,6 +25,19 @@ export function getAnclaMantenimiento(p: {
   return p.postHabilitacionInicioEn ?? p.actualUteEnd ?? null;
 }
 
+// Ancla para el mantenimiento y la encuesta de aniversario. Los importados de la
+// planilla nunca pasaron por el trámite en Voltia PM: no tienen fecha de
+// habilitación, y sí la de entrega. Es aproximada, por eso no se usa como fecha de
+// habilitación ni como puesta en marcha del plan de granizo.
+export function getAnclaAniversario(p: {
+  postHabilitacionInicioEn: Date | null;
+  actualUteEnd: Date | null;
+  plannedEndDate: Date | null;
+  importedFromCsv: boolean;
+}): Date | null {
+  return getAnclaMantenimiento(p) ?? (p.importedFromCsv ? p.plannedEndDate : null);
+}
+
 export type ProximoMantenimiento = {
   aniosQueCumple: number; // qué aniversario es el próximo (1°, 2°, 3°…)
   proximoAniversario: Date; // fecha del próximo aniversario (día UTC)

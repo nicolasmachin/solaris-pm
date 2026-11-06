@@ -994,7 +994,9 @@ historial de la ficha. Ver "historia clínica" arriba.
   accesos hay que crearlos: nadie los crea solo.
 - **El mantenimiento anual está en el contrato pero no tiene maquinaria.** No
   existe una entidad de mantenimiento: sólo una columna calculada al vuelo
-  ("Próximo mantenimiento") en el listado de generadores. No hay alerta de
+  ("Próximo mantenimiento") en el listado de generadores, desde la habilitación o,
+  en los importados de planilla, desde la fecha de entrega (`getAnclaAniversario`,
+  que también usa la encuesta de aniversario; el plan de granizo no). No hay alerta de
   próximo ni de vencido, y los traspasos T12/T13 están definidos pero no se
   disparan desde ningún lado.
 

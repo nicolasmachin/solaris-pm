@@ -2,12 +2,11 @@ import cron from "node-cron";
 import { SurveyTipo } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
-import { aniversariosCumplidos } from "../../utils/aniversario.js";
+import { aniversariosCumplidos, getAnclaAniversario } from "../../utils/aniversario.js";
 import { crearEncuestaSiNoExiste } from "./encuestas.service.js";
 
 // Genera la encuesta de aniversario (E3) en cada aniversario de la puesta en
-// marcha del sistema. Ancla: Project.postHabilitacionInicioEn (año 0); fallback
-// actualUteEnd para proyectos sin la fecha de post-habilitación seteada.
+// marcha del sistema. Ancla: ver getAnclaAniversario.
 // Idempotente: crearEncuestaSiNoExiste dedup por (proyecto, ANIVERSARIO, edición=año).
 //
 // Cap configurable (default 2 años, alineado con el compromiso comercial E3-A de
@@ -25,16 +24,26 @@ export async function chequearAniversarios(
   const proyectos = await prisma.project.findMany({
     where: {
       deletedAt: null,
-      OR: [{ postHabilitacionInicioEn: { not: null } }, { actualUteEnd: { not: null } }],
+      OR: [
+        { postHabilitacionInicioEn: { not: null } },
+        { actualUteEnd: { not: null } },
+        { importedFromCsv: true, plannedEndDate: { not: null } },
+      ],
     },
-    select: { id: true, postHabilitacionInicioEn: true, actualUteEnd: true },
+    select: {
+      id: true,
+      postHabilitacionInicioEn: true,
+      actualUteEnd: true,
+      plannedEndDate: true,
+      importedFromCsv: true,
+    },
   });
 
   const tope = anioAniversarioMax();
   let generadas = 0;
 
   for (const p of proyectos) {
-    const ancla = p.postHabilitacionInicioEn ?? p.actualUteEnd;
+    const ancla = getAnclaAniversario(p);
     if (!ancla) continue;
     const cumplidos = Math.min(aniversariosCumplidos(ancla, now), tope);
     for (let anio = 1; anio <= cumplidos; anio++) {

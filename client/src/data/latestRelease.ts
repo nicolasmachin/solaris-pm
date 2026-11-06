@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "14.2",
+  date: "6 de noviembre de 2026",
+  sections: [
+    {
+      title: "Clientes importados de la planilla: aniversario y mantenimiento",
+      items: [
+        "Los clientes que vinieron de la planilla ahora muestran su próximo mantenimiento y reciben la encuesta de aniversario, contando desde la fecha de entrega.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_14_1: Release = {
   version: "14.1",
   date: "5 de noviembre de 2026",
   sections: [
@@ -1106,6 +1119,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.1",
+    shortDate: "5 nov",
+    highlights: RELEASE_14_1.sections.map((sec) => sec.title),
+  },
   {
     version: "14.0",
     shortDate: "3 nov",

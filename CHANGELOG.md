@@ -1,5 +1,13 @@
 # Novedades
 
+## v14.2
+
+### 6 de noviembre de 2026
+
+#### Clientes importados de la planilla: aniversario y mantenimiento
+
+- Los clientes que vinieron de la planilla ahora muestran su **próximo mantenimiento** y reciben la encuesta de aniversario, contando desde la fecha de entrega.
+
 ## v14.1
 
 ### 5 de noviembre de 2026
