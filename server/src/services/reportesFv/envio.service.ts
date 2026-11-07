@@ -16,7 +16,7 @@ import { createAuditEntry } from "../audit.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { getStoredFilePath } from "../file-storage.service.js";
 import { sendEmail } from "../email.service.js";
-import { getConfigEfectiva } from "./config.service.js";
+import { getConfigEfectiva, SIN_A_QUIEN_ENVIAR } from "./config.service.js";
 import { regenerarPdfDesdeSnapshot } from "./emision.service.js";
 import { asuntoReporteFv, cuerpoHtmlReporteFv, cuerpoTextoReporteFv } from "./emailBody.js";
 import { dateAPeriodo, periodoADate } from "./periodo.js";
@@ -59,6 +59,21 @@ export async function enviarEmision(emisionId: string, opts: OpcionesEnvio): Pro
 
   // ─── Guardas duras ───
   const guarda = validarGuardas(emision, config);
+  // Sin mail, el cliente igual tiene que ver su reporte: se publica en el portal
+  // y el envío queda omitido con ese motivo. Antes no se publicaba nunca.
+  if (guarda === SIN_DESTINATARIOS && !opts.dryRun) {
+    await prisma.reporteFvEmision.update({
+      where: { id: emisionId },
+      data: { publicadoEnPortal: true, publicadoEn: new Date() },
+    });
+    return registrarEnvio(emisionId, {
+      estado: ReporteFvEnvioEstado.OMITIDO,
+      destinatarios: [],
+      motivo: "No tiene mail: quedó publicado en el portal",
+      esDryRun: false,
+      userId: opts.userId,
+    });
+  }
   if (guarda) {
     return registrarEnvio(emisionId, {
       estado: ReporteFvEnvioEstado.OMITIDO,
@@ -172,6 +187,8 @@ export async function enviarEmision(emisionId: string, opts: OpcionesEnvio): Pro
 }
 
 /** Devuelve el motivo por el que NO se puede enviar, o null si está todo OK. */
+const SIN_DESTINATARIOS = "No tiene destinatarios";
+
 function validarGuardas(
   emision: {
     estado: ReporteFvEmisionEstado;
@@ -182,8 +199,8 @@ function validarGuardas(
   config: Awaited<ReturnType<typeof getConfigEfectiva>>,
 ): string | null {
   if (!config.habilitado) return "El reporte está deshabilitado para este generador";
-  if (config.bloqueosEnvio.length > 0) return config.bloqueosEnvio.join("; ");
-  if (config.destinatarios.length === 0) return "No tiene destinatarios";
+  const bloqueos = config.bloqueosEnvio.filter((b) => b !== SIN_A_QUIEN_ENVIAR);
+  if (bloqueos.length > 0) return bloqueos.join("; ");
   if (emision.estado !== ReporteFvEmisionEstado.LISTO) {
     return `La emisión está en estado ${emision.estado}, no LISTO`;
   }
@@ -202,6 +219,7 @@ function validarGuardas(
       return `El ahorro del mes ($${Math.round(ahorro)}) se aparta mucho del promedio ($${Math.round(promedio)}): revisar antes de enviar`;
     }
   }
+  if (config.destinatarios.length === 0) return SIN_DESTINATARIOS;
   return null;
 }
 

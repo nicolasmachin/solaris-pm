@@ -119,10 +119,15 @@ export async function recalcularSerieConConfig(config: ConfigEfectiva): Promise<
   // Una transacción por proyecto: si algo falla, la serie no queda a medias.
   await prisma.$transaction(async (tx) => {
     // Los periodos que dejaron de ser calculables se borran, para que no queden
-    // cálculos viejos de un mes cuya lectura se vació.
+    // cálculos viejos de un mes cuya lectura se vació. Los que ya tienen un reporte
+    // emitido se conservan: el reporte los referencia (pasa al cambiar el día de corte).
     const vigentes = calculables.map((r) => periodoADate(r.periodo));
     await tx.reporteFvCalculo.deleteMany({
-      where: { projectId, periodo: { notIn: vigentes.length > 0 ? vigentes : [new Date(0)] } },
+      where: {
+        projectId,
+        periodo: { notIn: vigentes.length > 0 ? vigentes : [new Date(0)] },
+        emisiones: { none: {} },
+      },
     });
 
     for (const r of calculables) {

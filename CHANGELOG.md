@@ -2,6 +2,13 @@
 
 ## v14.2
 
+### 7 de noviembre de 2026
+
+#### Reportes para clientes sin mail
+
+- Los clientes que no tienen mail cargado ahora ven su **reporte mensual en el portal**. Antes el reporte se generaba pero solo se publicaba cuando salía por mail, así que nunca les aparecía.
+- Cambiar el día de corte de un cliente que ya tenía reportes emitidos ya no da error al regenerarlos.
+
 ### 6 de noviembre de 2026
 
 #### Clientes importados de la planilla: aniversario y mantenimiento

@@ -52,6 +52,10 @@ CONFIG = {
                     "pie": "Manual del Instalador Tercerizado · Voltia",
                     "titulo": "Manual del Instalador Tercerizado", "subtitulo": "Cómo se trabaja con Voltia",
                     "corto": "Instalador", "canvas": "Manual del Instalador Tercerizado"},
+    "reglamento": {"fuente": "Reglamento-Interno-Operaciones.md",
+                   "pie": "Reglamento interno de Operaciones · Voltia",
+                   "titulo": "Reglamento interno", "subtitulo": "Área Operaciones · Borrador en revisión",
+                   "corto": "Reglamento", "canvas": "Reglamento interno del Área Operaciones"},
 }[MANUAL]
 FUENTE = os.path.join(AQUI, "..", CONFIG["fuente"])
 sys.path.insert(0, AQUI)
@@ -82,6 +86,11 @@ if MANUAL == "tercerizado":
     # Una foto distinta en la portada y en cada portadilla, para que no se vea
     # igual que el de Operaciones.
     IMG.PORTADA, IMG.PORTADILLA_PARTE2 = IMG.PORTADILLA_PARTE2, "/_blob/871e3d109a7c1625835db5de3dfa7693"
+if MANUAL == "reglamento":
+    # Fotos del equipo trabajando, en vez de instalaciones terminadas.
+    _FOTOS_REG = json.load(open(os.path.join(AQUI, "capturas-reglamento.json")))
+    IMG.PORTADA = "/_blob/" + _FOTOS_REG["reglamento-portada"]  # cuadrilla armando una estructura a suelo
+    IMG.CIERRE = "/_blob/" + _FOTOS_REG["reglamento-cierre"]  # cuadrilla con el encofrado de una base
 import generar  # noqa: E402
 from generar import (  # noqa: E402
     AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, ROJO_BORDE, ROJO_FONDO, SANS, SERIF, TEXTO,
@@ -133,8 +142,11 @@ if MANUAL == "tercerizado":
 
 # Ventas no tiene partes: los capítulos van seguidos, sin portadillas, en el
 # orden del .md (incluida la sección sin número "Las reglas de Ventas").
-if MANUAL == "ventas":
+if MANUAL in ("ventas", "reglamento"):
     PARTES = []
+
+# El reglamento se cita por secciones ("sección 19"): sus hojas dicen lo mismo.
+ROTULO_CAPITULO = "SECCIÓN" if MANUAL == "reglamento" else "CAPÍTULO"
 
 # Los capítulos de "Cuando algo sale mal", cuyos casos van en tarjetas.
 CAPITULOS_CASOS = {"operaciones": (8, 16, 20), "ventas": (6,), "tercerizado": (14,)}.get(MANUAL, ())
@@ -2930,7 +2942,7 @@ VISUALES = {
 
 # Las capturas de Voltia PM de cada manual: nombre que usa el .md → id del asset.
 CAPTURAS = {}
-for _f in ("capturas-operaciones.json", "capturas-ventas.json", "capturas-tercerizado.json"):
+for _f in ("capturas-operaciones.json", "capturas-ventas.json", "capturas-tercerizado.json", "capturas-reglamento.json"):
     if os.path.exists(os.path.join(AQUI, _f)):
         CAPTURAS.update(json.load(open(os.path.join(AQUI, _f))))
 
@@ -3136,7 +3148,7 @@ def apertura(numero, titulo, rotulo=None):
     else:
         cifra = (f'    <div style="font-family: {SANS}; font-size: 92px; font-weight: 700; line-height: .78; '
                  f'color: {AZUL}; letter-spacing: -3px">{numero}</div>\n')
-        rot = f"CAPÍTULO {numero}"
+        rot = f"{ROTULO_CAPITULO} {numero}"
     return (f'  <div style="display: flex; align-items: flex-end; gap: 20px; padding-bottom: 20px; '
             f'border-bottom: 3px solid {AZUL}">\n'
             f'{cifra}'
@@ -3150,7 +3162,7 @@ def apertura(numero, titulo, rotulo=None):
 
 
 def continua(numero, titulo, rotulo=None):
-    rot = (f"CAPÍTULO {numero} · {titulo}" if numero is not None
+    rot = (f"{ROTULO_CAPITULO} {numero} · {titulo}" if numero is not None
            else (titulo if rotulo == "" else f"{rotulo or 'ANEXO'} · {titulo}"))
     return (f'  <div style="padding-bottom: 10px; border-bottom: 1px solid {BORDE}; font-family: {SANS}; '
             f'font-size: 11px; font-weight: 600; letter-spacing: 1.8px; color: {GRIS_CLARO}">'
@@ -3364,7 +3376,8 @@ def construir():
         clave = ("s" if cap.get("suelta") else "a") if cap["num"] is None else str(cap["num"])
         clave += re.sub(r"[^a-z]", "", cap["titulo"].lower())[:8]
         crudos = bloques_de(cap["lineas"])
-        if cap["num"] == 0 and len(parrafos) > 1:
+        # El reglamento no tiene capítulo 0: la presentación va al principio del 1.
+        if cap["num"] == (1 if MANUAL == "reglamento" else 0) and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
         if MANUAL == "pgt":
             crudos = juntar_secciones(juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos)))))
@@ -3379,6 +3392,8 @@ def construir():
             if cap.get("suelta"):
                 crudos = [(t, c) for t, c in crudos if not (t == "cita" and re.match(r"### \d+\. ", c[0]))]
             crudos = foto_primero(visualizar_operaciones(cuadros_ventas(partir_registro(crudos)), cap["num"]))
+        elif MANUAL == "reglamento":
+            crudos = partir_registro(crudos)
         else:
             crudos = juntar_operaciones(crudos)
             crudos = foto_primero(visualizar_operaciones(crudos, cap["num"]))

@@ -24,8 +24,15 @@ export type Release = {
 
 export const LATEST_RELEASE: Release = {
   version: "14.2",
-  date: "6 de noviembre de 2026",
+  date: "7 de noviembre de 2026",
   sections: [
+    {
+      title: "Reportes para clientes sin mail",
+      items: [
+        "Los clientes que no tienen mail cargado ahora ven su reporte mensual en el portal.",
+        "Cambiar el día de corte de un cliente con reportes emitidos ya no da error al regenerarlos.",
+      ],
+    },
     {
       title: "Clientes importados de la planilla: aniversario y mantenimiento",
       items: [

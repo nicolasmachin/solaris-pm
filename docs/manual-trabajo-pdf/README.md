@@ -158,3 +158,19 @@ nuevo). La de la chapa pisada es un recorte de las dos fotos de una captura de
 WhatsApp, sin los nombres ni los audios (`imagenes/tercerizado-chapa-pisada.jpg`).
 La portada es el techo rojo; la portadilla B, la estructura a suelo de
 Operaciones.
+
+## Reglamento interno de Operaciones (`MANUAL=reglamento`)
+
+De `docs/Reglamento-Interno-Operaciones.md`. Sin partes ni portadillas, como el de
+Ventas; las aperturas dicen "Sección" porque el texto se cita por secciones. Como
+no tiene capítulo 0, la presentación va al principio de la sección 1. Se arma con
+`MANUAL=reglamento bash docs/manual-trabajo-pdf/armar.sh <carpeta>`.
+
+Todavía no tiene canvas publicado (37 hojas al 6-nov-2026), así que sus imágenes
+son las direcciones del PGT, que `assets-locales.json` resuelve para medir y sacar
+el PDF con `pdf.mjs`. Al publicarlo hay que subirlas a su canvas y pasarle su
+`REMAP_ASSETS`, como en el del instalador tercerizado.
+
+Las fotos son del equipo trabajando (`capturas-reglamento.json`). A propósito no se usan
+las que muestran algo que el mismo reglamento prohíbe, como un tablero abierto con objetos
+adentro o un cabo de vida sin enganchar a la vista.

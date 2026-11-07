@@ -1084,7 +1084,7 @@ reportes.
 **Envío.** `enviarEmision()` tiene guardas (habilitado, destinatarios, estado
 LISTO, PDF de tamaño razonable, ahorro no disparatado frente al promedio) y un
 claim transaccional sobre `enviadoEn` para que dos clicks no manden dos veces.
-Al enviar, el reporte queda publicado en el portal.
+Al enviar, el reporte queda publicado en el portal. Si el cliente no tiene mail, el envío queda omitido pero el reporte se publica igual. Para un cliente puntual, `scripts/regenerar-reportes-cliente.ts` fija el día de corte y regenera y publica sus reportes.
 
 **Pendientes** (`pendientes.service.ts`). `listarPendientes(hasta)`: de cada
 generador y período, la **última versión**, solo si está LISTO, si **ninguna**

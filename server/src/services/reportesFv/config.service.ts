@@ -96,6 +96,9 @@ type ConfigConDestinatarios = ReporteFvConfig & {
  * exactamente qué le falta a cada generador. Los que tiran son los servicios que
  * necesitan una config completa (ver `exigirConfigCompleta`).
  */
+/** Bloqueo de envío por falta de mail. El envío lo distingue: igual publica en el portal. */
+export const SIN_A_QUIEN_ENVIAR = "no tiene a quién enviarle el reporte";
+
 export function resolverConfigEfectiva(
   config: ConfigConDestinatarios,
   proyecto: ProyectoParaConfig,
@@ -171,7 +174,7 @@ export function resolverConfigEfectiva(
     advertencias.push("sin fecha de habilitación: el retorno se estima con los meses que haya de datos");
   }
   if (destinatarios.length === 0) {
-    bloqueosEnvio.push("no tiene a quién enviarle el reporte");
+    bloqueosEnvio.push(SIN_A_QUIEN_ENVIAR);
   }
 
   return {

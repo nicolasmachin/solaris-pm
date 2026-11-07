@@ -1,10 +1,12 @@
 # Reglamento interno — Área Operaciones
 
-**Voltia · Uruguay** · Versión 3.0 — 11 de octubre de 2026 · *borrador en revisión* · Ref: REG-OP-01
+**Voltia · Uruguay** · Versión 3.1 · del 06/11/26 · *borrador en revisión* · Ref: REG-OP-01
 
 > **Qué es.** Las reglas obligatorias de la actividad de Operaciones: el horario,
-> las horas extra, la conducta, el orden en obra, la seguridad, los vehículos, la
-> confidencialidad y las sanciones. Cada trabajador lo recibe, lo lee y lo firma.
+> las horas extra, lo que marca la ley, lo que Voltia da por encima de la ley, lo
+> que espera de cada uno, la conducta, el orden en obra, la seguridad, los
+> vehículos, la confidencialidad y las sanciones. Cada trabajador lo recibe, lo lee
+> y lo firma.
 >
 > **Qué no es.** No explica cómo se trabaja: eso está en el **Manual de trabajo
 > de Operaciones**, y lo que conecta a las áreas, en el **Procedimiento General
@@ -13,7 +15,7 @@
 >
 > **Quién lo lee.** Todo el personal de Operaciones: el gerente de Operaciones,
 > los capataces, los operarios y Logística. Los instaladores tercerizados, en lo
-> que les toca mientras trabajan en una obra de Voltia (secciones 3.6 y 16).
+> que les toca mientras trabajan en una obra de Voltia (secciones 3.6 y 19).
 > Gerencia lo lee entero.
 
 ---
@@ -38,7 +40,7 @@ capataces, los operarios y todo trabajador asignado a tareas operativas,
 cualquiera sea su forma de contratación.
 
 También aplica, en lo que corresponde, a los **instaladores tercerizados** y a su
-personal mientras trabajan en una obra de Voltia (sección 16).
+personal mientras trabajan en una obra de Voltia (sección 19).
 
 El personal de las demás áreas se rige por sus propias normas y su contrato.
 Algunas disposiciones (confidencialidad, no captación de clientes, uso de
@@ -75,9 +77,11 @@ individuales, los convenios colectivos y las directivas de la Dirección.
 - **Respeto al cliente.** Se trabaja en propiedad ajena. La conducta, la
   limpieza, el cuidado del lugar y el trato son parte del servicio.
 - **Cadena de mando.** Se discute antes o después; durante la ejecución se
-  cumple. La excepción es el riesgo grave inminente (sección 10).
+  cumple. La excepción es el riesgo grave inminente (sección 13).
 - **Profesionalismo.** Cada instalación, cada vehículo y cada trato con el
   cliente muestran a Voltia. Eso es responsabilidad de todos.
+
+![Una cuadrilla de Voltia trabajando en obra.](captura:reglamento-obra)
 
 ---
 
@@ -101,7 +105,7 @@ Es responsable de la ejecución diaria del área:
 - Recibe y procesa los reportes de incidentes, daños y cuasi-incidentes.
 - Puede pedir un test de alcohol o drogas ante una sospecha razonable.
 - Mientras no haya un asesor en seguridad designado, ejerce el control de
-  seguridad en obra (sección 9.7).
+  seguridad en obra (sección 12.7).
 
 ### 3.3 Capataz
 
@@ -116,7 +120,7 @@ Es el responsable directo en la obra de la seguridad, la calidad y el avance:
 
 El capataz que tolere que alguien trabaje sin protección, o que deje entrar a
 alguien sin protección a la zona de trabajo, también es sancionado (sección
-19.2).
+22.2).
 
 ### 3.4 Operarios
 
@@ -134,12 +138,12 @@ la configuración del inversor, las mediciones y los ensayos que exige UTE.
 Mientras están en una obra de Voltia, ellos y su personal cumplen este
 reglamento en seguridad, conducta y orden. En sus obras, **el instalador
 tercerizado es el capataz**: tiene las responsabilidades de la sección 3.3. Las
-condiciones y la documentación exigible están en la sección 16.
+condiciones y la documentación exigible están en la sección 19.
 
 ### 3.7 Si dos instrucciones se contradicen
 
 Vale la del superior inmediato. Ante un riesgo grave inminente, rige la
-sección 10.
+sección 13.
 
 ### 3.8 Cambios respecto del proyecto
 
@@ -168,7 +172,8 @@ Voltia PM.
 
 La jornada empieza en el depósito de Voltia, que es el punto de encuentro. El
 traslado del depósito a la obra y la vuelta al depósito al final del día son
-tiempo de trabajo.
+tiempo de trabajo. En las obras del interior, las horas de viaje se cambian por un
+viático (sección 8.7).
 
 ### 4.2 Registro de entrada y salida
 
@@ -217,8 +222,8 @@ estructura en altura.
 
 ### 6.1 Principio
 
-Las horas extra no se hacen por decisión del trabajador: necesitan aprobación
-previa y por escrito.
+Las horas extra son voluntarias (sección 7) y no se hacen por decisión del
+trabajador: necesitan aprobación previa y por escrito.
 
 ### 6.2 Quién las aprueba
 
@@ -244,11 +249,140 @@ pueden tener un régimen de pago especial por jornada de obra, acordado por
 escrito y agregado a su legajo; ese acuerdo prevalece sobre esta sección en lo
 que corresponda.
 
+### 6.6 Sábados
+
+> *Por definir:* cuándo se trabaja el sábado y en qué condiciones.
+
 ---
 
-## 7 · Conducta
+## 7 · Lo que marca la ley
 
-### 7.1 Prohibiciones absolutas
+Esta sección y las dos que siguen separan tres cosas: lo que marca la ley, que no
+se discute, ni para un lado ni para el otro; lo que Voltia da por encima de la ley;
+y lo que la empresa espera de cada uno. Así todos tienen las reglas claras y nadie
+tiene que adivinar.
+
+En esta tabla, el BPS es el Banco de Previsión Social y el BSE, el Banco de Seguros
+del Estado.
+
+| Tema | Regla general |
+|---|---|
+| Feriados no laborables | Son 5: 1/1, 1/5, 18/7, 25/8 y 25/12. Son pagos y, si se trabajan, se pagan doble. |
+| Feriados laborables | Los demás, por ejemplo Carnaval y Turismo. Se trabaja normal y se paga normal. |
+| Horas extra | Son voluntarias. Se pagan con recargo: el doble en día hábil, más en día de descanso o feriado. |
+| Licencia anual | 20 días, más 1 día cada 4 años de antigüedad a partir del quinto año. Por ley se cuenta de lunes a sábado. |
+| Salario vacacional | Se paga junto con la licencia. |
+| Aguinaldo | Dos cuotas, en junio y en diciembre. |
+| Enfermedad | Se avisa y se certifica. A partir del cuarto día de certificación paga el BPS. Se trae la constancia. |
+| Accidente de trabajo | Se denuncia y lo cubre el BSE. Hay que avisar el mismo día. |
+| Elementos de seguridad | La empresa los tiene que dar y el trabajador los tiene que usar: casco, arnés, calzado, guantes. |
+| Licencias especiales | Estudio, paternidad, duelo, matrimonio, donación de sangre. |
+
+> *A confirmar con FEFA:* cómo se cuenta la licencia por ley, los días de las
+> licencias especiales, el recargo exacto de las horas extra, y si al equipo le
+> corresponde el convenio de la construcción, porque eso puede cambiar lo que es
+> obligatorio en licencia, viáticos y horas de viaje.
+
+---
+
+## 8 · Lo que Voltia da por encima de la ley
+
+Son decisiones de la empresa, no derechos. Dependen de que el equipo funcione bien.
+
+> *A confirmar con FEFA:* si un beneficio que se repite todos los años puede pasar
+> a ser un derecho del trabajador.
+
+### 8.1 Licencia coordinada, no impuesta
+
+Voltia podría aplicar la licencia de la construcción, con fechas fijas para todos.
+En cambio, cada uno propone cuándo se la quiere tomar, con tiempo, y se coordina
+entre todos. A la empresa le cuesta más organizarse.
+
+### 8.2 Seis días libres pagos que no corresponden por ley
+
+- El 24 y el 31 de diciembre enteros (lo habitual es medio día).
+- Lunes y martes de Carnaval.
+- Jueves y viernes de Turismo.
+
+> *A definir:* qué pasa de lunes a miércoles de Turismo. El Manual de trabajo de
+> Gerencia dice que Voltia no trabaja esa semana, de lunes a viernes.
+
+### 8.3 La licencia rinde más
+
+Se cuenta de lunes a viernes, no de lunes a sábado. Sumando esto y los seis días de
+la sección 8.2, son **unas dos semanas más de descanso pago por año** que la ley no
+exige.
+
+### 8.4 Ropa de trabajo de primera
+
+- Equipo completo dos veces por año.
+- Nadie tuvo que trabajar nunca con ropa propia.
+- La mejor calidad, por ejemplo en los zapatos de seguridad.
+
+Lo extra es la calidad y la frecuencia; los elementos de seguridad en sí son
+obligación.
+
+### 8.5 Flexibilidad
+
+Un día, un trámite o el médico: avisando con tiempo, se le da a todos. Las horas se
+recuperan otro día o con horas extra, sin descuento.
+
+> *A definir:* si las horas que se recuperan con horas extra se pagan con recargo.
+> La sección 6 pide aprobarlas antes.
+
+### 8.6 Alojamiento con cocina
+
+Lo estándar sería un hotel, que es más barato, con el viático para la comida. Se
+buscan casas porque el equipo lo pidió, para que cada uno se ahorre parte del
+viático. Si las casas dan más problemas que ventajas, se vuelve al hotel.
+
+> *A confirmar con el gerente de Operaciones:* el criterio de buscar casas con
+> cocina aunque cuesten más.
+
+### 8.7 Viáticos y horas de viaje
+
+En las obras del interior, Voltia paga **$ 1.000 por día y por persona**, contando
+ida y vuelta, a cambio de no cobrar las horas de viaje. Es un acuerdo, no un
+beneficio.
+
+> *A decidir:* dejarlo en $ 1.000 o subirlo a $ 1.200, para quedar por encima de la
+> construcción, que paga unos $ 1.090 por día trabajado más los días de viaje.
+>
+> *A confirmar con FEFA:* si el cambio de horas de viaje por viático es válido y si
+> conviene dejarlo firmado.
+
+---
+
+## 9 · Lo que Voltia espera de cada uno
+
+### 9.1 Licencia
+
+Cada uno la propone con anticipación y la coordina con el gerente de Operaciones.
+Después la pide en Voltia PM, desde Mi legajo, y administración la aprueba o la
+rechaza con su motivo.
+
+> *A definir:* la anticipación. La propuesta es de 15 días.
+
+### 9.2 Médico, trámites y faltas
+
+- Se avisa apenas se sabe, con la hora.
+- Se trae la constancia (sección 4.4).
+- "Capaz que no voy" no es un aviso.
+
+### 9.3 Reclamos
+
+Van al gerente de Operaciones o a la Dirección, en privado. No en el grupo ni de
+pasillo.
+
+### 9.4 Grupo de WhatsApp
+
+Es para coordinar el trabajo, no para quejas ni para hablar de los compañeros.
+
+---
+
+## 10 · Conducta
+
+### 10.1 Prohibiciones absolutas
 
 En el trabajo está absolutamente prohibido:
 
@@ -262,13 +396,13 @@ En el trabajo está absolutamente prohibido:
 - Portar armas en la obra o en vehículos de Voltia.
 - Ocultar incidentes, daños o accidentes.
 
-### 7.2 Trato
+### 10.2 Trato
 
 El trato con compañeros, clientes, vecinos y terceros es siempre respetuoso.
 Las críticas, quejas y diferencias se canalizan por la cadena de mando, nunca
 delante del cliente.
 
-### 7.3 Control de alcohol y drogas
+### 10.3 Control de alcohol y drogas
 
 Voltia puede pedir un test de alcohol o drogas ante una sospecha razonable:
 señales objetivas (olor a alcohol, descoordinación, conducta alterada, habla
@@ -277,7 +411,7 @@ alterada, comportamiento incompatible con la tarea) que advierte la supervisión
 El test lo hace personal habilitado o un centro de salud, a cargo de Voltia.
 Negarse sin justificación tiene los mismos efectos que un resultado positivo.
 
-### 7.4 Celular
+### 10.4 Celular
 
 En la obra, el celular se usa para el trabajo (coordinar, sacar fotos, cargar en
 Voltia PM, consultar). El uso personal, solo en las pausas, salvo una emergencia.
@@ -287,9 +421,9 @@ de carga o en cualquier tarea que pida atención plena.
 
 ---
 
-## 8 · Orden, limpieza y prolijidad en obra
+## 11 · Orden, limpieza y prolijidad en obra
 
-### 8.1 Durante la jornada
+### 11.1 Durante la jornada
 
 - Las herramientas se mantienen juntas en un lugar definido o en cajas, nunca
   desparramadas por el patio, el techo o la casa.
@@ -301,34 +435,34 @@ de carga o en cualquier tarea que pida atención plena.
   el cliente.
 - El orden se mantiene toda la jornada, no solo al final.
 
-### 8.2 Al terminar la jornada
+### 11.2 Al terminar la jornada
 
 - Se limpia toda la zona trabajada antes de irse.
 - El capataz controla el orden y la limpieza antes de retirarse.
 - La zona queda segura: sin herramientas sueltas ni cables u objetos con los que
   alguien se pueda tropezar.
 
-### 8.3 Al terminar la obra
+### 11.3 Al terminar la obra
 
 Los sobrantes se retiran de la casa del cliente o, por lo menos, el retiro queda
 coordinado con el cliente. Lo coordina el capataz. La obra no se cierra con
 materiales olvidados en la casa del cliente.
 
-### 8.4 La presentación
+### 11.4 La presentación
 
 Las instalaciones se hacen con criterio estético y prolijo, sobre todo en
 canalizaciones a la vista, tableros, cableado y fijaciones. No se aceptan cables
 colgando, caños torcidos, materiales desalineados ni terminaciones desprolijas,
 salvo imposibilidad técnica justificada.
 
-### 8.5 La opinión del cliente
+### 11.5 La opinión del cliente
 
 El comportamiento del equipo en la obra (orden, limpieza, cuidado del lugar) es
 parte de cómo se evalúa el servicio. Voltia puede preguntarle al cliente su
 opinión durante la obra o al terminarla, y esa opinión cuenta en el desempeño
 del equipo.
 
-### 8.6 En la casa del cliente
+### 11.6 En la casa del cliente
 
 - Se respetan los horarios y se avisa antes si hay demora.
 - No se fuma dentro de la casa.
@@ -339,9 +473,9 @@ del equipo.
 
 ---
 
-## 9 · Seguridad y salud
+## 12 · Seguridad y salud
 
-### 9.1 Equipo de protección
+### 12.1 Equipo de protección
 
 Voltia le entrega a cada operario su equipo de protección, contra una constancia
 firmada (REC-EPP-01). **Cada operario es responsable de tenerlo en
@@ -357,10 +491,10 @@ trabajando.
 
 Los instaladores tercerizados ponen el equipo de protección de su personal;
 Voltia les exige que lo usen. Si alguien de su personal trabaja sin protección,
-quien lo vea para la tarea hasta que se lo ponga (sección 10), y se le llama la
+quien lo vea para la tarea hasta que se lo ponga (sección 13), y se le llama la
 atención al tercerizado, que es el responsable de su gente.
 
-### 9.2 Trabajo en altura
+### 12.2 Trabajo en altura
 
 Es trabajo en altura toda tarea a 2 metros o más del nivel de abajo.
 
@@ -380,7 +514,7 @@ Es trabajo en altura toda tarea a 2 metros o más del nivel de abajo.
 - Los arneses y los cabos de vida tienen la vida útil que indica el fabricante.
   Un arnés que frenó una caída se saca de servicio en el momento.
 
-### 9.3 Trabajos eléctricos
+### 12.3 Trabajos eléctricos
 
 - Solo personal autorizado y capacitado interviene en tableros, borneras,
   strings, inversores, medidores o cualquier circuito.
@@ -396,18 +530,18 @@ Es trabajo en altura toda tarea a 2 metros o más del nivel de abajo.
   eléctrico adicional: guantes dieléctricos, protección facial y ropa no
   sintética.
 
-### 9.4 Herramientas
+### 12.4 Herramientas
 
 Prohibido usar herramientas defectuosas, modificadas o sin sus protecciones. La
 herramienta en mal estado se avisa al capataz y se saca de uso.
 
-### 9.5 Protección de terceros
+### 12.5 Protección de terceros
 
 Si la tarea puede poner en riesgo al cliente, a niños, mascotas, vecinos o
 transeúntes, se delimita y se señaliza la zona de trabajo. Proteger a terceros
 es responsabilidad de la cuadrilla.
 
-### 9.6 Salud
+### 12.6 Salud
 
 - Carné de salud vigente.
 - Aptitud médica para trabajo en altura.
@@ -415,7 +549,10 @@ es responsabilidad de la cuadrilla.
 - Quien tiene síntomas que pongan en riesgo su seguridad o la de otros no va a
   la obra, y avisa.
 
-### 9.7 Asesor en seguridad
+> *A confirmar con el prevencionista:* el control de aptitud para trabajo en altura,
+> para todos los que suben a techos.
+
+### 12.7 Asesor en seguridad
 
 Voltia va a designar formalmente un asesor en seguridad e higiene registrado
 ante el MTSS, que arma el plan de seguridad y capacita a la cuadrilla propia y a
@@ -424,7 +561,7 @@ gerente de Operaciones.
 
 ---
 
-## 10 · Autoridad para detener el trabajo
+## 13 · Autoridad para detener el trabajo
 
 **Cualquier persona de Voltia, sea cual sea su puesto, puede y debe detener una
 tarea si ve un riesgo grave inminente**: una caída, una descarga, una estructura
@@ -438,7 +575,7 @@ Nadie es sancionado por detener una tarea por seguridad si actuó de buena fe.
 
 ---
 
-## 11 · Accidentes, incidentes y daños
+## 14 · Accidentes, incidentes y daños
 
 - **Ante un accidente, primero se atiende a la persona**: se para el trabajo y,
   si hace falta, se llama a emergencias. Después, el capataz avisa en el momento
@@ -457,7 +594,7 @@ Nadie es sancionado por detener una tarea por seguridad si actuó de buena fe.
 
 ---
 
-## 12 · Calidad de obra
+## 15 · Calidad de obra
 
 - La obra se registra en Voltia PM con sus checklists, sus fotos (incluidas las
   de lo que después queda tapado: canalizaciones, tableros abiertos, conexiones)
@@ -470,11 +607,13 @@ Nadie es sancionado por detener una tarea por seguridad si actuó de buena fe.
   del capataz (sección 3.8) se avisa al gerente de Operaciones y, si hace falta,
   a Ingeniería.
 
+![Control de un trabajo en obra.](captura:reglamento-control)
+
 ---
 
-## 13 · Materiales, herramientas y vehículos
+## 16 · Materiales, herramientas y vehículos
 
-### 13.1 Herramientas
+### 16.1 Herramientas
 
 Las pérdidas o daños de herramientas se avisan al gerente de Operaciones. Si
 fueron por mal uso, descuido o mala conducta, después de investigarlo y escuchar
@@ -482,42 +621,42 @@ el descargo, Voltia puede pedir la reposición, descontar el valor según la
 normativa o aplicar una sanción. El desgaste normal no es responsabilidad del
 trabajador.
 
-### 13.2 Materiales
+### 16.2 Materiales
 
 Los paneles, los inversores y el material eléctrico se manejan con cuidado.
 Prohibido apoyarlos de forma insegura, golpearlos, arrastrarlos o dejarlos
 expuestos a la lluvia o la suciedad sin necesidad. Todo faltante o daño se avisa
 en el momento.
 
-### 13.3 Quién conduce
+### 16.3 Quién conduce
 
 Solo conducen vehículos de Voltia las personas designadas por escrito por la
 Dirección, con libreta vigente. La designación se puede revocar en cualquier
 momento. Quien conduce avisa de inmediato si le suspenden o le retiran la
 libreta.
 
-### 13.4 Conducción y multas
+### 16.4 Conducción y multas
 
 Conducción responsable y a la defensiva, respetando velocidades, cinturón y
 normas de tránsito. Las multas por culpa probada del conductor (velocidad,
 estacionamiento, cinturón, celular al volante) son a cargo del conductor; las
 que no dependen de él, a cargo de Voltia.
 
-### 13.5 Uso del vehículo
+### 16.5 Uso del vehículo
 
 El vehículo es solo para el trabajo de Voltia. Prohibido el uso personal, llevar
 a personas ajenas sin autorización o desviarse sin motivo de trabajo. Dejarlo en
 el domicilio del trabajador al final del día necesita autorización de la
 Dirección, caso a caso.
 
-### 13.6 Orden del vehículo
+### 16.6 Orden del vehículo
 
 El vehículo se mantiene ordenado y en condiciones. Al final del día, las
 herramientas quedan guardadas y la carga acomodada, sin materiales ni residuos
 mezclados de forma insegura. La cuadrilla responde por cómo devuelve el
 vehículo.
 
-### 13.7 Siniestros
+### 16.7 Siniestros
 
 Ante un choque, vuelco, golpe a terceros, daño a propiedad ajena o robo:
 
@@ -527,7 +666,7 @@ Ante un choque, vuelco, golpe a terceros, daño a propiedad ajena o robo:
   instrucción de Voltia.
 - Sacar fotos y anotar los datos de los terceros.
 
-### 13.8 Gastos
+### 16.8 Gastos
 
 Voltia no trabaja con caja chica. Todo gasto se paga con la tarjeta de Voltia o,
 excepcionalmente, lo adelanta el trabajador y se le reintegra contra la factura
@@ -539,9 +678,9 @@ comprometer crédito de Voltia con un proveedor sin autorización.
 
 ---
 
-## 14 · Confidencialidad, datos del cliente e imagen
+## 17 · Confidencialidad, datos del cliente e imagen
 
-### 14.1 Confidencialidad
+### 17.1 Confidencialidad
 
 La información a la que el trabajador accede por su trabajo es confidencial.
 Está prohibido divulgar, dentro o fuera de Voltia, datos del cliente (nombre,
@@ -550,40 +689,40 @@ comercial (precios, márgenes, propuestas, listas de clientes) o técnica (dise�
 cálculos, planos, configuraciones). La obligación sigue después de terminado el
 vínculo, sin límite de tiempo (Ley 18.331).
 
-### 14.2 Propiedad intelectual
+### 17.2 Propiedad intelectual
 
 Los diseños, cálculos, planos, propuestas, plantillas, procedimientos y demás
 documentación que el trabajador produce en su trabajo son de Voltia.
 
-### 14.3 No captación de clientes
+### 17.3 No captación de clientes
 
 Durante 6 meses después de terminado el vínculo, por cualquier causa, el
 ex-trabajador no contacta, no le ofrece servicios ni desvía a los clientes,
 interesados y referidos de Voltia que conoció por su trabajo, en instalación,
 mantenimiento o reparación de sistemas fotovoltaicos.
 
-### 14.4 Trabajos por fuera
+### 17.4 Trabajos por fuera
 
 Voltia no limita lo que el trabajador hace fuera de su jornada. Pero si después
 aparece que un trabajo por fuera fue con un cliente, interesado o referido de
 Voltia, se considera desvío de una oportunidad comercial, salvo que el
 trabajador pruebe lo contrario, y es falta gravísima.
 
-### 14.5 Pagos del cliente
+### 17.5 Pagos del cliente
 
 Prohibido pedir, insinuar o aceptar un pago o beneficio del cliente a cambio del
 trabajo, o condicionar el trabajo a eso. Las atenciones espontáneas (un café, una
 comida, una propina) se pueden aceptar, sin compromiso. Prohibido cobrarle al
 cliente cualquier pago de la instalación sin autorización de Finanzas.
 
-### 14.6 Redes sociales
+### 17.6 Redes sociales
 
 Se pueden compartir fotos y videos del trabajo en redes personales siempre que no
 identifiquen al cliente: dirección, fachada reconocible, nombre, consumo,
 planos, propuestas, número de medidor. Prohibido usar las redes para criticar a
 Voltia, a clientes, a compañeros o a la competencia.
 
-### 14.7 Uso de la imagen
+### 17.7 Uso de la imagen
 
 Al firmar este reglamento, el trabajador autoriza a Voltia a usar su imagen
 (fotos y videos en la obra, el depósito o eventos) en la comunicación de la
@@ -593,14 +732,14 @@ revocación no afecta lo ya publicado.
 
 ---
 
-## 15 · Registros administrativos
+## 18 · Registros administrativos
 
 Las horas extra aprobadas, los reintegros con su comprobante y las novedades del
 personal se entregan a Finanzas en los plazos y formatos que indique.
 
 ---
 
-## 16 · Instaladores tercerizados
+## 19 · Instaladores tercerizados
 
 Voltia trabaja con **cuadrillas tercerizadas fijas**, que hacen obras completas en
 su zona. Voltia contrata a la empresa, no a su personal: el tercerizado contrata a
@@ -627,7 +766,7 @@ corresponda a Voltia por las Leyes 18.099 y 18.251.
 
 ---
 
-## 17 · Microgeneración y UTE
+## 20 · Microgeneración y UTE
 
 Cuando la obra incluye microgeneración conectada a la red, Voltia y su personal
 cumplen la documentación y los requisitos técnicos vigentes de UTE. El detalle
@@ -635,21 +774,21 @@ está en el Manual de trabajo de Operaciones.
 
 ---
 
-## 18 · Capacitación
+## 21 · Capacitación
 
-### 18.1 Al entrar
+### 21.1 Al entrar
 
 Todo trabajador que entra a Operaciones recibe una capacitación inicial
 obligatoria: seguridad general, trabajo en altura, riesgo eléctrico (alterna y
 continua), calidad, trato con el cliente, uso de Voltia PM y régimen de
 sanciones. Queda registrada con su firma.
 
-### 18.2 Refrescos
+### 21.2 Refrescos
 
 Cada seis meses, y cada vez que hay un incidente relevante, un cambio de norma o
 una tecnología o un procedimiento nuevo.
 
-### 18.3 La capacitación de seguridad
+### 21.3 La capacitación de seguridad
 
 La capacitación habilitante de trabajo en altura y las demás capacitaciones
 formales de seguridad las da un técnico prevencionista habilitado por el MTSS,
@@ -657,9 +796,9 @@ designado por Voltia. Los certificados se archivan en el legajo.
 
 ---
 
-## 19 · Sanciones
+## 22 · Sanciones
 
-### 19.1 Las faltas
+### 22.1 Las faltas
 
 **Faltas leves**, entre otras:
 
@@ -694,7 +833,7 @@ otras:
 - Violar gravemente la confidencialidad o la no captación.
 - Reincidir en faltas graves, cuando lo determine la escala.
 
-### 19.2 Seguridad: la sanción alcanza a la cadena
+### 22.2 Seguridad: la sanción alcanza a la cadena
 
 Con la seguridad no hay flexibilidad, y la responsabilidad es en cadena:
 
@@ -708,7 +847,7 @@ Con la seguridad no hay flexibilidad, y la responsabilidad es en cadena:
 Así nadie puede decir que "el otro no se la puso": controlar es parte del
 trabajo de cada uno.
 
-### 19.3 La escala
+### 22.3 La escala
 
 Para las faltas leves y graves:
 
@@ -722,7 +861,10 @@ Para las faltas leves y graves:
 
 Las faltas gravísimas permiten el despido directo, sin pasar por la escala.
 
-### 19.4 Quién sanciona
+> *A definir:* si antes del primer apercibimiento va una observación. Las
+> advertencias verbales aparecen en las secciones 3.2 y 22.4, pero no en esta escala.
+
+### 22.4 Quién sanciona
 
 - Las advertencias verbales y el primer apercibimiento: el gerente de
   Operaciones.
@@ -732,7 +874,7 @@ Toda sanción escrita se notifica en persona, firmada, con copia para el
 trabajador y el original al legajo. Si el trabajador no quiere firmar, se deja
 constancia con la firma de un testigo.
 
-### 19.5 Derecho a descargo
+### 22.5 Derecho a descargo
 
 Antes de una sanción escrita, el trabajador puede presentar su descargo por
 escrito en un plazo razonable, de no menos de 24 horas hábiles, salvo casos
@@ -741,7 +883,7 @@ se tiene en cuenta al resolver.
 
 ---
 
-## 20 · Vigencia, cambios y aceptación
+## 23 · Vigencia, cambios y aceptación
 
 - **Vigencia.** Rige desde que se comunica y el trabajador lo firma, por tiempo
   indeterminado.
@@ -795,5 +937,6 @@ Por Voltia — Dirección: _______________________
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 3.1 | 6 de noviembre de 2026 | Se agregan tres secciones: lo que marca la ley, lo que Voltia da por encima de la ley (licencia coordinada, seis días libres pagos, ropa de trabajo, flexibilidad, alojamiento y viáticos) y lo que espera de cada uno (licencia, avisos, reclamos y grupo de WhatsApp). Por eso, las secciones que eran de la 7 a la 20 pasan a ser de la 10 a la 23. Las horas extra son voluntarias, y en el interior las horas de viaje se cambian por un viático. Quedan marcados los puntos a confirmar con FEFA y con el prevencionista, y lo que falta definir: los sábados, entre otros. |
 | 3.0 | 11 de octubre de 2026 | Se pasa el reglamento a la serie de manuales de Voltia y se alinea con lo que se definió para Operaciones. En obra, el criterio del instalador le gana al del proyectista y se anota el cambio, en vez de pedir una orden de cambio firmada. Los instaladores tercerizados son cuadrillas fijas, en sus obras el instalador es el capataz, y presentan la documentación todos los meses. La sanción por trabajar sin protección alcanza a la cadena; si el capataz lo encuentra, lo corrige en el momento. Las horas extra las aprueba la Dirección o, si no está, el gerente de Operaciones. Los roles son los de hoy (gerente de Operaciones, capataz, operarios). Se sacan los formularios en papel (parte diario, checklist por etapa, charla de inicio, orden de cambio): lo de la obra se registra en Voltia PM. Se suman los sobrantes al terminar la obra, el tope de gastos del gerente de Operaciones y el informe a la Inspección del Trabajo por un accidente grave. |
 | 2.0 | Sin fecha registrada | Versión anterior en Word, sin terminar de revisar. No hay registro de sus cambios. |
