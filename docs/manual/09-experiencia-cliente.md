@@ -1086,6 +1086,8 @@ LISTO, PDF de tamaño razonable, ahorro no disparatado frente al promedio) y un
 claim transaccional sobre `enviadoEn` para que dos clicks no manden dos veces.
 Al enviar, el reporte queda publicado en el portal. Si el cliente no tiene mail, el envío queda omitido pero el reporte se publica igual. Para un cliente puntual, `scripts/regenerar-reportes-cliente.ts` fija el día de corte y regenera y publica sus reportes.
 
+**Alumbrado público** (`ReporteFvConfig.alumbradoPublicoUyu`). No todos los clientes lo pagan: lo cobra UTE por la intendencia. Se carga en la configuración del reporte, en pesos por mes como figura en la factura (null = no paga). Se suma a la factura estimada sin IVA ni IRPF, igual con y sin paneles: no se sabe todavía si depende del consumo, así que no se cuenta como ahorro.
+
 **Pendientes** (`pendientes.service.ts`). `listarPendientes(hasta)`: de cada
 generador y período, la **última versión**, solo si está LISTO, si **ninguna**
 versión de ese período se envió, si el generador está habilitado y si el período

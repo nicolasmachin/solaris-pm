@@ -4408,6 +4408,11 @@ model ReporteFvConfig {
   // semana/feriados, por eso es aproximado.
   diaCorteMedidor Int?
 
+  // Alumbrado público que cobra UTE por cuenta de la intendencia, en pesos por mes,
+  // tal como figura en la factura. null = el cliente no lo paga. Se suma a la
+  // factura estimada sin IVA, igual con y sin paneles.
+  alumbradoPublicoUyu Decimal? @db.Decimal(10, 2)
+
   destinatarios ReporteFvDestinatario[]
 
   actualizadoPorId String?

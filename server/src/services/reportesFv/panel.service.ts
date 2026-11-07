@@ -311,6 +311,7 @@ export async function getDetalleGenerador(projectId: string) {
           mesInicio: config.mesInicio ? dateAPeriodo(config.mesInicio) : null,
           notasFijas: config.notasFijas,
           diaCorteMedidor: config.diaCorteMedidor,
+          alumbradoPublicoUyu: dec(config.alumbradoPublicoUyu),
           destinatarios: config.destinatarios.map((d) => ({
             email: d.email,
             nombre: d.nombre,

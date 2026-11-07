@@ -190,6 +190,8 @@ export function calcularFactura(params: {
    * factura de UTE de Estilo, ciclo 16-ago a 16-sep-2026); en las residenciales no.
    */
   cargoFijoGravado?: boolean;
+  /** Sin IVA y fijo en pesos, como el alumbrado público. */
+  otrosCargos?: number;
 }): Factura {
   const {
     cargoFijo,
@@ -199,6 +201,7 @@ export function calcularFactura(params: {
     tasaIva = 0.22,
     tasaIrpf = 0.12,
     cargoFijoGravado = false,
+    otrosCargos = 0,
   } = params;
 
   // En las residenciales solo potencia + energía gravan IVA (el cargo fijo no).
@@ -208,7 +211,7 @@ export function calcularFactura(params: {
   // La energía vendida no grava IVA, pero sí IRPF.
   const irpf = round2(creditoExportacion * tasaIrpf);
 
-  const totalBruto = cargoFijo + cargoPotencia + cargoEnergia + iva;
+  const totalBruto = cargoFijo + cargoPotencia + cargoEnergia + iva + otrosCargos;
   let totalNeto = round2(totalBruto + irpf - creditoExportacion);
 
   let saldoAFavor = 0;
@@ -225,6 +228,7 @@ export function calcularFactura(params: {
     iva,
     creditoExportacion: round2(creditoExportacion),
     irpf,
+    otrosCargos: round2(otrosCargos),
     totalBruto: round2(totalBruto),
     totalNeto,
     saldoAFavor,

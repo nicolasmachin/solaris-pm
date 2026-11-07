@@ -291,6 +291,7 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
           growattPlantId: z.string().regex(/^\d+$/).nullable().optional(),
           notasFijas: z.string().nullable().optional(),
           diaCorteMedidor: z.number().int().min(1).max(31).nullable().optional(),
+          alumbradoPublicoUyu: z.number().min(0).max(100000).nullable().optional(),
           destinatarios: z
             .array(
               z.object({

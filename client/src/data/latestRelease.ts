@@ -27,6 +27,12 @@ export const LATEST_RELEASE: Release = {
   date: "7 de noviembre de 2026",
   sections: [
     {
+      title: "Reportes: alumbrado público",
+      items: [
+        "En la configuración del reporte hay una casilla \"Paga alumbrado público\" con el monto mensual de la factura: la factura estimada lo suma y coincide con la de UTE.",
+      ],
+    },
+    {
       title: "Reportes para clientes sin mail",
       items: [
         "Los clientes que no tienen mail cargado ahora ven su reporte mensual en el portal.",

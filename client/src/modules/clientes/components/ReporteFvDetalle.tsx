@@ -165,6 +165,7 @@ function ConfigTab({
     growattPlantId: c?.growattPlantId ?? null,
     notasFijas: c?.notasFijas ?? null,
     diaCorteMedidor: c?.diaCorteMedidor ?? null,
+    alumbradoPublicoUyu: c?.alumbradoPublicoUyu ?? null,
   }));
   const [destinatarios, setDestinatarios] = useState<DestinatarioDto[]>(c?.destinatarios ?? []);
 
@@ -365,6 +366,32 @@ function ConfigTab({
           />
           <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
             Vacío = mes calendario (1 al último). Con día de corte, el reporte cubre el ciclo de facturación de UTE.
+          </p>
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+            <input
+              type="checkbox"
+              checked={form.alumbradoPublicoUyu != null}
+              disabled={!canEdit}
+              onChange={(e) => set("alumbradoPublicoUyu", e.target.checked ? 0 : null)}
+            />
+            Paga alumbrado público
+          </label>
+          {form.alumbradoPublicoUyu != null && (
+            <input
+              className={`${inp} mt-1`}
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.alumbradoPublicoUyu || ""}
+              disabled={!canEdit}
+              placeholder="Pesos por mes, como en la factura"
+              onChange={(e) => set("alumbradoPublicoUyu", numeroOrNull(e.target.value) ?? 0)}
+            />
+          )}
+          <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+            Lo cobra UTE por la intendencia y no todos lo pagan. Se suma a la factura estimada, sin IVA.
           </p>
         </div>
       </div>

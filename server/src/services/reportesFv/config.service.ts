@@ -195,6 +195,7 @@ export function resolverConfigEfectiva(
     heredados,
     potenciaEstimada,
     diaCorteMedidor: config.diaCorteMedidor ?? null,
+    alumbradoPublicoUyu: config.alumbradoPublicoUyu == null ? null : Number(config.alumbradoPublicoUyu),
     bloqueosCalculo,
     // Todo lo que impide calcular también impide enviar.
     bloqueosEnvio: [...bloqueosCalculo, ...bloqueosEnvio],
@@ -269,6 +270,8 @@ export interface UpsertConfigInput {
   notasFijas?: string | null;
   /** Día de corte del medidor de UTE (1-31). null = mes calendario. */
   diaCorteMedidor?: number | null;
+  /** Alumbrado público por mes en pesos. null = no lo paga. */
+  alumbradoPublicoUyu?: number | null;
   /** Si viene, reemplaza el set completo de destinatarios. */
   destinatarios?: DestinatarioInput[];
 }
@@ -321,6 +324,7 @@ export async function upsertConfig(
         : input.diaCorteMedidor == null
           ? null
           : Math.min(Math.max(Math.round(input.diaCorteMedidor), 1), 31),
+    alumbradoPublicoUyu: input.alumbradoPublicoUyu === undefined ? undefined : input.alumbradoPublicoUyu,
     actualizadoPorId: userId,
   };
 

@@ -60,6 +60,8 @@ export interface ConfigSerie {
   tipoCliente: "residencial" | "empresa";
   /** Obligatoria si tipoCliente = "empresa". */
   tarifaContratada: TarifaKey | null;
+  /** Alumbrado público por mes en pesos (null o ausente = no lo paga). */
+  alumbradoPublicoUyu?: number | null;
 }
 
 export interface LecturaSerie {
@@ -376,6 +378,7 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
         tasaIva: tarifaSnapshot.ivaPct,
         tasaIrpf: tarifaSnapshot.irpfPct,
         cargoFijoGravado: tarifa === "general_simple",
+        otrosCargos: config.alumbradoPublicoUyu ?? 0,
       });
 
       const facturaCon = calcularFactura({
@@ -386,6 +389,7 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
         tasaIva: tarifaSnapshot.ivaPct,
         tasaIrpf: tarifaSnapshot.irpfPct,
         cargoFijoGravado: tarifa === "general_simple",
+        otrosCargos: config.alumbradoPublicoUyu ?? 0,
       });
 
       // QUIRK: se usa facturaCon PRE cuenta corriente (ver ResultadoTarifa).

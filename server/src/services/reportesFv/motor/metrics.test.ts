@@ -152,3 +152,12 @@ test("el desglose reparte el ahorro entre autoconsumo y venta", () => {
   assert.equal(d.ahorroTotal, round2(d.ahorroAutoconsumo + d.ahorroVenta));
   assert.ok(Math.abs(d.pctAutoconsumo + d.pctVenta - 100) < 0.2);
 });
+
+test("el alumbrado público suma al total sin IVA ni IRPF", () => {
+  const sin = calcularFactura({ cargoFijo: 200, cargoPotencia: 300, cargoEnergia: 1000, creditoExportacion: 500 });
+  const con = calcularFactura({ cargoFijo: 200, cargoPotencia: 300, cargoEnergia: 1000, creditoExportacion: 500, otrosCargos: 339.38 });
+  assert.equal(con.iva, sin.iva);
+  assert.equal(con.irpf, sin.irpf);
+  assert.equal(con.otrosCargos, 339.38);
+  assert.equal(Math.round((con.totalNeto - sin.totalNeto) * 100) / 100, 339.38);
+});

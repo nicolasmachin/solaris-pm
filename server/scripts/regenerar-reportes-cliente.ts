@@ -8,6 +8,8 @@
  *   docker compose -f docker-compose.prod.yml exec server \
  *     npx tsx scripts/regenerar-reportes-cliente.ts --codigo=PRY-2026-093 --corte=24            # simula
  *     npx tsx scripts/regenerar-reportes-cliente.ts --codigo=PRY-2026-093 --corte=24 --aplicar --actor=mail@voltia.com.uy
+ *
+ * Con --alumbrado=339.38 carga también el alumbrado público mensual de la factura.
  */
 
 import { AuditAction, AuditEntityType, ReporteFvEmisionEstado, ReporteFvIngestaModo } from "@prisma/client";
@@ -25,6 +27,8 @@ const opcion = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?
 async function main() {
   const codigo = opcion("codigo");
   const corte = Number(opcion("corte"));
+  const alumbrado = opcion("alumbrado") == null ? undefined : Number(opcion("alumbrado"));
+  if (alumbrado !== undefined && !(alumbrado >= 0)) throw new Error("--alumbrado tiene que ser un monto en pesos");
   if (!codigo || !Number.isInteger(corte) || corte < 1 || corte > 31) {
     throw new Error("Uso: --codigo=PRY-... --corte=1..31 [--aplicar --actor=mail]");
   }
@@ -36,7 +40,7 @@ async function main() {
 
   const project = await prisma.project.findFirst({
     where: { code: codigo, deletedAt: null },
-    select: { id: true, clientName: true, reporteFvConfig: { select: { diaCorteMedidor: true } } },
+    select: { id: true, clientName: true, reporteFvConfig: { select: { diaCorteMedidor: true, alumbradoPublicoUyu: true } } },
   });
   if (!project?.reporteFvConfig) throw new Error(`${codigo} no existe o no tiene reporte dado de alta`);
 
@@ -50,11 +54,16 @@ async function main() {
 
   console.log(`${project.clientName}: corte ${project.reporteFvConfig.diaCorteMedidor ?? "mes calendario"} → ${corte}`);
   console.log(`Períodos: ${periodos.join(", ") || "ninguno"}`);
+  if (alumbrado !== undefined) console.log(`Alumbrado público: ${project.reporteFvConfig.alumbradoPublicoUyu ?? "no"} → ${alumbrado}`);
   if (!APLICAR) return console.log("Simulación: no se cambió nada.");
 
   await prisma.reporteFvConfig.update({
     where: { projectId: project.id },
-    data: { diaCorteMedidor: corte, actualizadoPorId: actor!.id },
+    data: {
+      diaCorteMedidor: corte,
+      ...(alumbrado !== undefined ? { alumbradoPublicoUyu: alumbrado } : {}),
+      actualizadoPorId: actor!.id,
+    },
   });
   await createAuditEntry({
     entityType: AuditEntityType.reporte_fv_config,
@@ -62,7 +71,7 @@ async function main() {
     projectId: project.id,
     userId: actor!.id,
     action: AuditAction.updated,
-    description: `Día de corte del medidor fijado en ${corte}`,
+    description: `Día de corte del medidor fijado en ${corte}${alumbrado !== undefined ? ` y alumbrado público en $${alumbrado}` : ""}`,
   });
 
   // Primero se traen todos los períodos con el corte nuevo y después se emite:

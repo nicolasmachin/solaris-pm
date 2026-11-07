@@ -42,6 +42,8 @@ export interface Factura {
   iva: number;
   creditoExportacion: number;
   irpf: number;
+  /** Cargos que no gravan IVA ni dependen de la energía, como el alumbrado público. */
+  otrosCargos: number;
   totalBruto: number;
   totalNeto: number;
   saldoAFavor: number;

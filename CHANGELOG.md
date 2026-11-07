@@ -4,6 +4,10 @@
 
 ### 7 de noviembre de 2026
 
+#### Reportes: alumbrado público
+
+- En la configuración del reporte de cada cliente hay una casilla **"Paga alumbrado público"** con el monto mensual de su factura. Si está marcada, la factura estimada del reporte lo suma, así coincide con lo que cobra UTE.
+
 #### Reportes para clientes sin mail
 
 - Los clientes que no tienen mail cargado ahora ven su **reporte mensual en el portal**. Antes el reporte se generaba pero solo se publicaba cuando salía por mail, así que nunca les aparecía.
