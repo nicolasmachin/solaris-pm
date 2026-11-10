@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.11 · del 03/11/26
+**Voltia · Uruguay** · Versión 1.12 · del 10/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -961,6 +961,13 @@ ventanas seguidas:
      motivo**. El monto se escribe **sin IVA**, **con IVA** o **como porcentaje
      del presupuesto** (por ejemplo, 50): al llenar uno, los otros dos se
      completan solos. Si no lleva factura, el monto es cero.
+   - Cuando se factura una parte y el resto se cobra **sin IVA**, debajo
+     aparece **«Ver detalle»** con la cuenta completa: la parte que va con
+     factura y su IVA, lo que queda como **restante** (sin IVA), el **total**
+     que paga el cliente y el **descuento de IVA**, que es el IVA que no se le
+     cobra sobre el restante. Con **«Copiar para WhatsApp»** se copia esa cuenta
+     para mandársela al cliente. Si la diferencia es por otra razón (una parte
+     que financia el banco, por ejemplo), esa cuenta no corresponde.
 
    Si después cambia, se corrige desde la ficha del proyecto.
 
@@ -1171,6 +1178,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.12 | 10 de noviembre de 2026 | En «¿Qué se le factura?», cuando se factura una parte, «Ver detalle» muestra la cuenta de la factura, el restante sin IVA, el total y el descuento de IVA, y se puede copiar para mandarla por WhatsApp. |
 | 1.11 | 3 de noviembre de 2026 | Los plazos de garantía del contrato vienen con los vigentes y se pueden cambiar en el formulario del contrato cuando se acordó otra cosa con el cliente. |
 | 1.10 | 3 de noviembre de 2026 | El asistente de Instagram pide el celular siempre y desde el primer interés, sin esperar la factura. En Ventas → Instagram aparecen todos los potenciales clientes (los interesados en instalar), no solo los que mandaron la factura o dejaron el celular. |
 | 1.9 | 1 de noviembre de 2026 | Los leads de Instagram: el asistente ya no manda a la persona al WhatsApp del asesor; le pide el celular para que el asesor le escriba, y escribirle directo queda como opción. Si no deja el celular, el asesor le contesta por Instagram desde Voltia PM (Ventas → Instagram) dentro de las 24 horas. |

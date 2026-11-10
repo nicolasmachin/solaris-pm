@@ -882,7 +882,9 @@ abre al marcar el lead como ganado, el bloque **«¿Qué se le factura?»** es
 obligatorio: casilla **«Facturación normal»** (todo el presupuesto, nota
 opcional) o el monto **sin IVA / con IVA / % del presupuesto** (al escribir uno
 se calculan los otros) con el **motivo**. Monto 0 = no lleva factura. El campo
-del presupuesto se rotula «Presupuesto (USD, con IVA)».
+del presupuesto se rotula «Presupuesto (USD, con IVA)». Con un monto parcial,
+**«Ver detalle»** muestra la cuenta factura / restante / total / descuento de
+IVA y la copia para WhatsApp (ver capítulo 08).
 
 ### Cómo funciona
 

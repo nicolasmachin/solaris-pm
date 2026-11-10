@@ -614,6 +614,14 @@ no se toca, no se manda) y en Facturación con el lápiz o **Definir**.
   presupuesto**; al escribir en uno se calculan los otros dos (IVA 22 %; el
   porcentaje es sobre el presupuesto, que es con IVA). **Motivo** obligatorio.
   Monto 0 = no lleva factura.
+- Debajo, el desplegable **«Ver detalle»** (solo si hay presupuesto y el monto
+  entra en él) arma la cuenta de una facturación parcial, como la planilla que
+  se usaba a mano: presupuesto sin IVA / IVA / con IVA; **Factura (x %)** sin
+  IVA / IVA / con IVA; **Restante (100 − x %)** sin IVA; **Total** = factura con
+  IVA + restante; **Descuento de IVA** = presupuesto con IVA − total (el IVA que
+  no se cobra sobre el restante). **Copiar para WhatsApp** copia ese detalle en
+  texto (`detalleFacturacion()` y `textoWhatsApp()` en el mismo componente). Es
+  solo de lectura: no se guarda nada.
 
 **Cómo funciona.** `services/finance/a-facturar.service.ts`:
 
@@ -636,6 +644,9 @@ no se toca, no se manda) y en Facturación con el lápiz o **Definir**.
 
 - Facturación normal toma el presupuesto **de hoy**: si se cambia el
   presupuesto, cambia lo que hay que facturar. Otro monto queda fijo.
+- «Ver detalle» supone que lo que no se factura se cobra **sin IVA**. Si la
+  diferencia es por otra razón (una parte que financia el banco, otra empresa),
+  el total y el descuento de IVA que muestra no corresponden.
 - «Falta facturar» compara con lo facturado por Biller; las facturas marcadas a
   mano no tienen monto y no descuentan.
 - Un proyecto con monto 0 no lleva factura y no aparece en Facturación.

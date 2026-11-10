@@ -1,5 +1,54 @@
 # Novedades
 
+## v14.3
+
+### 10 de noviembre de 2026
+
+#### Facturación: detalle de una facturación parcial
+
+- En **«¿Qué se le factura?»**, cuando se factura solo una parte, hay un desplegable **«Ver detalle»** con la cuenta completa: la parte con factura y su IVA, el restante sin IVA, el **total** que paga el cliente y el **descuento de IVA**. Con **«Copiar para WhatsApp»** se copia para mandársela al cliente. Está al ganar el lead, en la ficha del proyecto y en Finanzas → Facturación.
+
+## v14.2
+
+### 7 de noviembre de 2026
+
+#### Reportes: alumbrado público
+
+- En la configuración del reporte de cada cliente hay una casilla **"Paga alumbrado público"** con el monto mensual de su factura. Si está marcada, la factura estimada del reporte lo suma, así coincide con lo que cobra UTE.
+
+#### Reportes para clientes sin mail
+
+- Los clientes que no tienen mail cargado ahora ven su **reporte mensual en el portal**. Antes el reporte se generaba pero solo se publicaba cuando salía por mail, así que nunca les aparecía.
+- Cambiar el día de corte de un cliente que ya tenía reportes emitidos ya no da error al regenerarlos.
+
+### 6 de noviembre de 2026
+
+#### Clientes importados de la planilla: aniversario y mantenimiento
+
+- Los clientes que vinieron de la planilla ahora muestran su **próximo mantenimiento** y reciben la encuesta de aniversario, contando desde la fecha de entrega.
+
+
+#### Arreglos
+
+- **Pagos a instaladores:** una obra que tuvo un pago de la regla vieja, borrado en la limpieza de octubre, ahora recupera su pago cuando se agenda con un equipo tercerizado. Antes quedaba sin pago y no aparecía en la pantalla.
+## v14.1
+
+### 5 de noviembre de 2026
+
+#### Portal: más fácil entrar sin acordarse de nada
+
+- Si un cliente escribe un mail que no reconocemos, la pantalla le ofrece buscar por **su nombre y apellido** y le muestra el comienzo de su mail, para que se dé cuenta cuál es.
+- Quien entra con el **código por mail** ya no queda trabado pidiéndole la contraseña temporal.
+
+#### Asesores
+
+- Se puede responder dentro de un ticket desde el chat conectado a Voltia PM, con nota interna o visible para el cliente.
+
+#### Generación y consumo: ahora se ve la noche
+
+- En los inversores que se apagan sin sol, la curva del día cortaba al atardecer y volvía al amanecer. Ahora, en **Generación y consumo → Hora**, también en el portal, se ve el consumo de la noche en una **línea punteada**: el medidor lo cuenta aunque el inversor esté apagado. Se sabe cuánto se consumió, no a qué hora, así que se dibuja el promedio de esas horas.
+- El consumo y la compra a UTE de cada día **ahora incluyen la noche**: antes quedaban muy por debajo de la factura. Se actualiza solo todas las mañanas, para todas las plantas Growatt.
+
 ## v14.0
 
 ### 3 de noviembre de 2026
@@ -9,6 +58,10 @@
 - El asistente de Instagram **pide el celular siempre y apenas la persona muestra interés**, sin esperar a que mande la factura. Instagram solo deja escribirle hasta 24 horas después de su último mensaje: con el celular, el asesor le puede seguir escribiendo por WhatsApp.
 - En **Ventas → Instagram** aparecen todos los potenciales clientes: los que el asistente ve interesados en instalar (preguntaron el precio, cómo funciona para su casa, contaron su consumo o su techo), además de los que mandaron la factura, dejaron el celular o fueron derivados. Quedan afuera los curiosos, los que buscan trabajo, los proveedores y los clientes con un problema.
 - Eso se marca también mientras el asistente está en modo sombra (sin contestar), así Ventas los ve desde ahora.
+
+#### Onboarding: plazos de garantía en el contrato
+
+- En el formulario del contrato hay una sección nueva, **Garantías (años)**, con los plazos de paneles, inversor, componentes eléctricos y mano de obra. Vienen con los vigentes (10, 5, 3 y 3 años) y se cambian solo si se acordó otra cosa con el cliente; **Volver a los plazos vigentes** los restablece.
 
 #### Arreglos
 

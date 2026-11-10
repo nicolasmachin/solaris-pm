@@ -1,6 +1,6 @@
 # Manual de trabajo de Finanzas
 
-**Voltia · Uruguay** · Versión 0.22 · del 29/10/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.23 · del 10/11/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -727,6 +727,12 @@ proyecto sin contestarlo:
   solas: **sin IVA**, **con IVA** o **como porcentaje del presupuesto** (por
   ejemplo, 50). Si el monto es cero, el proyecto queda como que **no lleva
   factura**.
+- Cuando se factura una parte y el resto se cobra **sin IVA**, **«Ver
+  detalle»** muestra la cuenta completa: la parte con factura y su IVA, el
+  **restante** sin IVA, el **total** que paga el cliente y el **descuento de
+  IVA** (el IVA que no se cobra sobre el restante). **«Copiar para WhatsApp»**
+  la copia para mandarla. Si la diferencia es por otra razón, como una parte que
+  financia el banco, esa cuenta no corresponde.
 
 Lo mismo se corrige desde la ficha del proyecto o desde la lista de
 Facturación (el lápiz junto al monto).
@@ -1789,6 +1795,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.23 | 10 de noviembre de 2026 | En «¿Qué se le factura?», cuando se factura una parte, «Ver detalle» muestra la cuenta de la factura, el restante sin IVA, el total y el descuento de IVA, y se puede copiar para WhatsApp. |
 | 0.22 | 29 de octubre de 2026 | El lector del banco empieza a leer las cuentas del BROU de lunes a viernes a las 8 y a las 18. El lector trae el asunto; sugerencias, IA y «Es este» para cada movimiento del banco; costos fijos: lista de lo que falta pagar en el mes con «Pagar»; Cobros: «A cobrar ahora», también en la lista de Cobros de Experiencia Solar. Con financiación bancaria, el cobro previsto es una sola cuota del banco. |
 | 0.21 | 27 de octubre de 2026 | La proforma de un proyecto con financiación puede ser la generada en Voltia PM o una subida, si se hizo por fuera. |
 | 0.20 | 22 de octubre de 2026 | Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra (al firmar, previo a la obra, obra finalizada, habilitación finalizada) y Voltia PM avisa cuándo un cliente está listo para cobrar y cuándo una cuota venció. Cobros muestra al entrar solo lo que falta cobrar, con el filtro nuevo «Listos para cobrar». Nueva tabla de cuándo queda lista cada cuota y cómo entran en el flujo de fondos. Lo que se le factura a cada cliente lo define el asesor al crear el proyecto (facturación normal u otro monto con su motivo); Facturación muestra por separado presupuesto, a facturar, facturado y lo que falta, y al emitir se propone lo que falta facturar. Palabra nueva en el glosario: «A facturar». La lista de facturas recibidas se puede filtrar por proveedor, tipo, fecha y número. Un pago a proveedor se puede hacer desde una cuenta de otra moneda, con la cotización del día. «Arrancar cuenta» también cierra lo que quedaba a favor por pagos viejos. En las facturas por revisar, Voltia PM sugiere los gastos ya cargados más parecidos (también los cargados sin proveedor), con el porqué. En Movimientos, la columna Factura y el filtro de gastos sin factura. En Movimientos, las facturas pagadas con un pago se marcan «Factura a pagar» para no confundirlas con una salida de plata. En las facturas por revisar, «Ya está registrada»: vincular a un gasto elegido a mano, crear el gasto pagado o marcarla ya contemplada. Se aclara que descartar la saca del archivo para la contadora. |

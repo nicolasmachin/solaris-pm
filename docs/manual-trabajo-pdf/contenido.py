@@ -3334,6 +3334,18 @@ def leer_fuente():
         intro.append(lineas[i][1:].strip())
         i += 1
     parrafos, actual = [], []
+    if MANUAL == "reglamento":
+        # Cada párrafo empieza con su rótulo en negrita ("**Qué es.**"): lo que
+        # sigue hasta el próximo rótulo, con su lista, va junto.
+        for x in intro:
+            if x.startswith("**") and actual:
+                parrafos.append("\n".join(actual))
+                actual = []
+            if x:
+                actual.append(x)
+        if actual:
+            parrafos.append("\n".join(actual))
+        return version, parrafos, leer_capitulos(lineas, i)
     for x in intro:
         if x:
             actual.append(x)
@@ -3342,6 +3354,10 @@ def leer_fuente():
             actual = []
     if actual:
         parrafos.append(" ".join(actual))
+    return version, parrafos, leer_capitulos(lineas, i)
+
+
+def leer_capitulos(lineas, i):
     capitulos, cap = [], None
     for l in lineas[i:]:
         mm = re.match(r"^## (?:(\d+) · |Anexo · )(.+)$", l)
@@ -3356,7 +3372,23 @@ def leer_fuente():
             capitulos.append(cap)
         elif cap is not None:
             cap["lineas"].append(l)
-    return version, parrafos, capitulos
+    return capitulos
+
+
+def bajada_portada(texto):
+    """La presentación de la portada. Si trae una lista (el reglamento), va en
+    dos columnas para que entre debajo del título."""
+    if "\n- " not in texto:
+        return en_linea(texto)
+    lineas = texto.split("\n")
+    items = [l[2:] for l in lineas if l.startswith("- ")]
+    antes = " ".join(l for l in lineas[:lineas.index("- " + items[0])])
+    despues = " ".join(l for l in lineas[lineas.index("- " + items[-1]) + 1:])
+    lis = "".join(f'<li style="margin: 0">{en_linea(x)}</li>' for x in items)
+    return (f'{en_linea(antes)}</p>'
+            f'<ul style="margin: 6px 0 0; padding-left: 20px; columns: 2; column-gap: 28px; font-size: 15px; '
+            f'line-height: 1.5; color: {TEXTO}">{lis}</ul>'
+            f'<p style="margin: 6px 0 0; font-size: 16px; line-height: 1.6; color: {TEXTO}">{en_linea(despues)}')
 
 
 def construir():
@@ -3367,7 +3399,7 @@ def construir():
         n[0] += 1
         P.append((archivo, f"{n[0]} · {titulo_board}", hacer(n[0])))
 
-    hoja("Main.dc.html", "Portada", lambda p: portada(version, en_linea(parrafos[0])))
+    hoja("Main.dc.html", "Portada", lambda p: portada(version, bajada_portada(parrafos[0])))
 
     por_num = {c["num"]: c for c in capitulos if c["num"] is not None}
     anexos = [c for c in capitulos if c["num"] is None]
@@ -3378,7 +3410,7 @@ def construir():
         crudos = bloques_de(cap["lineas"])
         # El reglamento no tiene capítulo 0: la presentación va al principio del 1.
         if cap["num"] == (1 if MANUAL == "reglamento" else 0) and len(parrafos) > 1:
-            crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
+            crudos = [("cita", [" ".join(" ".join(parrafos[1:]).split("\n"))])] + crudos
         if MANUAL == "pgt":
             crudos = juntar_secciones(juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos)))))
             crudos = juntar_cliente_pm_casos(crudos, cap["num"])

@@ -1,5 +1,13 @@
 # Novedades
 
+## v14.3
+
+### 10 de noviembre de 2026
+
+#### Facturación: detalle de una facturación parcial
+
+- En **«¿Qué se le factura?»**, cuando se factura solo una parte, hay un desplegable **«Ver detalle»** con la cuenta completa: la parte con factura y su IVA, el restante sin IVA, el **total** que paga el cliente y el **descuento de IVA**. Con **«Copiar para WhatsApp»** se copia para mandársela al cliente. Está al ganar el lead, en la ficha del proyecto y en Finanzas → Facturación.
+
 ## v14.2
 
 ### 7 de noviembre de 2026

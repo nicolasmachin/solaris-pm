@@ -2,11 +2,21 @@
 
 **Voltia · Uruguay** · Versión 3.1 · del 06/11/26 · *borrador en revisión* · Ref: REG-OP-01
 
-> **Qué es.** Las reglas obligatorias de la actividad de Operaciones: el horario,
-> las horas extra, lo que marca la ley, lo que Voltia da por encima de la ley, lo
-> que espera de cada uno, la conducta, el orden en obra, la seguridad, los
-> vehículos, la confidencialidad y las sanciones. Cada trabajador lo recibe, lo lee
-> y lo firma.
+> **Qué es.** Las reglas obligatorias de la actividad de Operaciones:
+>
+> - el horario;
+> - las horas extra;
+> - lo que marca la ley;
+> - lo que Voltia da por encima de la ley;
+> - lo que espera de cada uno;
+> - la conducta;
+> - el orden en obra;
+> - la seguridad;
+> - los vehículos;
+> - la confidencialidad;
+> - las sanciones.
+>
+> Cada trabajador lo recibe, lo lee y lo firma.
 >
 > **Qué no es.** No explica cómo se trabaja: eso está en el **Manual de trabajo
 > de Operaciones**, y lo que conecta a las áreas, en el **Procedimiento General
@@ -15,7 +25,7 @@
 >
 > **Quién lo lee.** Todo el personal de Operaciones: el gerente de Operaciones,
 > los capataces, los operarios y Logística. Los instaladores tercerizados, en lo
-> que les toca mientras trabajan en una obra de Voltia (secciones 3.6 y 19).
+> que les toca mientras trabajan en una obra de Voltia (secciones 3.5 y 19).
 > Gerencia lo lee entero.
 
 ---
@@ -29,7 +39,8 @@ operativa de Voltia: la ejecución de obras e instalaciones fotovoltaicas, la
 puesta en marcha, los mantenimientos, las visitas de soporte, el depósito, los
 traslados y la conducta del personal en sus funciones.
 
-Su finalidad es que el trabajo se haga de forma segura, ordenada, documentada y
+Su finalidad es que todos tengan las reglas claras, sin malentendidos ni teléfono
+descompuesto, y que el trabajo se haga de forma segura, ordenada, documentada y
 profesional, cumpliendo la legislación laboral y de seguridad e higiene de
 Uruguay.
 
@@ -61,7 +72,16 @@ Este reglamento complementa, sin sustituirla, la normativa uruguaya:
 - Ley 18.561 — Acoso sexual laboral.
 - Ley 19.580 — Violencia hacia las mujeres basada en género.
 - Ley 18.331 — Protección de datos personales.
-- Normativa de UTE para microgeneración y conexión a la red.
+- Decreto 173/010 y normativa de UTE — Microgeneración y conexión a la red.
+- Ley 12.590 — Licencia anual.
+- Ley 16.101 — Salario vacacional.
+- Ley 15.996 — Horas extra.
+- Ley 12.840 — Aguinaldo.
+- Decreto-Ley 14.977 y Leyes 16.805 y 17.414 — Feriados.
+- Ley 18.345 — Licencias especiales.
+
+Qué dice cada una, en pocas palabras, está en el anexo *Las leyes, en pocas
+palabras*, al final.
 
 Lo que este reglamento no prevé se resuelve según esa normativa, los contratos
 individuales, los convenios colectivos y las directivas de la Dirección.
@@ -80,6 +100,8 @@ individuales, los convenios colectivos y las directivas de la Dirección.
   cumple. La excepción es el riesgo grave inminente (sección 13).
 - **Profesionalismo.** Cada instalación, cada vehículo y cada trato con el
   cliente muestran a Voltia. Eso es responsabilidad de todos.
+- **Los reclamos, a quien corresponde.** Se plantean al gerente de Operaciones
+  o a la Dirección, en privado; no en el grupo ni de pasillo (sección 9.3).
 
 ![Una cuadrilla de Voltia trabajando en obra.](captura:reglamento-obra)
 
@@ -100,12 +122,13 @@ Es responsable de la ejecución diaria del área:
 
 - Asigna las cuadrillas y las obras, propias o tercerizadas.
 - Aprueba las horas extra cuando no está la Dirección (sección 6).
-- Aplica las advertencias verbales y el primer apercibimiento escrito.
+- Coordina la licencia de cada uno (sección 9.1).
+- Recibe los reclamos del equipo, en privado (sección 9.3).
+- Administra los grupos de WhatsApp de Operaciones (sección 9.4).
+- Aplica las observaciones y el primer apercibimiento escrito.
 - Decide suspender una obra por clima o por condiciones inseguras.
 - Recibe y procesa los reportes de incidentes, daños y cuasi-incidentes.
 - Puede pedir un test de alcohol o drogas ante una sospecha razonable.
-- Mientras no haya un asesor en seguridad designado, ejerce el control de
-  seguridad en obra (sección 12.7).
 
 ### 3.3 Capataz
 
@@ -117,6 +140,8 @@ Es el responsable directo en la obra de la seguridad, la calidad y el avance:
   eléctricos.
 - Avisa en el momento al gerente de Operaciones cualquier desvío, incidente o
   cambio en la obra.
+- Hace la puesta en marcha: las verificaciones eléctricas, la configuración del
+  inversor, las mediciones y los ensayos que exige UTE.
 
 El capataz que tolere que alguien trabaje sin protección, o que deje entrar a
 alguien sin protección a la zona de trabajo, también es sancionado (sección
@@ -128,24 +153,21 @@ Hacen las tareas según el procedimiento, usan su equipo de protección toda la
 jornada, avisan los riesgos e incidentes y mantienen el orden y la limpieza. Son
 responsables de la calidad de lo que hacen personalmente.
 
-### 3.5 Puesta en marcha
-
-Quien hace la puesta en marcha es responsable de las verificaciones eléctricas,
-la configuración del inversor, las mediciones y los ensayos que exige UTE.
-
-### 3.6 Instaladores tercerizados
+### 3.5 Instaladores tercerizados
 
 Mientras están en una obra de Voltia, ellos y su personal cumplen este
 reglamento en seguridad, conducta y orden. En sus obras, **el instalador
 tercerizado es el capataz**: tiene las responsabilidades de la sección 3.3. Las
 condiciones y la documentación exigible están en la sección 19.
 
-### 3.7 Si dos instrucciones se contradicen
+### 3.6 Si dos instrucciones se contradicen
 
-Vale la del superior inmediato. Ante un riesgo grave inminente, rige la
-sección 13.
+Vale la de quien tiene mayor rango. Quien recibe dos instrucciones que se
+contradicen se lo dice a los dos antes de seguir. Quien da una instrucción por
+encima de un jefe intermedio le avisa a ese jefe. Ante un riesgo grave
+inminente, rige la sección 13.
 
-### 3.8 Cambios respecto del proyecto
+### 3.7 Cambios respecto del proyecto
 
 **En obra, el criterio del instalador le gana al del proyectista.** Si algo del
 proyecto no cierra en la casa del cliente, el capataz lo resuelve en el momento,
@@ -170,16 +192,31 @@ La jornada varía según las obras programadas. El horario de inicio, fin y
 pausas se comunica con anticipación al equipo, por el grupo de trabajo o por
 Voltia PM.
 
-La jornada empieza en el depósito de Voltia, que es el punto de encuentro. El
-traslado del depósito a la obra y la vuelta al depósito al final del día son
-tiempo de trabajo. En las obras del interior, las horas de viaje se cambian por un
-viático (sección 8.7).
+En las obras de Montevideo y alrededores, la jornada empieza en el depósito de
+Voltia, que es el punto de encuentro, y el traslado a la obra y la vuelta al
+depósito son tiempo de trabajo. En las obras del interior, la jornada empieza en
+la obra.
+
+> *A confirmar con FEFA:* si en una obra del interior, por ejemplo en Maldonado,
+> el viaje es tiempo de trabajo, y si Voltia tiene que llevar al equipo o se puede
+> presentar allá.
 
 ### 4.2 Registro de entrada y salida
 
-Es obligatorio marcar la entrada y la salida con la aplicación de fichaje con
-geolocalización que da Voltia. Sin un registro válido, la hora no se computa,
-salvo que el gerente de Operaciones la valide por escrito.
+Es obligatorio marcar la entrada y la salida. Se puede marcar de dos formas:
+
+- con la aplicación de marcas de Voltia, en el teléfono de cada uno, que registra
+  dónde se marcó; es la forma de marcar en las obras del interior;
+- en el reloj de marcas del depósito, que está para no depender del teléfono o de
+  internet.
+
+Marcar es responsabilidad de cada uno. Si por un motivo excepcional alguien no
+pudo marcar, le avisa ese mismo día al gerente de Operaciones, que carga la marca
+a mano.
+
+La aplicación toma la ubicación solo al marcar y durante la jornada, nunca fuera
+de hora, y solo para controlar el horario. Voltia le informa por escrito a cada
+uno qué se registra, para qué y quién lo ve.
 
 Eludir, manipular o falsear el registro es falta grave.
 
@@ -190,17 +227,22 @@ llegada tarde.
 
 ### 4.4 Ausencias
 
-Toda ausencia se avisa lo antes posible al capataz y al gerente de Operaciones,
-con el motivo. El certificado médico o el documento que la justifique se
-presenta dentro de las 48 horas hábiles.
+Lo que se puede prever se pide antes (sección 9.2). Lo que no se puede prever se
+avisa lo antes posible al capataz y al gerente de Operaciones, con el motivo.
+Quien queda certificado por enfermedad avisa que está certificado;
+Voltia lo consulta en el BPS. Para otras ausencias, el documento que la justifique
+se presenta dentro de las 48 horas hábiles.
 
 Faltar sin aviso es falta grave.
 
 ### 4.5 Pausas
 
-Se respetan las pausas legales, las que define Voltia y las que hagan falta por
-seguridad o salud (calor extremo, cansancio, trabajos críticos). El almuerzo se
-toma según lo que se coordine en cada obra.
+La jornada es de 8 horas corridas, con media hora de descanso en el medio, que
+se paga. Cada uno lo toma cuando le sirve, coordinándolo con el capataz y
+avisando, sin trabajar más de 5 horas seguidas.
+
+Además se respetan las pausas que hagan falta por seguridad o salud (calor
+extremo, cansancio, trabajos críticos).
 
 ---
 
@@ -210,8 +252,11 @@ Con lluvia, viento fuerte, superficie resbaladiza, tormenta eléctrica, calor
 extremo o cualquier condición que ponga en riesgo el trabajo en altura, **la
 decisión de suspender la toma el gerente de Operaciones**. Se la comunica por
 escrito a la cuadrilla (mensaje al grupo de trabajo), y el capataz le avisa al
-cliente que ese día el equipo no va. Cómo se computa el día (reasignación al
-depósito, suspensión parcial o total) se define en cada caso.
+cliente que ese día el equipo no va, porque es lo del día.
+
+Ese día no se pierde: el equipo vuelve al depósito y sigue trabajando ahí, en lo
+que haga falta (ordenar, preparar la próxima obra, mantener herramientas y
+vehículos). Es un día de trabajo normal.
 
 Una vez decidida la suspensión, nadie puede quedarse en el techo ni en una
 estructura en altura.
@@ -220,36 +265,42 @@ estructura en altura.
 
 ## 6 · Horas extra
 
-### 6.1 Principio
+### 6.1 Cuándo se hacen
 
-Las horas extra son voluntarias (sección 7) y no se hacen por decisión del
-trabajador: necesitan aprobación previa y por escrito.
+Las horas extra se hacen cuando el trabajo las pide, y siempre con el acuerdo del
+trabajador (sección 7). Las aprueba el gerente de Operaciones o, si no está, el
+capataz.
 
-### 6.2 Quién las aprueba
+Lo más común es que en la obra, entre el capataz y el equipo, decidan quedarse un
+rato más para terminar y no tener que volver otro día. En ese caso el capataz da
+el visto bueno ahí mismo y le avisa al gerente de Operaciones ese día. Las horas
+extra que se hacen así **siempre se pagan**.
 
-La Dirección. Si la Dirección no está, el gerente de Operaciones.
+### 6.2 Quedarse por cuenta propia
 
-### 6.3 Contingencia en obra
+A veces alguien se queda un rato más por su cuenta, para terminar algo con la
+calidad que le parece que corresponde. Eso está bien visto. Pero esa hora no la
+pidió nadie, así que **no es hora extra y no se paga**. Quien quiere que se le
+pague tiene que pedirla antes, por escrito, al capataz o al gerente de
+Operaciones.
 
-Si en la obra surge algo que no admite postergación (el clima, cerrar una etapa
-crítica, una condición de seguridad, una coordinación con UTE o con terceros),
-el capataz puede habilitar las horas extra necesarias y regularizarlas por
-escrito ese mismo día, avisando al gerente de Operaciones.
+> *A confirmar con FEFA:* qué pasa si alguien reclama después una hora que se
+> quedó por su cuenta.
 
-### 6.4 Registro
+### 6.3 Registro
 
 Cada hora extra queda registrada por escrito con la obra, la fecha, quiénes, la
-hora de inicio y de fin, el motivo y quién la aprobó. Sin registro, no se
-procesa.
+hora de inicio y de fin, el motivo y quién la aprobó. Si falta el registro, el
+gerente de Operaciones lo regulariza ese mismo día.
 
-### 6.5 Liquidación y regímenes especiales
+### 6.4 Liquidación y regímenes especiales
 
 Las horas extra se liquidan según la normativa laboral. Algunos trabajadores
 pueden tener un régimen de pago especial por jornada de obra, acordado por
 escrito y agregado a su legajo; ese acuerdo prevalece sobre esta sección en lo
-que corresponda.
+que corresponda, siempre que no pague menos de lo que marca la ley.
 
-### 6.6 Sábados
+### 6.5 Sábados
 
 > *Por definir:* cuándo se trabaja el sábado y en qué condiciones.
 
@@ -267,89 +318,106 @@ del Estado.
 
 | Tema | Regla general |
 |---|---|
-| Feriados no laborables | Son 5: 1/1, 1/5, 18/7, 25/8 y 25/12. Son pagos y, si se trabajan, se pagan doble. |
-| Feriados laborables | Los demás, por ejemplo Carnaval y Turismo. Se trabaja normal y se paga normal. |
-| Horas extra | Son voluntarias. Se pagan con recargo: el doble en día hábil, más en día de descanso o feriado. |
-| Licencia anual | 20 días, más 1 día cada 4 años de antigüedad a partir del quinto año. Por ley se cuenta de lunes a sábado. |
-| Salario vacacional | Se paga junto con la licencia. |
-| Aguinaldo | Dos cuotas, en junio y en diciembre. |
-| Enfermedad | Se avisa y se certifica. A partir del cuarto día de certificación paga el BPS. Se trae la constancia. |
-| Accidente de trabajo | Se denuncia y lo cubre el BSE. Hay que avisar el mismo día. |
-| Elementos de seguridad | La empresa los tiene que dar y el trabajador los tiene que usar: casco, arnés, calzado, guantes. |
-| Licencias especiales | Estudio, paternidad, duelo, matrimonio, donación de sangre. |
+| Feriados pagos | Son 5: 1/1, 1/5, 18/7, 25/8 y 25/12. Son pagos y, si se trabajan, se pagan doble. |
+| Feriados comunes | Los demás, por ejemplo Carnaval y Turismo. Se trabaja normal y se paga normal. |
+| Jornada | 8 horas por día y 48 por semana como máximo (en la industria). |
+| Descanso semanal | Un día después de seis de trabajo, que debe ser en domingo salvo excepciones (en la industria). |
+| Horas extra | Necesitan el acuerdo del trabajador, y son 8 por semana como máximo. Se pagan con recargo: el doble en día hábil; dos veces y media en el día de descanso o en un feriado. |
+| Licencia anual | 20 días por año, más días por antigüedad desde el quinto año. Por ley se cuentan los sábados; los domingos y los feriados, no. Se toma de corrido. |
+| Salario vacacional | Lo mismo que se cobra en mano por los días de licencia. Se paga antes de empezar la licencia. |
+| Aguinaldo | La doceava parte de lo cobrado en el año. Se paga en dos cuotas, en junio y en diciembre. |
+| Enfermedad | Se avisa a la empresa que se está certificado; el certificado lo carga el médico en el BPS. El BPS paga desde el cuarto día de certificación (desde el primero, si hay internación). |
+| Accidente de trabajo | Lo cubre el BSE. Voltia lo tiene que denunciar en plazo: por eso hay que avisar el mismo día. |
+| Elementos de seguridad | La empresa los tiene que dar gratis y el trabajador los tiene que usar: casco, arnés, calzado, guantes. |
+| Licencias especiales | Pagas: estudio, paternidad, duelo, matrimonio y donación de sangre. |
 
-> *A confirmar con FEFA:* cómo se cuenta la licencia por ley, los días de las
-> licencias especiales, el recargo exacto de las horas extra, y si al equipo le
-> corresponde el convenio de la construcción, porque eso puede cambiar lo que es
-> obligatorio en licencia, viáticos y horas de viaje.
+El detalle de cada tema, con lo que dice cada ley, está en el anexo *Las leyes,
+en pocas palabras*.
+
+> *A confirmar con FEFA:* si al equipo le corresponde el convenio de la
+> construcción, porque eso puede cambiar lo que es obligatorio en licencia,
+> viáticos y horas de viaje.
 
 ---
 
 ## 8 · Lo que Voltia da por encima de la ley
 
-Son decisiones de la empresa, no derechos. Dependen de que el equipo funcione bien.
+Los puntos de esta sección son decisiones de la empresa y no derechos de los
+trabajadores. Su continuidad depende del buen funcionamiento del equipo.
 
 > *A confirmar con FEFA:* si un beneficio que se repite todos los años puede pasar
 > a ser un derecho del trabajador.
 
-### 8.1 Licencia coordinada, no impuesta
+### 8.1 Licencia coordinada
 
-Voltia podría aplicar la licencia de la construcción, con fechas fijas para todos.
-En cambio, cada uno propone cuándo se la quiere tomar, con tiempo, y se coordina
-entre todos. A la empresa le cuesta más organizarse.
+Voltia podría aplicar el régimen de licencia de la construcción, con fechas fijas
+para todo el personal. Opta, en cambio, por que cada trabajador proponga con
+anticipación cuándo tomar su licencia y la coordine con el resto del equipo, lo
+que supone para la empresa una mayor complejidad de organización.
 
-### 8.2 Seis días libres pagos que no corresponden por ley
+### 8.2 Días libres pagos
 
-- El 24 y el 31 de diciembre enteros (lo habitual es medio día).
-- Lunes y martes de Carnaval.
-- Jueves y viernes de Turismo.
+Voltia otorga seis días libres pagos que no corresponden por ley:
 
-> *A definir:* qué pasa de lunes a miércoles de Turismo. El Manual de trabajo de
-> Gerencia dice que Voltia no trabaja esa semana, de lunes a viernes.
+- el 24 y el 31 de diciembre completos;
+- el lunes y el martes de Carnaval;
+- el jueves y el viernes de la Semana de Turismo.
 
-### 8.3 La licencia rinde más
+El lunes, el martes y el miércoles de la Semana de Turismo son días de trabajo.
 
-Se cuenta de lunes a viernes, no de lunes a sábado. Sumando esto y los seis días de
-la sección 8.2, son **unas dos semanas más de descanso pago por año** que la ley no
-exige.
+### 8.3 Cómputo de la licencia
 
-### 8.4 Ropa de trabajo de primera
+Voltia cuenta los días de licencia de lunes a viernes, y no de lunes a sábado como
+establece la ley. Sumado a los seis días de la sección 8.2, esto representa **unas
+dos semanas adicionales de descanso pago por año** que la ley no exige.
 
-- Equipo completo dos veces por año.
-- Nadie tuvo que trabajar nunca con ropa propia.
-- La mejor calidad, por ejemplo en los zapatos de seguridad.
+### 8.4 Ropa de trabajo
 
-Lo extra es la calidad y la frecuencia; los elementos de seguridad en sí son
-obligación.
+Voltia entrega a cada trabajador un equipo completo de ropa de trabajo dos veces
+por año, de primera calidad, incluido el calzado de seguridad. Ningún trabajador
+debe desempeñar sus tareas con ropa propia.
 
-### 8.5 Flexibilidad
+La entrega de los elementos de seguridad es una obligación legal de la empresa
+(sección 7). Lo que Voltia otorga por encima de la ley es la calidad y la
+frecuencia de esa entrega.
 
-Un día, un trámite o el médico: avisando con tiempo, se le da a todos. Las horas se
-recuperan otro día o con horas extra, sin descuento.
+### 8.5 Tiempo para trámites y consultas
 
-> *A definir:* si las horas que se recuperan con horas extra se pagan con recargo.
-> La sección 6 pide aprobarlas antes.
+Voltia concede tiempo para trámites, consultas médicas y otras gestiones
+personales que no puedan realizarse fuera del horario de trabajo, siempre que se
+soliciten con anticipación (sección 9.2) y que el trabajo lo permita. Las horas no
+trabajadas por este motivo no se descuentan del sueldo: se recuperan otro día o
+mediante horas extra, en la forma que se coordine con el capataz o el gerente de
+Operaciones, y lo acordado queda registrado por escrito.
 
-### 8.6 Alojamiento con cocina
+> *A confirmar con FEFA:* si las horas que se recuperan quedándose más tiempo otro
+> día llevan recargo.
 
-Lo estándar sería un hotel, que es más barato, con el viático para la comida. Se
-buscan casas porque el equipo lo pidió, para que cada uno se ahorre parte del
-viático. Si las casas dan más problemas que ventajas, se vuelve al hotel.
+### 8.6 Alojamiento en las obras del interior
 
-> *A confirmar con el gerente de Operaciones:* el criterio de buscar casas con
-> cocina aunque cuesten más.
+Siempre que sea posible, se opta por una casa con cocina, para que cada trabajador
+pueda ahorrar parte del viático. Si este régimen ocasionara más inconvenientes que
+ventajas, Voltia podrá volver al alojamiento en hotel.
 
 ### 8.7 Viáticos y horas de viaje
 
-En las obras del interior, Voltia paga **$ 1.000 por día y por persona**, contando
-ida y vuelta, a cambio de no cobrar las horas de viaje. Es un acuerdo, no un
+En las obras del interior, Voltia abona un viático de **$ 1.000 por día y por
+persona**, incluidos los días de ida y de vuelta, en compensación por las horas de
+viaje, que no se pagan. Este punto constituye un acuerdo entre las partes y no un
 beneficio.
 
-> *A decidir:* dejarlo en $ 1.000 o subirlo a $ 1.200, para quedar por encima de la
-> construcción, que paga unos $ 1.090 por día trabajado más los días de viaje.
->
 > *A confirmar con FEFA:* si el cambio de horas de viaje por viático es válido y si
 > conviene dejarlo firmado.
+
+### 8.8 Cómo se cambian estos beneficios
+
+Lo de esta sección es una decisión de Voltia y no forma parte del contrato de
+trabajo. Voltia puede sumar beneficios en cualquier momento. Para reducirlos o
+quitarlos, avisa por escrito con 60 días de anticipación, y el cambio rige recién
+desde el 1 de enero del año siguiente.
+
+> *A confirmar con FEFA:* si esta cláusula alcanza para poder reducir o quitar un
+> beneficio.
 
 ---
 
@@ -357,26 +425,54 @@ beneficio.
 
 ### 9.1 Licencia
 
-Cada uno la propone con anticipación y la coordina con el gerente de Operaciones.
-Después la pide en Voltia PM, desde Mi legajo, y administración la aprueba o la
-rechaza con su motivo.
+Cada trabajador propone su licencia con anticipación y la coordina con el gerente
+de Operaciones. Luego la solicita en Voltia PM, desde Mi legajo, y administración
+la aprueba o la rechaza indicando el motivo.
 
 > *A definir:* la anticipación. La propuesta es de 15 días.
 
-### 9.2 Médico, trámites y faltas
+### 9.2 Permisos y faltas
 
-- Se avisa apenas se sabe, con la hora.
-- Se trae la constancia (sección 4.4).
-- "Capaz que no voy" no es un aviso.
+**Lo previsible requiere permiso.** Los turnos médicos, los trámites y las
+gestiones personales se realizan fuera del horario de trabajo siempre que sea
+posible: antes de entrar, al salir o durante el descanso. Cuando no sea posible,
+el trabajador solicita permiso por escrito al gerente de Operaciones, indicando el
+día y la hora, y espera su respuesta. La solicitud se hace con el tiempo suficiente
+para reorganizar el trabajo, y no la noche anterior, porque la ausencia afecta a
+todo el equipo.
+
+**Lo imprevisible se avisa.** Una enfermedad, una urgencia o un accidente se
+comunican apenas se conocen. Quien queda certificado avisa que lo está (sección
+4.4).
+
+**Las licencias que establece la ley no requieren permiso.** Las licencias
+especiales (sección 7) son un derecho: se comunican y se acreditan.
+
+Quien tiene permiso para llegar más tarde se traslada directamente a la obra por
+sus medios, y su jornada comienza al llegar. Voltia le reintegra el boleto con el
+sueldo siguiente.
+
+El trabajador presenta la constancia del trámite o de la consulta. Todo permiso
+queda registrado por escrito, con las horas y la forma de recuperarlas. Una
+expresión sin certeza, como "capaz que no voy", no se considera un aviso.
 
 ### 9.3 Reclamos
 
-Van al gerente de Operaciones o a la Dirección, en privado. No en el grupo ni de
-pasillo.
+Los reclamos se plantean al gerente de Operaciones o a la Dirección, en privado, y
+no en los grupos de trabajo ni de manera informal.
 
-### 9.4 Grupo de WhatsApp
+### 9.4 Grupos de WhatsApp
 
-Es para coordinar el trabajo, no para quejas ni para hablar de los compañeros.
+Voltia tiene una comunidad de WhatsApp con un grupo por tema. Los de Operaciones
+los administra el gerente de Operaciones:
+
+- el general de Operaciones;
+- el de coordinación de capataces;
+- el de avisos de Operaciones;
+- uno por cada instalador tercerizado.
+
+Estos grupos, y todos los de la comunidad, se utilizan para coordinar el trabajo, y
+no para formular quejas ni para hablar de los compañeros.
 
 ---
 
@@ -404,12 +500,19 @@ delante del cliente.
 
 ### 10.3 Control de alcohol y drogas
 
-Voltia puede pedir un test de alcohol o drogas ante una sospecha razonable:
-señales objetivas (olor a alcohol, descoordinación, conducta alterada, habla
-alterada, comportamiento incompatible con la tarea) que advierte la supervisión.
+Quien muestre señales de no estar en condiciones de trabajar (olor a alcohol,
+descoordinación, habla o conducta alterada) es apartado de la tarea, sea cual sea
+su categoría. Voltia puede aplicar una prueba no invasiva, que realiza personal de
+salud. Si hay un delegado de salud o representante de los trabajadores, se le avisa
+y puede estar presente.
 
-El test lo hace personal habilitado o un centro de salud, a cargo de Voltia.
-Negarse sin justificación tiene los mismos efectos que un resultado positivo.
+Quien se niega a la prueba no vuelve a sus tareas hasta certificar que está en
+condiciones.
+
+Si la prueba da positivo, se suspende su jornada. El trabajador puede pedir una
+prueba de confirmación: si da positivo la paga él, y si da negativo, Voltia. Ante un
+segundo positivo, se lo orienta a los servicios de salud, sin perjuicio de las
+sanciones que correspondan.
 
 ### 10.4 Celular
 
@@ -441,6 +544,10 @@ de carga o en cualquier tarea que pida atención plena.
 - El capataz controla el orden y la limpieza antes de retirarse.
 - La zona queda segura: sin herramientas sueltas ni cables u objetos con los que
   alguien se pueda tropezar.
+- No queda ninguna colilla de cigarrillo en la obra ni en la casa del cliente.
+  Dejarla es falta leve y queda registrada. Si se sabe quién la dejó, se sanciona
+  a esa persona y al capataz, por no controlar. Si no se sabe, se sanciona al
+  capataz.
 
 ### 11.3 Al terminar la obra
 
@@ -465,7 +572,7 @@ del equipo.
 ### 11.6 En la casa del cliente
 
 - Se respetan los horarios y se avisa antes si hay demora.
-- No se fuma dentro de la casa.
+- No se fuma en la propiedad del cliente: solo afuera de ella.
 - No se dejan colillas, restos de comida ni residuos personales.
 - Se usan lonas o protectores donde haya riesgo de marcar pisos, paredes o
   muebles.
@@ -484,8 +591,9 @@ condiciones, llevarlo a la obra y usarlo**, todo el tiempo que está en la obra.
 que se use bien.
 
 La reposición por desgaste normal es a cargo de Voltia. Si se rompe o se pierde
-por mal uso, descuido o pérdida no justificada, se le puede descontar al
-trabajador, después de investigarlo y escuchar su descargo. Toda rotura, pérdida
+por mal uso o descuido, después de investigarlo y escuchar su descargo, se
+sanciona según la sección 22, y Voltia puede reclamar su valor. No se descuenta
+del sueldo sin el consentimiento expreso del trabajador. Toda rotura, pérdida
 o desgaste se avisa en el momento al capataz, y se repone antes de seguir
 trabajando.
 
@@ -496,7 +604,7 @@ atención al tercerizado, que es el responsable de su gente.
 
 ### 12.2 Trabajo en altura
 
-Es trabajo en altura toda tarea a 2 metros o más del nivel de abajo.
+Es trabajo en altura toda tarea a 2 metros o más del nivel del piso.
 
 - Nadie sube a un techo o una estructura sin la capacitación vigente y sin el
   equipo para altura: arnés de cuerpo completo, cabo de vida con amortiguador y
@@ -508,7 +616,7 @@ Es trabajo en altura toda tarea a 2 metros o más del nivel de abajo.
 - Con lluvia, viento fuerte, superficie resbaladiza o tormenta eléctrica, se
   suspende todo trabajo en el techo.
 - La capacitación de trabajo en altura la da un técnico prevencionista
-  habilitado por el MTSS, designado por Voltia. Queda registrada con el nombre,
+  registrado en el MTSS, designado por Voltia. Queda registrada con el nombre,
   la fecha y la firma. Se refresca cada seis meses, y cada vez que entra alguien
   nuevo o hay un incidente relevante.
 - Los arneses y los cabos de vida tienen la vida útil que indica el fabricante.
@@ -543,7 +651,7 @@ es responsabilidad de la cuadrilla.
 
 ### 12.6 Salud
 
-- Carné de salud vigente.
+- Control en salud (ex carné de salud) vigente.
 - Aptitud médica para trabajo en altura.
 - Se recomienda la vacuna antitetánica al día.
 - Quien tiene síntomas que pongan en riesgo su seguridad o la de otros no va a
@@ -554,10 +662,9 @@ es responsabilidad de la cuadrilla.
 
 ### 12.7 Asesor en seguridad
 
-Voltia va a designar formalmente un asesor en seguridad e higiene registrado
-ante el MTSS, que arma el plan de seguridad y capacita a la cuadrilla propia y a
-los tercerizados. Hasta entonces, el control de seguridad en obra lo ejerce el
-gerente de Operaciones.
+Voltia cuenta con un asesor en seguridad e higiene registrado en el Ministerio de
+Trabajo, que arma el plan de seguridad y capacita a la cuadrilla propia y a los
+tercerizados.
 
 ---
 
@@ -587,9 +694,10 @@ Nadie es sancionado por detener una tarea por seguridad si actuó de buena fe.
   pasó y qué se va a hacer para que no se repita, quién y para cuándo.
 - Los **cuasi-incidentes** (lo que pudo terminar en accidente y no terminó)
   también se reportan: sirven para prevenir.
-- Los accidentes con lesión se denuncian al BSE dentro de las 72 horas; lo hace
-  Voltia. Si el accidente es grave, el informe va a la Inspección del Trabajo
-  dentro de los 10 días hábiles.
+- Los accidentes con lesión los denuncia Voltia al BSE: dentro de las 72 horas
+  si pasan en Montevideo, y dentro de los 5 días hábiles en el resto del país. Si
+  el accidente es grave, el informe va a la Inspección del Trabajo dentro de los
+  10 días hábiles.
 - Ocultar, demorar a propósito o falsear un reporte es falta grave.
 
 ---
@@ -604,7 +712,7 @@ Nadie es sancionado por detener una tarea por seguridad si actuó de buena fe.
   capataz (el **control de obra**). Si algo no quedó como se espera, pide las
   correcciones.
 - Un problema técnico que no se puede resolver en el momento con el criterio
-  del capataz (sección 3.8) se avisa al gerente de Operaciones y, si hace falta,
+  del capataz (sección 3.7) se avisa al gerente de Operaciones y, si hace falta,
   a Ingeniería.
 
 ![Control de un trabajo en obra.](captura:reglamento-control)
@@ -791,7 +899,7 @@ una tecnología o un procedimiento nuevo.
 ### 21.3 La capacitación de seguridad
 
 La capacitación habilitante de trabajo en altura y las demás capacitaciones
-formales de seguridad las da un técnico prevencionista habilitado por el MTSS,
+formales de seguridad las da un técnico prevencionista registrado en el MTSS,
 designado por Voltia. Los certificados se archivan en el legajo.
 
 ---
@@ -803,9 +911,10 @@ designado por Voltia. Los certificados se archivan en el legajo.
 **Faltas leves**, entre otras:
 
 - Llegar tarde sin justificación.
-- No completar los registros (fichaje, Voltia PM).
+- No marcar la entrada o la salida, o no completar los registros en Voltia PM.
+- Ausentarse por algo previsible sin haber pedido permiso.
 - Usar mal el celular en la obra.
-- Desorden o falta de limpieza en la obra.
+- Desorden o falta de limpieza en la obra, incluido dejar colillas.
 - No avisar a tiempo una incidencia menor.
 - Incumplir el reglamento sin comprometer la seguridad.
 
@@ -815,23 +924,27 @@ designado por Voltia. Los certificados se archivan en el legajo.
 - Trabajar en altura sin las medidas de seguridad.
 - Intervenir una instalación eléctrica sin autorización ni procedimiento.
 - Faltar sin aviso.
-- Eludir, manipular o falsear el fichaje.
+- Eludir, manipular o falsear las marcas de entrada o salida.
 - Ocultar, demorar o falsear el reporte de un incidente.
 - Insubordinación reiterada o conducta agresiva.
 - Dañar bienes de Voltia, del cliente o de terceros por negligencia grave.
 - Conducir un vehículo de Voltia sin estar designado o con la libreta vencida.
+- Presentarse bajo los efectos del alcohol o de drogas, la primera vez.
 
-**Faltas gravísimas** (notoria mala conducta, despido con justa causa), entre
-otras:
+**Faltas gravísimas** (pueden considerarse notoria mala conducta, con despido
+con justa causa), entre otras:
 
-- Presentarse bajo los efectos del alcohol o de drogas.
-- Negarse sin justificación al test de alcohol o drogas.
+- Presentarse bajo los efectos del alcohol o de drogas de forma reiterada, o
+  cuando provocó un riesgo grave o un daño.
 - Robar o dañar a propósito bienes de Voltia, del cliente o de terceros.
 - Agredir físicamente, amenazar gravemente o portar armas.
 - Acoso sexual, moral o discriminatorio.
 - Trabajar por fuera con clientes, interesados o referidos de Voltia.
 - Violar gravemente la confidencialidad o la no captación.
-- Reincidir en faltas graves, cuando lo determine la escala.
+
+Esta lista no es cerrada. Lo que no figure en ella lo evalúa Voltia según su
+gravedad, respetando el derecho a descargo (sección 22.5). La lista se actualiza
+con el tiempo (sección 23).
 
 ### 22.2 Seguridad: la sanción alcanza a la cadena
 
@@ -849,25 +962,28 @@ trabajo de cada uno.
 
 ### 22.3 La escala
 
-Para las faltas leves y graves:
+Cada falta leve suma 1 punto y cada falta grave suma 2. Se cuentan los puntos de
+los últimos 12 meses: lo anterior no suma, pero queda en el legajo.
 
-| Instancia | Sanción | Registro |
-|---|---|---|
-| 1.ª | Apercibimiento por escrito. Si la falta lo amerita, se retira de la obra hasta regularizar | En el legajo |
-| 2.ª | Segundo apercibimiento por escrito | En el legajo, con copia a la Dirección |
-| 3.ª | Suspensión de un día, sin goce de sueldo | Reunión obligatoria con el gerente de Operaciones |
-| 4.ª | Suspensión de dos días, sin goce de sueldo | En el legajo |
-| Si sigue | Notoria mala conducta: despido con justa causa, sin indemnización, según la normativa | Despido justificado |
+| Puntos en 12 meses | Sanción |
+|---|---|
+| 1 | Observación por escrito |
+| 2 | Apercibimiento por escrito |
+| 3 | Segundo apercibimiento por escrito |
+| 4 | Suspensión de un día, sin goce de sueldo |
+| 5 | Suspensión de dos días, sin goce de sueldo |
+| 6 o más | Puede considerarse notoria mala conducta |
 
-Las faltas gravísimas permiten el despido directo, sin pasar por la escala.
+Cada sanción queda en el legajo. Si la falta lo amerita, además se retira al
+trabajador de la obra hasta regularizar la situación. Al llegar a una suspensión,
+hay una reunión obligatoria con el gerente de Operaciones.
 
-> *A definir:* si antes del primer apercibimiento va una observación. Las
-> advertencias verbales aparecen en las secciones 3.2 y 22.4, pero no en esta escala.
+Las faltas gravísimas no suman puntos: permiten el despido directo, sin pasar por
+la escala.
 
 ### 22.4 Quién sanciona
 
-- Las advertencias verbales y el primer apercibimiento: el gerente de
-  Operaciones.
+- Las observaciones y el primer apercibimiento: el gerente de Operaciones.
 - El segundo apercibimiento, las suspensiones y los despidos: la Dirección.
 
 Toda sanción escrita se notifica en persona, firmada, con copia para el
@@ -933,10 +1049,219 @@ Por Voltia — Dirección: _______________________
 
 ---
 
+## Anexo · Las leyes, en pocas palabras
+
+Nadie tiene que ir a leer las leyes. Acá está lo que dice cada una, contado de
+forma sencilla, para que todos sepan qué les corresponde y qué tiene que cumplir
+Voltia. Si algo de este resumen no coincide con la ley, vale la ley. Un convenio
+colectivo puede mejorar lo que dicen.
+
+### Ley 12.590 — Licencia anual
+
+- **Cuántos días.** 20 días de licencia paga por año trabajado. Al quinto año en
+  la empresa se suma un día, y después uno más cada cuatro años: al octavo año,
+  por ejemplo, son dos días más.
+- **Cómo se cuentan.** Los sábados cuentan como días de licencia. Los domingos y
+  los feriados que caen en medio de la licencia no se cuentan.
+- **Cuándo se toma.** Se genera trabajando un año y se toma dentro del año
+  siguiente. No puede empezar en un día de descanso. Quien todavía no cumplió un
+  año tiene los días que le corresponden por el tiempo que trabajó hasta el 31 de
+  diciembre.
+- **De corrido.** Por ley, la licencia se toma en un solo período. Solo se puede
+  partir en dos si lo permite un convenio colectivo, y la parte más corta tiene
+  que ser de al menos 10 días.
+- **No se cambia por plata.** Se toma siempre: la ley anula cualquier acuerdo
+  para cobrarla en vez de tomarla. La única excepción es cuando la persona deja
+  la empresa: ahí se le paga la licencia que le corresponde, sin descuentos.
+
+> *A confirmar con FEFA:* si hay un convenio colectivo que le permita a Voltia
+> partir la licencia en dos.
+
+### Ley 16.101 — Salario vacacional
+
+Es una suma extra para disfrutar la licencia. Equivale a **lo mismo que se cobra
+en mano por los días de licencia**: quien sale 20 días cobra el sueldo de esos 20
+días y, además, otro tanto de salario vacacional.
+
+Se paga **antes de empezar la licencia**, por los días que se toman. Si la
+licencia se parte en dos, se paga en proporción a los días de cada parte.
+
+### Ley 15.996 — Horas extra
+
+Hora extra es la que se trabaja **por encima del horario normal**. Cuánto se
+paga depende del día:
+
+| Cuándo se hace | Recargo | Cuánto vale la hora |
+|---|---|---|
+| Un día hábil | 100 % | El doble |
+| El día de descanso de la semana | 150 % | Dos veces y media |
+| Un feriado pago | 100 % las horas del horario normal; 150 % las que pasan de ese horario | El doble, y dos veces y media lo que pasa del horario |
+
+Por ejemplo, si la hora vale $ 200, la hora extra vale $ 400 un martes y $ 500 en
+el día de descanso.
+
+Hay un tope: **8 horas extra por semana como máximo, y siempre con el acuerdo
+del trabajador**.
+
+### Ley 12.840 — Aguinaldo
+
+Es un **sueldo extra por año**: la doceava parte de todo lo que se cobró en los
+doce meses anteriores al 1 de diciembre. Se paga en **dos cuotas**, en junio y
+en diciembre; el Poder Ejecutivo lo fija así cada año. Quien deja la empresa
+cobra la parte que le corresponde por el tiempo que trabajó, salvo que lo
+despidan por notoria mala conducta: en ese caso lo pierde.
+
+### Feriados — Decreto-Ley 14.977 y Leyes 12.590, 16.805 y 17.414
+
+Hay dos clases de feriados, y se pagan distinto.
+
+**Los feriados pagos** son cinco: el 1 de enero, el 1 de mayo, el 18 de julio, el
+25 de agosto y el 25 de diciembre. Son los únicos que se pagan doble si se
+trabajan.
+
+**Los feriados comunes** son todos los demás: el 6 de enero, el lunes y el
+martes de Carnaval, la Semana de Turismo, el 19 de abril, el 18 de mayo, el 19 de
+junio, el 12 de octubre y el 2 de noviembre. **Se trabaja normal y se paga
+normal: nada doble.** Por eso el 2 de noviembre, si se trabaja, se cobra como
+cualquier día.
+
+| | Feriado pago | Feriado común |
+|---|---|---|
+| Quien cobra por mes y **no** trabaja | Cobra su sueldo igual | Cobra su sueldo igual |
+| Quien cobra por mes y trabaja | Cobra un día más (el sueldo dividido 30) | Cobra su sueldo, sin nada extra |
+| Quien cobra por jornal y **no** trabaja | Cobra el jornal igual | No cobra ese día |
+| Quien cobra por jornal y trabaja | Cobra doble jornal | Cobra el jornal normal |
+
+Solo tres feriados se corren a un lunes: el 19 de abril, el 18 de mayo y el 12
+de octubre. Los demás se respetan el día que caen.
+
+En Voltia, además, hay días de feriado común que no se trabajan y se pagan igual
+(sección 8.2).
+
+### Ley 18.345 — Licencias especiales
+
+Son días libres **pagos**, que no se pueden cambiar por plata:
+
+- **Estudio:** entre 6 y 12 días por año, según las horas que se trabajan por
+  semana, de a 3 días como máximo cada vez. Hace falta tener más de 6 meses en la
+  empresa. El primer año se muestra la inscripción; después, que se aprobaron las
+  materias.
+- **Paternidad:** 20 días seguidos desde el nacimiento. Los 3 primeros los paga
+  la empresa y los 17 siguientes, el BPS (para nacimientos desde 2026).
+- **Matrimonio:** 3 días, uno de ellos el día del casamiento. Se avisa con 30
+  días de anticipación.
+- **Duelo:** 3 días hábiles por la muerte del padre, la madre, un hijo, el
+  cónyuge o concubino, o un hermano, incluidos los hijos adoptivos y los padres
+  adoptantes.
+- **Donación de sangre** (Ley 16.168): el día de la donación, hasta dos veces por
+  año, con la constancia.
+- **Papanicolau, mamografía y test de VPH** (Leyes 17.242 y 20.361): las
+  trabajadoras tienen un día pago por año para hacérselos, y lo acreditan.
+
+### Subsidio por enfermedad — BPS
+
+Quien se enferma y queda certificado cobra un subsidio del **BPS** (Banco de
+Previsión Social) **desde el cuarto día de certificación**; si queda internado,
+desde el primer día. Es el **70 % de lo que gana en promedio**, con un tope. Los
+tres primeros días no los paga el BPS.
+
+### Ley 5.032 — Prevención de accidentes de trabajo
+
+Es la ley base de la seguridad en el trabajo en Uruguay. Obliga a quien dirige
+un trabajo donde hay peligro para los trabajadores a **tomar medidas de
+seguridad para evitar accidentes**.
+
+### Decreto 406/988 — Seguridad e higiene en el trabajo
+
+Dice que los equipos de protección personal son **de uso obligatorio**, que **el
+empleador los tiene que dar gratis** y que **el trabajador está obligado a
+usarlos**.
+
+### Decreto 125/014 — Seguridad en la construcción
+
+Las reglas de seguridad de las obras. Alcanza también a los montajes, las
+instalaciones eléctricas y los trabajos de mantenimiento. Entre otras cosas:
+
+- Cuando se puede caer de **2 metros o más**, el arnés es obligatorio, y los
+  bordes llevan baranda.
+- Antes de pisar un techo hay que verificar que aguante. Sobre un techo frágil se
+  camina por pasarelas.
+- La empresa con **5 trabajadores o más**, o que trabaja **a más de 5 metros de
+  altura**, tiene que tener un servicio de seguridad, a cargo de un técnico
+  prevencionista registrado en el Ministerio de Trabajo, que arma el plan de
+  seguridad.
+- Los equipos de protección son gratis y obligatorios.
+
+### Ley 16.074 — Seguro de accidentes de trabajo
+
+Toda empresa tiene que asegurar a sus trabajadores en el **BSE** (Banco de
+Seguros del Estado). Si alguien se accidenta trabajando, o se enferma por el
+trabajo, el BSE le cubre **la atención médica, los remedios y el dentista**, y
+desde el cuarto día que falta le paga **dos tercios de su sueldo**.
+
+El accidente lo **denuncia la empresa al BSE**: dentro de las 72 horas si pasa en
+Montevideo, y dentro de los 5 días hábiles en el resto del país. Por eso este
+reglamento pide avisar el mismo día. El trabajador también puede denunciarlo,
+dentro de los 15 días.
+
+### Ley 19.196 — Responsabilidad penal del empleador
+
+Si el empleador **no cumple las medidas de seguridad** que piden las leyes y con
+eso pone en peligro grave la vida o la salud de un trabajador, **puede ir preso,
+de tres meses a dos años**. Alcanza también a quien manda en la obra en nombre
+de la empresa. Por eso Voltia no negocia la seguridad: no es solo cuidar a la
+gente, es la ley.
+
+### Leyes 18.099 y 18.251 — Subcontratación
+
+Cuando Voltia contrata a otra empresa, como un instalador tercerizado, **Voltia
+también responde** por lo que esa empresa le debe a su gente mientras trabaja
+para Voltia: sueldos, aportes al BPS y seguro del BSE.
+
+Por eso Voltia le pide al tercerizado sus papeles al día todos los meses
+(sección 19). Si los controla, responde solo cuando el tercerizado no paga; si no
+los controla, responde igual que él. Y si faltan los papeles, puede retenerle el
+pago.
+
+### Ley 18.561 — Acoso sexual en el trabajo
+
+El acoso sexual es **cualquier comportamiento sexual que la otra persona no
+quiere** y que la perjudica en el trabajo o le crea un ambiente hostil o
+humillante, venga de un jefe, de un compañero o de un cliente. La empresa tiene
+que prevenirlo, investigar la denuncia y sancionarlo.
+
+**Quien denuncia y los testigos están protegidos**: no se los puede despedir ni
+sancionar por eso. Si se los despide o sanciona dentro de los 180 días de la
+denuncia, se presume que es una represalia.
+
+### Ley 19.580 — Violencia hacia las mujeres basada en género
+
+Protege a las mujeres de la violencia por ser mujeres, **también en el trabajo**:
+lo que les traba entrar a un trabajo, ascender o conservarlo. La empresa tiene
+que prevenirla, investigarla y sancionarla cuando la ejerce su personal. La
+trabajadora que denuncia tiene, entre otras cosas, un día libre pago; y si se la
+despide en los seis meses siguientes, se le paga una indemnización mayor.
+
+### Ley 18.331 — Protección de datos personales
+
+Los datos de una persona (nombre, dirección, teléfono, consumo) **solo se usan
+para lo que se pidieron**. Las fotos y los videos de una persona también son
+datos personales: para usarlos hace falta su permiso. Por eso los datos de los
+clientes no se comparten, y por eso este reglamento pide la autorización para
+usar la imagen de cada trabajador (sección 17).
+
+### Decreto 173/010 — Microgeneración
+
+Permite que un cliente conectado a la red de UTE instale su propia generación
+solar. Para eso hay que firmar un **Convenio de Conexión con UTE** y cumplir la
+reglamentación técnica.
+
+---
+
 ## Anexo · Registro de cambios
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 3.1 | 6 de noviembre de 2026 | Se agregan tres secciones: lo que marca la ley, lo que Voltia da por encima de la ley (licencia coordinada, seis días libres pagos, ropa de trabajo, flexibilidad, alojamiento y viáticos) y lo que espera de cada uno (licencia, avisos, reclamos y grupo de WhatsApp). Por eso, las secciones que eran de la 7 a la 20 pasan a ser de la 10 a la 23. Las horas extra son voluntarias, y en el interior las horas de viaje se cambian por un viático. Quedan marcados los puntos a confirmar con FEFA y con el prevencionista, y lo que falta definir: los sábados, entre otros. |
+| 3.1 | 6 de noviembre de 2026 | Se agregan tres secciones: lo que marca la ley, lo que Voltia da por encima de la ley (licencia coordinada, seis días libres pagos, ropa de trabajo, flexibilidad, alojamiento y viáticos) y lo que espera de cada uno (licencia, avisos, reclamos y grupo de WhatsApp). Por eso, las secciones que eran de la 7 a la 20 pasan a ser de la 10 a la 23. Las horas extra necesitan el acuerdo del trabajador, y en el interior las horas de viaje se cambian por un viático. Se agregan al marco normativo las leyes de licencia, salario vacacional, horas extra, aguinaldo, feriados y licencias especiales, y un anexo con lo que dice cada ley en pocas palabras, verificado en las normas y en las páginas oficiales. Los plazos para denunciar un accidente al BSE son distintos en Montevideo y en el resto del país. En la finalidad, se suma que todos tengan las reglas claras. Lo que se puede prever se pide, no se avisa. Quedan marcados los puntos a confirmar con FEFA y con el prevencionista, y lo que falta definir: los sábados, entre otros. |
 | 3.0 | 11 de octubre de 2026 | Se pasa el reglamento a la serie de manuales de Voltia y se alinea con lo que se definió para Operaciones. En obra, el criterio del instalador le gana al del proyectista y se anota el cambio, en vez de pedir una orden de cambio firmada. Los instaladores tercerizados son cuadrillas fijas, en sus obras el instalador es el capataz, y presentan la documentación todos los meses. La sanción por trabajar sin protección alcanza a la cadena; si el capataz lo encuentra, lo corrige en el momento. Las horas extra las aprueba la Dirección o, si no está, el gerente de Operaciones. Los roles son los de hoy (gerente de Operaciones, capataz, operarios). Se sacan los formularios en papel (parte diario, checklist por etapa, charla de inicio, orden de cambio): lo de la obra se registra en Voltia PM. Se suman los sobrantes al terminar la obra, el tope de gastos del gerente de Operaciones y el informe a la Inspección del Trabajo por un accidente grave. |
 | 2.0 | Sin fecha registrada | Versión anterior en Word, sin terminar de revisar. No hay registro de sus cambios. |

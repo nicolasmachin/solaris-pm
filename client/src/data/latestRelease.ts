@@ -22,7 +22,7 @@ export type Release = {
   sections: ReleaseSection[];
 };
 
-export const LATEST_RELEASE: Release = {
+const RELEASE_14_2: Release = {
   version: "14.2",
   date: "7 de noviembre de 2026",
   sections: [
@@ -43,6 +43,19 @@ export const LATEST_RELEASE: Release = {
       title: "Clientes importados de la planilla: aniversario y mantenimiento",
       items: [
         "Los clientes que vinieron de la planilla ahora muestran su próximo mantenimiento y reciben la encuesta de aniversario, contando desde la fecha de entrega.",
+      ],
+    },
+  ],
+};
+
+export const LATEST_RELEASE: Release = {
+  version: "14.3",
+  date: "10 de noviembre de 2026",
+  sections: [
+    {
+      title: "Facturación: detalle de una facturación parcial",
+      items: [
+        "En «¿Qué se le factura?», cuando se factura solo una parte, «Ver detalle» muestra la parte con factura y su IVA, el restante sin IVA, el total que paga el cliente y el descuento de IVA, y se puede copiar para WhatsApp.",
       ],
     },
   ],
@@ -1132,6 +1145,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.2",
+    shortDate: "7 nov",
+    highlights: RELEASE_14_2.sections.map((sec) => sec.title),
+  },
   {
     version: "14.1",
     shortDate: "5 nov",

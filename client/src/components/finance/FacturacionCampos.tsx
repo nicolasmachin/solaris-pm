@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 import type { FacturacionInput } from '../../api/finance.api';
 
 // Qué se le factura al cliente: "facturación normal" (todo el presupuesto) o
@@ -40,6 +41,104 @@ export function draftDesde(
     };
   }
   return { ...DRAFT_VACIO, motivo: p.facturaNota ?? '' };
+}
+
+const usd = (n: number) => 'USD ' + n.toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pctTxt = (n: number) => n.toLocaleString('es-UY', { maximumFractionDigits: 2 }) + '%';
+
+/**
+ * Detalle de una facturación parcial: qué parte del presupuesto va con factura
+ * (y paga IVA) y cuál se paga sin factura, sin IVA. El "descuento" es el IVA que
+ * no se cobra sobre la parte sin factura. null si el monto no entra en el presupuesto.
+ */
+export function detalleFacturacion(sinIvaFacturado: number, presupuestoConIva: number) {
+  const base = presupuestoConIva / (1 + IVA);
+  if (!Number.isFinite(sinIvaFacturado) || sinIvaFacturado < 0 || base <= 0 || sinIvaFacturado > base + 0.005) return null;
+  const restante = Math.max(base - sinIvaFacturado, 0);
+  const facturaConIva = sinIvaFacturado * (1 + IVA);
+  const total = facturaConIva + restante;
+  return {
+    base, ivaBase: base * IVA, presupuestoConIva,
+    pctFactura: (sinIvaFacturado * 100) / base, facturaSinIva: sinIvaFacturado, facturaIva: sinIvaFacturado * IVA, facturaConIva,
+    pctRestante: (restante * 100) / base, restante,
+    total, descuento: presupuestoConIva - total,
+  };
+}
+
+function textoWhatsApp(d: NonNullable<ReturnType<typeof detalleFacturacion>>): string {
+  return [
+    '*Detalle de facturación*',
+    `Presupuesto: ${usd(d.base)} + IVA = ${usd(d.presupuestoConIva)}`,
+    `Factura (${pctTxt(d.pctFactura)}): ${usd(d.facturaSinIva)} + IVA ${usd(d.facturaIva)} = ${usd(d.facturaConIva)}`,
+    `Restante (${pctTxt(d.pctRestante)}): ${usd(d.restante)}`,
+    `*Total: ${usd(d.total)}*`,
+    `Descuento de IVA: ${usd(d.descuento)}`,
+  ].join('\n');
+}
+
+function DetalleFacturacion({ sinIva, presupuesto }: { sinIva: number; presupuesto: number }) {
+  const d = detalleFacturacion(sinIva, presupuesto);
+  if (!d) return null;
+  const fila = 'grid grid-cols-[1fr_auto_auto_auto] gap-x-3 py-0.5';
+  const num = 'text-right tabular-nums';
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(textoWhatsApp(d!));
+      toast.success('Detalle copiado');
+    } catch {
+      toast.error('No se pudo copiar');
+    }
+  }
+  return (
+    <details className="rounded-md border border-[var(--color-border)] px-2 py-1.5 text-xs text-[var(--color-text-primary)]">
+      <summary className="cursor-pointer select-none text-[var(--color-text-muted)]">Ver detalle</summary>
+      <div className="mt-2 overflow-x-auto">
+        <div className={`${fila} text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]`}>
+          <span />
+          <span className={num}>Sin IVA</span>
+          <span className={num}>IVA</span>
+          <span className={num}>Con IVA</span>
+        </div>
+        <div className={fila}>
+          <span>Presupuesto</span>
+          <span className={num}>{usd(d.base)}</span>
+          <span className={num}>{usd(d.ivaBase)}</span>
+          <span className={num}>{usd(d.presupuestoConIva)}</span>
+        </div>
+        <div className={fila}>
+          <span>Factura ({pctTxt(d.pctFactura)})</span>
+          <span className={num}>{usd(d.facturaSinIva)}</span>
+          <span className={num}>{usd(d.facturaIva)}</span>
+          <span className={num}>{usd(d.facturaConIva)}</span>
+        </div>
+        <div className={fila}>
+          <span>Restante ({pctTxt(d.pctRestante)})</span>
+          <span className={num}>{usd(d.restante)}</span>
+          <span className={num}>—</span>
+          <span className={num}>—</span>
+        </div>
+        <div className={`${fila} mt-1 border-t border-[var(--color-border)] pt-1 font-semibold`}>
+          <span>Total</span>
+          <span />
+          <span />
+          <span className={num}>{usd(d.total)}</span>
+        </div>
+        <div className={fila}>
+          <span>Descuento de IVA</span>
+          <span />
+          <span />
+          <span className={num}>{usd(d.descuento)}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={copiar}
+        className="mt-2 rounded-md border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-primary)] hover:bg-[var(--color-bg-app)]"
+      >
+        Copiar para WhatsApp
+      </button>
+    </details>
+  );
 }
 
 /** Lo que se manda al servidor, o el texto del error si falta algo. */
@@ -136,6 +235,7 @@ export function FacturacionCampos({
             />
           </div>
           <p className="text-[11px] text-[var(--color-text-muted)]">Con monto 0, el proyecto queda como que no lleva factura.</p>
+          {conPresupuesto && <DetalleFacturacion sinIva={aNumero(value.sinIva)} presupuesto={presupuesto!} />}
         </>
       )}
     </div>
