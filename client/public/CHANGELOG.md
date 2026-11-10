@@ -7,6 +7,11 @@
 #### Facturación: detalle de una facturación parcial
 
 - En **«¿Qué se le factura?»**, cuando se factura solo una parte, hay un desplegable **«Ver detalle»** con la cuenta completa: la parte con factura y su IVA, el restante sin IVA, el **total** que paga el cliente y el **descuento de IVA**. Con **«Copiar para WhatsApp»** se copia para mandársela al cliente. Está al ganar el lead, en la ficha del proyecto y en Finanzas → Facturación.
+- El porcentaje y ese detalle ahora parten del **precio de la propuesta**, no del presupuesto de la obra: así el presupuesto puede quedar como lo que paga el cliente sin que la cuenta salga mal.
+
+#### Arreglos
+
+- **Aviso de obra terminada:** ahora también le llega a Ingeniería, que es quien hace el trámite ante UTE. Antes no le llegaba y se enteraba días después.
 
 ## v14.2
 

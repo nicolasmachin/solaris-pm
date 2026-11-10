@@ -149,7 +149,7 @@ function EditProjectModal({
   const [facturacion, setFacturacion] = useState<FacturacionDraft>(() =>
     draftDesde(
       { facturacionNormal: project.facturacionNormal ?? null, facturarSinIvaUsd: project.facturarSinIvaUsd ?? null, facturaNota: project.facturaNota ?? null },
-      project.budgetUsd ?? null,
+      project.precioPropuestaUsd ?? project.budgetUsd ?? null,
     ),
   );
   const [facturacionTocada, setFacturacionTocada] = useState(false);
@@ -256,6 +256,7 @@ function EditProjectModal({
               value={facturacion}
               onChange={(d) => { setFacturacion(d); setFacturacionTocada(true); }}
               presupuesto={budgetUsd.trim() === "" ? null : parseFloat(budgetUsd)}
+              precioPropuesta={project.precioPropuestaUsd ?? null}
               inputCls="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
               labelCls="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono"
             />

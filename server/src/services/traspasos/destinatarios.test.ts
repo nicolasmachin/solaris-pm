@@ -112,13 +112,13 @@ test("T6: primario sólo Gerente de Operaciones; ADMIN copia", async () => {
   assert.ok(!r.some((d) => d.usuarioId === "ops1"));
 });
 
-test("T7: primarios Experiencia Solar + Tramitación UTE, Gerente de Operaciones + ADMIN copia", async () => {
+test("T7: primarios Experiencia Solar + Tramitación UTE + Ingeniería, Gerente de Operaciones + ADMIN copia", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T7_OBRA_TERMINADA,
     {},
-    depsFrom([ADMIN, EXP1, UTE1, GEROPS]),
+    depsFrom([ADMIN, EXP1, UTE1, ING1, GEROPS]),
   );
-  assert.deepEqual(primarios(r), ["exp1", "ute1"]);
+  assert.deepEqual(primarios(r), ["exp1", "ing1", "ute1"]);
   assert.deepEqual(copias(r), ["admin1", "gerops1"]);
 });
 

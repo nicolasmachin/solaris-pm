@@ -56,6 +56,13 @@ export const LATEST_RELEASE: Release = {
       title: "Facturación: detalle de una facturación parcial",
       items: [
         "En «¿Qué se le factura?», cuando se factura solo una parte, «Ver detalle» muestra la parte con factura y su IVA, el restante sin IVA, el total que paga el cliente y el descuento de IVA, y se puede copiar para WhatsApp.",
+        "El porcentaje y el detalle parten del precio de la propuesta, así el presupuesto puede quedar como lo que paga el cliente.",
+      ],
+    },
+    {
+      title: "Arreglos",
+      items: [
+        "El aviso de obra terminada ahora también le llega a Ingeniería, que es quien hace el trámite ante UTE.",
       ],
     },
   ],

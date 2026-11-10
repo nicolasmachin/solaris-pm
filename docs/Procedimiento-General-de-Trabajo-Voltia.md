@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Versión 1.4 — 28 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.5 — 10 de noviembre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -462,7 +462,7 @@ otra arranca a ciegas:
 | Operaciones | Experiencia Solar | La fecha de obra confirmada **en el calendario**: el aviso le llega solo |
 | Logística | Obra | Los materiales listos para salir a obra: todo en el local o, si la obra es tercerizada, el kit enviado |
 | Obra | Experiencia Solar | La obra terminada: el aviso llega solo, arranca E2 y Experiencia Solar le cuenta al cliente qué sigue |
-| Obra | Tramitación UTE | La documentación de obra firmada, las fotos y los videos de los ensayos, cargados en el proyecto |
+| Obra | Tramitación UTE | La documentación de obra firmada, las fotos y los videos de los ensayos, cargados en el proyecto; el aviso de obra terminada le llega solo |
 | Tramitación UTE | Experiencia Solar | La habilitación marcada: el aviso le llega solo y arranca el reloj de 24 a 48 horas |
 
 Cuatro cosas que se avisan solas, sin que nadie escriba: **la fecha de obra
@@ -648,6 +648,7 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.5 | 10 de noviembre de 2026 | El aviso de obra terminada le llega solo también a Tramitación UTE, que con eso arranca el trámite. |
 | 1.4 | 28 de octubre de 2026 | En el glosario: al cliente se le dice "reclamo" y no "ticket", y el portal muestra primero su planta. La aplicación del inversor queda como herramienta del equipo técnico: al cliente ya no se le da, porque lo que mostraba está en el portal. |
 | 1.3 | 22 de octubre de 2026 | Las cuotas del plan de pagos se cobran cuando llega cada momento de la obra, no en una fecha fijada de antemano. Al crear el proyecto, Ventas deja dicho qué se le factura al cliente, y Finanzas factura eso. |
 | 1.2 | 17 de octubre de 2026 | Se aclara qué es un día hábil: de lunes a viernes, sin feriados no laborables, Carnaval ni Semana de Turismo. |

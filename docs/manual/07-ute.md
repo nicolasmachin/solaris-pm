@@ -9,6 +9,20 @@
 
 ---
 
+# Aviso de obra terminada a quien tramita
+
+Cuando se confirma el traspaso **T7 · Obra terminada**, el aviso (in-app y mail)
+les llega a los roles `EXPERIENCIA_SOLAR`, `TRAMITACION_UTE` e **`INGENIERIA`**,
+con el Gerente de Operaciones y ADMIN en copia (`TRASPASO_CATALOGO` en
+`services/traspasos/catalogo.ts`). Ingeniería está porque **la tramitación ante
+UTE la hace Ingeniería**: en producción nadie tiene el rol `TRAMITACION_UTE`, y
+hasta el 10-nov-2026 el aviso no le llegaba a quien tenía que arrancar el
+trámite (se enteraba días después mirando el proyecto). Si algún día se asigna
+el rol `TRAMITACION_UTE` a alguien, también lo recibe; sacar Ingeniería de la
+lista es una decisión aparte.
+
+---
+
 # Solicitud de suministro individual / aumento de potencia
 
 ## Para qué existe

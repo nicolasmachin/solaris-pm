@@ -91,8 +91,11 @@ export const TRASPASO_CATALOGO: Record<TraspasoTipo, CatalogoEntry> = {
     rolesCopia: [],
     areaDestino: "Gerente de Operaciones",
   },
+  // La tramitación ante UTE hoy la hace Ingeniería (nadie tiene el rol
+  // TRAMITACION_UTE): sin INGENIERIA el aviso de obra terminada no le llegaba
+  // a quien tiene que arrancar el trámite.
   T7_OBRA_TERMINADA: {
-    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR, ...AREA_ROLES.TRAMITACION_UTE],
+    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR, ...AREA_ROLES.TRAMITACION_UTE, ...AREA_ROLES.INGENIERIA],
     rolesCopia: [ROLE.GERENTE_OPERACIONES],
     areaDestino: "Experiencia Solar y Tramitación UTE",
   },

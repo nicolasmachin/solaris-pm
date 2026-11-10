@@ -62,6 +62,30 @@ export async function getLatestPublishedQuote(leadId: string): Promise<LatestQuo
 }
 
 /**
+ * Precio (USD con IVA) de la última propuesta publicada de los leads que se
+ * convirtieron en cada proyecto. Es la base de la facturación parcial: el
+ * presupuesto de la obra es lo que paga el cliente y puede ser menos (por
+ * ejemplo, cuando una parte se cobra sin IVA). Sin propuesta, el proyecto no
+ * aparece en el mapa.
+ */
+export async function preciosPropuestaDeProyectos(projectIds: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (projectIds.length === 0) return out;
+  const leads = await prisma.salesLead.findMany({
+    where: { convertedToProjectId: { in: projectIds }, deletedAt: null },
+    select: { id: true, convertedToProjectId: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  for (const lead of leads) {
+    const pid = lead.convertedToProjectId!;
+    if (out.has(pid)) continue;
+    const quote = await getLatestPublishedQuote(lead.id);
+    if (quote?.precioUsd != null && quote.precioUsd > 0) out.set(pid, quote.precioUsd);
+  }
+  return out;
+}
+
+/**
  * Copia los dos PDF (completa + resumen) de la última propuesta publicada del
  * lead como FileAttachment (tipo PRESUPUESTO) del proyecto. Best-effort por PDF:
  * si un archivo físico no está, lo saltea sin romper. No borra la propuesta del

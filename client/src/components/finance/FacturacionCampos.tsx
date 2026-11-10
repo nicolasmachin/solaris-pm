@@ -3,7 +3,8 @@ import type { FacturacionInput } from '../../api/finance.api';
 
 // Qué se le factura al cliente: "facturación normal" (todo el presupuesto) o
 // otro monto con su motivo. El monto se puede escribir sin IVA, con IVA o como
-// porcentaje del presupuesto: al llenar uno, los otros dos se calculan solos.
+// porcentaje de la propuesta (o del presupuesto si no hay propuesta): al llenar
+// uno, los otros dos se calculan solos.
 // Lo usan el paso de ganar el lead, la ficha del proyecto y Finanzas.
 
 const IVA = 0.22;
@@ -27,7 +28,7 @@ function aNumero(v: string): number {
 }
 const aTexto = (n: number) => (Number.isFinite(n) ? (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') : '');
 
-/** Arma el borrador desde lo guardado en el proyecto. */
+/** Arma el borrador desde lo guardado en el proyecto. `presupuesto`: la base del porcentaje (precio de la propuesta si lo hay). */
 export function draftDesde(
   p: { facturacionNormal: boolean | null; facturarSinIvaUsd: number | null; facturaNota: string | null },
   presupuesto: number | null,
@@ -151,29 +152,37 @@ export function draftAInput(d: FacturacionDraft): FacturacionInput | string {
 }
 
 export function FacturacionCampos({
-  value, onChange, presupuesto, inputCls, labelCls,
+  value, onChange, presupuesto, precioPropuesta, inputCls, labelCls,
 }: {
   value: FacturacionDraft;
   onChange: (d: FacturacionDraft) => void;
-  /** Presupuesto de la obra (total con IVA), base del porcentaje. */
+  /** Presupuesto de la obra (total que paga el cliente, con IVA). */
   presupuesto: number | null;
+  /**
+   * Precio con IVA de la propuesta ganadora. Si está, es la base del porcentaje
+   * y del detalle: con una parte sin factura, el presupuesto (lo que paga) es
+   * menor que la propuesta y no sirve de base.
+   */
+  precioPropuesta?: number | null;
   inputCls: string;
   labelCls: string;
 }) {
-  const conPresupuesto = presupuesto != null && presupuesto > 0;
+  const deLaPropuesta = precioPropuesta != null && precioPropuesta > 0;
+  const base = deLaPropuesta ? precioPropuesta : presupuesto;
+  const conPresupuesto = base != null && base > 0;
 
   function desdeSinIva(txt: string) {
     const n = aNumero(txt);
     const con = n * (1 + IVA);
-    onChange({ ...value, sinIva: txt, conIva: aTexto(con), pct: conPresupuesto ? aTexto((con * 100) / presupuesto!) : '' });
+    onChange({ ...value, sinIva: txt, conIva: aTexto(con), pct: conPresupuesto ? aTexto((con * 100) / base!) : '' });
   }
   function desdeConIva(txt: string) {
     const n = aNumero(txt);
-    onChange({ ...value, conIva: txt, sinIva: aTexto(n / (1 + IVA)), pct: conPresupuesto ? aTexto((n * 100) / presupuesto!) : '' });
+    onChange({ ...value, conIva: txt, sinIva: aTexto(n / (1 + IVA)), pct: conPresupuesto ? aTexto((n * 100) / base!) : '' });
   }
   function desdePct(txt: string) {
     const p = aNumero(txt);
-    const con = conPresupuesto ? (presupuesto! * p) / 100 : NaN;
+    const con = conPresupuesto ? (base! * p) / 100 : NaN;
     onChange({ ...value, pct: txt, conIva: aTexto(con), sinIva: aTexto(con / (1 + IVA)) });
   }
 
@@ -217,7 +226,7 @@ export function FacturacionCampos({
               <input className={inputCls} inputMode="decimal" value={value.conIva} onChange={(e) => desdeConIva(e.target.value)} placeholder="0,00" />
             </div>
             <div>
-              <label className={labelCls}>% del presupuesto</label>
+              <label className={labelCls}>{deLaPropuesta ? '% de la propuesta' : '% del presupuesto'}</label>
               <input
                 className={inputCls} inputMode="decimal" value={value.pct} onChange={(e) => desdePct(e.target.value)}
                 placeholder={conPresupuesto ? 'Ej: 50' : 'Sin presupuesto'} disabled={!conPresupuesto}
@@ -235,7 +244,7 @@ export function FacturacionCampos({
             />
           </div>
           <p className="text-[11px] text-[var(--color-text-muted)]">Con monto 0, el proyecto queda como que no lleva factura.</p>
-          {conPresupuesto && <DetalleFacturacion sinIva={aNumero(value.sinIva)} presupuesto={presupuesto!} />}
+          {conPresupuesto && <DetalleFacturacion sinIva={aNumero(value.sinIva)} presupuesto={base!} />}
         </>
       )}
     </div>

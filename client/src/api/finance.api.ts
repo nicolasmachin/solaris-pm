@@ -820,6 +820,7 @@ export interface FacturacionRow {
   clientName: string;
   status: string;
   budgetUsd: number | null;
+  precioPropuestaUsd: number | null;
   saleDate: string | null;
   facturaEmitida: boolean;
   facturaEmitidaEn: string | null;

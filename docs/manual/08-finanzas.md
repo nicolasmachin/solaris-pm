@@ -610,16 +610,25 @@ no se toca, no se manda) y en Facturación con el lápiz o **Definir**.
 
 - Casilla **«Facturación normal»**: se factura todo el presupuesto. Nota
   opcional (RUT, razón social).
-- Sin tildar: **Sin IVA (USD)** (obligatorio), **Con IVA (USD)** y **% del
-  presupuesto**; al escribir en uno se calculan los otros dos (IVA 22 %; el
-  porcentaje es sobre el presupuesto, que es con IVA). **Motivo** obligatorio.
-  Monto 0 = no lleva factura.
+- Sin tildar: **Sin IVA (USD)** (obligatorio), **Con IVA (USD)** y **% de la
+  propuesta**; al escribir en uno se calculan los otros dos (IVA 22 %). La base
+  del porcentaje es el **precio con IVA de la última propuesta publicada** del
+  lead que se convirtió en el proyecto (`preciosPropuestaDeProyectos()` en
+  `services/proposal/latest-proposal.service.ts`, que viaja como
+  `precioPropuestaUsd` en `GET /projects/:id` y en `GET /finance/facturacion`,
+  y al convertir sale de `conversion-defaults`). Sin propuesta, la base es el
+  presupuesto y el rótulo vuelve a «% del presupuesto». La propuesta y no el
+  presupuesto porque, cuando una parte se cobra sin IVA, el presupuesto (lo que
+  paga el cliente) ya trae ese descuento y no sirve de base. **Motivo**
+  obligatorio. Monto 0 = no lleva factura.
 - Debajo, el desplegable **«Ver detalle»** (solo si hay presupuesto y el monto
   entra en él) arma la cuenta de una facturación parcial, como la planilla que
-  se usaba a mano: presupuesto sin IVA / IVA / con IVA; **Factura (x %)** sin
+  se usaba a mano, sobre la misma base que el porcentaje (la propuesta):
+  presupuesto sin IVA / IVA / con IVA; **Factura (x %)** sin
   IVA / IVA / con IVA; **Restante (100 − x %)** sin IVA; **Total** = factura con
   IVA + restante; **Descuento de IVA** = presupuesto con IVA − total (el IVA que
-  no se cobra sobre el restante). **Copiar para WhatsApp** copia ese detalle en
+  no se cobra sobre el restante). El total debería coincidir con el presupuesto
+  de la obra, que es lo que paga el cliente. **Copiar para WhatsApp** copia ese detalle en
   texto (`detalleFacturacion()` y `textoWhatsApp()` en el mismo componente). Es
   solo de lectura: no se guarda nada.
 

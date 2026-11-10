@@ -418,6 +418,8 @@ export interface Project {
   plannedEndDate: string | null;
   actualEndDate: string | null;
   budgetUsd: number | null;
+  /** Precio con IVA de la última propuesta publicada del lead (base de la facturación parcial). */
+  precioPropuestaUsd?: number | null;
   executedUsd: number;
   estimatedMwhYear: number | null;
   co2TonsAvoided: number | null;

@@ -137,6 +137,7 @@ import { CAMPOS_MOVIMIENTO, CAMPOS_PAGO, ENTIDADES_FINANZAS, registrarCambios } 
 import {
   copyLatestProposalToProject,
   getLatestPublishedQuote,
+  preciosPropuestaDeProyectos,
 } from "../services/proposal/latest-proposal.service.js";
 import {
   calculateProjectMetrics,
@@ -1799,8 +1800,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         })()
       : null;
 
+    const precioPropuestaUsd = (await preciosPropuestaDeProyectos([project.id])).get(project.id) ?? null;
+
     return {
       ...serializeProject(project),
+      precioPropuestaUsd,
       installationSchedule,
       solarSystems: project.solarSystems.map(serializeSolarSystem),
       ampliaciones: project.ampliaciones.map((a) => ({
@@ -11792,12 +11796,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
           .filter((c) => VIVOS.includes(c.estado) && c.moneda === Moneda.USD)
           .reduce((a, c) => a + (c.referenciaId ? -Number(c.total) : Number(c.total)), 0) * 100) / 100;
 
+      // Precio de la propuesta: base del detalle de una facturación parcial.
+      // Solo para las que no son facturación normal (las demás no lo usan).
+      const preciosPropuesta = await preciosPropuestaDeProyectos(
+        projects.filter((p) => p.facturacionNormal !== true).map((p) => p.id),
+      );
+
       const items = projects.map((p) => ({
         id: p.id,
         code: p.code,
         clientName: p.clientName,
         status: p.status,
         budgetUsd: p.budgetUsd != null ? Number(p.budgetUsd) : null,
+        precioPropuestaUsd: preciosPropuesta.get(p.id) ?? null,
         saleDate: p.saleDate ? serializeDateOnly(p.saleDate) : null,
         facturaEmitida: p.facturaEmitida,
         facturaEmitidaEn: p.facturaEmitidaEn ? serializeDate(p.facturaEmitidaEn) : null,

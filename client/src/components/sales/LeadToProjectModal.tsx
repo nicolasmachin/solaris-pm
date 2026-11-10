@@ -239,6 +239,7 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
                   value={facturacion}
                   onChange={setFacturacion}
                   presupuesto={budgetUsd ? Number(budgetUsd) : null}
+                  precioPropuesta={fromProposal ? defaults?.budgetUsd ?? null : null}
                   inputCls={inp}
                   labelCls={lbl}
                 />
