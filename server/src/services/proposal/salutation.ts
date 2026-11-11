@@ -99,3 +99,22 @@ export function saludoPara(nombreCompleto: string): string {
   const tratamiento = genero === "m" ? "Estimado" : genero === "f" ? "Estimada" : "Estimado/a";
   return `${tratamiento} ${capitalizar(primerNombre)},`;
 }
+
+/**
+ * Saludo de la carta según la variante. En el cotizador B2B la carta va a la
+ * persona de contacto si se cargó ("Estimada Rossina,"); sin contacto, a la
+ * empresa en general ("Estimados,"). El nombre del cliente en B2B suele ser el
+ * del local o la obra ("Estación Axion Ruta 11"), y saludar con su primera
+ * palabra daba "Estimado/a Estación,".
+ */
+export function saludoDePropuesta(
+  variante: string | null | undefined,
+  nombreCliente: string,
+  contactoNombre?: string | null,
+): string {
+  if (variante === "EMPRESA") {
+    const contacto = (contactoNombre ?? "").trim();
+    return contacto ? saludoPara(contacto) : "Estimados,";
+  }
+  return saludoPara(nombreCliente);
+}

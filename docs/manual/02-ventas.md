@@ -296,7 +296,10 @@ por panel (W)** y marca de inversor. Al abrir el cotizador de un lead nuevo, eso
 tres valores vienen precargados.
 
 El **saludo de la carta** no se escribe: se arma solo con el nombre del cliente y
-se muestra en el formulario como texto de solo lectura, debajo del nombre.
+se muestra en el formulario como texto de solo lectura, debajo del nombre. En el
+**cotizador B2B** se arma con el **contacto** de la empresa ("Estimada Rossina,");
+si no hay contacto, queda **"Estimados,"**. El nombre del cliente en B2B suele ser
+el del local o la obra, y saludar con él daba cosas como "Estimado/a Estación,".
 
 ## Cómo funciona
 
@@ -309,10 +312,14 @@ se muestra en el formulario como texto de solo lectura, debajo del nombre.
   faltan y no pisa lo que ya se editó desde Admin. **Al agregar una variable nueva
   hay que correrlo de nuevo en cada ambiente**, porque el formulario de Admin solo
   renderiza las claves que existen en el JSON `data`.
-- El saludo lo calcula `client/src/lib/salutation.ts` → `saludoPara(nombre)`, y se
-  escribe en `cliente.dirigidoA` del borrador en tres momentos: al armar el
-  borrador inicial, al mergear uno guardado, y cada vez que cambia el nombre en el
-  formulario. La plantilla del PDF (`carta.hbs`) sigue leyendo `dirigidoA`, así que
+- El saludo lo calcula `saludoDePropuesta(variante, nombre, contacto)`, que en
+  residencial delega en `saludoPara(nombre)` y en B2B usa el contacto o
+  "Estimados,". Está igual en `client/src/lib/salutation.ts` y en
+  `server/src/services/proposal/salutation.ts` (con tests en `salutation.test.ts`),
+  y se escribe en `cliente.dirigidoA` del borrador en tres momentos: al armar el
+  borrador inicial (`buildInitialDraftData`), al mergear uno guardado
+  (`mergeDraftData`, en el servidor) y cada vez que cambia el nombre o el contacto
+  en el formulario. La plantilla del PDF (`carta.hbs`) sigue leyendo `dirigidoA`, así que
   el backend no cambió.
 
 ### Cómo infiere el género
@@ -352,12 +359,18 @@ desde las 21:00 hora local.
 - **El saludo dejó de ser editable a mano.** Era un campo que repetía un dato ya
   ingresado y la falla típica era dejar el nombre de otro cliente al reutilizar un
   borrador.
-- **La lógica del saludo vive solo en el cliente**, que es quien arma el borrador,
-  para no duplicar las listas de nombres en el servidor. El fallback del backend
-  ("Estimado/a cliente,") queda como red por si llegara un `dirigidoA` vacío.
+- **La lógica del saludo está duplicada en cliente y servidor**, con las mismas
+  listas de nombres: el formulario la necesita para mostrarlo al instante y el
+  servidor para normalizar los borradores guardados. Si se cambia una, hay que
+  cambiar la otra.
 - **Los borradores viejos se normalizan al abrirse**: `mergeDraft()` recalcula el
   saludo aunque el guardado traiga uno tipeado a mano. Las versiones ya publicadas
   no se tocan (su PDF ya está generado).
+- **Al reabrir, el cotizador trae siempre lo guardado** (`ProposalBuilderModal`:
+  la consulta del borrador va con `staleTime: 0` y `gcTime: 0`). Con la caché por
+  defecto mostraba la copia de la primera apertura y el autosave la volvía a
+  guardar encima. Además `useDraftAutosave` guarda lo pendiente al desmontarse,
+  así no se pierde lo escrito en el último segundo y medio antes de cerrar.
 
 ## Casos borde
 

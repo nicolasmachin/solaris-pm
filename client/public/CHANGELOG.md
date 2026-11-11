@@ -1,5 +1,14 @@
 # Novedades
 
+## v14.4
+
+### 11 de noviembre de 2026
+
+#### Arreglos
+
+- **Propuestas B2B:** el saludo de la carta ahora va dirigido al contacto de la empresa (por ejemplo, «Estimada Rossina,»). Antes tomaba la primera palabra del nombre del cliente y salía «Estimado/a Estación,». Si no se cargó contacto, la carta empieza con «Estimados,».
+- **Cotizadores de propuestas:** al cerrar el cotizador y volver a abrirlo aparecen los últimos valores cargados. Antes mostraba lo de la primera vez que se había abierto y, al seguir editando, lo volvía a guardar encima. Lo escrito justo antes de cerrar también se guarda.
+
 ## v14.3
 
 ### 10 de noviembre de 2026

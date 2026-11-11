@@ -52,10 +52,15 @@ export function ProposalBuilderModal({
   // El borrador se pide con init: si no existe lo crea el servidor con la
   // precarga, y siempre vuelve con el `data` completo. Por eso acá ya no hay
   // que armar la base ni mergear.
+  // Sin caché: al reabrir el cotizador tiene que traer lo último guardado. Con
+  // la caché por defecto mostraba la copia de la primera apertura y el autosave
+  // la volvía a guardar encima de lo nuevo.
   const draftQuery = useQuery({
     queryKey: ["proposal-draft", leadId, variante],
     queryFn: () => proposalsV2BuilderApi.initDraft(leadId, variante),
     enabled: Boolean(leadId),
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const [data, setData] = useState<ProposalDraftData | null>(null);

@@ -48,7 +48,7 @@ const RELEASE_14_2: Release = {
   ],
 };
 
-export const LATEST_RELEASE: Release = {
+const RELEASE_14_3: Release = {
   version: "14.3",
   date: "10 de noviembre de 2026",
   sections: [
@@ -63,6 +63,20 @@ export const LATEST_RELEASE: Release = {
       title: "Arreglos",
       items: [
         "El aviso de obra terminada ahora también le llega a Ingeniería, que es quien hace el trámite ante UTE.",
+      ],
+    },
+  ],
+};
+
+export const LATEST_RELEASE: Release = {
+  version: "14.4",
+  date: "11 de noviembre de 2026",
+  sections: [
+    {
+      title: "Arreglos",
+      items: [
+        "Propuestas B2B: el saludo de la carta va dirigido al contacto de la empresa; sin contacto, empieza con «Estimados,».",
+        "Cotizadores: al cerrar y volver a abrir aparecen los últimos valores cargados, y lo escrito justo antes de cerrar también se guarda.",
       ],
     },
   ],
@@ -1152,6 +1166,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.3",
+    shortDate: "10 nov",
+    highlights: RELEASE_14_3.sections.map((sec) => sec.title),
+  },
   {
     version: "14.2",
     shortDate: "7 nov",

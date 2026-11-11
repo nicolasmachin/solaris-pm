@@ -12,7 +12,7 @@
 
 import { ProposalVariante } from "@prisma/client";
 
-import { saludoPara } from "./salutation.js";
+import { saludoDePropuesta } from "./salutation.js";
 import type { DraftDataPublish } from "./schemas/draft.schema.js";
 
 /** Una variable del singleton: `{ value, asesorCanOverride }`. */
@@ -122,7 +122,7 @@ export function buildInitialDraftData(
     variante,
     cliente: {
       nombre: lead.clientName,
-      dirigidoA: saludoPara(lead.clientName),
+      dirigidoA: saludoDePropuesta(variante, lead.clientName, ""),
       ciudad: "",
     },
     // En B2B la razón social arranca con el nombre del lead: casi siempre es
@@ -179,9 +179,11 @@ export function mergeDraftData(
   const s = stored as Partial<DraftDataPublish>;
 
   const cliente = { ...base.cliente, ...s.cliente };
-  // El saludo se deriva siempre del nombre, incluso en borradores que lo traen
-  // tipeado a mano: es dato calculado, no un campo más del formulario.
-  cliente.dirigidoA = saludoPara(cliente.nombre);
+  const empresa = { ...base.empresa!, ...s.empresa };
+  // El saludo se deriva siempre del nombre (en B2B, del contacto), incluso en
+  // borradores que lo traen tipeado a mano: es dato calculado, no un campo más
+  // del formulario.
+  cliente.dirigidoA = saludoDePropuesta(base.variante, cliente.nombre, empresa.contactoNombre);
 
   return {
     // La variante la manda la fila, no el contenido guardado: si no, un
@@ -190,7 +192,7 @@ export function mergeDraftData(
     cliente,
     // El `!` no es descuido: `base` viene de buildInitialDraftData, que siempre
     // los completa. El Partial es del lado guardado, no de la base.
-    empresa: { ...base.empresa!, ...s.empresa },
+    empresa,
     factura: { ...base.factura, ...s.factura },
     techo: { ...base.techo, ...s.techo },
     cotizacion: { ...base.cotizacion, ...s.cotizacion },

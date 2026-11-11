@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.12 · del 10/11/26
+**Voltia · Uruguay** · Versión 1.13 · del 11/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -832,7 +832,9 @@ Arriba hay una franja fija con:
 **El formulario**, de arriba abajo:
 
 - **Cliente:** el nombre, la ciudad y la fecha de la propuesta. El saludo de la
-  carta ("Estimado…") se arma solo con el nombre.
+  carta ("Estimado…") se arma solo con el nombre. En el Cotizador B2B se arma con
+  el **contacto** de la empresa; si no se cargó contacto, la carta empieza con
+  «Estimados,». Por eso conviene cargar siempre el contacto.
 - **Datos de la empresa** (solo en el Cotizador B2B): la razón social y el RUT,
   que hacen falta para publicar, y el contacto y su cargo, que son opcionales.
 - **Datos técnicos del sistema:** lo que paga por mes (en pesos), la tarifa, el
@@ -1181,6 +1183,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.13 | 11 de noviembre de 2026 | En el Cotizador B2B, el saludo de la carta va dirigido al contacto de la empresa; sin contacto, empieza con «Estimados,». |
 | 1.12 | 10 de noviembre de 2026 | En «¿Qué se le factura?», cuando se factura una parte, «Ver detalle» muestra la cuenta de la factura, el restante sin IVA, el total y el descuento de IVA, y se puede copiar para mandarla por WhatsApp. El porcentaje y esa cuenta parten del precio de la propuesta, y el presupuesto del proyecto queda como lo que paga el cliente. |
 | 1.11 | 3 de noviembre de 2026 | Los plazos de garantía del contrato vienen con los vigentes y se pueden cambiar en el formulario del contrato cuando se acordó otra cosa con el cliente. |
 | 1.10 | 3 de noviembre de 2026 | El asistente de Instagram pide el celular siempre y desde el primer interés, sin esperar la factura. En Ventas → Instagram aparecen todos los potenciales clientes (los interesados en instalar), no solo los que mandaron la factura o dejaron el celular. |

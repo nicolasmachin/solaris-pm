@@ -2,7 +2,7 @@ import { Button } from "../ui/Button";
 import { ComisionB2BPanel } from "./ComisionB2BPanel";
 import { InversoresDistintosField } from "./InversoresDistintosField";
 import { listaInversoresDistintos, sincronizarSistemaInversores } from "../../lib/inversores";
-import { saludoPara } from "../../lib/salutation";
+import { saludoDePropuesta } from "../../lib/salutation";
 import { NumberField, SelectField, TextAreaField, TextField } from "./fields";
 import {
   isFlaggedValue,
@@ -37,14 +37,19 @@ export function ProposalForm({
   savedTick: number;
 }) {
   const esEmpresa = data.variante === "EMPRESA";
-  // El saludo de la carta se deriva del nombre; no es un campo editable.
+  // El saludo de la carta se deriva del nombre (en B2B, del contacto); no es un
+  // campo editable.
+  const saludo = (cliente: ProposalDraftData["cliente"], empresa: ProposalDraftData["empresa"]) =>
+    saludoDePropuesta(data.variante, cliente.nombre, empresa?.contactoNombre);
   const setCliente = (p: Partial<ProposalDraftData["cliente"]>) => {
     const cliente = { ...data.cliente, ...p };
-    if (p.nombre !== undefined) cliente.dirigidoA = saludoPara(cliente.nombre);
+    cliente.dirigidoA = saludo(cliente, data.empresa);
     onChange({ ...data, cliente });
   };
-  const setEmpresa = (p: Partial<ProposalDraftData["empresa"]>) =>
-    onChange({ ...data, empresa: { ...data.empresa, ...p } });
+  const setEmpresa = (p: Partial<ProposalDraftData["empresa"]>) => {
+    const empresa = { ...data.empresa, ...p };
+    onChange({ ...data, empresa, cliente: { ...data.cliente, dirigidoA: saludo(data.cliente, empresa) } });
+  };
   const setFactura = (p: Partial<ProposalDraftData["factura"]>) => onChange({ ...data, factura: { ...data.factura, ...p } });
   const setTecho = (p: Partial<ProposalDraftData["techo"]>) => onChange({ ...data, techo: { ...data.techo, ...p } });
   const setCotiz = (p: Partial<ProposalDraftData["cotizacion"]>) => onChange({ ...data, cotizacion: { ...data.cotizacion, ...p } });
@@ -91,10 +96,10 @@ export function ProposalForm({
           <div className="block">
             <span className={labelCls}>Saludo de la carta</span>
             <div className="w-full rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
-              {saludoPara(data.cliente.nombre)}
+              {saludo(data.cliente, data.empresa)}
             </div>
             <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
-              Se arma solo con el nombre de arriba.
+              {esEmpresa ? "Se arma solo con el contacto de la empresa (sin contacto: «Estimados,»)." : "Se arma solo con el nombre de arriba."}
             </p>
           </div>
           <label className="block">

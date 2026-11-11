@@ -79,7 +79,9 @@ export function useDraftAutosave(params: {
       const backoff = Math.min(30_000, 1000 * 2 ** (retries.current - 1));
       retryTimer.current = setTimeout(() => void doSave(), backoff);
     }
-  }, [enabled, leadId]);
+  }, [enabled, leadId, variante]);
+  const doSaveRef = useRef(doSave);
+  doSaveRef.current = doSave;
 
   // Programa el save ante cada cambio (debounce).
   useEffect(() => {
@@ -91,10 +93,13 @@ export function useDraftAutosave(params: {
     };
   }, [data, enabled, doSave]);
 
+  // Al cerrar el cotizador se guarda lo que quedó sin guardar. Antes solo se
+  // cancelaba el debounce y se perdía lo escrito en el último segundo y medio.
   useEffect(
     () => () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       if (retryTimer.current) clearTimeout(retryTimer.current);
+      void doSaveRef.current();
     },
     [],
   );

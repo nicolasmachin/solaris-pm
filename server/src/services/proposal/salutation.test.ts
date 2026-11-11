@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { saludoPara } from "./salutation.js";
+import { saludoDePropuesta, saludoPara } from "./salutation.js";
 
 describe("saludoPara", () => {
   it("infiere masculino por lista y por terminación", () => {
@@ -56,5 +56,20 @@ describe("saludoPara", () => {
 
   it("colapsa espacios de más", () => {
     assert.equal(saludoPara("  Ana   Pérez  "), "Estimada Ana,");
+  });
+});
+
+describe("saludoDePropuesta", () => {
+  it("en B2B saluda al contacto, no al nombre del local", () => {
+    assert.equal(saludoDePropuesta("EMPRESA", "Estación Axion Ruta 11.", "Rossina Zaffaroni"), "Estimada Rossina,");
+  });
+
+  it("en B2B sin contacto saluda a la empresa", () => {
+    assert.equal(saludoDePropuesta("EMPRESA", "Estación Axion Ruta 11.", ""), "Estimados,");
+    assert.equal(saludoDePropuesta("EMPRESA", "Estación Axion Ruta 11.", "   "), "Estimados,");
+  });
+
+  it("en residencial sigue usando el nombre del cliente", () => {
+    assert.equal(saludoDePropuesta("RESIDENCIAL", "Ana Pérez", "Otro Nombre"), "Estimada Ana,");
   });
 });
