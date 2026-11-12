@@ -59,11 +59,40 @@ sobre una persona; lo individual se habla aparte.
   horas con medio día los sábados, con un aumento algo mejor que proporcional.
   Dejar claro que es una consulta y que el acuerdo formal viene después, con
   FEFA.
-- **Autorización de imagen:** formulario aparte y optativo, no atado a la firma
-  del reglamento.
+- **Autorización de imagen:** anexo aparte y optativo, no atado a la firma del
+  reglamento; quien no firma no tiene consecuencia.
+  Pasar la hoja de a uno, no en ronda, para que nadie se sienta presionado.
+- **Redes:** se puede opinar y criticar con respeto; insultos, amenazas o
+  acusaciones no.
 
 ## Antes de la reunión
 
+- **CONVENIO DE LA CONSTRUCCIÓN (Grupo 9, Subgrupo 1, acta del 14/08/2026, vigente
+  hasta 2031).** Si rige para la SAS, cambia mucho del reglamento y de la
+  presentación (cruce del 11-nov-2026):
+  - Feriados: en la construcción el 2 de noviembre y el tercer lunes de octubre
+    SON feriados pagos (Decretos 30/991 y 13/001). NO usar el 2 de noviembre como
+    ejemplo de feriado común.
+  - Licencia de la construcción con fechas fijas (resolución IGTSS 2025-2026:
+    22/12 al 9/01 y Semana de Turismo). Apartarse requiere trámite ante la
+    Inspección y consentimiento escrito. La "licencia coordinada", los 6 días
+    libres y "dos semanas más" no se sostienen como están.
+  - Viático: mínimo 50 % del jornal de la categoría V (unos $ 1.088 o $ 1.325 por
+    día según el régimen), días de viaje pagos como jornal; ir al interior
+    requiere el acuerdo del trabajador. El canje por $ 1.000 choca.
+  - Ropa: 2 equipos por año es obligación (más compensación por desgaste); desde
+    abril de 2028 se duplica.
+  - Estudios médicos: 3 días libres no pagos por año más uno para PSA, con aviso
+    de 48 h: es un derecho, no un permiso.
+  - Compensaciones: presentismo (10,42 %), alimentación, transporte, desgaste de
+    ropa y herramientas, altura (6 m o más), nocturnidad, guardia retén.
+  - Jornada: baja a 43, 42, 41 y 40 horas entre 2027 y 2030.
+  - Delegado de seguridad de los trabajadores, horas de recorrida y asambleas.
+  - Nicolás (11-nov): "somos de industria y comercio pero asimilado a
+    construcción". Si eso es el régimen de aportes del BPS (no el de la
+    construcción del Decreto-Ley 14.411), el personal sería "no incluido": escala
+    de jornales más alta y licencia y aguinaldo a cargo de la empresa. A
+    confirmar con FEFA, igual que si hoy se está pagando todo esto.
 - Imprimir la copia final sin las notas "a confirmar": hay que resolverlas antes
   con FEFA.
 - Que la reunión sea para todos: no usar casos de una persona como ejemplo.
@@ -90,3 +119,40 @@ sobre una persona; lo individual se habla aparte.
 - Fotos: usar las del equipo trabajando bien; no las que muestran algo que el
   reglamento prohíbe (tablero con objetos adentro, cabo de vida sin enganchar a
   la vista).
+
+## Después de la reunión (no es para la reunión)
+
+- Tercerizados: la lista de papeles mensuales (certificado común del BPS,
+  constancia del BSE, historia laboral y recibo de aportes, planilla de trabajo y
+  recibos de sueldo, lista de quién va a cada obra) salió del reglamento. Pasarla
+  al Manual del Instalador Tercerizado y al contrato (borrador 0.3 en Drive): hoy
+  el manual solo pide la empresa inscripta y la póliza del BSE antes de la primera
+  obra. La Ley 18.251 permite exigirlos y retener el pago si faltan.
+
+## Preguntas para FEFA (mail del 11-nov-2026)
+
+1. VOLTIA SAS tiene su propio Libro de Registro Laboral (3/11/2026), también
+   Grupo 9, Subgrupo 1. ¿Rige entero el convenio de la construcción? ¿En qué se
+   basa que no aplica la licencia de la construcción? En la constancia el número
+   de BSE está vacío: confirmar la póliza de accidentes de la SAS.
+2. Licencia: si algún convenio permite partirla en dos.
+3. Traslado al interior: si el viaje es tiempo de trabajo (ejemplo Maldonado,
+   salida 8, horario 9, llegada 10) y si el canje por viático de $ 1.000 por día
+   es válido y conviene firmarlo.
+4. Viático: si un convenio lo fija y cómo aporta (Ley 16.713: 50 % salvo
+   reintegro con rendición de cuentas).
+5. Sábados: qué hace falta para pasar de 40 a 44 horas con medio día los sábados
+   y aumento; si esas horas serían comunes o extra.
+6. Horas que alguien se queda por su cuenta: qué pasa si después las reclama.
+7. Recuperar horas quedándose otro día: si llevan recargo.
+8. Beneficios por encima de la ley: si la cláusula de 60 días y desde el 1 de
+   enero alcanza para quitarlos.
+9. No captación de clientes por 6 meses, sin compensación: si se sostiene.
+10. Sanciones: si la escala de 6 puntos sirve de respaldo para notoria mala
+    conducta, y cómo llevar el libro de sanciones.
+11. Protocolo de alcohol y drogas sin delegados: cómo se arma y quién hace las
+    pruebas.
+12. Decreto 125/014: si alcanza a Voltia y si los 5 trabajadores se cuentan por
+    empresa o por obra.
+13. Si algún convenio da días pagos para exámenes (próstata u otros).
+

@@ -56,6 +56,10 @@ CONFIG = {
                    "pie": "Reglamento interno de Operaciones · Voltia",
                    "titulo": "Reglamento interno", "subtitulo": "Área Operaciones · Borrador en revisión",
                    "corto": "Reglamento", "canvas": "Reglamento interno del Área Operaciones"},
+    "finanzas": {"fuente": "Manual-de-Trabajo-Finanzas.md",
+                 "pie": "Manual de Administración y Finanzas · Voltia",
+                 "titulo": "Manual de trabajo de Administración y Finanzas", "subtitulo": "Cobros, pagos, contabilidad e informes",
+                 "corto": "Finanzas", "canvas": "Manual de trabajo de Administración y Finanzas"},
 }[MANUAL]
 FUENTE = os.path.join(AQUI, "..", CONFIG["fuente"])
 sys.path.insert(0, AQUI)
@@ -142,14 +146,14 @@ if MANUAL == "tercerizado":
 
 # Ventas no tiene partes: los capítulos van seguidos, sin portadillas, en el
 # orden del .md (incluida la sección sin número "Las reglas de Ventas").
-if MANUAL in ("ventas", "reglamento"):
+if MANUAL in ("ventas", "reglamento", "finanzas"):
     PARTES = []
 
 # El reglamento se cita por secciones ("sección 19"): sus hojas dicen lo mismo.
 ROTULO_CAPITULO = "SECCIÓN" if MANUAL == "reglamento" else "CAPÍTULO"
 
 # Los capítulos de "Cuando algo sale mal", cuyos casos van en tarjetas.
-CAPITULOS_CASOS = {"operaciones": (8, 16, 20), "ventas": (6,), "tercerizado": (14,)}.get(MANUAL, ())
+CAPITULOS_CASOS = {"operaciones": (8, 16, 20), "ventas": (6,), "tercerizado": (14,), "finanzas": (6,)}.get(MANUAL, ())
 
 # Lo que entra en una hoja: 1123 menos los márgenes (72 + 56) y el pie. Con
 # alturas medidas (medir-bloques.mjs) el colchón es chico; sin ellas se
@@ -290,7 +294,10 @@ def tabla_pgt(cabeceras, filas, anchos, margen=16):
             peso = f"font-weight: 600; color: {NEGRO};" if i == 0 else f"color: {TEXTO};"
             tds += (f'<td style="padding: {pad}; font-size: 14px; line-height: 1.42; {peso} '
                     f'border-bottom: 1px solid {BORDE}; vertical-align: top">{celda}</td>')
-        trs += f"<tr>{tds}</tr>"
+        # Una fila vacía es un renglón para completar a mano (las firmas del
+        # reglamento): se le da altura para escribir.
+        alto = ' style="height: 46px"' if not any(c.strip() for c in fila) else ""
+        trs += f"<tr{alto}>{tds}</tr>"
     # Con casi todos los anchos fijados, se respetan tal cual (sin esto, el
     # navegador los reparte a su gusto).
     fijo = " table-layout: fixed;" if sum(1 for x in anchos if x) >= 4 else ""

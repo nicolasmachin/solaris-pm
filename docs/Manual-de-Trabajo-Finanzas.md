@@ -1,6 +1,6 @@
-# Manual de trabajo de Finanzas
+# Manual de trabajo de Administración y Finanzas
 
-**Voltia · Uruguay** · Versión 0.23 · del 10/11/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.24 · del 11/11/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -29,14 +29,16 @@
 
 ## Qué es y qué no es este documento
 
-**Es** la guía de trabajo de Finanzas: qué hace el área, qué recibe de las
-demás, qué les entrega, con qué criterio decide y cómo usa cada pantalla de
-**Voltia PM**, el sistema interno donde trabajan todas las áreas de Voltia.
+**Es** la guía de trabajo del área de **Administración y Finanzas** (en este
+manual, **Finanzas** a secas): qué hace el área, qué recibe de las demás, qué
+les entrega, con qué criterio decide y cómo usa cada pantalla de **Voltia PM**,
+el sistema interno donde trabajan todas las áreas de Voltia.
 
-**No es** un manual contable ni impositivo: cómo se registra cada cosa ante DGI o
-en la contabilidad formal lo define el contador. Tampoco explica cómo trabajan
-las otras áreas: de ellas trae solo lo que Finanzas necesita saber, repetido a
-propósito para que nadie tenga que salir a buscarlo en otro manual.
+**No es** un curso de contabilidad: la contabilidad y los impuestos son parte
+del trabajo del área, pero cómo se registra cada cosa ante DGI o en los libros
+lo decide la contadora, con su criterio profesional. Tampoco explica cómo
+trabajan las otras áreas: de ellas trae solo lo que Finanzas necesita saber,
+repetido a propósito para que nadie tenga que salir a buscarlo en otro manual.
 
 Las palabras propias de Voltia (Voltia PM, UTE, etapa, onboarding, CFE, plan de
 pagos, ajuste, cierre de mes…) se explican la primera vez que aparecen y están
@@ -46,22 +48,29 @@ todas en el **Glosario**, al final.
 
 ## 1 · Para qué existe Finanzas
 
-Finanzas existe para que Voltia pueda decir **en todo momento** dos cosas:
-**cuánto le debe Voltia a cada proveedor y para qué fecha**, y **cuánto le deben
-los clientes a Voltia y para qué fecha**. Con eso se puede saber si la plata
-alcanza (el **flujo de fondos**) y si la empresa gana o pierde (el **estado de
-resultados**).
+**Administración y Finanzas** (en este manual, **Finanzas**) es el área de la
+que dependen **todos los objetivos financieros de Voltia**. Su responsable es la
+**contadora de la empresa**, así que la gestión del día a día y la contabilidad
+van integradas en un mismo lugar. No todo lo hace ella: parte de las tareas
+administrativas las hacen otras personas del área.
 
-Para que esos números sirvan, tienen que salir de **documentos reales**: una
-deuda con un proveedor existe cuando llega su factura; lo que debe un cliente
-sale del **plan de pagos** que se acordó con él. Lo proyectado "a ojo" no se
-carga como deuda. Y lo que dice Voltia PM tiene que **coincidir con el banco**:
-cada movimiento del banco tiene su movimiento cargado, y al revés.
+Le corresponde:
 
-Además, Finanzas es quien **paga**: a los proveedores, a los instaladores
-tercerizados y las comisiones de los asesores; quien **emite las facturas** a
-los clientes que las llevan; y quien **cierra cada mes** y le entrega a la
-contadora lo que necesita.
+- **Saber si la empresa gana plata**: la rentabilidad de Voltia y la de cada
+  producto, y los análisis financieros que se necesiten para decidir.
+- **Los informes**: el estado de resultados, el flujo de fondos y el balance.
+- **La contabilidad**: el debe y el haber de la empresa.
+- **La plata que entra**: facturar a los clientes y cobrarles.
+- **La plata que sale**: pagar a los proveedores, a los instaladores
+  tercerizados, las comisiones de los asesores y los sueldos.
+- **Los impuestos y los aportes**: lo que se le paga a DGI y a BPS, incluidos
+  los aportes de los sueldos.
+
+Para que todo eso sirva, los números tienen que salir de **documentos reales**:
+una deuda con un proveedor existe cuando llega su factura; lo que debe un
+cliente sale del **plan de pagos** que se acordó con él. Lo proyectado "a ojo"
+no se carga como deuda. Y lo que dice Voltia PM tiene que **coincidir con el
+banco**: cada movimiento del banco tiene su movimiento cargado, y al revés.
 
 ## 2 · Qué hace y dónde termina su trabajo
 
@@ -96,7 +105,6 @@ termina con su **cierre**.
 | **Experiencia Solar** | Los cobros al día: lo que Finanzas registra se ve al instante en la pestaña Cobros de Experiencia Solar y en el historial del cliente |
 | **Asesores** | Las comisiones pagadas: al marcarlas pagadas en Finanzas, el asesor las ve como «Pagada» |
 | **Instaladores tercerizados** | Los pagos registrados, que el instalador ve en **Mis cobros** |
-| **La contadora** (área de Administración) | Cada mes cerrado, el **archivo para la contadora**: compras con neto e IVA, ventas, ajustes y movimientos del mes. Y lo que hay para descontar de los sueldos y el saldo de la cuenta del socio |
 | **Gerencia** | El flujo de fondos, el estado de resultados, el cierre de cada mes y los números de Finanzas del reporte semanal |
 
 ### A quién le pregunta qué
@@ -108,7 +116,7 @@ termina con su **cierre**.
 | Qué equipo hizo una obra o cuándo se hizo | Al **gerente de Operaciones** |
 | Qué compró Logística y para qué obra | A **Logística** |
 | Si un gasto de tarjeta fue de Voltia o personal | A **quien usa la tarjeta**; si es personal con una tarjeta de la empresa, también a quien lo autorizó |
-| Cómo se registra algo ante DGI o en la contabilidad formal | Al **contador** |
+| Cómo se registra algo ante DGI o en la contabilidad formal | A la **contadora**, responsable del área |
 | Algo del cliente que no es de plata | A **Experiencia Solar** |
 
 ---
@@ -159,10 +167,7 @@ los fije, se trabaja con criterio y se avisa si algo se demora.
   qué cuotas vencieron sin cobrar (los dos aparecen también en «Para hacer
   hoy», todos los días). Si una cuota está
   vencida, se le pregunta al asesor qué pasó antes de reclamarle al cliente.
-  **El reclamo al cliente lo hace Experiencia Solar**, que es quien habla con
-  él. Está decidido que pase al **área de Administración** (la contadora)
-  cuando esa área se haga cargo de Finanzas en Voltia PM; ese día se corrige
-  este manual.
+  **El reclamo al cliente lo hace Finanzas.**
   Experiencia Solar ve la misma lista de listos para cobrar, con cuánto cobrar
   ahora y los totales, en su pestaña Cobros.
 - **Revisar lo que se le debe a cada proveedor por vencimiento** (arriba de
@@ -186,8 +191,7 @@ En los primeros días del mes se deja en orden el mes que terminó y se lo
    de Voltia o personal; el pago a la tarjeta cargado como transferencia desde
    el banco, y el saldo que cierra en cero después del pago.
 4. **Revisar lo personal**: lo que hay para **descontar del sueldo** a los
-   empleados (lo marca descontado el encargado de Finanzas, la contadora, que es
-   quien liquida los sueldos) y el saldo de la **cuenta del socio**.
+   empleados (lo marca descontado quien liquida los sueldos) y el saldo de la **cuenta del socio**.
 5. **Conciliar las cuentas bancarias** con el saldo real del banco (5.12). Si no
    coincide, se escribe el motivo.
 6. **Comparar con el estado de cuenta de cada proveedor**: Finanzas le pide el
@@ -332,8 +336,8 @@ en ese estado de cuenta (ver «Arrancar cuenta», 5.6).
   no sale de ninguna cuenta, no es gasto ni ingreso y no aparece en el estado de
   resultados.
 - **Las deudas viejas de la empresa unipersonal** con Tiempo al Tiempo se
-  registran como compra de la SAS. Lo decidió Gerencia sabiendo que el contador
-  marcó un riesgo fiscal, que queda para revisar con la contadora.
+  registran como compra de la SAS. Lo decidió Gerencia sabiendo que la contadora
+  marcó un riesgo fiscal, que queda por revisar.
 
 El porqué: lo viejo tenía facturas sin cargar, pagos sin aplicar y deudas
 cargadas dos veces; arreglarlo renglón por renglón no termina nunca. Lo que
@@ -346,13 +350,13 @@ Cuando Voltia paga algo que no es de la empresa, no se carga como gasto:
 
 - **Un gasto personal del socio** pagado con plata de Voltia (con una tarjeta o
   de una cuenta) va a la **cuenta del socio**: queda como algo que el socio le
-  debe a Voltia. **No se carga como sueldo**: así lo recomendó el contador. La
+  debe a Voltia. **No se carga como sueldo**: así lo recomendó la contadora. La
   contadora la cancela con sueldo formal, con utilidades o con la devolución de
   la plata.
 - **Un gasto personal de un empleado** con una tarjeta de la empresa, si fue
   **autorizado**, queda como **adelanto a descontar** del sueldo, con el nombre
-  de quien lo autorizó. Lo marca descontado el encargado de Finanzas (la
-  contadora), que es quien liquida los sueldos.
+  de quien lo autorizó. Lo marca descontado quien liquida los sueldos,
+  en Finanzas.
 
 Ni la cuenta del socio ni los adelantos entran al estado de resultados.
 
@@ -426,7 +430,7 @@ Es la reserva para reponer paneles cuando una tormenta pega en varias obras el
 mismo día. Va en una línea propia y **no suma al saldo de la obra**: la
 anualidad del plan no salda el presupuesto de la instalación. **No se le dice
 «seguro»**, ni por escrito ni en voz alta: se dice *plan*, *anualidad* y *daño
-por granizo*. Cómo se registra contablemente lo define el contador.
+por granizo*. Cómo se registra contablemente lo define la contadora.
 
 ### La comisión sale de la propuesta, no al revés
 
@@ -834,7 +838,7 @@ PM no se puede revertir así: se anula con una nota de crédito.
 
 **Los cobros no emiten comprobantes.** Registrar un cobro sigue sin tocar la
 facturación electrónica. Si cada cobro tiene que llevar su recibo electrónico
-está pendiente de definir con el contador.
+está pendiente de definir por la contadora.
 
 ### 5.5 · Facturas de proveedores
 
@@ -1167,7 +1171,7 @@ menú de su cuenta. Solo puede mirar.
 
 ### 5.8 · Costos fijos
 
-Los **costos fijos** son los gastos que se repiten (alquiler, contador,
+Los **costos fijos** son los gastos que se repiten (alquiler,
 servicios). Se configuran una vez en **Finanzas → Costos fijos**, con
 **«Agregar costo fijo»**: nombre, descripción
 (opcional), **periodicidad** —**mensual**, **bimensual** (en los meses pares o
@@ -1276,8 +1280,7 @@ Voltia»).
 
 **A descontar del sueldo.** Los gastos personales autorizados de empleados con
 una tarjeta de la empresa, todavía no descontados. Cuando se descuentan del
-sueldo, quien liquida los sueldos (el encargado de Finanzas, la contadora) toca
-**«Descontado»**.
+sueldo, quien liquida los sueldos toca **«Descontado»**.
 
 ### 5.11 · Movimientos
 
@@ -1619,9 +1622,7 @@ cliente. No se inventan fechas.
 
 Se mira primero si el pago entró y no se registró (en **Banco** o en **Por
 conciliar**). Si no entró, se le pregunta al asesor si hubo algún cambio
-acordado. El reclamo al cliente lo hace Experiencia Solar, que es quien habla con
-él (va a pasar al área de Administración cuando esa área se haga cargo de
-Finanzas en Voltia PM).
+acordado. Si no lo hubo, Finanzas le reclama el pago al cliente.
 
 ### Una obra muestra «hay cobro sin factura»
 
@@ -1715,7 +1716,7 @@ cambió o borró cada cosa, con el valor de antes y el de después, está en
 
 El proyecto vuelve solo a **Pendientes** de Facturación, y en la fila se ve el
 motivo que dio DGI. Se corrige el dato que falló y se emite una factura nueva. Si
-el motivo no se entiende, se consulta con el contador antes de volver a emitir.
+el motivo no se entiende, se consulta con la contadora antes de volver a emitir.
 
 ### Una factura quedó «Verificando» mucho tiempo
 
@@ -1738,7 +1739,7 @@ una vez por mes.
 |---|---|
 | **Voltia PM** | El sistema interno donde trabajan todas las áreas de Voltia: proyectos, clientes, calendario, finanzas. |
 | **Portal de Voltia** | Lo que ve el cliente: avance, documentación, reportes y reclamos. |
-| **Área de Administración** | El área de la contadora. Va a usar el módulo de Finanzas de Voltia PM y a hacerse cargo de reclamar los pagos atrasados. Liquida los sueldos. No confundir con **Administración** de Voltia PM, el menú de configuración del sistema. |
+| **Administración y Finanzas** | El área de este manual, que en el texto se nombra **Finanzas** a secas. La responsable es la contadora de la empresa; otras personas del área hacen parte de las tareas administrativas. No confundir con **Administración** de Voltia PM, el menú de configuración del sistema. |
 | **UTE** | La empresa estatal de electricidad. Tiene que aprobar y **habilitar** la instalación para que el cliente pueda encenderla. |
 | **DGI** | La Dirección General Impositiva. Registra todas las facturas electrónicas. |
 | **CFE** | Comprobante fiscal electrónico: la factura electrónica (o nota de crédito, o nota de débito). |

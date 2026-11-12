@@ -339,7 +339,9 @@ tienen también el instalador tercerizado, el capataz y los asesores, y estas
 herramientas muestran datos de todos los clientes. Al 21-oct-2026 el rol
 `OPERACIONES` **no** tiene `EXPERIENCIA_CLIENTES:VIEW` en producción: para que
 el equipo de Operaciones las use hay que dárselo desde Admin → Roles (abre
-también las pantallas de Experiencia Solar en lectura).
+también las pantallas de Experiencia Solar en lectura). El rol **`CAPATAZ`** sí lo tiene
+desde el 12-nov-2026, para que el capataz diagnostique cualquier planta desde
+el conector (solo `VIEW`: vincular plantas sigue pidiendo `EDIT`).
 
 **La web de Growatt sin navegador** (`growatt/web.client.ts`). La web no tiene API documentada, pero sus páginas llaman endpoints simples: `POST /login` con `account` y `passwordCrc` (MD5 con los `0` de las posiciones pares cambiados por `c`, `hashPasswordGrowatt()`), que deja la sesión en cookies, `POST /device/getTLXHistory` (`tlxSn`, `startDate`, `endDate`, `start` = número de página; 80 registros por página, del más nuevo al más viejo, `haveNext`), `POST /device/getMAXHistory` (igual con `maxSn`; trae además `vacr/s/t` y `vacRs/St/Tr`, `currentString1..32`, `pvIso`, `gfci`) y `POST /log/getNewPlantFaultLog` (`plantId`, `date` = AAAA-MM con `type` 2, `toPageNum` desde 1, `deviceSn` vacío, `deviceFlag` 0; 10 por página). En los MAX la "tensión de red" es la de fase si pasa de 180 V, y si no la de línea: en las redes de 230 V sin neutro la de fase da ~133 V. Se descubrió mirando qué hace la página con Playwright (skill `historico` en la VPS de desarrollo). Necesita `GROWATT_WEB_USER` y `GROWATT_WEB_PASS`; la sesión se renueva cada 30 min y, si una página vuelve rechazada, se reintenta una vez con login nuevo. En la cartera solo hay Growatt tipo 4 y 7 (más medidores, tipo 3); los SPH/híbridos (tipo 5) tendrían su propio endpoint, no explorado. Si Growatt cambia la página, esto se rompe.
 

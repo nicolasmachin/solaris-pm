@@ -111,8 +111,8 @@ individuales, los convenios colectivos y las directivas de la Dirección.
 
 ### 3.1 Dirección
 
-Define la estrategia y los estándares operativos; autoriza excepciones; aplica
-las suspensiones y las desvinculaciones; designa por escrito a quienes pueden
+Define la estrategia y los estándares operativos; autoriza excepciones; decide
+los despidos; designa por escrito a quienes pueden
 conducir vehículos de Voltia; y autoriza casos especiales (el vehículo en el
 domicilio, modificaciones de contrato, etc.).
 
@@ -125,7 +125,7 @@ Es responsable de la ejecución diaria del área:
 - Coordina la licencia de cada uno (sección 9.1).
 - Recibe los reclamos del equipo, en privado (sección 9.3).
 - Administra los grupos de WhatsApp de Operaciones (sección 9.4).
-- Aplica las observaciones y el primer apercibimiento escrito.
+- Aplica las sanciones (sección 22.4).
 - Decide suspender una obra por clima o por condiciones inseguras.
 - Recibe y procesa los reportes de incidentes, daños y cuasi-incidentes.
 - Puede pedir un test de alcohol o drogas ante una sospecha razonable.
@@ -617,8 +617,8 @@ Es trabajo en altura toda tarea a 2 metros o más del nivel del piso.
   suspende todo trabajo en el techo.
 - La capacitación de trabajo en altura la da un técnico prevencionista
   registrado en el MTSS, designado por Voltia. Queda registrada con el nombre,
-  la fecha y la firma. Se refresca cada seis meses, y cada vez que entra alguien
-  nuevo o hay un incidente relevante.
+  la fecha y la firma. Se refresca una vez por año, y cada vez que entra
+  alguien nuevo o hay un incidente relevante.
 - Los arneses y los cabos de vida tienen la vida útil que indica el fabricante.
   Un arnés que frenó una caída se saca de servicio en el momento.
 
@@ -725,8 +725,8 @@ Nadie es sancionado por detener una tarea por seguridad si actuó de buena fe.
 
 Las pérdidas o daños de herramientas se avisan al gerente de Operaciones. Si
 fueron por mal uso, descuido o mala conducta, después de investigarlo y escuchar
-el descargo, Voltia puede pedir la reposición, descontar el valor según la
-normativa o aplicar una sanción. El desgaste normal no es responsabilidad del
+el descargo, Voltia puede reclamar su valor o aplicar una sanción. No se descuenta
+del sueldo sin el consentimiento expreso del trabajador. El desgaste normal no es responsabilidad del
 trabajador.
 
 ### 16.2 Materiales
@@ -748,7 +748,8 @@ libreta.
 Conducción responsable y a la defensiva, respetando velocidades, cinturón y
 normas de tránsito. Las multas por culpa probada del conductor (velocidad,
 estacionamiento, cinturón, celular al volante) son a cargo del conductor; las
-que no dependen de él, a cargo de Voltia.
+que no dependen de él, a cargo de Voltia. El conductor la paga o la reintegra; no
+se descuenta del sueldo sin su consentimiento expreso.
 
 ### 16.5 Uso del vehículo
 
@@ -794,8 +795,9 @@ La información a la que el trabajador accede por su trabajo es confidencial.
 Está prohibido divulgar, dentro o fuera de Voltia, datos del cliente (nombre,
 dirección, consumo, fotos de la instalación que lo identifiquen), información
 comercial (precios, márgenes, propuestas, listas de clientes) o técnica (diseños,
-cálculos, planos, configuraciones). La obligación sigue después de terminado el
-vínculo, sin límite de tiempo (Ley 18.331).
+cálculos, planos, configuraciones). Los datos de los clientes se guardan en
+secreto aun después de terminado el vínculo (Ley 18.331). La información comercial
+y técnica, también, por este reglamento.
 
 ### 17.2 Propiedad intelectual
 
@@ -809,12 +811,13 @@ ex-trabajador no contacta, no le ofrece servicios ni desvía a los clientes,
 interesados y referidos de Voltia que conoció por su trabajo, en instalación,
 mantenimiento o reparación de sistemas fotovoltaicos.
 
+> *A confirmar con FEFA:* si esta cláusula se puede sostener sin una compensación.
+
 ### 17.4 Trabajos por fuera
 
-Voltia no limita lo que el trabajador hace fuera de su jornada. Pero si después
-aparece que un trabajo por fuera fue con un cliente, interesado o referido de
-Voltia, se considera desvío de una oportunidad comercial, salvo que el
-trabajador pruebe lo contrario, y es falta gravísima.
+Voltia no limita lo que el trabajador hace fuera de su jornada. Pero trabajar por
+fuera con un cliente, interesado o referido de Voltia que conoció por su trabajo
+es falta grave.
 
 ### 17.5 Pagos del cliente
 
@@ -827,16 +830,20 @@ cliente cualquier pago de la instalación sin autorización de Finanzas.
 
 Se pueden compartir fotos y videos del trabajo en redes personales siempre que no
 identifiquen al cliente: dirección, fachada reconocible, nombre, consumo,
-planos, propuestas, número de medidor. Prohibido usar las redes para criticar a
-Voltia, a clientes, a compañeros o a la competencia.
+planos, propuestas, número de medidor.
+
+En redes, como en cualquier conversación, se puede opinar e incluso criticar,
+siempre con respeto. No se admiten insultos, amenazas, faltas de respeto ni
+acusaciones contra Voltia, sus clientes, los compañeros o la competencia.
 
 ### 17.7 Uso de la imagen
 
-Al firmar este reglamento, el trabajador autoriza a Voltia a usar su imagen
-(fotos y videos en la obra, el depósito o eventos) en la comunicación de la
-empresa, sus redes, su web y sus presentaciones (Ley 18.331). La autorización es
-gratuita, dura el vínculo y después, salvo que la revoque por escrito; la
-revocación no afecta lo ya publicado.
+Voltia le pide a cada trabajador autorización para usar su imagen (fotos y videos
+en la obra, el depósito o eventos) en su comunicación: sus redes, su web y sus
+presentaciones. La autorización es optativa y se firma aparte, en el anexo
+*Autorización de uso de imagen*. Quien no la firma no tiene ninguna consecuencia.
+Se puede retirar en cualquier momento, por escrito; desde ahí, Voltia no usa su
+imagen en publicaciones nuevas.
 
 ---
 
@@ -849,28 +856,11 @@ personal se entregan a Finanzas en los plazos y formatos que indique.
 
 ## 19 · Instaladores tercerizados
 
-Voltia trabaja con **cuadrillas tercerizadas fijas**, que hacen obras completas en
-su zona. Voltia contrata a la empresa, no a su personal: el tercerizado contrata a
-los trabajadores que necesita.
+Este reglamento es para el equipo propio de Voltia. Los instaladores tercerizados
+se rigen por su contrato con Voltia y por el Manual del Instalador Tercerizado.
 
-**Todos los meses**, el tercerizado le presenta a Voltia:
-
-- el certificado común del BPS vigente;
-- la constancia del BSE de que su seguro de accidentes de trabajo está vigente y
-  cubre a todos los que van a las obras;
-- la historia laboral y el recibo de los aportes al BPS del mes;
-- la planilla de trabajo y los recibos de sueldo de su personal;
-- la lista de quiénes van a cada obra.
-
-Si no la presenta, Voltia puede retener el pago y pagar directamente lo que se
-deba a los trabajadores, al BPS o al BSE. Voltia puede revisar la documentación
-del personal en la obra y exigir que se retire quien no cumpla.
-
-En la obra, el tercerizado y su personal cumplen este reglamento en seguridad,
-conducta y orden. Todo esto, sin perjuicio de la responsabilidad que le
-corresponda a Voltia por las Leyes 18.099 y 18.251.
-
-> *Por armar:* el contrato entre Voltia y cada instalador tercerizado.
+Mientras trabajan en una obra de Voltia, ellos y su personal cumplen las reglas de
+seguridad, conducta y orden de este reglamento.
 
 ---
 
@@ -893,7 +883,7 @@ sanciones. Queda registrada con su firma.
 
 ### 21.2 Refrescos
 
-Cada seis meses, y cada vez que hay un incidente relevante, un cambio de norma o
+Una vez por año, y cada vez que hay un incidente relevante, un cambio de norma o
 una tecnología o un procedimiento nuevo.
 
 ### 21.3 La capacitación de seguridad
@@ -930,6 +920,8 @@ designado por Voltia. Los certificados se archivan en el legajo.
 - Dañar bienes de Voltia, del cliente o de terceros por negligencia grave.
 - Conducir un vehículo de Voltia sin estar designado o con la libreta vencida.
 - Presentarse bajo los efectos del alcohol o de drogas, la primera vez.
+- Trabajar por fuera con un cliente, interesado o referido de Voltia que conoció
+  por su trabajo.
 
 **Faltas gravísimas** (pueden considerarse notoria mala conducta, con despido
 con justa causa), entre otras:
@@ -939,7 +931,6 @@ con justa causa), entre otras:
 - Robar o dañar a propósito bienes de Voltia, del cliente o de terceros.
 - Agredir físicamente, amenazar gravemente o portar armas.
 - Acoso sexual, moral o discriminatorio.
-- Trabajar por fuera con clientes, interesados o referidos de Voltia.
 - Violar gravemente la confidencialidad o la no captación.
 
 Esta lista no es cerrada. Lo que no figure en ella lo evalúa Voltia según su
@@ -958,7 +949,8 @@ Con la seguridad no hay flexibilidad, y la responsabilidad es en cadena:
   y al **gerente de Operaciones**.
 
 Así nadie puede decir que "el otro no se la puso": controlar es parte del
-trabajo de cada uno.
+trabajo de cada uno. Al capataz y al gerente se los sanciona por no controlar, que
+es una falta propia.
 
 ### 22.3 La escala
 
@@ -981,10 +973,12 @@ hay una reunión obligatoria con el gerente de Operaciones.
 Las faltas gravísimas no suman puntos: permiten el despido directo, sin pasar por
 la escala.
 
+Llegar a 6 puntos, o cometer una falta gravísima, no genera un despido automático:
+lo habilita. La decisión es de la Gerencia, según el caso.
+
 ### 22.4 Quién sanciona
 
-- Las observaciones y el primer apercibimiento: el gerente de Operaciones.
-- El segundo apercibimiento, las suspensiones y los despidos: la Dirección.
+Las sanciones las aplica el gerente que corresponde.
 
 Toda sanción escrita se notifica en persona, firmada, con copia para el
 trabajador y el original al legajo. Si el trabajador no quiere firmar, se deja
@@ -1005,7 +999,8 @@ se tiene en cuenta al resolver.
   indeterminado.
 - **Cambios.** Voltia puede modificarlo según las necesidades y la normativa.
   Los cambios se comunican por escrito con anticipación razonable y no se
-  aplican hacia atrás en perjuicio del trabajador.
+  aplican hacia atrás en perjuicio del trabajador. Los cambios no rebajan el
+  sueldo, la categoría ni los derechos adquiridos.
 - **Complementariedad.** Complementa, sin sustituir, el contrato individual, los
   convenios colectivos y la legislación laboral y de seguridad.
 - **Aceptación.** Al firmar el formulario de aceptación, el trabajador declara
@@ -1015,12 +1010,14 @@ se tiene en cuenta al resolver.
 
 - **REG-SEG-01** — Régimen de sanciones en seguridad y equipo de protección,
   firmado individualmente.
-- **REC-EPP-01** — Constancia de entrega y recepción del equipo de protección,
-  firmada individualmente.
+- La constancia de entrega del equipo de protección, que desde el 26 de octubre
+  de 2026 se firma en Voltia PM, en Mi legajo. Las anteriores, en papel, son el
+  **REC-EPP-01**, firmado individualmente.
 - La designación por escrito de quienes pueden conducir vehículos de Voltia.
 
 REG-SEG-01 y REC-EPP-01 ya los firmó el personal antes de este reglamento y
-siguen vigentes.
+siguen vigentes. Si algo de esos documentos contradice este reglamento, vale este
+reglamento.
 
 ---
 
@@ -1033,11 +1030,9 @@ El trabajador que firma declara:
 2. Haberlo leído y entendido.
 3. Aceptar el régimen de sanciones, incluidas las faltas de seguridad y de uso
    del equipo de protección.
-4. Autorizar a Voltia a usar su imagen con fines institucionales y comerciales
-   (Ley 18.331).
-5. Entender los riesgos del montaje, el mantenimiento y la puesta en marcha de
+4. Entender los riesgos del montaje, el mantenimiento y la puesta en marcha de
    instalaciones fotovoltaicas, y las medidas para prevenirlos.
-6. Comprometerse a cumplir el reglamento y a colaborar con las medidas de
+5. Comprometerse a cumplir el reglamento y a colaborar con las medidas de
    seguridad y calidad.
 
 Nombre completo: _______________________ · C.I.: ______________ · Cargo:
@@ -1046,6 +1041,28 @@ ______________ · Fecha: ___ / ___ / _____
 Firma del trabajador: _______________________
 
 Por Voltia — Dirección: _______________________
+
+---
+
+## Anexo · Autorización de uso de imagen
+
+Quienes firman autorizan a Voltia a usar su imagen (fotos y videos en la obra, el
+depósito o eventos) en su comunicación: sus redes, su web y sus presentaciones. La
+autorización es gratuita y optativa: firmarla no es condición para trabajar en
+Voltia, y quien no la firma no tiene ninguna consecuencia. Se puede retirar en
+cualquier momento, por escrito; desde ahí, Voltia no usa la imagen de esa persona
+en publicaciones nuevas (Ley 18.331).
+
+| Nombre completo | C.I. | Fecha | Firma |
+|---|---|---|---|
+| | | | |
+| | | | |
+| | | | |
+| | | | |
+| | | | |
+| | | | |
+| | | | |
+| | | | |
 
 ---
 
@@ -1262,6 +1279,6 @@ reglamentación técnica.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 3.1 | 6 de noviembre de 2026 | Se agregan tres secciones: lo que marca la ley, lo que Voltia da por encima de la ley (licencia coordinada, seis días libres pagos, ropa de trabajo, flexibilidad, alojamiento y viáticos) y lo que espera de cada uno (licencia, avisos, reclamos y grupo de WhatsApp). Por eso, las secciones que eran de la 7 a la 20 pasan a ser de la 10 a la 23. Las horas extra necesitan el acuerdo del trabajador, y en el interior las horas de viaje se cambian por un viático. Se agregan al marco normativo las leyes de licencia, salario vacacional, horas extra, aguinaldo, feriados y licencias especiales, y un anexo con lo que dice cada ley en pocas palabras, verificado en las normas y en las páginas oficiales. Los plazos para denunciar un accidente al BSE son distintos en Montevideo y en el resto del país. En la finalidad, se suma que todos tengan las reglas claras. Lo que se puede prever se pide, no se avisa. Quedan marcados los puntos a confirmar con FEFA y con el prevencionista, y lo que falta definir: los sábados, entre otros. |
+| 3.1 | 6 de noviembre de 2026 | Se agregan tres secciones: lo que marca la ley, lo que Voltia da por encima de la ley (licencia coordinada, seis días libres pagos, ropa de trabajo, flexibilidad, alojamiento y viáticos) y lo que espera de cada uno (licencia, avisos, reclamos y grupo de WhatsApp). Por eso, las secciones que eran de la 7 a la 20 pasan a ser de la 10 a la 23. Las horas extra necesitan el acuerdo del trabajador, y en el interior las horas de viaje se cambian por un viático. Se agregan al marco normativo las leyes de licencia, salario vacacional, horas extra, aguinaldo, feriados y licencias especiales, y un anexo con lo que dice cada ley en pocas palabras, verificado en las normas y en las páginas oficiales. Los plazos para denunciar un accidente al BSE son distintos en Montevideo y en el resto del país. En la finalidad, se suma que todos tengan las reglas claras. Lo que se puede prever se pide, no se avisa. La autorización de imagen pasa a un anexo aparte y optativo. Quedan marcados los puntos a confirmar con FEFA y con el prevencionista, y lo que falta definir: los sábados, entre otros. |
 | 3.0 | 11 de octubre de 2026 | Se pasa el reglamento a la serie de manuales de Voltia y se alinea con lo que se definió para Operaciones. En obra, el criterio del instalador le gana al del proyectista y se anota el cambio, en vez de pedir una orden de cambio firmada. Los instaladores tercerizados son cuadrillas fijas, en sus obras el instalador es el capataz, y presentan la documentación todos los meses. La sanción por trabajar sin protección alcanza a la cadena; si el capataz lo encuentra, lo corrige en el momento. Las horas extra las aprueba la Dirección o, si no está, el gerente de Operaciones. Los roles son los de hoy (gerente de Operaciones, capataz, operarios). Se sacan los formularios en papel (parte diario, checklist por etapa, charla de inicio, orden de cambio): lo de la obra se registra en Voltia PM. Se suman los sobrantes al terminar la obra, el tope de gastos del gerente de Operaciones y el informe a la Inspección del Trabajo por un accidente grave. |
 | 2.0 | Sin fecha registrada | Versión anterior en Word, sin terminar de revisar. No hay registro de sus cambios. |
