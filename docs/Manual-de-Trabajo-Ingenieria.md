@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.14 · del 19/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.15 · del 12/11/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -169,6 +169,14 @@ los videos, que al ganar el lead pasan al proyecto).
   pueden leer como texto. Un PDF escaneado no lo puede leer: ahí hay que abrirlo
   con el enlace. Se le pide por el nombre del cliente ("traeme los documentos de
   tal obra" y después "leé la memoria y el unifilar").
+
+- **El registro de problemas técnicos resueltos.** Voltia PM guarda, común a
+  todo el equipo, los problemas de obra y de planta que ya se resolvieron: qué
+  equipos había (marca, modelo y número de serie), qué se vio, qué se descartó,
+  qué era y cómo se arregló. Claude lo consulta antes de diagnosticar y anota
+  solo cada problema que se resuelve en la conversación. Sirve también al
+  diseñar: antes de elegir un equipo o una configuración que no es la de
+  siempre, se le pregunta a Claude si ya hubo problemas con ese modelo.
 
 - **El resumen de la obra.** Arriba de todo en el espacio de Ingeniería del
   proyecto (y en la pantalla del proyecto, en **Datos técnicos**) se ven en
@@ -439,6 +447,7 @@ borrar; lo de otras áreas, no.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.15 | 12 de noviembre de 2026 | Se agrega, entre las herramientas, el registro de problemas técnicos resueltos: Claude lo consulta antes de diagnosticar y anota solo cada problema que se resuelve. |
 | 0.14 | 19 de octubre de 2026 | Al completar la pre-ingeniería se usa la minuta que ya está en el proyecto, con el botón Usar esta: no se vuelve a subir. |
 | 0.13 | 14 de octubre de 2026 | Nuevo lineamiento: la Pre-Ingeniería no se cierra sin el formulario de pre-ingeniería completo (paneles, inversor con su potencia, red, techo y coplanar o inclinado), sin el unifilar de cada suministro y con los dos diciendo lo mismo. En la pre-ingeniería se agregan la opción Suelo en el techo y la pregunta coplanar o inclinado. Se agrega, entre las herramientas, el resumen de la obra arriba del espacio de Ingeniería. |
 | 0.12 | 12 de octubre de 2026 | Se agrega el informe post-obra: al terminar cada obra el gerente de Operaciones evalúa también a Ingeniería, y su responsable firma su parte. En el espacio de Ingeniería se agrega el bloque Comentarios y archivos, para comentar y adjuntar sin ir a la pantalla del proyecto. |

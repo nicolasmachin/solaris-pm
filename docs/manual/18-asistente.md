@@ -131,6 +131,7 @@ clientes sería otro proyecto.
   % del texto) van solo con su índice de secciones, y el asistente abre la
   sección que necesita con la herramienta propia `leer_enciclopedia`. Cargarlas
   enteras llevaba el prompt de ~48.000 a ~108.000 tokens.
+- **Los problemas técnicos ya resueltos no están en estos Markdown**: viven en la tabla `casos_tecnicos` y el asistente los busca con `buscar_casos_tecnicos`, que le llega como cualquier herramienta de lectura del conector (ver capítulo 13). El asistente no puede cargarlos ni corregirlos: eso lo hacen las conversaciones del conector.
 - **Herramientas = las del conector MCP, en proceso.** `abrirHerramientas()`
   arma el mismo servidor que el conector (`buildMcpServer(user)`) y le habla por
   un transporte en memoria (`InMemoryTransport`). Solo se ofrecen las marcadas

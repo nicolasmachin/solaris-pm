@@ -68,7 +68,7 @@ const RELEASE_14_3: Release = {
   ],
 };
 
-export const LATEST_RELEASE: Release = {
+const RELEASE_14_4: Release = {
   version: "14.4",
   date: "11 de noviembre de 2026",
   sections: [
@@ -77,6 +77,20 @@ export const LATEST_RELEASE: Release = {
       items: [
         "Propuestas B2B: el saludo de la carta va dirigido al contacto de la empresa; sin contacto, empieza con «Estimados,».",
         "Cotizadores: al cerrar y volver a abrir aparecen los últimos valores cargados, y lo escrito justo antes de cerrar también se guarda.",
+      ],
+    },
+  ],
+};
+
+export const LATEST_RELEASE: Release = {
+  version: "14.5",
+  date: "12 de noviembre de 2026",
+  sections: [
+    {
+      title: "Registro de problemas técnicos resueltos",
+      items: [
+        "Las conversaciones con Claude conectadas a Voltia PM ahora tienen un registro común de problemas técnicos ya resueltos: qué equipos había, qué se vio, qué era y cómo se arregló.",
+        "Antes de diagnosticar, Claude busca si el problema ya pasó; y cuando uno se resuelve en la conversación, lo anota solo y avisa. Lo ve todo el equipo, desde cualquier conversación, y también el asistente de Voltia PM.",
       ],
     },
   ],
@@ -1166,6 +1180,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.4",
+    shortDate: "11 nov",
+    highlights: RELEASE_14_4.sections.map((sec) => sec.title),
+  },
   {
     version: "14.3",
     shortDate: "10 nov",

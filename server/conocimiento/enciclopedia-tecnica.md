@@ -460,6 +460,7 @@ El smart meter mide el **intercambio con la red en el punto de interconexión** 
 - **SDM630MCT en 3 hilos:** el borne **N recibe la Fase 1 con fusible** (referencia común); L2→borne L1; L3→borne L2; **borne L3 vacío**. La fase no va al borne de su mismo nombre.
 - Fusibles de sensado 1 A rápido **300 V** (230 V entre fases; serían 500 V en 400 V).
 - Menú: **SET SYS = 3P3W**; **PT1 = PT2** (trampa: PT2 viene en 400 V por defecto y escala todo por 0,575); SET CT según el CT real (confirmar si es de 40 mA/mV o de 1/5 A); SET SYS CONT con todas las fases en FRD.
+- **Lo mismo vale para el SDM630-Modbus de conexión directa:** en 3P4 sobre red sin neutro, el Growatt marcó **Warning 401** (sin comunicación con el medidor) y se arregló al pasar a 3P3 (Diego González, nov-2026, en el registro de casos técnicos).
 - En 3 hilos, **potencias y FP por fase no tienen significado físico**; solo valen los totales.
 - Una fase leyendo ~135 V = entrada flotando (tornillo flojo o mal insertado). Medir sobre el tornillo.
 - **Magnitud idéntica con signo invertido = los dos CT invertidos** (uno solo invertido da otra magnitud).
@@ -671,17 +672,7 @@ Con dos inversores en el sitio: **modificar uno y dejar el otro de control**. An
 
 ### 14.3 Casos resueltos (para reconocerlos de nuevo)
 
-| Caso | Síntoma | Causa | Solución |
-|---|---|---|---|
-| **Lamas** (2× MAC 30KTL3-XL) | Meseta en 6 kW (20%), DerateMode 3 | Curva Volt-Watt de fábrica (149 = 233,1 V, 148 = 241,9 V) con red en 242–245 V | 149 → 247,0 V, 148 → 256,0 V. Lamas 1 subió de ~45 a ~60–68 kWh/día |
-| Lamas 2 | Desconexión por falsa sobretensión (FaultCode 300) | Offset de medición del inversor ~5 V vs smart meter | Umbral temporal 258 V documentado + reclamo de garantía |
-| **Diego Trías** | Caídas de llaves DC | Térmicas DC CHINT C10A con strings de Isc ~14,3 A (picos de 16 A con borde de nube) | Cambiar a C25/C32 DC o seccionador 32 A. **Auditar la flota con el mismo kit** |
-| **Victoria Soler** | Planta al 68% de la mediana | 40 paneles en un solo MPPT (tope ~32,8 A) | Recablear a dos MPPT; además sombras por árboles (a cargo del cliente) |
-| **Nelson Filippa** | "No generó a la mañana" | Datalogger sin conexión, datos re-subidos (`IsAgain`) | Nada en obra; revisar WiFi del cliente |
-| **MID12KTL3-XL2** (SN JRR6F8600A) | No arranca al amanecer sin código | Falla que sigue al número de serie (pasó en dos obras distintas) | Sustitución por garantía vía distribuidor. "AC V Outrange (006)" se resolvió con WideVolt Set = 1 |
-| **Huawei Estilo** | Exportación cero, consumo pegado a la generación | CT aguas abajo de la inyección del inversor | Reubicar CT entre medidor UTE y el nodo inversor/cargas |
-| SDM630MCT 3 hilos | Lecturas de ~135 V y potencia al 60% / potencia con signo invertido | Cableado de 4 hilos en red de 3 hilos / los dos CT invertidos | Recableado según §10.3 |
-| Huawei Álvaro García | Meter no detectado | Modelo de meter distinto al asumido + RS485 con hilos de pares distintos en 180 m | Elegir DHSU1079-CT en la app y recablear con un par trenzado |
+Se pasaron al registro de casos técnicos de Voltia PM (herramienta `buscar_casos_tecnicos`), que es donde se cargan los nuevos.
 
 ### 14.4 Reportes FV automáticos
 

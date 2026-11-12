@@ -348,6 +348,20 @@ de Experiencia del cliente).
 
 **Crear tickets desde el chat** (`tools/soporte.ts`, `crear_ticket_soporte`): `TICKETS:CREATE`; la nota interna pide `TICKETS:COMMENT` o `EDIT`, y derivar pide `TICKETS:EDIT`, igual que las rutas. Usa `crearTicket()`, `agregarComentario(esInterno)` y `derivarTicket()`. **El cliente ve en el portal el título y la descripción de todos los tickets de su proyecto** (`GET /client/tickets`), por eso la descripción de la herramienta le pide al modelo dejar lo técnico en la nota interna. Muestra los tickets ya abiertos del proyecto en la vista previa para no duplicar.
 
+**Registro de casos técnicos** (`tools/casos-tecnicos.ts`, tabla `casos_tecnicos`, modelo `CasoTecnico`). Problemas técnicos de obra y de planta **ya resueltos**: equipos (marca, modelo exacto, serie, tipo de red), síntoma, qué se descartó, causa, solución, lección, etiquetas para buscar (marcas, modelos, códigos de error) y, opcional, el proyecto. Nació el 12-nov-2026 con Diego González (un Eastron SDM630 en 3P4 en red sin neutro daba el Warning 401 de Growatt) para que lo aprendido en una conversación lo tengan las demás.
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `buscar_casos_tecnicos` | ninguno | Busca por palabras (cada una tiene que aparecer en algún campo, en las etiquetas o en el nombre del cliente del proyecto, sin distinguir mayúsculas salvo en las etiquetas); sin búsqueda, los 15 más recientes. `readOnlyHint`, así que también la usa el asistente del equipo |
+| `registrar_caso_tecnico` | ninguno | Carga un caso a nombre del usuario. Si ya hay uno del mismo proyecto ese día, no carga y pide `es_otro_caso: true` o corregir el existente |
+| `corregir_caso_tecnico` | ninguno | Reemplaza los campos que se pasan (texto entero, no se agrega al final) o, con `eliminar: true`, lo da de baja (`deletedAt`). Cada campo cambiado queda en la auditoría con el valor viejo y el nuevo |
+
+- **Sin permiso de la matriz, a propósito**: es conocimiento técnico común, no datos de un módulo. Lo usa cualquiera que pase la allowlist del conector (`MCP_ALLOWED_EMAILS`); en el asistente, cualquier usuario interno (solo para buscar).
+- **Lo cargan las conversaciones solas.** La regla está en las instrucciones del servidor (`instructions()` de `server.ts`) y en la descripción de las herramientas: buscar antes de diagnosticar; registrar apenas un problema queda resuelto, sin esperar a que lo pidan, y avisar en una línea. Depende de que el modelo lo cumpla: no hay nada que lo obligue.
+- **Auditoría**: `AuditEntityType.caso_tecnico` (`created`, `updated` por campo, `deleted`).
+- **Carga inicial** (migración `casos_tecnicos_carga_inicial`): el caso de Diego González, vinculado por código `PRY-2026-116` (en una base sin ese proyecto queda sin vínculo, con el nombre en `cliente`), y los 9 casos que había en `enciclopedia-tecnica.md` §14.3, que ahora apunta acá. **Esos 9 tienen fecha 27-oct-2026, que es cuando se compiló la enciclopedia, no cuando pasaron**: la fecha real no estaba registrada.
+- **No hay pantalla en Voltia PM** para verlos ni editarlos: solo por el conector y el asistente (o la base de datos).
+
 **Limitaciones que sorprenden:**
 
 - Huawei no da historial del inversor ni del medidor: `getDevHistoryKpi`

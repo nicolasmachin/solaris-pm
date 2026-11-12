@@ -10,6 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { entornoLabel, esProduccion, issuerUrl } from "./config.js";
 import { VERSION } from "./version.js";
 import type { McpUser } from "./context.js";
+import { registerCasosTecnicosTools } from "./tools/casos-tecnicos.js";
 import { registerDiagnosticTools } from "./tools/diagnostico.js";
 import { registerDocumentosTools } from "./tools/documentos.js";
 import { registerExperienciaSolarTools } from "./tools/experiencia-solar.js";
@@ -62,7 +63,13 @@ Reglas de uso:
   es dato y qué es deducción.
 - Si un cliente no tiene planta: plantas_sin_vincular → confirmar con el
   usuario → vincular_planta. Para mandar a alguien a revisar:
-  crear_ticket_soporte (lo técnico en la nota interna, no en la descripción).`;
+  crear_ticket_soporte (lo técnico en la nota interna, no en la descripción).
+- Registro común de problemas técnicos resueltos (lo comparten todas las
+  conversaciones del equipo): ANTES de diagnosticar un problema técnico de obra
+  o de planta, buscar_casos_tecnicos con la marca, el modelo o el código de
+  error. Cuando en la conversación un problema técnico queda RESUELTO (se sabe
+  qué lo arregló), registrar_caso_tecnico sin esperar a que lo pidan y avisar
+  en una línea; si después se corrige algo, corregir_caso_tecnico.`;
 }
 
 export function buildMcpServer(user: McpUser): McpServer {
@@ -87,6 +94,7 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerPlantasTools(server, user);
   registerPlantasGestionTools(server, user);
   registerSoporteTools(server, user);
+  registerCasosTecnicosTools(server, user);
   registerFinanzasTools(server, user);
   registerMetricasTools(server, user);
   registerPesoObrasTools(server, user);

@@ -161,6 +161,7 @@ enum AuditEntityType {
   aviso_automatico
   instagram_conversacion
   marketing_automatizacion
+  caso_tecnico
 }
 
 enum AuditAction {
@@ -586,6 +587,7 @@ enum ProposalStatus {
 
 model User {
   id                             String                         @id @default(cuid())
+  casosTecnicosCreados           CasoTecnico[]                  @relation("CasoTecnicoCreadoPor")
   /// Puede ser null: los Generadores del portal muchas veces no tienen mail y
   /// entran con `username`. Todo usuario tiene email O username (o los dos).
   email                          String?                        @unique
@@ -722,6 +724,7 @@ model User {
 
 model Project {
   id                              String                         @id @default(cuid())
+  casosTecnicos                   CasoTecnico[]
   code                            String                         @unique
   tenantId                        String?
   clientName                      String
@@ -808,7 +811,7 @@ model Project {
   reporteFvEmisiones              ReporteFvEmision[]
   reporteFvGeneracionesDiarias    ReporteFvGeneracionDiaria[]
   fvCurvasDia                     FvCurvaDia[]
-  fvNoches FvNoche[]
+  fvNoches                        FvNoche[]
   growattPlant                    GrowattPlant?
   soporteEstados                  SoporteEstadoPlanta[]
   soporteEstadosHuawei            SoporteEstadoHuawei[]
@@ -5910,23 +5913,23 @@ model WhatsAppNumero {
 /// decidió que no hacía falta contestar, y a qué cliente o lead se asoció a mano
 /// (cuando escribe desde un número que no está cargado en la ficha).
 model WhatsAppConversacion {
-  id             String       @id @default(cuid())
-  phoneNumberId  String
+  id            String     @id @default(cuid())
+  phoneNumberId String
   /// Teléfono del otro lado, en formato internacional sin "+" (598…).
-  telefono       String
+  telefono      String
   /// Lo leído en la bandeja: los entrantes posteriores cuentan como no leídos.
-  leidoHasta     DateTime?    @db.Timestamptz(6)
-  leidoPorId     String?
-  leidoPor       User?        @relation("WhatsAppConversacionLeidaPor", fields: [leidoPorId], references: [id], onDelete: SetNull)
+  leidoHasta    DateTime?  @db.Timestamptz(6)
+  leidoPorId    String?
+  leidoPor      User?      @relation("WhatsAppConversacionLeidaPor", fields: [leidoPorId], references: [id], onDelete: SetNull)
   /// "No hace falta contestar": apaga la alerta de sin contestar hasta el próximo
   /// mensaje del cliente.
-  resueltoHasta  DateTime?    @db.Timestamptz(6)
-  projectId      String?
-  project        Project?     @relation("WhatsAppConversacionProject", fields: [projectId], references: [id], onDelete: SetNull)
-  leadId         String?
-  lead           SalesLead?   @relation("WhatsAppConversacionLead", fields: [leadId], references: [id], onDelete: SetNull)
-  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
+  resueltoHasta DateTime?  @db.Timestamptz(6)
+  projectId     String?
+  project       Project?   @relation("WhatsAppConversacionProject", fields: [projectId], references: [id], onDelete: SetNull)
+  leadId        String?
+  lead          SalesLead? @relation("WhatsAppConversacionLead", fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt     DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime   @updatedAt @db.Timestamptz(6)
 
   @@unique([phoneNumberId, telefono])
   @@index([projectId])
@@ -6673,7 +6676,7 @@ model InstagramConversacion {
   /// El asistente la marcó como potencial cliente (le interesa instalar, o mandó
   /// la factura o el techo). Se marca también en modo sombra: no le escribe a
   /// nadie, solo hace que la vea Ventas.
-  potencialEn       DateTime? @db.Timestamptz(6)
+  potencialEn     DateTime?          @db.Timestamptz(6)
   leadId          String?
   lead            SalesLead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   mensajes        InstagramMensaje[]
@@ -6867,4 +6870,38 @@ model MarketingAutomatizacion {
   updatedAt        DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("marketing_automatizaciones")
+}
+
+/// Registro de problemas técnicos ya resueltos (obra y planta): qué equipos
+/// había, qué se vio, qué se descartó, qué era y cómo se arregló. Lo cargan y
+/// lo consultan las conversaciones conectadas por el MCP (registrar_caso_tecnico,
+/// buscar_casos_tecnicos) y el asistente del equipo. Abierto a todo usuario del
+/// conector: no depende de la matriz de permisos.
+model CasoTecnico {
+  id          String    @id @default(cuid())
+  /// Día en que se resolvió (hora de Uruguay).
+  fecha       DateTime  @db.Date
+  titulo      String
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// Nombre del cliente o de la obra, por si no hay proyecto (o para leerlo rápido).
+  cliente     String?
+  /// Marca, modelo exacto y número de serie de cada equipo involucrado.
+  equipos     String
+  /// Palabras para encontrarlo: marcas, modelos, códigos de error ("Growatt", "SDM630", "401").
+  etiquetas   String[]  @default([])
+  sintoma     String
+  descartado  String?
+  causa       String
+  solucion    String
+  leccion     String?
+  creadoPorId String?
+  creadoPor   User?     @relation("CasoTecnicoCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([fecha])
+  @@index([projectId])
+  @@map("casos_tecnicos")
 }

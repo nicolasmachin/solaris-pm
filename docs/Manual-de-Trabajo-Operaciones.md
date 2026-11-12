@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.11 · del 28/10/26
+**Voltia · Uruguay** · Versión 1.12 · del 12/11/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -110,6 +110,8 @@ Lo que Claude deduce se toma como una **pista para revisar en el lugar**, no com
 Si el cliente **no tiene la planta asociada** en Voltia PM (el chat dice que no hay datos de monitoreo), se le pide que busque la planta sin vincular: muestra las que no están asociadas a ningún cliente, sugiere a cuál corresponde por el nombre y, con la confirmación de quien pregunta, la vincula. Desde ese momento entra en el monitoreo diario. Además, cada 15 días Voltia PM asocia sola las plantas que se llaman exactamente igual que un cliente; las que no puede asociar le llegan por mail a Gerencia.
 
 Cuando el diagnóstico pide ir, el chat también **abre el ticket de soporte** y se lo pasa a Operaciones. El título y la descripción del ticket **los ve el cliente** en el portal de Voltia, así que van en palabras para él; las mediciones y lo que hay que revisar en el lugar van en la **nota interna**, que solo ve el equipo. La visita la coordina Experiencia Solar con el cliente, como siempre.
+
+**Los problemas ya resueltos quedan anotados.** Voltia PM guarda un **registro de problemas técnicos resueltos**, común a todo el equipo: qué equipos había (marca, modelo y número de serie), qué se vio, qué se descartó, qué era y cómo se arregló. Antes de diagnosticar, Claude se fija ahí si el problema ya pasó en otra obra; y cuando en la conversación un problema queda resuelto, lo anota solo y avisa en una línea. Para que la anotación sirva, a Claude se le cuenta **qué fue lo que finalmente lo arregló**, aunque haya sido algo distinto de lo que él sugería. Si después se descubre que la causa era otra, se le pide que corrija el caso.
 
 Para usarlo hace falta tener en Voltia PM el permiso de ver Experiencia Solar (y, para vincular plantas, el de editarla; para los tickets, el de crearlos); se le pide al gerente de Operaciones.
 
@@ -1114,6 +1116,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.12 | 12 de noviembre de 2026 | Se agrega el registro de problemas técnicos resueltos: Claude se fija ahí antes de diagnosticar y anota solo cada problema que se resuelve en la conversación. |
 | 1.11 | 28 de octubre de 2026 | Las visitas de soporte pueden nacer de la mesa de Soporte de Voltia PM, que detecta en el día las plantas con problemas y dice qué vio el inversor. |
 | 1.10 | 28 de octubre de 2026 | En los criterios técnicos del montaje: sobre un techo de chapa se camina siempre sobre tablas, y sobre membrana asfáltica las virutas de metal se barren en el momento. |
 | 1.9 | 27 de octubre de 2026 | Desde el chat de Claude se puede ver el registro de alarmas y el detalle cada 5 minutos del inversor, en todos los Growatt (las horas en falla con sol, cada entrada de paneles y cada string, el aislamiento, la red y la hora en que dejó de comunicar), buscar y vincular una planta que no está asociada a ningún cliente (y, cada 15 días, las que se llaman igual que el cliente se asocian solas), y abrir el ticket de soporte con una nota interna que el cliente no ve. |

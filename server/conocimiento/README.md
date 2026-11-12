@@ -29,6 +29,7 @@ base junta lo que hace falta saber para contestar.
 | `08-obra-plazos-y-costos-aparte.md` | Plazos de punta a punta, el día de la obra, qué cuesta aparte de la propuesta |
 | `cifras-vigentes.md` | **Todos los números que cambian** (tarifas, tasas, precios), con fecha y fuente |
 | `pendientes.md` | Lo que la base todavía no sabe o no está decidido. La IA no lo responde: lo marca ❓ |
+| *(registro de casos técnicos)* | **No es un archivo:** los problemas técnicos ya resueltos (equipos, síntoma, causa, solución, lección) están en la base de datos de Voltia PM y se consultan con la herramienta `buscar_casos_tecnicos`. Los cargan las conversaciones conectadas al conector cuando resuelven un problema |
 | `casos/` | Preguntas reales de clientes y la respuesta que se les dio. Sirven de ejemplo de tono y criterio |
 | `enciclopedia.md` | Lo compilado del historial de Nicolás con Claude (ago–oct 2026): empresa y equipo, cotizador y markup, criterios técnicos de venta, plantillas, objeciones, cotizaciones no estándar, ingeniería, soporte Growatt, casos. **Alimenta a los archivos de tema, no los reemplaza** |
 | `enciclopedia-tecnica.md` | Segundo compilado (otro proyecto de Claude): embudo y tiempos reales de Voltia PM, pipeline de obra, UTE, ingeniería DC/AC, tableros, tierra, redes, smart meters, estructura y viento, tipologías, entregables, diagnóstico y casos resueltos, componentes, lecciones. Misma regla: alimenta, no reemplaza |

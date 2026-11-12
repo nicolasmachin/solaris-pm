@@ -1,5 +1,15 @@
 # Novedades
 
+## v14.5
+
+### 12 de noviembre de 2026
+
+#### Registro de problemas técnicos resueltos
+
+- Las conversaciones con Claude conectadas a Voltia PM ahora comparten un **registro de problemas técnicos ya resueltos**, de obra y de planta: qué equipos había (marca, modelo y número de serie), qué se vio, qué se descartó, qué era, cómo se arregló y qué conviene hacer la próxima vez.
+- **Antes de diagnosticar**, Claude busca si el problema ya pasó. **Cuando uno se resuelve** en la conversación, lo anota solo y avisa en una línea. Si después se confirma algo distinto, lo corrige.
+- Lo ve todo el equipo desde cualquier conversación conectada, y también el asistente de Voltia PM. Arranca con diez casos: los que ya estaban anotados y el del smart meter de esta semana.
+
 ## v14.4
 
 ### 11 de noviembre de 2026
