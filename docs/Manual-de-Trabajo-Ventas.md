@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.13 · del 11/11/26
+**Voltia · Uruguay** · Versión 1.14 · del 13/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -236,7 +236,10 @@ decir los resultados.
 Pasa seguido: en la visita, negociando en persona, cambia lo que se había
 cotizado (más o menos paneles, otro montaje, otro precio). En ese caso, quien
 visita **arma la propuesta nueva ahí mismo, junto con el resumen de la visita**,
-con Voltia PM conectado al chat de Claude. El asesor se entera por cuatro lados:
+con Voltia PM conectado al chat de Claude. Desde el chat se pueden armar las dos
+clases de propuesta, la residencial y la de empresa; para la de empresa hay que
+tener a mano la razón social y el RUT, y conviene dar el nombre del contacto,
+que es a quien saluda la carta. El asesor se entera por cuatro lados:
 
 - el resumen de la visita le llega a él al mismo tiempo que al cliente;
 - la versión nueva queda adjunta en el lead;
@@ -1183,6 +1186,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.14 | 13 de noviembre de 2026 | Desde el chat de Claude conectado a Voltia PM se pueden armar y emitir también las propuestas de empresa; hay que tener a mano la razón social y el RUT. |
 | 1.13 | 11 de noviembre de 2026 | En el Cotizador B2B, el saludo de la carta va dirigido al contacto de la empresa; sin contacto, empieza con «Estimados,». |
 | 1.12 | 10 de noviembre de 2026 | En «¿Qué se le factura?», cuando se factura una parte, «Ver detalle» muestra la cuenta de la factura, el restante sin IVA, el total y el descuento de IVA, y se puede copiar para mandarla por WhatsApp. El porcentaje y esa cuenta parten del precio de la propuesta, y el presupuesto del proyecto queda como lo que paga el cliente. |
 | 1.11 | 3 de noviembre de 2026 | Los plazos de garantía del contrato vienen con los vigentes y se pueden cambiar en el formulario del contrato cuando se acordó otra cosa con el cliente. |

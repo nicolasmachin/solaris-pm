@@ -1,5 +1,16 @@
 # Novedades
 
+## v14.6
+
+### 13 de noviembre de 2026
+
+#### Propuestas de empresa desde el chat
+
+- Desde una conversación con Claude conectada a Voltia PM ahora se pueden **armar y emitir propuestas de empresa (B2B)**, no solo residenciales. Si no se aclara el tipo, se usa el que tiene el cliente en Voltia PM.
+- Para la de empresa se pasan la **razón social y el RUT** (necesarios para emitir) y, si se quiere, el **contacto y su cargo**, que arman el saludo de la carta.
+- Antes de emitir, el resumen muestra también la **comisión del asesor**, igual que en el cotizador B2B.
+- Al pedir ver una propuesta, ahora dice si es residencial o de empresa.
+
 ## v14.5
 
 ### 12 de noviembre de 2026

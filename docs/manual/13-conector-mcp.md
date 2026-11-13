@@ -155,8 +155,23 @@ y ahí sí se ofrece el enlace: es el único caso en que no hay texto que entreg
 
 ### Propuestas
 
-Solo **residenciales**. El cotizador B2B no se expone: necesita razón social y
-RUT, que no son datos que se dicten de memoria, y conviene que tenga rodaje.
+Con los **dos cotizadores**: residencial y empresa (B2B), cada uno con su
+borrador. Las dos herramientas reciben `tipo` (`residencial` | `empresa`); si no
+viene, se usa el `tipoCliente` del lead (`elegirVariante()` en
+`tools/propuesta.logic.ts`, con tests: `npm run test:mcp-propuesta`), así un lead
+de empresa no termina con una propuesta residencial porque nadie aclaró el tipo.
+
+En **empresa**, `preparar_propuesta` recibe además `razon_social`, `rut`,
+`contacto_nombre` y `contacto_cargo`. Razón social y RUT son obligatorios para
+emitir (los exige el refinamiento del esquema, igual que el formulario); el
+contacto arma el saludo de la carta (`aplicarEmpresa()` →
+`saludoDePropuesta()`). El resumen suma el bloque **"Comisión del asesor"**
+(`computeDraftComision()`, lo mismo que el panel del cotizador: base, excedente
+sobre el markup de referencia, total y cuánto sería al markup de referencia),
+con el mismo permiso que el panel (`VENTAS:EDIT`). Si en una residencial se
+mandan datos de empresa, se ignoran y la respuesta lo avisa. `ver_propuesta`
+dice si la versión es residencial o de empresa y, en empresa, la razón social,
+el RUT y el contacto.
 
 | Herramienta | Permiso | Qué hace |
 |---|---|---|

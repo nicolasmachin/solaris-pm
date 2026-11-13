@@ -369,6 +369,8 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       // costos, comisiones y margen, que no tienen por qué salir de la app.
       const snap = version.snapshot as {
         data?: {
+          variante?: string;
+          empresa?: { razonSocial?: string; rut?: string; contactoNombre?: string };
           sistema?: {
             cantidadPaneles?: number;
             potenciaPanelW?: number;
@@ -395,7 +397,16 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       const listaInv = listaInversoresDistintos(sistema);
       const inversoresTexto = listaInv ? describirInversores(listaInv) : null;
 
+      const esEmpresa = snap.data?.variante === "EMPRESA";
       const numeros = campos([
+        ["Tipo", esEmpresa ? "Empresa (B2B)" : "Residencial"],
+        ...(esEmpresa
+          ? ([
+              ["Razón social", snap.data?.empresa?.razonSocial || "—"],
+              ["RUT", snap.data?.empresa?.rut || "—"],
+              ["Contacto", snap.data?.empresa?.contactoNombre || "—"],
+            ] as [string, string][])
+          : []),
         ["Precio final (IVA incluido)", usd(calc.totalFinalConIva ?? calc.totalConIva)],
         ["Potencia", calc.potenciaTotalKwp ? `${calc.potenciaTotalKwp.toFixed(2)} kWp` : null],
         [

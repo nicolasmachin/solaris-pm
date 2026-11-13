@@ -1,9 +1,7 @@
-// Armado y publicación de propuestas comerciales residenciales desde el chat.
-//
-// Solo RESIDENCIAL: el cotizador B2B se estrenó hace días y conviene que tenga
-// rodaje antes de exponerlo por acá. Un borrador B2B armado desde el chat
-// además necesitaría razón social y RUT, que no son datos que uno dicte de
-// memoria caminando.
+// Armado y publicación de propuestas comerciales desde el chat, con los dos
+// cotizadores: residencial y empresa (B2B). Si no se dice cuál, se usa el del
+// tipo de cliente del lead. El B2B pide además razón social y RUT para emitir,
+// y suma el desglose de la comisión del asesor, como el panel del cotizador.
 //
 // La cotización del dólar NO se expone: es el único parámetro que mueve el
 // precio y que el asesor no debería tocar. El markup sí, que es su holgura.
@@ -14,6 +12,7 @@ import { z } from "zod";
 
 import { prisma } from "../../../lib/prisma.js";
 import {
+  computeDraftComision,
   computeDraftResumenComercial,
   draftMissingFields,
   draftQualityIssues,
@@ -32,8 +31,17 @@ import { requirePermission, type McpUser } from "../context.js";
 import { buildDownloadUrl, nombrePdfPropuesta } from "../descargas.routes.js";
 import { hasPermission } from "../../../middleware/authorize.middleware.js";
 import { campos, pesos, porcentaje, texto, usd } from "../format.js";
+import { aplicarEmpresa, elegirVariante, vinoAlgoDeEmpresa } from "./propuesta.logic.js";
 
-const VARIANTE = ProposalVariante.RESIDENCIAL;
+const tipoSchema = z
+  .enum(["residencial", "empresa"])
+  .optional()
+  .describe(
+    "Qué cotizador: residencial o empresa (B2B). Si no se pasa, el del tipo de cliente del lead. " +
+      "Cada uno tiene su propio borrador.",
+  );
+
+const nombreCotizador = (v: ProposalVariante) => (v === ProposalVariante.EMPRESA ? "empresa (B2B)" : "residencial");
 
 /**
  * Cómo se llama cada campo en una conversación. Traduce los paths que devuelven
@@ -43,6 +51,8 @@ const VARIANTE = ProposalVariante.RESIDENCIAL;
 const NOMBRE_CAMPO: Record<string, string> = {
   "cliente.nombre": "el nombre del cliente",
   "cliente.ciudad": "la ciudad",
+  "empresa.razonSocial": "la razón social de la empresa",
+  "empresa.rut": "el RUT de la empresa",
   "factura.pagaMensualPesos": "cuánto paga de UTE por mes (en pesos)",
   "factura.tarifa": "la tarifa (Simple, Doble o Triple)",
   "factura.suministro": "el suministro (monofásico o trifásico)",
@@ -121,6 +131,33 @@ function bloqueResumen(
 }
 
 /**
+ * La comisión del asesor en el B2B, igual que el panel del cotizador: base sobre
+ * la venta más un excedente si el markup supera el de referencia. La ve el
+ * propio asesor (mismo permiso que el panel), no va al cliente.
+ */
+// Los porcentajes de comisión del B2B vienen como fracción (0.04 = 4%); el
+// markup de referencia, en cambio, ya viene en porcentaje. Igual que el panel.
+const pctFraccion = (f: number) => `${(f * 100).toLocaleString("es-UY", { maximumFractionDigits: 2 })}%`;
+
+function bloqueComisionB2B(c: NonNullable<Awaited<ReturnType<typeof computeDraftComision>>>): string {
+  if (c.comisionFijadaAMano) {
+    return "COMISIÓN DEL ASESOR — no mostrar al cliente\n" + campos([["Comisión (fijada a mano)", usd(c.comisionTotalUsd)]]);
+  }
+  return (
+    "COMISIÓN DEL ASESOR — no mostrar al cliente\n" +
+    campos([
+      ["Base", `${usd(c.comisionBaseUsd)} (${pctFraccion(c.comisionBasePorcentaje)} de la venta sin IVA)`],
+      [
+        "Excedente",
+        `${usd(c.comisionExcedenteUsd)} (${pctFraccion(c.comisionExcedentePorcentaje)} de lo que el markup pasa del ${c.markupReferenciaPorcentaje}% de referencia)`,
+      ],
+      ["Total", `${usd(c.comisionTotalUsd)} (${pctFraccion(c.comisionPctEfectivo)} efectivo)`],
+      ["Con el markup de referencia sería", usd(c.comisionEnReferenciaUsd)],
+    ])
+  );
+}
+
+/**
  * Lo que ya está cargado en el borrador.
  *
  * Se muestra siempre, incluso cuando falta algo: hasta acá la herramienta solo
@@ -134,6 +171,14 @@ function bloqueCargado(d: DraftDataPublish): string {
     campos([
       ["Cliente", d.cliente?.nombre],
       ["Ciudad", d.cliente?.ciudad || "—"],
+      ...(d.variante === "EMPRESA"
+        ? ([
+            ["Razón social", d.empresa?.razonSocial || "—"],
+            ["RUT", d.empresa?.rut || "—"],
+            ["Contacto", [d.empresa?.contactoNombre, d.empresa?.contactoCargo].filter(Boolean).join(", ") || "—"],
+            ["Saludo de la carta", d.cliente?.dirigidoA || "—"],
+          ] as [string, string][])
+        : []),
       ["Tipo de techo", d.techo?.descripcion || "—"],
       ["Superficie de techo", m2 && m2 > 0 ? `${m2} m²` : "—"],
       ["Tipo de montaje", d.sistema?.tipoMontaje || "—"],
@@ -181,16 +226,25 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
   server.registerTool(
     "preparar_propuesta",
     {
-      title: "Preparar propuesta residencial",
+      title: "Preparar propuesta (residencial o empresa)",
       description:
-        "Consulta o corrige el borrador de la propuesta residencial de un cliente " +
-        "potencial. Llamada solo con el lead_id NO escribe nada: devuelve el estado del " +
-        "borrador, qué hay cargado y qué falta. Con datos, los guarda. El resto lo " +
-        "completa con los valores por defecto del cotizador y lo que ya sabe del " +
-        "cliente. No emite nada: para eso está publicar_propuesta. " +
-        "No sirve para propuestas de empresa, que se arman desde la aplicación.",
+        "Consulta o corrige el borrador de la propuesta de un cliente potencial, con el " +
+        "cotizador residencial o el de empresa (B2B). Llamada solo con el lead_id NO escribe " +
+        "nada: devuelve el estado del borrador, qué hay cargado y qué falta. Con datos, los " +
+        "guarda. El resto lo completa con los valores por defecto del cotizador y lo que ya " +
+        "sabe del cliente. En empresa, para emitir hacen falta la razón social y el RUT; el " +
+        "contacto es opcional pero arma el saludo de la carta. No emite nada: para eso está " +
+        "publicar_propuesta.",
       inputSchema: {
         lead_id: z.string().min(1).describe("Identificador del cliente potencial"),
+        tipo: tipoSchema,
+        razon_social: z.string().optional().describe("Solo empresa: razón social a la que va la propuesta"),
+        rut: z.string().optional().describe("Solo empresa: RUT de la empresa"),
+        contacto_nombre: z
+          .string()
+          .optional()
+          .describe("Solo empresa: quién recibe la propuesta. La carta lo saluda a él/ella."),
+        contacto_cargo: z.string().optional().describe("Solo empresa: cargo del contacto"),
         ciudad: z.string().optional().describe("Ciudad donde se instala"),
         paga_ute_mensual_pesos: z
           .number()
@@ -277,9 +331,15 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
 
       const lead = await prisma.salesLead.findFirst({
         where: { id: args.lead_id, deletedAt: null },
-        select: { id: true, clientName: true },
+        select: { id: true, clientName: true, tipoCliente: true },
       });
       if (!lead) return texto(`No encontré ningún cliente potencial con el id ${args.lead_id}.`);
+      const VARIANTE = elegirVariante(args.tipo, lead.tipoCliente);
+      const esEmpresa = VARIANTE === ProposalVariante.EMPRESA;
+      const avisoEmpresa =
+        !esEmpresa && vinoAlgoDeEmpresa(args)
+          ? "Ojo: los datos de empresa (razón social, RUT, contacto) solo se usan en el cotizador de empresa; en esta propuesta residencial los ignoré."
+          : null;
 
       // Trae el borrador completo (lo crea con la precarga si no existía).
       const draft = await ensureDraft(lead.id, user.id, VARIANTE);
@@ -387,6 +447,8 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
       // potencia / marca clásicas se derivan de ella. Se aplica también acá para
       // que el "cargado" y los faltantes que se devuelven sean los guardados.
       data.sistema = sincronizarSistemaInversores(data.sistema);
+      // Datos de la empresa (solo B2B) y saludo de la carta.
+      Object.assign(data, aplicarEmpresa(data as DraftDataPublish, args));
 
       // Solo se escribe si algo cambió de verdad. Antes se guardaba siempre y
       // la respuesta decía "guardé lo que me pasaste" aunque no hubiera venido
@@ -400,12 +462,14 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
       const flojos = draftQualityIssues(data);
       const pendientes = [...new Set([...faltantes, ...flojos])];
 
+      const cotizador = `Cotizador ${nombreCotizador(VARIANTE)}.`;
       if (pendientes.length > 0) {
         return texto(
           huboCambios
-            ? `Guardé lo que me pasaste para ${lead.clientName}.`
-            : `Borrador de ${lead.clientName} (no cambié nada).`,
-          bloqueCargado(data),
+            ? `Guardé lo que me pasaste para ${lead.clientName}. ${cotizador}`
+            : `Borrador de ${lead.clientName} (no cambié nada). ${cotizador}`,
+          ...(avisoEmpresa ? [avisoEmpresa] : []),
+          bloqueCargado(data as DraftDataPublish),
           "FALTA PARA EMITIR\n- " + nombrarCampos(pendientes),
         );
       }
@@ -421,13 +485,16 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
       // La ganancia solo la ve quien ya tiene acceso al cálculo interno en la
       // aplicación. El markup en porcentaje se muestra siempre.
       const verInterno = await hasPermission(user.role, Module.VENTAS, Action.DEBUG_CALCULADORA);
+      const comision = esEmpresa ? await computeDraftComision(lead.id, VARIANTE) : null;
 
       return texto(
         huboCambios
-          ? `Propuesta lista para ${lead.clientName}:`
-          : `Borrador de ${lead.clientName} (no cambié nada), listo para emitir:`,
-        bloqueCargado(data),
+          ? `Propuesta lista para ${lead.clientName}. ${cotizador}`
+          : `Borrador de ${lead.clientName} (no cambié nada), listo para emitir. ${cotizador}`,
+        ...(avisoEmpresa ? [avisoEmpresa] : []),
+        bloqueCargado(data as DraftDataPublish),
         bloqueResumen(resumen, verInterno),
+        ...(comision ? [bloqueComisionB2B(comision)] : []),
         "Si está bien, decime que la emita y genero el PDF.",
       );
     },
@@ -438,25 +505,27 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
     {
       title: "Emitir la propuesta",
       description:
-        "Emite la propuesta residencial: genera el PDF definitivo y la registra como una " +
+        "Emite la propuesta (residencial o empresa, la misma que se preparó): genera el PDF definitivo y la registra como una " +
         "versión nueva. USAR SOLO después de que la persona haya visto los números que " +
         "devolvió preparar_propuesta y haya dicho explícitamente que los emita. " +
         "Nunca llamarla por iniciativa propia ni para 'ver cómo queda'.",
       inputSchema: {
         lead_id: z.string().min(1),
+        tipo: tipoSchema,
         confirmar: z
           .literal(true)
           .describe("Solo true, y solo si la persona confirmó los números que ya vio."),
       },
     },
-    async ({ lead_id }) => {
+    async ({ lead_id, tipo }) => {
       await requirePermission(user, Module.VENTAS, Action.CREATE);
 
       const lead = await prisma.salesLead.findFirst({
         where: { id: lead_id, deletedAt: null },
-        select: { id: true, clientName: true, stage: true },
+        select: { id: true, clientName: true, stage: true, tipoCliente: true },
       });
       if (!lead) return texto(`No encontré ningún cliente potencial con el id ${lead_id}.`);
+      const VARIANTE = elegirVariante(tipo, lead.tipoCliente);
 
       // Se revalida la calidad acá también: entre preparar y publicar puede
       // haber pasado cualquier cosa, incluida una edición desde la aplicación.
@@ -466,7 +535,7 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
       ];
       if (pendientes.length > 0) {
         return texto(
-          `Todavía no puedo emitir la propuesta de ${lead.clientName}. Falta:`,
+          `Todavía no puedo emitir la propuesta ${nombreCotizador(VARIANTE)} de ${lead.clientName}. Falta:`,
           `- ${nombrarCampos(pendientes)}`,
         );
       }
@@ -480,7 +549,7 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
           : "";
 
       return texto(
-        `Emitida la propuesta v${version.versionNumber} de ${lead.clientName}.${movio}`,
+        `Emitida la propuesta ${nombreCotizador(VARIANTE)} v${version.versionNumber} de ${lead.clientName}.${movio}`,
         `PDF (el enlace vence en 15 minutos):\n${enlace}`,
       );
     },

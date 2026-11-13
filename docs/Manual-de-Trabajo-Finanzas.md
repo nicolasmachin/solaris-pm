@@ -1,6 +1,6 @@
 # Manual de trabajo de Administración y Finanzas
 
-**Voltia · Uruguay** · Versión 0.24 · del 11/11/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.24 · del 12/11/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -74,14 +74,35 @@ banco**: cada movimiento del banco tiene su movimiento cargado, y al revés.
 
 ## 2 · Qué hace y dónde termina su trabajo
 
-**Qué hace.** Cobra a los clientes según el plan de pagos que dejó armado Ventas,
-paga a los proveedores, a los instaladores y las comisiones, emite las facturas,
-concilia lo cargado con el banco y lleva los resultados de la empresa.
+**Finanzas no es una etapa del proyecto: atraviesa toda la empresa.** Por eso
+su trabajo no tiene un principio y un final como el de las otras áreas. Se
+divide en dos clases de tareas.
 
-**Dónde termina su trabajo.** Con un proyecto, cuando está **cobrado entero y
-sus gastos, pagados**. Con la empresa en general, no termina: los costos fijos,
-las cuentas, las tarjetas y los resultados se llevan todos los meses, y cada mes
-termina con su **cierre**.
+**Tareas fijas**: las de la empresa, que se hacen siempre, haya obras o no.
+
+- **Todos los días**: cargar y conciliar lo que pasa en el banco, revisar las
+  facturas que llegan de los proveedores, ver qué clientes están listos para
+  cobrar y qué pagos vencen.
+- **Cada semana**: revisar las facturas de cuenta corriente, lo que se les debe
+  a los proveedores y el flujo de fondos.
+- **Cada mes**: los sueldos y sus aportes a BPS, los impuestos a DGI, los costos
+  fijos, la rendición de las tarjetas, la conciliación de las cuentas y de los
+  proveedores, el estado de resultados y el cierre del mes.
+- **Cada año**: el balance.
+- **Cuando se necesita**: los análisis para decidir, como la rentabilidad de
+  cada producto.
+
+**Tareas variables**: las que nacen con cada proyecto.
+
+- **Al venderse**: la comisión del asesor.
+- **En el onboarding**: el plan de pagos y la seña.
+- **Durante la obra**: cobrar cada cuota en su momento, facturar, pagarle al
+  instalador y a los proveedores de esa obra.
+
+**Dónde termina su trabajo.** Con un proyecto, cuando está **cobrado entero,
+facturado, con sus gastos pagados y con su resultado calculado**. Con la
+empresa, no termina: cada mes se cierra con el **cierre de mes**, y cada año
+con el **balance**.
 
 ### Qué recibe de cada área
 
