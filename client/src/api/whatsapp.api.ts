@@ -13,9 +13,13 @@ export type WhatsAppConversacion = {
   ultimoTexto: string;
   ultimaDireccion: "ENTRANTE" | "SALIENTE";
   ultimoEn: string;
+  /** Estado del último mensaje si es saliente (para los tildes de la lista). */
+  ultimoEstado?: string | null;
   total: number;
   ventanaAbierta: boolean;
   noLeida: boolean;
+  /** Mensajes del cliente sin leer en la bandeja (el número del círculo verde). */
+  noLeidos?: number;
   sinContestar: boolean;
   cliente: WhatsAppCliente | null;
 };

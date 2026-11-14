@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.40 · del 05/11/26
+**Voltia · Uruguay** · Versión 1.41 · del 14/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1106,13 +1106,17 @@ mensaje no queda sin ver porque la persona de siempre no está. El número sigue
 andando en el celular como siempre; lo que se escribe en un lado aparece en el
 otro.
 
-**La bandeja.** A la izquierda están todas las conversaciones, la más nueva
-arriba, con el nombre del cliente cuando su celular está cargado en la ficha. Las
-que no se abrieron están en negrita, y las que tienen un mensaje del cliente sin
-contestar llevan la marca roja **Sin contestar**; el filtro *Sin contestar* deja
-solo esas, y la pestaña muestra cuántas son. A la derecha, la conversación. Para
-escribirle a alguien que todavía no tiene conversación, se escribe su número en el
-buscador.
+**La bandeja.** Se ve y se usa igual que WhatsApp Web, el de la computadora. A la
+izquierda están todas las conversaciones, la más nueva arriba, con el nombre del
+cliente y un círculo con sus iniciales cuando su celular está cargado en la ficha;
+si no, aparece solo el número. Las que tienen mensajes sin leer llevan un círculo
+verde con cuántos son, y las que tienen un mensaje del cliente sin contestar
+llevan la marca roja **Sin contestar**. Arriba, los filtros *Todos*, *No leídos* y
+*Sin contestar*; la pestaña muestra cuántas sin contestar hay. A la derecha, la
+conversación, con las burbujas verdes de lo que mandó Voltia y las blancas del
+cliente, y los tildes de entregado y leído. Para escribirle a alguien que todavía
+no tiene conversación, se escribe su número en el buscador. En el celular, como en
+WhatsApp, primero se ve la lista y al tocar un chat se abre a pantalla completa.
 
 **Qué se le puede mandar.** Si el cliente escribió en las últimas 24 horas, se le
 contesta con texto libre, como en el celular. Si pasó más tiempo, WhatsApp solo
@@ -1120,8 +1124,8 @@ deja mandar un **mensaje aprobado por Meta** (lo que la pantalla llama
 "plantilla"): es una regla de WhatsApp, no de Voltia.
 
 **Cuando el cliente escribe desde otro número** (el de un familiar, el de la
-empresa), la conversación aparece como *Sin cliente*. Con **Asociar a un
-cliente** se elige de quién es, y desde ahí se ve en su ficha.
+empresa), la conversación aparece solo con el número. Con **Asociar a un
+cliente** (el ícono de enlace arriba del chat) se elige de quién es, y desde ahí se ve en su ficha.
 
 **Cuando no hace falta contestar** (un "gracias", un "ok"), **No hace falta
 contestar** saca la marca roja. Vuelve a aparecer si el cliente escribe de nuevo.
@@ -2072,6 +2076,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.41 | 14 de noviembre de 2026 | La bandeja de WhatsApp de Voltia PM se ve y se usa como WhatsApp Web: iniciales del cliente, cantidad de mensajes sin leer, filtros Todos / No leídos / Sin contestar, Enter para mandar, plantillas desde la caja para escribir, y en el celular el chat a pantalla completa. Una conversación de otro número ya no dice «Sin cliente»: aparece solo con el número. |
 | 1.40 | 5 de noviembre de 2026 | El cliente que no se acuerda de su mail lo puede buscar con su nombre en la pantalla de entrada. Quien entra con el código ya no queda obligado a cambiar la contraseña temporal. |
 | 1.39 | 5 de noviembre de 2026 | En la curva del día se ve el consumo de la noche, en línea punteada, y el consumo y la compra a UTE de cada día ya la incluyen. |
 | 1.38 | 1 de noviembre de 2026 | Se agrega el WhatsApp general dentro de Voltia PM: la bandeja de Experiencia Solar que puede usar cualquiera del área, qué se le puede mandar al cliente, cómo se asocia una conversación de otro número, y la alerta de la ficha cuando el cliente escribió y nadie le contestó. |

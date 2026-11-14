@@ -1,5 +1,20 @@
 # Novedades
 
+## v14.7
+
+### 14 de noviembre de 2026
+
+#### WhatsApp con la apariencia de WhatsApp Web
+
+- La bandeja de **Experiencia Solar → WhatsApp** ahora se ve y se usa como WhatsApp Web: la lista de chats a la izquierda, con la foto de iniciales del cliente, la hora o el día del último mensaje y la cantidad de mensajes sin leer en un círculo verde; el chat abierto a la derecha, con su fondo, las burbujas verdes para lo que manda Voltia y blancas para lo del cliente, la hora y los tildes adentro de cada burbuja, y los separadores *Hoy*, *Ayer* o la fecha.
+- Arriba de la lista, los filtros **Todos**, **No leídos** y **Sin contestar**, con cuántos hay de cada uno.
+- La caja para escribir es la de WhatsApp: **Enter manda** y Shift+Enter baja de línea. Las plantillas se abren con el botón de la izquierda y muestran cómo va a quedar el mensaje antes de mandarlo.
+- Si pasaron más de 24 horas desde el último mensaje del cliente, la caja lo avisa y ofrece directamente las plantillas.
+- Las fotos, audios y documentos que manda el cliente aparecen como «Foto», «Audio» o «Documento» con su ícono (todavía no se pueden ver desde Voltia PM).
+- En el celular funciona como WhatsApp: primero la lista, y al tocar un chat se abre a pantalla completa, con la flecha para volver.
+- Respeta el modo oscuro de Voltia PM con los colores del modo oscuro de WhatsApp.
+- La tarjeta de WhatsApp de la ficha del cliente muestra los últimos mensajes con el mismo estilo.
+
 ## v14.6
 
 ### 13 de noviembre de 2026

@@ -113,16 +113,25 @@ type FilaUltimo = {
   ocurridoEn: Date;
   total: bigint;
   ultimoEntranteEn: Date | null;
+  /** Estado del último mensaje si es saliente (sent | delivered | read | failed…). */
+  estado: string | null;
+  /** Entrantes posteriores a lo leído en la bandeja. */
+  noLeidos: bigint;
 };
 
 /** El último mensaje de cada conversación del número, con la hora del último del cliente. */
 async function ultimosPorTelefono(phoneNumberId: string, telefonos?: string[]): Promise<FilaUltimo[]> {
   const filas = await prisma.$queryRaw<FilaUltimo[]>`
     SELECT DISTINCT ON (m.telefono)
-      m.telefono, m.texto, m.tipo, m.direccion, m."ocurridoEn",
+      m.telefono, m.texto, m.tipo, m.direccion, m."ocurridoEn", m.estado,
       count(*) OVER (PARTITION BY m.telefono) AS total,
-      max(m."ocurridoEn") FILTER (WHERE m.direccion = 'ENTRANTE') OVER (PARTITION BY m.telefono) AS "ultimoEntranteEn"
+      max(m."ocurridoEn") FILTER (WHERE m.direccion = 'ENTRANTE') OVER (PARTITION BY m.telefono) AS "ultimoEntranteEn",
+      count(*) FILTER (
+        WHERE m.direccion = 'ENTRANTE' AND (c."leidoHasta" IS NULL OR m."ocurridoEn" > c."leidoHasta")
+      ) OVER (PARTITION BY m.telefono) AS "noLeidos"
     FROM whatsapp_mensajes m
+    LEFT JOIN whatsapp_conversaciones c
+      ON c."phoneNumberId" = m."phoneNumberId" AND c.telefono = m.telefono
     WHERE m."phoneNumberId" = ${phoneNumberId}
     ORDER BY m.telefono, m."ocurridoEn" DESC
   `;
@@ -175,9 +184,11 @@ export async function listarConversaciones(bandeja: Bandeja) {
         ultimoTexto: u.texto ?? `[${u.tipo}]`,
         ultimaDireccion: u.direccion,
         ultimoEn: u.ocurridoEn.toISOString(),
+        ultimoEstado: u.direccion === "SALIENTE" ? u.estado : null,
         total: Number(u.total),
         ventanaAbierta: !!u.ultimoEntranteEn && ahora - u.ultimoEntranteEn.getTime() < VENTANA_MS,
         noLeida: estaNoLeida(u.ultimoEntranteEn, e?.leidoHasta),
+        noLeidos: estaNoLeida(u.ultimoEntranteEn, e?.leidoHasta) ? Number(u.noLeidos) : 0,
         sinContestar: estaSinContestar(u, e?.resueltoHasta),
         cliente,
       };

@@ -37,22 +37,38 @@ conversaciones se usan desde el módulo de cada área.
 
 **Experiencia Solar → WhatsApp** (la bandeja del número general):
 
-- A la izquierda, las conversaciones del número, la más reciente arriba. Cada una
-  muestra el **nombre del cliente** si su teléfono está cargado en un proyecto (o
-  se asoció a mano), y si no, el número con la etiqueta *Sin cliente*. En negrita
-  y con punto verde, las **no leídas**; en rojo, las **sin contestar**. Filtro
-  *Todas* / *Sin contestar*, y un buscador que también sirve para escribir un
-  número y empezar una conversación nueva.
-- A la derecha, el chat (se refresca cada 4 s) con las tildes de enviado,
-  entregado y leído; lo escrito desde el celular lleva un ícono de teléfono. El
-  nombre del cliente lleva a su ficha.
+- **Se ve como WhatsApp Web** (pedido de Nicolás del 14-nov-2026): dos columnas,
+  la lista de chats a la izquierda y el chat abierto a la derecha, con los colores
+  de WhatsApp Web (claro) o los de su modo oscuro si Voltia PM está en oscuro.
+- A la izquierda, los chats del número, el más reciente arriba. Cada uno lleva un
+  **círculo con las iniciales** del cliente si su teléfono está cargado en un
+  proyecto (o se asoció a mano); si no, la silueta gris y el número con formato
+  (+598 99 123 456). A la derecha, la hora del último mensaje (hoy), *Ayer*, el día
+  de la semana (esta semana) o la fecha. Abajo, el último mensaje en una línea, con
+  los tildes si lo mandó Voltia. Los **no leídos** llevan el círculo verde con la
+  cantidad de mensajes del cliente sin leer, y los **sin contestar** la etiqueta
+  roja *Sin contestar*. Filtros *Todos* / *No leídos* / *Sin contestar* (con cuántos
+  hay), y un buscador que también sirve para escribir un número: si no tiene chat,
+  la lista ofrece *Empezar un chat con este número*.
+- A la derecha, el chat (se refresca cada 4 s): fondo beige con un dibujo propio
+  (soles, rayos, paneles; no es el de WhatsApp), burbujas verdes a la derecha para
+  lo que mandó Voltia y blancas a la izquierda para lo del cliente, con la hora y
+  los tildes de enviado, entregado y leído adentro, y separadores *Hoy* / *Ayer* /
+  día / fecha. La primera burbuja de cada tanda lleva la "colita" y, si la mandó
+  alguien desde Voltia PM, su nombre arriba. Lo escrito desde el celular lleva un
+  ícono de teléfono. El nombre del cliente en el encabezado lleva a su ficha.
+- **En el celular**, como WhatsApp: se ve la lista; al tocar un chat se abre a
+  pantalla completa (tapa el menú de abajo) con la flecha para volver.
 - **Mandar**: texto libre si el cliente escribió en las últimas 24 horas (la
-  pantalla arranca ahí cuando se puede), o una plantilla aprobada fuera de esa
-  ventana.
-- **Asociar a un cliente**: para una conversación *Sin cliente* (escribe desde un
-  número que no está en la ficha). Se busca el cliente por nombre o teléfono. Se
+  caja de abajo; **Enter manda**, Shift+Enter baja de línea; en pantallas táctiles
+  Enter baja de línea y se manda con el botón). Fuera de esa ventana la caja se
+  reemplaza por el aviso de las 24 horas y se abre el panel de **plantillas**
+  aprobadas, que también se abre con el botón de la izquierda de la caja: se elige
+  la plantilla, se completan los valores y se ve cómo va a quedar antes de mandarla.
+- **Asociar a un cliente** (ícono de enlace en el encabezado del chat): para una
+  conversación sin cliente (escribe desde un número que no está en la ficha). Se busca el cliente por nombre o teléfono. Se
   puede *quitar* después.
-- **No hace falta contestar**: apaga la alerta de sin contestar (un "gracias", un
+- **No hace falta contestar** (doble tilde verde en el encabezado): apaga la alerta de sin contestar (un "gracias", un
   "ok") hasta que el cliente vuelva a escribir.
 - La pestaña muestra cuántas conversaciones tienen un mensaje sin contestar.
 
@@ -154,7 +170,10 @@ prefijo `/api` y sin login:
   `clientPhone` normalizado coincide (`telefonosDe()` parte el campo si trae más
   de un número; si dos proyectos comparten teléfono gana el más nuevo). **Nunca
   por nombre.**
-- **No leída**: hay un mensaje del cliente posterior a `leidoHasta`. Abrir la
+- **No leída**: hay un mensaje del cliente posterior a `leidoHasta`. La cantidad
+  (`noLeidos`, el número del círculo verde) cuenta esos entrantes en la misma
+  consulta de `ultimosPorTelefono()`; la lista también trae `ultimoEstado` (el
+  estado del último mensaje si es saliente) para los tildes de la vista previa. Abrir la
   conversación en la bandeja la marca leída **para todos** (la bandeja es
   compartida). Mirar la ficha no la marca.
 - **Sin contestar**: el último mensaje de la conversación es del cliente y es
@@ -243,13 +262,20 @@ Crear una plantilla y conectar un número quedan en auditoría.
 - **Sin variables configuradas** la pantalla avisa qué falta y no manda nada; el
   webhook rechaza todo POST (sin `META_APP_SECRET` no hay firma válida posible).
 - **Un número que nunca escribió** solo puede recibir plantillas.
-- **Un cliente que escribe desde otro número** aparece *Sin cliente* hasta que
+- **Un cliente que escribe desde otro número** aparece solo con su número (sin cliente) hasta que
   alguien lo asocia a mano. La asociación vale solo para ese número de Voltia.
 - **Si Meta no devuelve las plantillas**, la bandeja sigue andando sin ellas (se
   loguea el error): el texto libre no las necesita.
 - **Mensajes que no son texto** (fotos, audios, documentos) se muestran como
-  `[image]`, `[audio]`… con el pie de foto si lo tiene: todavía no se bajan ni se
-  ven. Tampoco se puede mandar un archivo desde la bandeja.
+  «Foto», «Audio», «Documento»… con su ícono, o con el pie de foto si lo tiene:
+  todavía no se bajan ni se ven.
+- **Las plantillas mandadas** se ven como *Plantilla · nombre*: el texto que
+  recibió el cliente no se guarda en `whatsapp_mensajes`, así que el chat no lo
+  muestra.
+- **El nombre de perfil de WhatsApp** de quien escribe (el que en WhatsApp sale
+  como «~ Nombre» para los que no están agendados) no se guarda: el webhook guarda
+  el mensaje, no el bloque `contacts`. Por eso un número sin cliente se ve solo
+  como número. Tampoco se puede mandar un archivo desde la bandeja.
 - **No hay aviso cuando entra un mensaje** (ni campanita ni push): se ve en la
   pestaña, en la bandeja y en la ficha.
 - **Las conversaciones de Ventas** todavía no tienen bandeja (parte siguiente).
@@ -273,7 +299,9 @@ Crear una plantilla y conectar un número quedan en auditoría.
 - `client/src/pages/admin/WhatsAppAdminPage.tsx`, `WhatsAppNumeros.tsx`,
   `client/src/api/whatsapp.api.ts`.
 - `client/src/components/whatsapp/BandejaWhatsApp.tsx` (la bandeja, reutilizable
-  por área vía `BandejaApi`), `client/src/modules/clientes/pages/WhatsAppESPage.tsx`,
+  por área vía `BandejaApi`; exporta `Burbuja` y `ListaMensajes`, que usa la ficha)
+  y `whatsapp-web.css` (paleta `--wa-*` clara y oscura, el dibujo del fondo y el
+  hueco de la hora en las burbujas), `client/src/modules/clientes/pages/WhatsAppESPage.tsx`,
   `client/src/modules/clientes/components/ClienteWhatsAppCard.tsx`.
 
 ## Variables de entorno

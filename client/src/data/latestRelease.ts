@@ -97,6 +97,22 @@ const RELEASE_14_5: Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "14.7",
+  date: "14 de noviembre de 2026",
+  sections: [
+    {
+      title: "WhatsApp con la apariencia de WhatsApp Web",
+      items: [
+        "La bandeja de Experiencia Solar → WhatsApp se ve y se usa como WhatsApp Web: lista de chats con iniciales, hora y no leídos en verde; el chat con burbujas, tildes y separadores de día.",
+        "Filtros Todos, No leídos y Sin contestar arriba de la lista.",
+        "Enter manda el mensaje; las plantillas se abren desde la caja y se ve cómo va a quedar antes de mandarlo.",
+        "En el celular, primero la lista y al tocar un chat se abre a pantalla completa, con flecha para volver.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_14_6: Release = {
   version: "14.6",
   date: "13 de noviembre de 2026",
   sections: [
@@ -1195,6 +1211,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.6",
+    shortDate: "13 nov",
+    highlights: RELEASE_14_6.sections.map((sec) => sec.title),
+  },
   {
     version: "14.5",
     shortDate: "12 nov",

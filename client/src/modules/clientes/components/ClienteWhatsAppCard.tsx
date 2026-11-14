@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle, MessageCircle } from "lucide-react";
 
 import { getWhatsAppDeProyecto } from "../../../api/whatsapp.api";
-import { Burbuja } from "../../../components/whatsapp/BandejaWhatsApp";
+import { ListaMensajes } from "../../../components/whatsapp/BandejaWhatsApp";
 
 function haceCuanto(iso: string): string {
   const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -75,10 +75,8 @@ export function ClienteWhatsAppCard({ projectId }: { projectId: string }) {
       ) : data.mensajes.length === 0 ? (
         <p className="text-[12px] text-[var(--color-text-muted)]">Todavía no hay mensajes con este cliente por WhatsApp.</p>
       ) : (
-        <div className="space-y-1.5">
-          {data.mensajes.map((m) => (
-            <Burbuja key={m.id} m={m} chica />
-          ))}
+        <div className="wa-web wa-fondo rounded-md px-3 py-2">
+          <ListaMensajes mensajes={data.mensajes} chica />
         </div>
       )}
     </div>
