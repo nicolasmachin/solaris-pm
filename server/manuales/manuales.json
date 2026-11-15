@@ -77,10 +77,11 @@
       "GERENTE_FINANZAS"
     ],
     "requiereLectura": false,
-    "version": "1.32",
+    "version": "1.43",
     "notas": {
       "1.18": "Al marcar pagado un cobro se confirman la fecha real y el monto. El reclamo de cuotas vencidas lo hace Experiencia Solar hasta que pase al área de Administración.",
-      "1.32": "Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender."
+      "1.32": "Las cuotas del plan de pagos ya no tienen fecha: se cobran en un momento de la obra, y la pestaña Cobros muestra si cada una está lista para cobrar, vencida o prevista. La del 20 % queda lista con el mismo aviso de que el cliente puede encender.",
+      "1.43": "Se agregan el alumbrado público en el reporte (se marca y se carga el monto de la factura), que el cliente sin mail ve su reporte en el portal, y que a los clientes de la planilla anterior el aniversario se les cuenta desde la entrega. Se registran las reglas de los mensajes de WhatsApp definidos el 15-nov, todavía no activos. Se actualiza lo que falta: los accesos al portal de los clientes que ya estaban están creados."
     }
   }
 ]

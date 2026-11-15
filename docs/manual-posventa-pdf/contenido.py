@@ -93,17 +93,11 @@ PLANTILLAS = {
         "En el portal tenés además tus reportes de generación, la documentación de la obra y un lugar "
         "para abrirnos un reclamo o una consulta cuando lo necesites. Si querés lo recorremos juntos "
         "por teléfono."),
-    "acceso_inversor": (
-        "Acceso a la plataforma del inversor",
-        "Hola [nombre], te paso el acceso a la plataforma del inversor, que es donde ves la generación "
-        "en vivo: [usuario y contraseña] · [app o link]\n\n"
-        "Cualquier duda para entrar, escribime."),
     "alta_reportes": (
         "Alta en los reportes mensuales",
         "Hola [nombre], te dimos de alta en los reportes mensuales: todos los meses te va a llegar por "
         "correo un resumen de cuánto generó tu instalación y cuánto ahorraste.\n\n"
-        "También los vas a tener siempre en el portal. Es el único correo automático que vas a recibir "
-        "de nosotros."),
+        "También los vas a tener siempre en el portal."),
 }
 
 
@@ -177,7 +171,9 @@ TEMAS_FAQ = [
       "%</strong> cuando UTE habilita.",
       "<strong>Financiación bancaria:</strong> se firma el contrato para presentar al banco, y la obra se agenda "
       "<strong>recién con el crédito aprobado</strong>. Por eso conviene que vaya adelantando lo que le pide el "
-      "banco: es lo que más atrasa estas obras.",
+      "banco: es lo que más atrasa estas obras. En <strong>Cobros</strong> tiene una sola cuota, "
+      "<strong>«Financiación bancaria»</strong>, por todo lo que falta; cuando entra la plata del banco, se marca "
+      "pagada como cualquier otro cobro.",
       "Para decirle cuánto le falta, mirá la pestaña <strong>Cobros</strong> de su ficha: ahí está qué pagó y "
       "qué queda previsto.",
       "<strong>Las cuotas no tienen fecha</strong>: cada una se cobra en un momento de la obra. La del 50 % "
@@ -191,6 +187,11 @@ TEMAS_FAQ = [
      "pestaña <strong>Cobros</strong> con <strong>Marcar pagado</strong>, confirmando <strong>la fecha en que "
      "entró la plata y el monto</strong> (Voltia PM propone la fecha de hoy y el monto previsto; se corrigen si "
      "fue otro día u otro monto). Nadie lo revisa después: lo que se carga ahí es lo que queda.<span style=\"display: block; height: 7px\"></span>"
+     "<strong>A quién cobrarle hoy:</strong> en Experiencia Solar → <strong>Cobros</strong>, el aviso verde de "
+     "arriba dice cuántos clientes están listos para cobrar y cuántos tienen la cuota vencida, con <strong>Ver "
+     "solo esos</strong>. La columna <strong>A cobrar ahora</strong> dice cuánto cobrarle a cada uno y qué cuotas "
+     "son; abajo, el total listo para cobrar y cuánto ya venció. Arranca mostrando solo a quienes les falta "
+     "cobrar algo (<strong>Todos, también los completos</strong> muestra el resto).<span style=\"display: block; height: 7px\"></span>"
      "<strong>Si una cuota vence y el cliente no pagó</strong>, el reclamo lo hace Experiencia Solar, que es "
      "quien habla con él. Está decidido que esto pase al área de Administración (la contadora) cuando esa área "
      "se haga cargo de Finanzas en Voltia PM.",
@@ -200,16 +201,21 @@ TEMAS_FAQ = [
      "\"¿dónde veo cómo va?\", \"¿cómo entro?\", \"no tengo usuario\", \"¿qué es la app?\"",
      ["Son <strong>dos cosas distintas</strong>, y conviene explicarlo así desde el principio, con esos dos "
       "nombres siempre:",
-      "<strong>El portal de Voltia:</strong> el seguimiento del trámite, las encuestas, los tickets, los videos "
-      "que se le mandaron, y donde carga su fecha de corte y su tarifa. En <em>Mis reportes solares</em> ve "
-      "además <strong>su generación y su consumo</strong>: la curva del día, los días, los meses y los años "
-      "(en Huawei, por ahora, sin la curva del día).",
-      "<strong>La aplicación de tu inversor:</strong> la generación en tiempo real, el histórico y el consumo. "
-      "Es de la marca del inversor, no de Voltia. Sigue sirviendo, pero ya no hace falta para ver cómo va."],
+      "<strong>El portal de Voltia:</strong> lo primero que ve, una vez habilitado, es <strong>su planta</strong>: "
+      "cuánto generan los paneles en ese momento, cuánto consume la casa y cuánto le vende o le compra a UTE, y su "
+      "generación y su consumo por hora, día, mes y año (en Huawei, por ahora, sin la curva del día). Además: el "
+      "trámite UTE, los reclamos, las encuestas, los reportes mensuales, los videos que se le mandaron, y donde "
+      "carga su fecha de corte y su tarifa.",
+      "<strong>La aplicación de tu inversor:</strong> es de la marca del inversor, no de Voltia. <strong>Desde el "
+      "28 de octubre de 2026 ya no se le da al cliente</strong>: todo lo que mostraba está en el portal de Voltia. "
+      "El que ya la tenía puede seguir usándola, pero se lo lleva al portal."],
      "el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el "
-     "cliente cambia la contraseña al entrar. Para la aplicación del inversor se le manda el link de descarga "
-     "y las credenciales; si no tiene usuario, lo creás siguiendo el video instructivo.",
-     "problemas técnicos de la plataforma del inversor, a Operaciones."),
+     "cliente cambia la contraseña al entrar. <strong>No se le da acceso a la aplicación del inversor</strong>: si "
+     "lo pide, se le explica que en el portal ve lo mismo, y además sus reportes, sus documentos y sus reclamos, "
+     "en un solo lugar y con el nombre de Voltia. Mandarlo a la aplicación de otra marca no suma y le da dos "
+     "lugares para mirar.",
+     "si el portal no le muestra la generación (por ejemplo, porque la planta no está asociada a su ficha), a "
+     "Operaciones."),
 
     (7, "E2", "Cuánto demora UTE",
      "\"¿cuánto falta?\", \"¿por qué tarda tanto?\", \"¿cuándo me habilitan?\", \"ya pasó un mes\"",
@@ -240,8 +246,8 @@ TEMAS_FAQ = [
      ["<strong>El encendido lo hace el cliente</strong>: cortar el precinto y subir la llave de "
       "microgeneración. <strong>No se toca el inversor.</strong> Es una maniobra de un minuto, y conviene "
       "explicarla paso a paso.",
-      "Después se confirma con él que <strong>quedó generando</strong>: en la aplicación del inversor tiene que "
-      "verse la generación subiendo."],
+      "Después se confirma con él que <strong>quedó generando</strong>: en el portal de Voltia (o en su ficha, del "
+      "lado de Voltia PM) tiene que verse la generación subiendo."],
      "Voltia avisa dentro de las <strong>24 a 48 horas</strong> de otorgada la habilitación, sin esperar que "
      "pregunte. <strong>Si pregunta él, el aviso llegó tarde.</strong> Al confirmar que genera, se le recuerda "
      "el <strong>20 % final</strong>. Que vaya alguien de Voltia a encender es excepción, no la regla.",
@@ -249,7 +255,7 @@ TEMAS_FAQ = [
 
     (10, "E3", "\"Genera poco\"",
      "\"genera menos de lo que me dijeron\", \"tengo 6 kWp y no paso de 3 kW\", \"con sol no llega\"",
-     ["Se compara la generación <strong>real</strong> (la aplicación del inversor) contra la "
+     ["Se compara la generación <strong>real</strong> (la de su planta en el portal de Voltia o en su ficha) contra la "
       "<strong>esperada</strong> (el gráfico de la propuesta), <strong>por mes y no por día</strong>. Un día "
       "nublado aislado no dice nada.",
       "El pico de potencia depende de la altura del sol, la orientación y la temperatura. <strong>En invierno, "
@@ -328,15 +334,20 @@ TEMAS_FAQ = [
       "falta que pasen por Voltia."],
      "mandale el <strong>video de reconexión de su marca</strong> para que lo haga solo, si se anima, con "
      "<strong>Enlace para el cliente</strong>: así le queda en la pestaña Videos del portal. Si no, que "
-     "abra un ticket de soporte desde el portal de Voltia.",
+     "abra un reclamo desde el portal de Voltia.",
      "si la luz no está verde, pasa al tema 17."),
 
     (17, "E3", "Falla del inversor (luz roja)",
      "\"el inversor tiene una luz roja\", \"me sale un error\", \"se apagó el inversor\"",
      ["Que <strong>se registra el caso y se le da seguimiento</strong>, y cuándo va a tener novedades.",
-      "Cómo <strong>abrir el ticket desde el portal de Voltia</strong>, para la próxima."],
+      "Cómo <strong>abrir un reclamo desde el portal de Voltia</strong>, para la próxima."],
      "es raro que lo reporte el cliente primero: con falla, el inversor sigue conectado y la reporta, así que "
-     "<strong>Voltia debería enterarse antes y contactarlo</strong>. Si llama él primero, algo falló en el "
+     "<strong>Voltia debería enterarse antes y contactarlo</strong>. Para eso está la <strong>mesa de "
+     "Soporte</strong> de Voltia PM (menú <strong>Soporte</strong>): cada media hora con sol revisa todas las "
+     "plantas y, si una lleva una hora sin generar o sin comunicar mientras las demás sí generan, abre un caso que "
+     "explica qué pasa (\"el inversor no ve la red: casi siempre es la llave\", \"dejó de mandar datos a las "
+     "16:23\"). Desde el caso, <strong>Avisar al cliente</strong> le manda un mensaje listo para revisar, que le "
+     "llega a su portal y al celular; nunca le escribe el sistema solo. Si llama él primero, algo falló en el "
      "monitoreo. Se registra como caso técnico. Si el cliente no abre el ticket, lo abre Experiencia Solar, pero "
      "la meta es que lo haga solo.",
      "a Operaciones [A CONFIRMAR]"),
@@ -656,7 +667,8 @@ def construir():
                  "no puede recuperar la contraseña solo.", margen=14, tamano=14),
          parrafo("<strong>Si se olvida la contraseña y tiene mail</strong>, no hace falta resetearla: en la "
                  "entrada del portal toca <strong>Entrar con un código por mail</strong> y entra con un código "
-                 "de 6 números, que vence a los 10 minutos. La sesión dura mientras lo use: pide entrar de "
+                 "de 6 números, que vence a los 10 minutos. Si no se acuerda de su mail, al errarlo la pantalla "
+                 "le ofrece buscarlo por su nombre y apellido. La sesión dura mientras lo use: pide entrar de "
                  "nuevo recién después de 10 días sin abrirlo.", margen=12, tamano=14),
          ],
         p))
@@ -666,11 +678,21 @@ def construir():
         kicker("ETAPA 1 · PASO 3 · SIGUE")
         + titulo("Envío del acceso al portal", tamano=30)
         + parrafo("<strong>Qué gana el cliente:</strong> ve el avance, la documentación y sus reportes, y "
-                  "<strong>puede abrirnos un reclamo por ahí</strong> en vez de por WhatsApp.",
-                  margen=18, tamano=15)
+                  "<strong>puede abrirnos un reclamo por ahí</strong> en vez de por WhatsApp. Lo primero que ve "
+                  "al entrar cambia con la habilitación: antes, el avance del trámite UTE; después, <strong>su "
+                  "planta</strong>, con lo que generan los paneles en ese momento, lo que consume la casa y lo que "
+                  "le vende o le compra a UTE, y los gráficos de cada día, mes y año. El trámite le queda en el "
+                  "menú, en <strong>Trámite UTE</strong>.", margen=18, tamano=15)
+        + aviso("<strong>Que lo instale y active los avisos.</strong> El portal se instala en el celular como "
+                "una aplicación más (queda el ícono \"Voltia\"), y el Inicio le ofrece <strong>Activar "
+                "avisos</strong>: le llega un aviso cuando se le responde un reclamo o tiene una encuesta, aunque "
+                "no tenga el portal abierto. En iPhone, primero Compartir → Agregar a inicio, y abrirlo desde el "
+                "ícono. Vale la pena pedírselo al mandarle el acceso: es lo que lo hace volver al portal. "
+                "Experiencia Solar también puede activarlos en su celular, desde el menú de su cuenta en Voltia "
+                "PM → <em>Avisos en este dispositivo</em>.", "clave", margen=18)
         + cita("portal", margen=18)
         + aviso("<strong>Este paso arrastra a varios más.</strong> Sin acceso al portal el cliente no puede "
-                "abrir tickets ni responder encuestas. Al que se le pasó, nadie se lo crea seis meses "
+                "abrir reclamos ni responder encuestas. Al que se le pasó, nadie se lo crea seis meses "
                 "más tarde.", "duro", margen=20),
         p))
 
@@ -853,8 +875,7 @@ def construir():
         "El cliente ya está generando. Cambió lo que necesita: antes quería saber cuándo; ahora quiere "
         "entender lo que ve y saber que si algo falla nos enteramos.",
         "sin cadencia",
-        ["Capacitación: material y videos", "Acceso a la plataforma del inversor",
-         "Alta en reportes mensuales", "Recorrido por el portal"],
+        ["Capacitación: material y videos", "Alta en reportes mensuales", "Recorrido por el portal"],
         p, foto=IMG.PORTADILLA_E3))
 
     nueva("E3Capacitacion.dc.html", "22 · Capacitación", lambda p: pagina(
@@ -872,25 +893,9 @@ def construir():
                 "guardados. Vale para cualquier video que se le mande después.", "ojo", margen=14),
         p))
 
-    nueva("E3Inversor.dc.html", "22a · Acceso al inversor", lambda p: pagina(
-        "Acceso a la plataforma del inversor",
-        kicker("ETAPA 3 · PASO 2")
-        + titulo("Acceso a la plataforma del inversor", tamano=34)
-        + ficha([("PLAZO", "15 días hábiles"),
-                 ("QUÉ DECIR", "Plantilla <strong>\"Acceso a la plataforma del inversor\"</strong>")],
-                margen=20)
-        + parrafo("<strong>El usuario y la contraseña los deja registrados el técnico</strong> durante la "
-                  "instalación. Acá solo se le entregan al cliente.", margen=20)
-        + aviso("Si no están registrados, <strong>el problema es anterior</strong> y hay que ir a buscarlo a "
-                "Operaciones. No es algo que Experiencia Solar pueda resolver sola, y tampoco algo que "
-                "deba quedar trabado esperando.", "ojo", margen=20)
-        + cita("acceso_inversor", margen=16),
-        p))
-
     nueva("E3Reportes.dc.html", "23 · Alta en reportes mensuales", lambda p: paso(
-        "ETAPA 3 · PASO 3", "15 DÍAS HÁBILES", "Alta en reportes mensuales",
-        "El único correo automático que el cliente va a recibir de nosotros en 25 años. Vale la pena "
-        "decírselo así: no es spam, es su resumen mensual.",
+        "ETAPA 3 · PASO 2", "15 DÍAS HÁBILES", "Alta en reportes mensuales",
+        "Vale la pena que el cliente lo sepa así: no es publicidad, es su resumen mensual.",
         [ficha([("PLAZO", "15 días hábiles. <strong>Se da por hecho solo</strong> cuando el reporte queda "
                           "habilitado y con alguien a quien mandárselo"),
                 ("QUIÉN", "Experiencia Solar"),
@@ -908,17 +913,42 @@ def construir():
                  "factura y que los números le cierren.", margen=10),
          aviso("Si pregunta por qué un mes tiene 28 días y otro 33, la respuesta es esa: "
                "<strong>es el ciclo de su medidor, no un error</strong>.", "ojo", margen=16),
-         aviso("<strong>La factura se le explica al mes del encendido</strong>, con su factura real en la "
-               "mano. Antes no hay nada que comparar.", "clave", margen=14),
          cita("alta_reportes", margen=18)],
         p, plazo_rojo=False))
 
+    nueva("E3Reportes2.dc.html", "23a · Alta en reportes (sigue)", lambda p: pagina(
+        "Alta en reportes mensuales",
+        kicker("ETAPA 3 · PASO 2 · SIGUE")
+        + titulo("Alta en reportes mensuales", tamano=30)
+        + aviso("<strong>No se le promete que sea el único correo que va a recibir.</strong> Voltia PM puede "
+                "mandarle además los avisos automáticos de su proyecto (capítulo 9).", "ojo", margen=18)
+        + subtitulo("El alumbrado público", margen=26, tamano=19)
+        + parrafo("Algunos clientes pagan en la factura de UTE el alumbrado público, que UTE cobra por cuenta "
+                  "de la intendencia. Es un <strong>monto fijo por mes</strong>, que no depende del consumo, no "
+                  "lleva IVA y lo ajusta la intendencia dos veces por año. En Canelones hay dos valores: el pleno, "
+                  "si la calle tiene alumbrado, y el 40 %, si solo hay alumbrado en la localidad; los padrones "
+                  "rurales no pagan.", margen=10)
+        + parrafo("Para que la factura estimada del reporte coincida con la de UTE, en la configuración del "
+                  "reporte del cliente se marca <strong>Paga alumbrado público</strong> y se carga el monto que "
+                  "figura en su factura. Se suma igual con y sin paneles, así que no cambia el ahorro.",
+                  margen=12)
+        + aviso("Hay que <strong>actualizarlo en enero y en julio</strong>, cuando cambia el valor.", "ojo",
+                margen=16)
+        + subtitulo("El cliente sin mail igual ve su reporte", margen=26, tamano=19)
+        + parrafo("Si no tiene mail cargado, el reporte no le llega por correo, pero <strong>queda publicado en "
+                  "su portal, en Reportes</strong>. Igual hay que conseguirle el mail: es lo que le hace llegar "
+                  "el reporte todos los meses y lo que le permite entrar al portal con el código.", margen=10)
+        + aviso("<strong>La factura se le explica al mes del encendido</strong>, con su factura real en la "
+                "mano. Antes no hay nada que comparar, y la explicación en abstracto no se retiene (Anexo E, "
+                "tema 12).", "clave", margen=22),
+        p))
+
     nueva("E3Portal.dc.html", "24 · Recorrido por el portal", lambda p: paso(
-        "ETAPA 3 · PASO 4", "15 DÍAS HÁBILES", "Recorrido por el portal",
+        "ETAPA 3 · PASO 3", "15 DÍAS HÁBILES", "Recorrido por el portal",
         "El paso que convierte el portal de \"una cosa que me mandaron\" en una herramienta que va a usar.",
         [ficha([("PLAZO", "15 días hábiles"),
                 ("QUIÉN", "Experiencia Solar"),
-                ("QUÉ MOSTRAR", "Tickets, encuestas, reportes, documentación y videos")]),
+                ("QUÉ MOSTRAR", "Su planta, reclamos, encuestas, reportes, documentación y videos")]),
          subtitulo("Qué conviene que sepa usar", margen=26, tamano=19),
          numerados(["<strong>Abrir un reclamo</strong> desde el portal, en vez de mandarlo por WhatsApp a "
                     "quien tenga a mano.",
@@ -933,7 +963,8 @@ def construir():
                "si esa persona está de licencia, el reclamo no existe.", "clave", margen=22),
          aviso("<strong>Tres cosas que tiene que aprender a hacer solo:</strong> cargar su <strong>fecha de "
                "corte</strong> (sin eso el reporte no coincide con la factura), cargar su <strong>tarifa</strong> "
-               "y <strong>abrir un ticket</strong>.", "clave", margen=18),
+               "y <strong>abrir un reclamo</strong> (<em>Mis reclamos</em> → <em>Abrir un reclamo</em>).",
+               "clave", margen=18),
          aviso("<strong>Al entregarle el sistema</strong>, contale la condición de la cobertura de voladura: "
                "Voltia se hace cargo si se vuelan paneles, siempre que haya hecho un mantenimiento en el "
                "último año.", "ojo", margen=14)],
@@ -1035,7 +1066,7 @@ def construir():
         kicker("CAPÍTULO 9")
         + titulo("Los mensajes modelo")
         + bajada("Están en Voltia PM: ficha del cliente → una etapa → botón <strong>Plantillas</strong>. Son "
-                 "catorce, y cada paso que tiene mensaje propio también lo abre directo.")
+                 "trece, y cada paso que tiene mensaje propio también lo abre directo.")
         + subtitulo("Tres cosas para saber", margen=28)
         + numerados(["<strong>Vienen con el nombre del cliente y el tuyo ya puestos.</strong> Lo que el "
                      "sistema no puede saber —la fecha, el motivo, el plazo, el nombre del capataz— queda "
@@ -1050,16 +1081,119 @@ def construir():
                      "destildar): no hace falta volver a tildarlo. Es la diferencia entre un historial que "
                      "refleja la relación y uno vacío."],
                     margen=16)
-        + subtitulo("Los catorce", margen=28, tamano=20)
+        + subtitulo("Los trece", margen=28, tamano=20)
         + f'  <p style="margin: 12px 0 0; font-size: 14.5px; line-height: 1.8; color: {TEXTO}">'
           f'bienvenida · acceso al portal · presentación del capataz · fecha tentativa · fecha confirmada · '
           f'reprogramación · visita a la propiedad · obra terminada · encuesta de instalación · ya podés '
-          f'encender + capacitación · encuesta de habilitación · material de capacitación · acceso al '
-          f'inversor · alta en reportes</p>\n'
+          f'encender + capacitación · encuesta de habilitación · material de capacitación · alta en '
+          f'reportes</p>\n'
         + aviso("<strong>Lo que todavía no hay:</strong> una plantilla para \"no hay novedad\", que es "
                 "justamente el contacto que más se repite en la espera de UTE. Mientras tanto se escribe a "
                 "mano, y lo importante es que salga igual: el trámite sigue en curso, sin novedades, y "
                 "apenas haya algo se avisa.", "ojo", margen=26),
+        p))
+
+    nueva("AvisosAutomaticos.dc.html", "29a · Los avisos que salen solos", lambda p: pagina(
+        "Los avisos que salen solos",
+        kicker("CAPÍTULO 9 · SIGUE")
+        + titulo("Los avisos que salen solos", tamano=34)
+        + bajada("Además de los mensajes modelo, que manda una persona, Voltia PM puede mandarle <strong>avisos "
+                 "automáticos</strong> al cliente, por WhatsApp o por mail, cuando pasa un hecho del proyecto: se "
+                 "confirma la fecha de obra, faltan unos días para la obra, UTE aprobó un paso del trámite, UTE "
+                 "habilitó.")
+        + parrafo("Qué avisos hay y qué dicen lo define Gerencia en Voltia PM (Administración → Avisos "
+                  "automáticos); en WhatsApp, cada texto lo aprueba antes Meta, la empresa dueña de WhatsApp.",
+                  margen=14, tamano=14)
+        + subtitulo("Lo que Experiencia Solar tiene que saber", margen=22, tamano=19)
+        + numerados([
+            "<strong>Queda en el historial del cliente</strong> como \"Aviso automático\", con el texto que le "
+            "llegó. Antes de escribirle se mira el historial: si el aviso ya salió, no se le manda lo mismo a mano.",
+            "<strong>Si el aviso deja hecho un paso del recorrido, ese paso aparece tildado solo.</strong> Por "
+            "ejemplo, el de avisar la fecha confirmada, si ese aviso está activo.",
+            "<strong>No reemplaza a la persona.</strong> Si el cliente contesta, contesta Experiencia Solar como "
+            "siempre. Lo que no está en un aviso automático se sigue mandando con el mensaje modelo.",
+            "<strong>Si al cliente le falta el celular o el mail en el proyecto, el aviso no sale.</strong> Queda "
+            "registrado como \"no se mandó\" con el motivo: una razón más para tener los datos completos.",
+        ], margen=12)
+        + subtitulo("Los mensajes de WhatsApp que vienen", margen=24, tamano=19)
+        + parrafo("El 15 de noviembre de 2026 la Dirección dejó definidos los textos de los avisos de todo el "
+                  "recorrido, desde el acceso al portal hasta los mantenimientos. <strong>Todavía no están "
+                  "activos</strong>: salen cuando se conecte el número de WhatsApp y se programen sus condiciones, "
+                  "y cada uno se suma a este manual cuando se active. Lo que ya está decidido y cambia el trabajo "
+                  "sigue en la hoja siguiente.", margen=10, tamano=14),
+        p))
+
+    nueva("AvisosAutomaticos2.dc.html", "29b · Los mensajes de WhatsApp que vienen", lambda p: pagina(
+        "Los mensajes de WhatsApp que vienen",
+        kicker("CAPÍTULO 9 · LOS AVISOS QUE SALEN SOLOS")
+        + titulo("Los mensajes de WhatsApp que vienen", tamano=30)
+        + bajada("Definidos el 15 de noviembre de 2026, <strong>todavía no activos</strong>. Lo que ya está "
+                 "decidido y cambia el trabajo:")
+        + numerados([
+            "<strong>Ningún aviso automático sale antes de la bienvenida.</strong> La bienvenida la sigue mandando "
+            "el responsable de Experiencia Solar, que es quien se presenta como la persona que acompaña al "
+            "cliente. Lo que pase antes queda esperando.",
+            "<strong>En lo que puede avisar una persona, la persona va primero.</strong> El recordatorio de la "
+            "obra y los avisos de cambio de fecha salen solos solo si Experiencia Solar no le escribió antes al "
+            "cliente: en un cambio de fecha tiene 24 horas para avisarle con el motivo.",
+            "<strong>Los videos y las fotos van en un mensaje aparte</strong>, uno o dos minutos después del "
+            "texto, para que el cliente entienda primero de qué se trata. Cada video queda además en la sección "
+            "Videos del portal.",
+            "<strong>El tono:</strong> en plural, de parte de Voltia; sin el signo de pregunta de apertura; \"la "
+            "instalación\" y no \"tu casa\"; sin nombres internos como \"consulta\"; y solo lo que es cierto en "
+            "cualquier caso, porque el aviso no sabe si la obra se hizo antes de que UTE aprobara.",
+            "<strong>La alerta de la planta</strong> por WhatsApp queda en espera hasta afinar la mesa de Soporte.",
+        ], margen=22),
+        p))
+
+    nueva("WhatsAppGeneral.dc.html", "29c · El WhatsApp general dentro de Voltia PM", lambda p: pagina(
+        "El WhatsApp general dentro de Voltia PM",
+        kicker("CAPÍTULO 9 · SIGUE")
+        + titulo("El WhatsApp general dentro de Voltia PM", tamano=30)
+        + bajada("El número general de Voltia, el que tiene el cliente para escribir, se usa también desde "
+                 "Voltia PM, en <strong>Experiencia Solar → WhatsApp</strong>. El número sigue andando en el "
+                 "celular como siempre; lo que se escribe en un lado aparece en el otro.")
+        + aviso("<strong>Lo ve y lo usa solo el responsable de Experiencia Solar</strong> (y la Dirección, que "
+                "puede entrar a cualquier número). Los demás del área no ven la pestaña WhatsApp ni la tarjeta de "
+                "WhatsApp de la ficha. Si el responsable falta, lo cubre la Dirección.", "clave", margen=20)
+        + subtitulo("La bandeja", margen=22, tamano=19)
+        + parrafo("Se ve y se usa igual que WhatsApp Web. A la izquierda, las conversaciones, la más nueva "
+                  "arriba, con el nombre del cliente y un círculo con sus iniciales cuando su celular está "
+                  "cargado en la ficha; si no, solo el número. Un círculo verde dice cuántos mensajes sin leer "
+                  "hay, y la marca roja <strong>Sin contestar</strong>, que el último del cliente no tuvo "
+                  "respuesta. Arriba, los filtros <em>Todos</em>, <em>No leídos</em> y <em>Sin contestar</em>. A "
+                  "la derecha, la conversación, con los tildes de entregado y leído. Para escribirle a alguien sin "
+                  "conversación, se escribe su número en el buscador. En el celular, primero la lista y al tocar "
+                  "un chat se abre a pantalla completa.", margen=8, tamano=14)
+        + parrafo("<strong>Qué se le puede mandar.</strong> Si el cliente escribió en las últimas 24 horas, texto "
+                  "libre, como en el celular. Si pasó más tiempo, WhatsApp solo deja mandar un <strong>mensaje "
+                  "aprobado por Meta</strong> (lo que la pantalla llama \"plantilla\"): es una regla de WhatsApp, "
+                  "no de Voltia.", margen=12, tamano=14)
+        + parrafo("<strong>Cuando escribe desde otro número</strong> (un familiar, la empresa), la conversación "
+                  "aparece solo con el número: con <strong>Asociar a un cliente</strong> (el ícono de enlace "
+                  "arriba del chat) se elige de quién es, y desde ahí se ve en su ficha. <strong>Cuando no hace "
+                  "falta contestar</strong> (un \"gracias\", un \"ok\"), <strong>No hace falta contestar</strong> "
+                  "saca la marca roja; vuelve si el cliente escribe de nuevo.", margen=12, tamano=14),
+        p))
+
+    nueva("WhatsAppGeneral2.dc.html", "29d · El WhatsApp en la ficha", lambda p: pagina(
+        "El WhatsApp en la ficha del cliente",
+        kicker("CAPÍTULO 9 · EL WHATSAPP GENERAL")
+        + titulo("El WhatsApp en la ficha del cliente", tamano=30)
+        + numerados([
+            "Al lado del teléfono hay un botón <strong>WhatsApp</strong> que abre su conversación.",
+            "La tarjeta <strong>WhatsApp</strong> muestra los últimos mensajes.",
+            "<strong>Si el cliente escribió y nadie le contestó</strong>, la tarjeta lo dice en rojo (\"Escribió "
+            "hace 3 h y nadie le contestó\", con su mensaje) y arriba de la ficha aparece la marca "
+            "<strong>WhatsApp sin contestar</strong>. Se contesta en el día, igual que un reclamo.",
+        ], margen=22)
+        + subtitulo("Lo que queda en el historial", margen=28, tamano=19)
+        + parrafo("El primer mensaje del día que se le manda al cliente desde Voltia PM queda en su historial "
+                  "como contacto, así que <strong>cuenta para la cadencia</strong>.", margen=10)
+        + aviso("Lo que se le escribe <strong>desde el celular no queda en el historial</strong>: si fue un "
+                "contacto importante, se registra a mano.", "ojo", margen=18)
+        + aviso("<strong>Mandar un mensaje desde la bandeja no deja hecho ningún paso del recorrido.</strong> "
+                "Para eso siguen los mensajes modelo.", "clave", margen=16),
         p))
 
     nueva("Reclamos.dc.html", "30 · Reclamos", lambda p: pagina(
@@ -1077,8 +1211,10 @@ def construir():
                 [["Portal del cliente", "Queda registrado, <strong>avisa a Experiencia Solar en el momento</strong> "
                   "en la campanita de Voltia PM y "
                   "<strong>aparece en el correo de la mañana</strong> si no se respondió"],
-                 ["WhatsApp", "Es por donde entra la mayoría hoy. <strong>No queda registrado solo</strong>: "
-                  "hay que abrirlo como ticket o al menos registrarlo en el historial"]],
+                 ["WhatsApp", "Es por donde entra la mayoría hoy. Lo que llega al número general se ve en "
+                  "Voltia PM (Experiencia Solar → WhatsApp), y la ficha avisa si nadie le contestó; pero <strong>no "
+                  "es un reclamo registrado</strong>: hay que abrirlo como ticket. Lo que llega al celular de "
+                  "otra persona no se ve en ningún lado"]],
                 anchos=[170, None], margen=16)
         + aviso("<strong>Un reclamo cuenta como sin responder</strong> cuando está abierto, lo abrió el "
                 "cliente desde el portal y no tiene ningún comentario de alguien de Voltia. Eso es lo que "
@@ -1145,6 +1281,10 @@ def construir():
                   "vence</strong>. Es una decisión: que agende solo visitas sin que nadie las confirme choca "
                   "con <strong>si no está agendado, no vamos</strong>. La iniciativa es de Voltia; la "
                   "confirmación, del cliente.", margen=10)
+        + parrafo("A los clientes que se cargaron de la planilla anterior a Voltia PM, que no tienen fecha de "
+                  "habilitación, <strong>el aniversario se les cuenta desde la fecha de entrega de la obra</strong>: "
+                  "así también les aparece el próximo mantenimiento y les llega la encuesta de aniversario.",
+                  margen=12, tamano=14)
         + aviso("<strong>Este es el capítulo más corto y el que cubre más tiempo.</strong> Las etapas 1 a 3 "
                 "cubren unos meses; esto cubre los 25 años que siguen. Es donde hay más para construir.",
                 "clave", margen=22),
@@ -1167,7 +1307,20 @@ def construir():
                   "PM se pregunta en palabras comunes (<em>\"¿cómo viene la planta de…?\"</em>) y muestra la "
                   "generación día por día contra las demás plantas, la forma del día y el inversor y el "
                   "medidor en el momento. Sirve para contestarle al cliente con datos y darle a Operaciones "
-                  "una pista antes de una visita: es una pista, no un diagnóstico.", margen=12, tamano=14),
+                  "una pista antes de una visita: es una pista, no un diagnóstico.", margen=12, tamano=14)
+        + parrafo("En los inversores Growatt, el chat trae además <strong>el registro de alarmas</strong> (qué "
+                  "fallas tuvo en los últimos meses, cuántas veces y qué días) y <strong>el detalle cada 5 "
+                  "minutos</strong>, con un Excel para bajar: las horas en falla habiendo sol, cuánto da cada "
+                  "entrada de paneles, el aislamiento y la hora exacta en que dejó de comunicar. Así se explica, "
+                  "por ejemplo, el cliente que dice \"arranca tarde a la mañana\": el inversor se queda en falla "
+                  "por <strong>aislamiento bajo</strong> hasta que se seca el rocío.", margen=12, tamano=14)
+        + parrafo("Si el cliente no tiene la planta asociada, el chat <strong>la busca entre las plantas sin "
+                  "vincular y la vincula</strong>, con la confirmación de quien pregunta (cada 15 días Voltia PM "
+                  "asocia sola las que se llaman exactamente igual que un cliente; las que no puede, le llegan "
+                  "por mail a Gerencia). Y cuando hay que mandar a alguien, <strong>abre el ticket de "
+                  "soporte</strong> y lo pasa a Operaciones: el título y la descripción los ve el cliente en el "
+                  "portal, así que van en palabras para él; lo técnico va en la nota interna. Experiencia Solar "
+                  "coordina la visita con el cliente.", margen=12, tamano=14),
         p))
 
     nueva("PlanGranizo.dc.html", "32b · Plan de Protección contra Granizo", lambda p: pagina(
@@ -1198,6 +1351,11 @@ def construir():
                   "suspendido, y si paga después corre una nueva carencia. Voltia PM te avisa por la campana y en el "
                   "correo de la mañana, pero <strong>al cliente le escribís vos</strong>: en la ficha está "
                   "<strong>Avisar al cliente</strong>, con el mensaje listo.", margen=8, tamano=14)
+        + parrafo("<strong>El cliente ve su plan en el portal</strong>, en Documentos: el estado, desde y hasta "
+                  "cuándo está protegido, cuántos paneles cubre, cuánto sale por año y el próximo pago, con el "
+                  "Anexo A firmado y las condiciones. Sale de lo que se carga en la pestaña Plan granizo: si el "
+                  "Anexo A no está subido, el portal le dice que todavía no está cargado. No reemplaza el aviso "
+                  "de vencimiento.", margen=8, tamano=14)
         + parrafo("Las ampliaciones de Voltia se suman desde su puesta en marcha, con cobro proporcional. Si se "
                   "cambia el inversor, actualizás el número de serie. La baja no reintegra la anualidad en curso "
                   "y cubre hasta el fin del período pago.", margen=8, tamano=14),
@@ -1287,9 +1445,11 @@ def construir():
                   "<strong>No cuenta como contacto.</strong>"],
                  ["Regla de Oro", "El aviso de habilitación dentro de 24-48 horas."],
                  ["Traspaso", "El pase formal de trabajo entre áreas dentro del sistema."],
-                 ["Ticket", "Un reclamo o consulta registrado, con estado y responsable."],
-                 ["Portal", "La vista que tiene el cliente: avance, documentación, reportes, tickets y "
-                  "encuestas."]],
+                 ["Ticket", "Un reclamo o consulta registrado, con estado y responsable. En el portal, el "
+                  "cliente lo ve como <strong>reclamo</strong> (<em>Mis reclamos</em>): con el cliente se dice "
+                  "siempre \"reclamo\", nunca \"ticket\"."],
+                 ["Portal", "La vista que tiene el cliente: su planta, el trámite, documentación, reportes, "
+                  "reclamos y encuestas."]],
                 anchos=[160, None], margen=26),
         p))
 
@@ -1298,9 +1458,11 @@ def construir():
         kicker("ANEXO D")
         + titulo("Qué se decidió no hacer")
         + bajada("Es la parte que más se consulta cuando algo no aparece donde uno lo busca: antes de pensar que falta, conviene ver si no se decidió así a propósito.")
-                + numerados(["<strong>El sistema no le escribe al cliente por su cuenta.</strong> Toda comunicación "
-                     "saliente la hace una persona; el sistema arma el mensaje y recuerda cuándo. La única "
-                     "excepción es el reporte mensual de generación.",
+        + numerados(["<strong>El sistema le escribe al cliente solo con los avisos automáticos que define "
+                     "Gerencia</strong> (cap. 9, desde el 29-10-2026) y con el reporte mensual de generación. Toda "
+                     "otra comunicación saliente la hace una persona; el sistema arma el mensaje y recuerda "
+                     "cuándo. Hasta el 29-10-2026 la regla era que no le escribía nunca por su cuenta. Vale "
+                     "también para el plan de granizo: el aviso de vencimiento lo manda Experiencia Solar.",
                      "<strong>El sistema no agenda los mantenimientos solo.</strong> La iniciativa es de "
                      "Voltia, pero la fecha la confirma una persona con el cliente.",
                      "<strong>No hay check de \"contacto semanal\".</strong> El cumplimiento se calcula "
@@ -1321,12 +1483,15 @@ def construir():
         kicker("ANEXO D, SEGUNDA PARTE")
         + titulo("Qué falta")
         + bajada("Lo que se sabe que no está, y que no se decidió dejar afuera: está pendiente.")
-        + numerados(["<strong>Los accesos al portal no se crean solos.</strong> Mientras falten son el techo "
-                     "de las encuestas y de los reclamos.",
+        + numerados(["<strong>Los accesos al portal de los clientes nuevos no se crean solos.</strong> Desde el "
+                     "6 de noviembre de 2026 todos los clientes que ya estaban tienen el suyo; a los nuevos se les "
+                     "crea uno por uno desde la ficha. Un cliente tiene un solo acceso: todavía no se puede sumar "
+                     "el de otra persona de la familia o de la empresa.",
                      "<strong>Los mails que se le mandan al cliente no cuentan como contacto</strong> en el "
                      "historial: hay que registrarlos aparte.",
-                     "<strong>Los mantenimientos no tienen alerta de vencido</strong>, solo la cuenta de "
-                     "cuánto falta.",
+                     "<strong>Los mantenimientos no tienen alerta de próximo ni de vencido</strong>, solo la "
+                     "cuenta de cuánto falta, y ningún aviso le propone al cliente el mantenimiento pago desde el "
+                     "tercer año.",
                      "<strong>No hay métricas de satisfacción</strong> consolidadas ni antigüedad de reclamos.",
                      "<strong>El portal no muestra el estado ni la fecha de obra</strong>, que es lo primero "
                      "que el cliente querría ver ahí.",
@@ -1444,7 +1609,7 @@ def construir():
                    "el listado (el ojito) o desde la ficha (<strong>Ver como el cliente</strong>) se abre su "
                    "pantalla tal cual.",
             url=IMG.PORTAL_CLIENTE,
-            epigrafe="El cliente ve el avance del trámite, sus reportes, sus tickets y las encuestas. "
+            epigrafe="El cliente ve su planta, el avance del trámite, sus reportes, sus reclamos y las encuestas. "
                      "<strong>No ve</strong> el historial interno ni los comentarios del equipo.")),
         ("AnexoPantallaReportes.dc.html", "Anexo F · Los reportes mensuales", dict(
             titulo="Los reportes mensuales",

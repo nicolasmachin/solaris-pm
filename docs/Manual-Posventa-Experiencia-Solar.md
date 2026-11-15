@@ -714,7 +714,7 @@ genera la encuesta. Plantilla **"Aviso de la encuesta de habilitación"**.
 **Esta etapa no tiene semáforo de cadencia.** Es la única. E3 no termina nunca,
 así que un plazo que se repite marcaría en rojo, para siempre, a todo cliente
 habilitado — y no habría nada que decirle. Lo que sostiene el vínculo acá no es
-un plazo sino **los cuatro pasos de abajo** (que sí tienen plazo), y después
+un plazo sino **los tres pasos de abajo** (que sí tienen plazo), y después
 **el reporte mensual, la encuesta de aniversario y el mantenimiento**, que llegan
 solos.
 
@@ -725,7 +725,7 @@ el hecho, no por el calendario.
 El cliente ya está generando. Cambió lo que necesita: antes quería saber cuándo;
 ahora quiere **entender lo que ve** y saber que si algo falla nos enteramos.
 
-**Los cuatro pasos de esta etapa vencen a los 15 días hábiles** de la habilitación,
+**Los tres pasos de esta etapa vencen a los 15 días hábiles** de la habilitación,
 y el reloj lo arranca solo el sistema cuando Tramitación cierra el trámite.
 
 ---
@@ -1084,10 +1084,10 @@ Tres cosas para saber:
   refleje la relación o quede vacío, y entre una lista de pendientes real o una
   llena de cosas que ya se hicieron.
 
-Los 14 mensajes: bienvenida · acceso al portal · presentación del capataz · fecha
+Los 13 mensajes: bienvenida · acceso al portal · presentación del capataz · fecha
 tentativa · fecha confirmada · reprogramación · visita a la propiedad · obra
 terminada · encuesta de instalación · ya podés encender + capacitación · encuesta
-de habilitación · material de capacitación · acceso al inversor · alta en reportes.
+de habilitación · material de capacitación · alta en reportes.
 
 ### Los avisos que salen solos
 
@@ -1630,7 +1630,7 @@ más que el silencio. Lo que no se puede es inventar un avance que no existe.
 ## Anexo A · Índice de los mensajes modelo
 
 **Cada uno está citado entero en su paso**, que es donde hay que usarlo. Acá van
-sólo los catorce con su lugar, para encontrarlos rápido.
+sólo los trece con su lugar, para encontrarlos rápido.
 
 | Mensaje | Dónde está | Etapa |
 |---|---|---|
