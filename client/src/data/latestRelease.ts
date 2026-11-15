@@ -111,6 +111,15 @@ export const LATEST_RELEASE: Release = {
         "El WhatsApp de Experiencia Solar (pestaña y tarjeta de la ficha) lo ve solo el responsable del número general y la administración.",
       ],
     },
+    {
+      title: "Avisos automáticos",
+      items: [
+        "Un aviso puede salir N horas o días después del hecho.",
+        "Opción para que no salga si Experiencia Solar ya le escribió al cliente.",
+        "Ningún aviso sale antes de la bienvenida de Experiencia Solar: queda esperando.",
+        "Nuevo disparador «Bienvenida hecha» y los envíos programados en el registro.",
+      ],
+    },
   ],
 };
 

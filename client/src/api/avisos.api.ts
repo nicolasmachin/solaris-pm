@@ -16,7 +16,10 @@ export type AvisosCatalogo = {
   disparadores: AvisoDisparador[];
   variables: Array<{ clave: string; etiqueta: string; ejemplo: string }>;
   checks: Array<{ codigo: string; etiqueta: string }>;
+  condiciones: Array<{ clave: AvisoCondicion; etiqueta: string }>;
 };
+
+export type AvisoCondicion = "SIN_CONTACTO";
 
 export type Aviso = {
   id: string;
@@ -24,6 +27,8 @@ export type Aviso = {
   disparador: string;
   disparadorEtiqueta: string;
   dias: number | null;
+  demoraMinutos: number | null;
+  condicion: AvisoCondicion | null;
   canal: AvisoCanal;
   estado: AvisoEstado;
   asunto: string | null;
@@ -35,13 +40,15 @@ export type Aviso = {
   activadoEn: string | null;
   creadoPor: string | null;
   createdAt: string;
-  envios: Partial<Record<"ENVIADO" | "FALLIDO" | "OMITIDO", number>>;
+  envios: Partial<Record<"ENVIADO" | "FALLIDO" | "OMITIDO" | "PROGRAMADO", number>>;
 };
 
 export type AvisoDatos = {
   nombre: string;
   disparador: string;
   dias?: number | null;
+  demoraMinutos?: number | null;
+  condicion?: AvisoCondicion | null;
   canal: AvisoCanal;
   asunto?: string | null;
   cuerpo: string;
@@ -54,8 +61,10 @@ export type AvisoEnvio = {
   projectId: string | null;
   canal: AvisoCanal;
   destino: string | null;
-  estado: "ENVIADO" | "FALLIDO" | "OMITIDO" | "PROCESANDO";
+  estado: "ENVIADO" | "FALLIDO" | "OMITIDO" | "PROCESANDO" | "PROGRAMADO" | "ENVIANDO";
   detalle: string | null;
+  /** Cuándo sale, si está programado. */
+  salirEn: string | null;
   texto: string | null;
   createdAt: string;
   estadoWhatsApp: string | null;

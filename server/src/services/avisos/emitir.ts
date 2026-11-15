@@ -3,15 +3,22 @@
  *
  * Los puntos del flujo llaman a `emitirHecho()` cuando pasa algo (se confirma la
  * fecha de obra, UTE habilita…). Acá se buscan los avisos ACTIVOS de ese
- * disparador y se le manda a cada uno su mensaje al cliente. Nunca tira error
- * hacia quien lo llamó: un aviso que falla no puede frenar la carga de una fecha.
+ * disparador y se le reserva a cada uno su envío. Nunca tira error hacia quien
+ * lo llamó: un aviso que falla no puede frenar la carga de una fecha.
  *
  * Reglas (ver docs/manual/20-avisos-automaticos.md):
  *  - Solo cuentan los hechos posteriores a la activación del aviso, y no más
  *    viejos que ANTIGUEDAD_MAX_DIAS (una fecha cargada tarde no avisa algo viejo).
+ *    Se mira al llegar el hecho: lo que después espera (la demora, la
+ *    bienvenida) no lo vuelve viejo.
  *  - Un hecho manda cada aviso una sola vez: la fila de `avisos_envios` con su
  *    clave se crea ANTES de mandar y es única. Si se reabre una etapa o se
  *    vuelve a cargar una fecha, no sale de nuevo.
+ *  - **Nada sale antes de la bienvenida** de Experiencia Solar (paso
+ *    `e1_bienvenida`): lo que pasa antes queda PROGRAMADO y sale cuando se hace.
+ *  - Con demora, el envío queda PROGRAMADO para el hecho + la demora; el job de
+ *    `avisos.job.ts` lo manda a su hora (`enviarProgramados()`).
+ *  - La condición (SIN_CONTACTO) se revisa al momento de salir.
  *  - Todo queda registrado: lo enviado, lo fallido y lo que no se mandó con el
  *    motivo; lo enviado además va a la bitácora del cliente y a la auditoría.
  *  - Fuera de producción no se le escribe a ningún cliente: va a
@@ -23,7 +30,7 @@ import { AuditAction, AuditEntityType, InteractionChannel, InteractionDirection,
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
-import { DISPARADOR_POR_CLAVE } from "./disparadores.js";
+import { DISPARADOR_BIENVENIDA, DISPARADOR_POR_CLAVE } from "./disparadores.js";
 import { fechaLarga, rellenar, variablesDelTexto } from "./plantilla.js";
 
 export const ANTIGUEDAD_MAX_DIAS = 7;
@@ -39,7 +46,18 @@ export type Hecho = {
   ocurrioEn?: Date;
   /** Fecha que se muestra como {{evento.fecha}}. */
   eventoFecha?: Date | null;
+  /**
+   * Para la condición SIN_CONTACTO: desde cuándo se mira si Experiencia Solar le
+   * escribió. Por defecto, el hecho. El recordatorio de obra mira desde que se
+   * confirmó la fecha.
+   */
+  contactoDesde?: Date | null;
+  /** Datos del mensaje que se fijan ahora (ej. la fecha de obra que se suspendió). */
+  datosFijos?: Record<string, string>;
 };
+
+/** Prefijo con que los avisos quedan en la bitácora: no cuentan como "Experiencia Solar le escribió". */
+export const PREFIJO_BITACORA = "Aviso automático «";
 
 export function avisosHabilitados(): boolean {
   return process.env.AVISOS_AUTOMATICOS !== "false";
@@ -116,7 +134,10 @@ export function claveDelHecho(h: Hecho): string {
   return [h.disparador, h.projectId, h.ref ?? ""].join("|");
 }
 
-/** Manda un aviso por un hecho. Devuelve la fila del registro (o null si ya se había procesado). */
+/**
+ * Reserva el envío de un aviso por un hecho y, si no tiene que esperar, lo manda.
+ * Devuelve la fila del registro (o null si el hecho ya se había procesado).
+ */
 export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
   const ocurrio = hecho.ocurrioEn ?? new Date();
   const claveHecho = claveDelHecho(hecho);
@@ -130,14 +151,23 @@ export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
   let envio;
   try {
     envio = await prisma.avisoEnvio.create({
-      data: { avisoId: aviso.id, projectId: hecho.projectId, claveHecho, canal: aviso.canal, estado: "PROCESANDO" },
+      data: {
+        avisoId: aviso.id,
+        projectId: hecho.projectId,
+        claveHecho,
+        canal: aviso.canal,
+        estado: "PROCESANDO",
+        ocurrioEn: ocurrio,
+        contactoDesde: hecho.contactoDesde ?? ocurrio,
+        eventoFecha: hecho.eventoFecha ?? null,
+        datosFijos: hecho.datosFijos ?? Prisma.DbNull,
+      },
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return null;
     throw err;
   }
-  const cerrar = (data: { estado: "ENVIADO" | "FALLIDO" | "OMITIDO"; detalle?: string; destino?: string | null; texto?: string; waMessageId?: string }) =>
-    prisma.avisoEnvio.update({ where: { id: envio.id }, data });
+  const cerrar = (data: Cierre) => prisma.avisoEnvio.update({ where: { id: envio.id }, data });
 
   // Solo hechos posteriores a la activación. Se compara el día en Uruguay: una
   // fecha de UTE se carga sin hora, y la del mismo día de la activación cuenta.
@@ -148,13 +178,117 @@ export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
     return cerrar({ estado: "OMITIDO", detalle: `El hecho tiene más de ${ANTIGUEDAD_MAX_DIAS} días: se cargó tarde.` });
   }
 
-  const cliente = await datosDelCliente(hecho.projectId, hecho.eventoFecha);
+  const salirEn = new Date(ocurrio.getTime() + (aviso.demoraMinutos ?? 0) * 60_000);
+  if (salirEn.getTime() > Date.now()) {
+    return cerrar({ estado: "PROGRAMADO", salirEn, detalle: null });
+  }
+  if (!(await bienvenidaHecha(aviso, hecho.projectId))) {
+    return cerrar({ estado: "PROGRAMADO", salirEn, detalle: ESPERA_BIENVENIDA });
+  }
+  return enviarEnvio(envio.id);
+}
+
+const ESPERA_BIENVENIDA = "Espera a que Experiencia Solar haga la bienvenida.";
+
+type Cierre = {
+  estado: "PROGRAMADO" | "ENVIADO" | "FALLIDO" | "OMITIDO";
+  detalle?: string | null;
+  destino?: string | null;
+  texto?: string;
+  waMessageId?: string;
+  salirEn?: Date;
+};
+
+/**
+ * La bienvenida (paso `e1_bienvenida`) está hecha. Un proyecto sin ese paso (los
+ * de antes del recorrido) no espera: no habría cómo hacerla. El aviso de la
+ * propia bienvenida no espera nada.
+ */
+export async function bienvenidaHecha(aviso: { disparador: string }, projectId: string): Promise<boolean> {
+  if (aviso.disparador === DISPARADOR_BIENVENIDA) return true;
+  const checks = await prisma.recorridoCheck.findMany({
+    where: { projectId, codigo: "e1_bienvenida" },
+    select: { completadoEn: true },
+  });
+  return checks.length === 0 || checks.some((c) => c.completadoEn);
+}
+
+/**
+ * Si Experiencia Solar le escribió al cliente desde `desde`: un WhatsApp saliente
+ * a alguno de sus teléfonos (desde Voltia PM o desde el celular) o un contacto
+ * registrado en la bitácora. Los avisos automáticos no cuentan.
+ */
+export async function leEscribieronDesde(projectId: string, telefono: string | null, desde: Date): Promise<boolean> {
+  const contacto = await prisma.clientInteraction.findFirst({
+    where: {
+      projectId,
+      deletedAt: null,
+      createdAt: { gt: desde },
+      OR: [{ direction: InteractionDirection.SALIENTE }, { direction: null }],
+      NOT: { content: { startsWith: PREFIJO_BITACORA } },
+    },
+    select: { id: true },
+  });
+  if (contacto) return true;
+  const { telefonosDe } = await import("../whatsapp-cloud/bandejas.service.js");
+  const telefonos = telefonosDe(telefono);
+  if (telefonos.length === 0) return false;
+  const deAvisos = await prisma.avisoEnvio.findMany({
+    where: { projectId, waMessageId: { not: null } },
+    select: { waMessageId: true },
+  });
+  const mensaje = await prisma.whatsAppMensaje.findFirst({
+    where: {
+      telefono: { in: telefonos },
+      direccion: "SALIENTE",
+      ocurridoEn: { gt: desde },
+      waMessageId: { notIn: deAvisos.map((e) => e.waMessageId!) },
+    },
+    select: { id: true },
+  });
+  return !!mensaje;
+}
+
+/**
+ * Manda un envío reservado. Lo usan el hecho que no espera y el job, para los
+ * PROGRAMADOS que llegaron a su hora. Si todavía falta la bienvenida, lo deja
+ * PROGRAMADO.
+ */
+export async function enviarEnvio(envioId: string) {
+  // Se toma el envío: si otro proceso ya lo agarró, no se manda dos veces.
+  const tomado = await prisma.avisoEnvio.updateMany({
+    where: { id: envioId, estado: { in: ["PROCESANDO", "PROGRAMADO"] } },
+    data: { estado: "ENVIANDO" },
+  });
+  if (tomado.count === 0) return null;
+  const envio = await prisma.avisoEnvio.findUniqueOrThrow({ where: { id: envioId }, include: { aviso: true } });
+  const aviso = envio.aviso;
+  const cerrar = (data: Cierre) => prisma.avisoEnvio.update({ where: { id: envio.id }, data });
+  const projectId = envio.projectId;
+  if (!projectId) return cerrar({ estado: "OMITIDO", detalle: "El proyecto no existe o está borrado." });
+
+  if (aviso.estado !== "ACTIVO" || aviso.deletedAt) {
+    return cerrar({ estado: "OMITIDO", detalle: "El aviso se pausó o se borró antes de salir." });
+  }
+  if (!(await bienvenidaHecha(aviso, projectId))) {
+    return cerrar({ estado: "PROGRAMADO", detalle: ESPERA_BIENVENIDA });
+  }
+
+  const cliente = await datosDelCliente(projectId, envio.eventoFecha);
   if (!cliente || cliente.proyecto.deletedAt) return cerrar({ estado: "OMITIDO", detalle: "El proyecto no existe o está borrado." });
   if (cliente.proyecto.importedFromCsv) {
     return cerrar({ estado: "OMITIDO", detalle: "Es un generador cargado por planilla, no un proyecto de Voltia." });
   }
+  const datos = { ...cliente.datos, ...((envio.datosFijos as Record<string, string> | null) ?? {}) };
 
-  const { texto, faltan } = rellenar(aviso.cuerpo, cliente.datos);
+  if (aviso.condicion === "SIN_CONTACTO") {
+    const desde = envio.contactoDesde ?? envio.ocurrioEn ?? envio.createdAt;
+    if (await leEscribieronDesde(projectId, cliente.proyecto.clientPhone, desde)) {
+      return cerrar({ estado: "OMITIDO", detalle: "Experiencia Solar ya le escribió al cliente desde el hecho." });
+    }
+  }
+
+  const { texto, faltan } = rellenar(aviso.cuerpo, datos);
   if (faltan.length > 0) {
     return cerrar({ estado: "OMITIDO", texto, detalle: `Faltan datos para el mensaje: ${faltan.join(", ")}.` });
   }
@@ -182,17 +316,17 @@ export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
         telefono: destino,
         nombre: aviso.plantillaNombre,
         idioma: aviso.plantillaIdioma,
-        variables: orden.map((v) => cliente.datos[v] ?? ""),
+        variables: orden.map((v) => datos[v] ?? ""),
         userId: sistema,
         texto,
       });
-      await cerrar({ estado: "ENVIADO", texto, destino: real, waMessageId: msg.waMessageId });
+      await cerrar({ estado: "ENVIADO", texto, destino: real, waMessageId: msg.waMessageId, detalle: null });
     } else {
       const { sendEmail } = await import("../email.service.js");
       const { renderEmailLayout } = await import("../email/layout.js");
       const destino = cliente.proyecto.clientEmail?.trim();
       if (!destino || !destino.includes("@")) return cerrar({ estado: "OMITIDO", texto, detalle: "El proyecto no tiene mail cargado." });
-      const { texto: asunto } = rellenar(aviso.asunto || aviso.nombre, cliente.datos);
+      const { texto: asunto } = rellenar(aviso.asunto || aviso.nombre, datos);
       const html = renderEmailLayout({
         title: asunto,
         kicker: "Voltia",
@@ -205,15 +339,38 @@ export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
       }
       const ok = await sendEmail({ to: destino, subject: asunto, html, text: texto, type: "client_facing" });
       if (!ok) return cerrar({ estado: "FALLIDO", texto, destino, detalle: "El servidor de correo no lo mandó (ver logs)." });
-      await cerrar({ estado: "ENVIADO", texto, destino });
+      await cerrar({ estado: "ENVIADO", texto, destino, detalle: null });
     }
   } catch (err) {
     const detalle = err instanceof Error ? err.message : String(err);
     return cerrar({ estado: "FALLIDO", texto, detalle });
   }
 
-  await registrarEnviado(aviso, hecho.projectId, texto);
+  await registrarEnviado(aviso, projectId, texto);
   return prisma.avisoEnvio.findUnique({ where: { id: envio.id } });
+}
+
+/**
+ * Manda los PROGRAMADOS que llegaron a su hora (todos, o los de un proyecto: al
+ * hacerse la bienvenida se liberan los suyos sin esperar al job).
+ */
+export async function enviarProgramados(params: { projectId?: string; ahora?: Date } = {}) {
+  const pendientes = await prisma.avisoEnvio.findMany({
+    where: { estado: "PROGRAMADO", salirEn: { lte: params.ahora ?? new Date() }, projectId: params.projectId },
+    orderBy: { salirEn: "asc" },
+    select: { id: true },
+    take: 200,
+  });
+  let enviados = 0;
+  for (const p of pendientes) {
+    try {
+      const r = await enviarEnvio(p.id);
+      if (r?.estado === "ENVIADO") enviados++;
+    } catch (err) {
+      console.error(`[avisos] envío programado ${p.id}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  return enviados;
 }
 
 /** Lo que salió queda en la bitácora del cliente (y cierra el paso del recorrido) y en la auditoría. */
@@ -224,7 +381,7 @@ export async function registrarEnviado(aviso: Aviso, projectId: string, texto: s
     await createInteraction(
       projectId,
       aviso.canal === "WHATSAPP" ? InteractionChannel.WHATSAPP : InteractionChannel.EMAIL,
-      `Aviso automático «${aviso.nombre}»:\n${texto}`,
+      `${PREFIJO_BITACORA}${aviso.nombre}»:\n${texto}`,
       sistema,
       {
         direction: InteractionDirection.SALIENTE,

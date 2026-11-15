@@ -29,6 +29,8 @@ import { Button } from "../ui/Button";
 
 const inp =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
+/** Para los campos que van dentro de una frase: sin el ancho completo. */
+const inpLinea = inp.replace("w-full", "");
 const lbl = "block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono";
 
 const ESTADO: Record<AvisoEstado, { texto: string; clase: string }> = {
@@ -44,6 +46,7 @@ const ESTADO_ENVIO: Record<string, string> = {
   ENVIADO: "Enviado",
   FALLIDO: "Falló",
   OMITIDO: "No se mandó",
+  PROGRAMADO: "Programado",
   PROCESANDO: "Enviando",
 };
 const ESTADO_WA: Record<string, string> = { accepted: "aceptado", sent: "enviado", delivered: "entregado", read: "leído", failed: "no entregado" };
@@ -56,7 +59,27 @@ function fechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-UY", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-const VACIO: AvisoDatos = { nombre: "", disparador: "", dias: 1, canal: "WHATSAPP", asunto: "", cuerpo: "", cierraCheck: null };
+const VACIO: AvisoDatos = {
+  nombre: "",
+  disparador: "",
+  dias: 1,
+  demoraMinutos: null,
+  condicion: null,
+  canal: "WHATSAPP",
+  asunto: "",
+  cuerpo: "",
+  cierraCheck: null,
+};
+
+const HORA = 60;
+const DIA = 24 * HORA;
+
+/** "2 horas", "1 día": la demora como se dice. */
+export function demoraEnPalabras(minutos: number): string {
+  if (minutos % DIA === 0) return `${minutos / DIA} día${minutos === DIA ? "" : "s"}`;
+  if (minutos % HORA === 0) return `${minutos / HORA} hora${minutos === HORA ? "" : "s"}`;
+  return `${minutos} minuto${minutos === 1 ? "" : "s"}`;
+}
 
 export function TabAvisosAutomaticos() {
   const puedeEditar = usePermission("CONFIGURACION", "EDIT");
@@ -153,11 +176,18 @@ export function TabAvisosAutomaticos() {
                     )}
                     <span className="font-medium text-[var(--color-text-primary)]">{a.nombre}</span>
                     {a.dias ? <span className="text-xs text-[var(--color-text-muted)]">· {a.dias} día(s) antes</span> : null}
+                    {a.demoraMinutos ? (
+                      <span className="text-xs text-[var(--color-text-muted)]">· sale {demoraEnPalabras(a.demoraMinutos)} después</span>
+                    ) : null}
+                    {a.condicion === "SIN_CONTACTO" ? (
+                      <span className="text-xs text-[var(--color-text-muted)]">· si Experiencia Solar no le escribió</span>
+                    ) : null}
                     <span className={`rounded-full px-2 py-0.5 text-[11px] ${ESTADO[a.estado].clase}`}>{ESTADO[a.estado].texto}</span>
                     <span className="ml-auto text-xs text-[var(--color-text-muted)]">
                       {a.envios.ENVIADO ?? 0} enviados
                       {a.envios.FALLIDO ? ` · ${a.envios.FALLIDO} fallidos` : ""}
                       {a.envios.OMITIDO ? ` · ${a.envios.OMITIDO} sin mandar` : ""}
+                      {a.envios.PROGRAMADO ? ` · ${a.envios.PROGRAMADO} programados` : ""}
                     </span>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-[13px] text-[var(--color-text-secondary)]">{a.cuerpo}</p>
@@ -237,6 +267,8 @@ function Editor({
           nombre: aviso.nombre,
           disparador: aviso.disparador,
           dias: aviso.dias ?? 1,
+          demoraMinutos: aviso.demoraMinutos,
+          condicion: aviso.condicion,
           canal: aviso.canal,
           asunto: aviso.asunto ?? "",
           cuerpo: aviso.cuerpo,
@@ -309,6 +341,22 @@ function Editor({
           ))}
         </select>
         {disp && <p className="mt-1 text-xs text-[var(--color-text-muted)]">{disp.cuando}</p>}
+        <Demora valor={d.demoraMinutos ?? null} onCambio={(m) => setD({ ...d, demoraMinutos: m })} />
+        <label className="mt-2 flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={d.condicion === "SIN_CONTACTO"}
+            onChange={(e) => setD({ ...d, condicion: e.target.checked ? "SIN_CONTACTO" : null })}
+          />
+          <span>
+            Solo si Experiencia Solar no le escribió al cliente desde el hecho
+            <span className="block text-xs text-[var(--color-text-muted)]">
+              Se revisa al salir: si hay un WhatsApp nuestro (desde Voltia PM o desde el celular) o un contacto anotado en
+              la bitácora, no sale. Los avisos automáticos no cuentan.
+            </span>
+          </span>
+        </label>
         {disp?.conDias && (
           <div className="mt-2 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
             Faltando
@@ -478,6 +526,9 @@ function Envios({ avisoId, onCerrar }: { avisoId?: string; onCerrar: () => void 
                       {ESTADO_ENVIO[e.estado] ?? e.estado}
                     </span>
                     {e.estadoWhatsApp && <span className="text-[var(--color-text-muted)]"> · {ESTADO_WA[e.estadoWhatsApp] ?? e.estadoWhatsApp}</span>}
+                    {e.estado === "PROGRAMADO" && e.salirEn && !e.detalle && (
+                      <p className="text-xs text-[var(--color-text-muted)]">Sale el {fechaHora(e.salirEn)}</p>
+                    )}
                     {e.detalle && <p className="text-xs text-[var(--color-text-muted)]">{e.detalle}</p>}
                   </td>
                 </tr>
@@ -486,6 +537,42 @@ function Envios({ avisoId, onCerrar }: { avisoId?: string; onCerrar: () => void 
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+/** La demora del aviso: enseguida, o N horas / días después del hecho. */
+function Demora({ valor, onCambio }: { valor: number | null; onCambio: (minutos: number | null) => void }) {
+  const unidad = valor && valor % DIA === 0 ? DIA : HORA;
+  const cantidad = valor ? valor / unidad : 0;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+      Sale
+      <select
+        className={`${inpLinea} w-auto`}
+        value={valor ? "despues" : "ya"}
+        onChange={(e) => onCambio(e.target.value === "ya" ? null : DIA)}
+      >
+        <option value="ya">enseguida</option>
+        <option value="despues">después de…</option>
+      </select>
+      {valor ? (
+        <>
+          <input
+            type="number"
+            min={1}
+            max={unidad === DIA ? 60 : 72}
+            className={`${inpLinea} w-20`}
+            value={cantidad}
+            onChange={(e) => onCambio(Math.max(1, Number(e.target.value) || 1) * unidad)}
+          />
+          <select className={`${inpLinea} w-auto`} value={unidad} onChange={(e) => onCambio(cantidad * Number(e.target.value))}>
+            <option value={HORA}>horas</option>
+            <option value={DIA}>días</option>
+          </select>
+          del hecho.
+        </>
+      ) : null}
     </div>
   );
 }

@@ -191,6 +191,8 @@ export async function cerrarChecks(params: {
         });
       }
 
+      if (codigo === "e1_bienvenida") await alHacerseLaBienvenida(params.projectId, ahora);
+
       for (const c of checks) {
         await createAuditEntry({
           entityType: AuditEntityType.project,
@@ -242,6 +244,20 @@ export async function crearCheckReagenda(
   });
 }
 
+/**
+ * La bienvenida es la puerta de los avisos automáticos: dispara "Bienvenida
+ * hecha" y libera los avisos que estaban esperándola.
+ */
+async function alHacerseLaBienvenida(projectId: string, cuando: Date) {
+  const { emitirHecho, enviarProgramados, avisosHabilitados } = await import("../avisos/emitir.js");
+  emitirHecho({ disparador: "es.bienvenida", projectId, ocurrioEn: cuando });
+  if (avisosHabilitados()) {
+    void enviarProgramados({ projectId }).catch((err) =>
+      console.error("[avisos] liberar tras la bienvenida:", err instanceof Error ? err.message : err),
+    );
+  }
+}
+
 export async function listarChecks(projectId: string): Promise<CheckSerializado[]> {
   await ensureChecks(projectId);
   const rows = await prisma.recorridoCheck.findMany({
@@ -275,6 +291,10 @@ export async function completarCheck(params: {
   // cron. Antes eso lo hacía un botón escondido en el formulario de la bitácora
   // ("Marcar avisado al Generador"), así que había dos formas de marcar lo mismo
   // y tildar el paso —lo obvio— no apagaba nada.
+  if (check.codigo === "e1_bienvenida" && params.completado) {
+    await alHacerseLaBienvenida(check.projectId, updated.completadoEn ?? new Date());
+  }
+
   if (check.codigo === CODIGO_AVISO_HABILITACION) {
     await prisma.project.updateMany({
       where: {

@@ -2,7 +2,9 @@
  * Jobs de los avisos automáticos:
  *  - cada 15 minutos, si hay plantillas en revisión, pregunta a Meta si ya las
  *    aprobó (también detecta si Meta pausó o rechazó una activa);
- *  - todas las mañanas, los avisos "faltan N días para la obra".
+ *  - todas las mañanas, los avisos "faltan N días para la obra";
+ *  - cada 2 minutos, los envíos PROGRAMADOS que llegaron a su hora (la demora
+ *    del aviso, o los que esperaban la bienvenida).
  * Kill switch: AVISOS_AUTOMATICOS=false.
  */
 
@@ -10,7 +12,7 @@ import cron from "node-cron";
 
 import { prisma } from "../../lib/prisma.js";
 import { refrescarPlantillas } from "./avisos.service.js";
-import { avisosHabilitados, mandarAviso } from "./emitir.js";
+import { avisosHabilitados, enviarProgramados, mandarAviso } from "./emitir.js";
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -80,5 +82,18 @@ export function startAvisosJobs() {
     },
     { timezone: "America/Montevideo" },
   );
-  return { plantillas, diario };
+  const programados = cron.schedule(
+    process.env.CRON_AVISOS_PROGRAMADOS || "*/2 * * * *",
+    async () => {
+      if (!avisosHabilitados()) return;
+      try {
+        const n = await enviarProgramados();
+        if (n > 0) console.log(`[avisos] programados: ${n} enviados`);
+      } catch (err) {
+        console.error("[avisos] programados:", err instanceof Error ? err.message : err);
+      }
+    },
+    { timezone: "America/Montevideo" },
+  );
+  return { plantillas, diario, programados };
 }

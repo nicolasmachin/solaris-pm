@@ -14,7 +14,7 @@ import { UTE_HITO_LABEL } from "../ute-timeline.service.js";
 
 export type Disparador = {
   clave: string;
-  grupo: "Venta" | "Obra" | "Etapas" | "UTE" | "Agenda";
+  grupo: "Venta" | "Experiencia Solar" | "Obra" | "Etapas" | "UTE" | "Agenda";
   etiqueta: string;
   /** Cuándo pasa, en palabras del usuario. */
   cuando: string;
@@ -51,12 +51,27 @@ const HITOS_UTE = [
 
 const OBRA = ["obra.fecha", "obra.fechaFin"];
 
+/** La bienvenida de Experiencia Solar: ningún otro aviso sale antes (ver emitir.ts). */
+export const DISPARADOR_BIENVENIDA = "es.bienvenida";
+
+/** Condiciones que se revisan al momento de salir. */
+export const CONDICIONES: Record<string, string> = {
+  SIN_CONTACTO: "Solo si Experiencia Solar no le escribió al cliente desde el hecho",
+};
+
 export const DISPARADORES: Disparador[] = [
   {
     clave: "proyecto.creado",
     grupo: "Venta",
     etiqueta: "Venta cerrada",
     cuando: "Cuando el asesor convierte el lead ganado en proyecto.",
+    variables: [],
+  },
+  {
+    clave: DISPARADOR_BIENVENIDA,
+    grupo: "Experiencia Solar",
+    etiqueta: "Bienvenida hecha",
+    cuando: "Cuando Experiencia Solar deja hecho el paso «Bienvenida y presentación» del recorrido.",
     variables: [],
   },
   {

@@ -6583,6 +6583,13 @@ model AvisoAutomatico {
   disparador         String
   /// Solo para disparadores con días (ej. "la obra es en N días").
   dias               Int?
+  /// Cuánto espera después del hecho antes de salir, en minutos (la pantalla
+  /// lo pide en horas o días). Null o 0 = sale enseguida.
+  demoraMinutos      Int?
+  /// Condición que se revisa al momento de salir. "SIN_CONTACTO": solo sale si
+  /// Experiencia Solar no le escribió al cliente desde el hecho (ningún WhatsApp
+  /// saliente ni contacto registrado, sin contar los avisos automáticos).
+  condicion          String?
   /// WHATSAPP | EMAIL
   canal              String
   /// BORRADOR | EN_REVISION (Meta) | RECHAZADO (Meta) | LISTO | ACTIVO | PAUSADO
@@ -6630,8 +6637,19 @@ model AvisoEnvio {
   canal       String
   /// Teléfono o mail al que salió (o al que se iba a mandar).
   destino     String?
-  /// ENVIADO | FALLIDO | OMITIDO
+  /// PROGRAMADO (espera su hora o la bienvenida) | ENVIADO | FALLIDO | OMITIDO
   estado      String
+  /// Cuándo sale (PROGRAMADO): el hecho + la demora del aviso.
+  salirEn     DateTime?       @db.Timestamptz(6)
+  /// Cuándo pasó el hecho.
+  ocurrioEn   DateTime?       @db.Timestamptz(6)
+  /// Desde cuándo se mira si Experiencia Solar le escribió (condición SIN_CONTACTO).
+  contactoDesde DateTime?     @db.Timestamptz(6)
+  /// Fecha que va como {{evento.fecha}}.
+  eventoFecha DateTime?       @db.Timestamptz(6)
+  /// Datos del mensaje fijados al momento del hecho (ej. la fecha de obra que se
+  /// suspendió, que después ya no existe). Pisan a los que se calculan al salir.
+  datosFijos  Json?
   /// Por qué falló o por qué no se mandó.
   detalle     String?
   /// El texto tal como salió, ya con los datos del cliente.
@@ -6642,6 +6660,7 @@ model AvisoEnvio {
   @@unique([avisoId, claveHecho])
   @@index([projectId])
   @@index([createdAt])
+  @@index([estado, salirEn])
   @@map("avisos_envios")
 }
 

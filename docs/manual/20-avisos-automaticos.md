@@ -18,9 +18,13 @@ internos sigue con el bloqueo `internal` / `client_facing`.
 
 **Administración → Procesos y reglas → Avisos automáticos.**
 
-1. **Nuevo aviso** → se elige el disparador (agrupados: Venta, Obra, Etapas, UTE,
-   Agenda). Debajo se ve en palabras cuándo pasa. En "Faltan N días para la obra"
-   se eligen los días.
+1. **Nuevo aviso** → se elige el disparador (agrupados: Venta, Experiencia Solar,
+   Obra, Etapas, UTE, Agenda). Debajo se ve en palabras cuándo pasa. En "Faltan N
+   días para la obra" se eligen los días.
+   - **Sale**: *enseguida* o *después de…* N horas o días del hecho (la demora).
+   - **Solo si Experiencia Solar no le escribió al cliente desde el hecho**: se
+     tilda para los avisos que no tienen que salir si Experiencia Solar ya se
+     ocupó (el recordatorio de obra, los cambios de fecha).
 2. Se elige el canal (WhatsApp o mail; después no se cambia) y un nombre.
 3. Se escribe el mensaje. Los botones de arriba insertan los datos que tiene ese
    disparador (`{{cliente.nombre}}`, `{{obra.fecha}}`…). Abajo se ve cómo le
@@ -36,7 +40,8 @@ internos sigue con el bloqueo `internal` / `client_facing`.
 6. **Activar**: desde ese momento sale con cada hecho nuevo. **Pausar** lo frena.
 7. **Ver envíos** (por aviso) o **Registro de envíos** (todos): cuándo, a qué
    cliente, a qué número o mail, y el resultado — *Enviado* (en WhatsApp además
-   entregado / leído), *Falló* o *No se mandó*, con el motivo. Pasando el mouse
+   entregado / leído), *Falló*, *No se mandó*, con el motivo, o *Programado*
+   (con cuándo sale, o "Espera a que Experiencia Solar haga la bienvenida"). Pasando el mouse
    por la fila se ve el texto tal cual salió.
 
 Lo que sale queda además en la **bitácora del cliente** (Experiencia Solar →
@@ -52,6 +57,7 @@ del proyecto.
 | Disparador | Dónde se engancha |
 |---|---|
 | `proyecto.creado` (Venta cerrada) | `POST /leads/:id/convert` en `api.routes.ts` |
+| `es.bienvenida` (Bienvenida hecha) | `recorrido.service.ts` → `alHacerseLaBienvenida()`, cuando se cierra el paso `e1_bienvenida` (a mano en `completarCheck()` o solo en `cerrarChecks()`) |
 | `obra.fecha_confirmada` | `PATCH /calendar/:id/confirm`, junto a `activarPorHecho("fecha_confirmada")` |
 | `obra.reprogramada` | `PATCH /calendar/:id` y `PATCH /calendar/:id/reschedule`, solo cuando la fecha ya estaba confirmada y hay motivo (lo mismo que crea el check de reagenda) |
 | `obra.proxima` (faltan N días) | job diario `avisosObraProxima()` en `avisos.job.ts`, 9:00 (`CRON_AVISOS_DIARIO`): obras **confirmadas** cuyo primer día es hoy + N |
@@ -63,7 +69,7 @@ del proyecto.
 - `emitirHecho()` no espera ni tira error: un aviso que falla nunca frena la
   carga de una fecha. `procesarHecho()` busca los avisos **ACTIVO** del
   disparador y llama a `mandarAviso()` por cada uno.
-- `mandarAviso()`:
+- `mandarAviso()` reserva y decide; `enviarEnvio()` manda:
   1. **Reserva el hecho**: crea la fila de `avisos_envios` con
      `claveHecho = disparador|proyecto|referencia` (único por aviso). Si ya
      existe, no hace nada. Así un hecho manda cada aviso **una sola vez**, aunque
@@ -74,14 +80,39 @@ del proyecto.
   2. **Solo hechos posteriores a la activación**: `ocurrioEn` ≥ `activadoEn` − 1
      día (las fechas de UTE se cargan sin hora). Y no más viejos que
      `ANTIGUEDAD_MAX_DIAS` = 7: una fecha cargada con atraso no avisa algo viejo.
-  3. Rellena el mensaje con `datosDelCliente()`. Si falta un dato (ej. la obra sin
+     Se mira **al llegar el hecho**: lo que después espera (la demora, la
+     bienvenida) no lo vuelve viejo.
+  3. **Demora** (`demoraMinutos`): si el hecho + la demora todavía no llegó, el
+     envío queda `PROGRAMADO` con `salirEn`. La demora cuenta desde el hecho, no
+     desde que se procesó.
+  4. **Nada antes de la bienvenida** (`bienvenidaHecha()`): si el proyecto tiene
+     el paso `e1_bienvenida` sin hacer, queda `PROGRAMADO` con el detalle "Espera
+     a que Experiencia Solar haga la bienvenida", sin descartarse. Un proyecto sin
+     ese paso (los de antes del recorrido) no espera; el aviso de la bienvenida
+     misma tampoco. Se vuelve a mirar al salir.
+  5. `enviarEnvio()` toma el envío (`PROGRAMADO`/`PROCESANDO` → `ENVIANDO`, para
+     que no salga dos veces) y revisa: que el aviso siga `ACTIVO` (si se pausó o
+     borró mientras esperaba, "No se mandó"), la bienvenida y la **condición**.
+     `SIN_CONTACTO` (`leEscribieronDesde()`): no sale si desde `contactoDesde`
+     (el hecho, o lo que diga el disparador) hay una interacción de la bitácora
+     saliente o sin dirección, o un WhatsApp saliente a alguno de los teléfonos del
+     proyecto (desde cualquier número de Voltia, incluido lo escrito desde el
+     celular). Los avisos automáticos no cuentan: en la bitácora empiezan con
+     `PREFIJO_BITACORA` y en WhatsApp se reconocen por el `waMessageId` guardado
+     en `avisos_envios`.
+  6. Rellena el mensaje con `datosDelCliente()`. Si falta un dato (ej. la obra sin
      fecha), **no se manda** y queda el motivo.
-  4. WhatsApp: `enviarPlantilla()` con la plantilla aprobada, al `clientPhone`
+  7. WhatsApp: `enviarPlantilla()` con la plantilla aprobada, al `clientPhone`
      del proyecto. Mail: `sendEmail({ type: "client_facing" })` con el layout de
      marca, al `clientEmail`, desde la casilla general.
-  5. Si salió: interacción en la bitácora (`createInteraction`, canal, saliente,
+  8. Si salió: interacción en la bitácora (`createInteraction`, canal, saliente,
      motivo SEGUIMIENTO, cierra `cierraCheck`) y entrada de auditoría del
      proyecto. El autor es el primer ADMIN (usuario de sistema).
+- **Envíos programados**: el job `enviarProgramados()` (`avisos.job.ts`, cada 2
+  minutos, `CRON_AVISOS_PROGRAMADOS`) manda los `PROGRAMADO` con `salirEn` ya
+  pasado, de a 200. Al hacerse la bienvenida, `alHacerseLaBienvenida()` libera los
+  del proyecto sin esperar al job. Los datos del mensaje se calculan al salir
+  (ej. la fecha de obra vigente), salvo los que el hecho fijó en `datosFijos`.
 - Plantilla de Meta (`plantilla.ts`): el texto con `{{cliente.nombre}}` se pasa a
   `{{1}}`, `{{2}}`… (`aFormatoMeta`); el orden queda en `plantillaVariables`. El
   nombre es `aviso_<nombre>_<4 hex>`, categoría UTILITY, idioma `es`.
@@ -90,7 +121,8 @@ del proyecto.
   El estado de Meta se trae al abrir la pantalla y cada 15 minutos
   (`CRON_AVISOS_PLANTILLAS`) mientras haya avisos de WhatsApp.
 - Tablas: `avisos_automaticos` y `avisos_envios` (migración
-  `20261030021111_avisos_automaticos`).
+  `20261030021111_avisos_automaticos`; la demora, la condición y los envíos
+  programados, `20261115213917_avisos_demora_bienvenida`, aditiva).
 
 ### Variables
 
@@ -112,6 +144,8 @@ del proyecto.
 
 ## Reglas y decisiones
 
+- **Ningún aviso sale antes de la bienvenida** de Experiencia Solar (decisión de
+  Nicolás, 15-11-2026): lo que pasa antes espera, no se descarta.
 - **No hay modo prueba** (decisión de Nicolás, 29-10-2026): el aviso se activa y
   sale. Lo que protege es que solo cuentan hechos posteriores a la activación y
   que cada hecho sale una vez.
@@ -143,6 +177,12 @@ del proyecto.
   condición que el pendiente de reagenda de Experiencia Solar).
 - **"Faltan N días"** mira solo obras con fecha **confirmada** y el primer tramo;
   si se reprograma a otra fecha, puede volver a salir para la fecha nueva.
+- **Proyectos con la bienvenida sin hacer** no reciben nada hasta que se haga: hay
+  clientes ya habilitados que tienen ese paso abierto desde antes de que existiera
+  el recorrido; para que les lleguen los avisos, Experiencia Solar tiene que
+  tildar la bienvenida.
+- **Un aviso que se pausa con envíos programados**: al llegar su hora no salen
+  ("El aviso se pausó o se borró antes de salir"). Reactivarlo no los recupera.
 - **Cobros, tickets y portal** todavía no son disparadores: los cobros se marcan
   pagados en cinco lugares distintos y no hay un punto único donde engancharlos.
 - Una plantilla que Meta pausa o desactiva después de aprobada se ve en el estado

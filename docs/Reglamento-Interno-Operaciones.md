@@ -79,6 +79,8 @@ Este reglamento complementa, sin sustituirla, la normativa uruguaya:
 - Ley 12.840 — Aguinaldo.
 - Decreto-Ley 14.977 y Leyes 16.805 y 17.414 — Feriados.
 - Ley 18.345 — Licencias especiales.
+- Convenio colectivo del Grupo 9, Subgrupo 1, de la industria de la construcción
+  (acta del 14 de agosto de 2026), en lo que corresponde a Voltia.
 
 Qué dice cada una, en pocas palabras, está en el anexo *Las leyes, en pocas
 palabras*, al final.
@@ -318,8 +320,9 @@ del Estado.
 
 | Tema | Regla general |
 |---|---|
-| Feriados pagos | Son 5: 1/1, 1/5, 18/7, 25/8 y 25/12. Son pagos y, si se trabajan, se pagan doble. |
+| Feriados pagos | Son 7: los 5 de la ley (1/1, 1/5, 18/7, 25/8 y 25/12) y los 2 de la construcción (2/11 y el tercer lunes de octubre). Son pagos y, si se trabajan, se pagan doble. |
 | Feriados comunes | Los demás, por ejemplo Carnaval y Turismo. Se trabaja normal y se paga normal. |
+| Estudios médicos | Por el convenio de la construcción: 3 días libres por año, no pagos, más uno para el examen de próstata, avisando con 48 horas. |
 | Jornada | 8 horas por día y 48 por semana como máximo (en la industria). |
 | Descanso semanal | Un día después de seis de trabajo, que debe ser en domingo salvo excepciones (en la industria). |
 | Horas extra | Necesitan el acuerdo del trabajador, y son 8 por semana como máximo. Se pagan con recargo: el doble en día hábil; dos veces y media en el día de descanso o en un feriado. |
@@ -334,9 +337,12 @@ del Estado.
 El detalle de cada tema, con lo que dice cada ley, está en el anexo *Las leyes,
 en pocas palabras*.
 
-> *A confirmar con FEFA:* si al equipo le corresponde el convenio de la
-> construcción, porque eso puede cambiar lo que es obligatorio en licencia,
-> viáticos y horas de viaje.
+Voltia está en el Grupo 9, Subgrupo 1, de los Consejos de Salarios: le rige el
+convenio de la industria de la construcción, que en varios puntos da más que la
+ley.
+
+> *A confirmar con FEFA:* qué rubros del convenio corresponden a Voltia (jornal,
+> presentismo, alimentación, transporte, desgaste de ropa y herramientas).
 
 ---
 
@@ -350,10 +356,9 @@ trabajadores. Su continuidad depende del buen funcionamiento del equipo.
 
 ### 8.1 Licencia coordinada
 
-Voltia podría aplicar el régimen de licencia de la construcción, con fechas fijas
-para todo el personal. Opta, en cambio, por que cada trabajador proponga con
-anticipación cuándo tomar su licencia y la coordine con el resto del equipo, lo
-que supone para la empresa una mayor complejidad de organización.
+Cada trabajador propone con anticipación cuándo tomar su licencia y la coordina
+con el resto del equipo, en lugar de que Voltia fije las mismas fechas para todos.
+Esto supone para la empresa una mayor complejidad de organización.
 
 ### 8.2 Días libres pagos
 
@@ -373,13 +378,15 @@ dos semanas adicionales de descanso pago por año** que la ley no exige.
 
 ### 8.4 Ropa de trabajo
 
-Voltia entrega a cada trabajador un equipo completo de ropa de trabajo dos veces
-por año, de primera calidad, incluido el calzado de seguridad. Ningún trabajador
-debe desempeñar sus tareas con ropa propia.
+Como pide el convenio de la construcción, Voltia entrega a cada trabajador dos
+equipos de ropa por año, sin costo:
 
-La entrega de los elementos de seguridad es una obligación legal de la empresa
-(sección 7). Lo que Voltia otorga por encima de la ley es la calidad y la
-frecuencia de esa entrega.
+- uno de invierno: pantalón, camisa o remera, y buzo;
+- uno de verano: pantalón y camisa o remera.
+
+Los elementos de seguridad, incluido el calzado, son obligación de la empresa
+(sección 7). Lo que Voltia agrega es la calidad: ningún trabajador debe
+desempeñar sus tareas con ropa propia.
 
 ### 8.5 Tiempo para trámites y consultas
 
@@ -401,7 +408,7 @@ ventajas, Voltia podrá volver al alojamiento en hotel.
 
 ### 8.7 Viáticos y horas de viaje
 
-En las obras del interior, Voltia abona un viático de **$ 1.000 por día y por
+En las obras del interior, Voltia abona un viático de **$ 1.100 por día y por
 persona**, incluidos los días de ida y de vuelta, en compensación por las horas de
 viaje, que no se pagan. Este punto constituye un acuerdo entre las partes y no un
 beneficio.
@@ -445,8 +452,10 @@ todo el equipo.
 comunican apenas se conocen. Quien queda certificado avisa que lo está (sección
 4.4).
 
-**Las licencias que establece la ley no requieren permiso.** Las licencias
-especiales (sección 7) son un derecho: se comunican y se acreditan.
+**Lo que establecen la ley o el convenio no requiere permiso.** Las licencias
+especiales y los días para estudios médicos (sección 7) son un derecho: se
+comunican y se acreditan. Para los estudios médicos, el aviso es con 48 horas de
+anticipación.
 
 Quien tiene permiso para llegar más tarde se traslada directamente a la obra por
 sus medios, y su jornada comienza al llegar. Voltia le reintegra el boleto con el
@@ -1132,15 +1141,17 @@ despidan por notoria mala conducta: en ese caso lo pierde.
 
 Hay dos clases de feriados, y se pagan distinto.
 
-**Los feriados pagos** son cinco: el 1 de enero, el 1 de mayo, el 18 de julio, el
-25 de agosto y el 25 de diciembre. Son los únicos que se pagan doble si se
-trabajan.
+**Los feriados pagos** son cinco por ley: el 1 de enero, el 1 de mayo, el 18 de
+julio, el 25 de agosto y el 25 de diciembre. En la construcción se suman dos más,
+por el convenio: el 2 de noviembre y el tercer lunes de octubre, Día del
+Trabajador de la Construcción (Decretos 30/991 y 13/001). Son los únicos que se
+pagan doble si se trabajan.
 
 **Los feriados comunes** son todos los demás: el 6 de enero, el lunes y el
 martes de Carnaval, la Semana de Turismo, el 19 de abril, el 18 de mayo, el 19 de
 junio, el 12 de octubre y el 2 de noviembre. **Se trabaja normal y se paga
-normal: nada doble.** Por eso el 2 de noviembre, si se trabaja, se cobra como
-cualquier día.
+normal: nada doble.** En la construcción, el 2 de noviembre pasa a ser pago, como
+se explica arriba.
 
 | | Feriado pago | Feriado común |
 |---|---|---|

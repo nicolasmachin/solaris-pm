@@ -2,7 +2,7 @@ import { after, describe, test } from "node:test";
 import assert from "node:assert/strict";
 
 import { prisma } from "../../lib/prisma.js";
-import { diaUruguay, mandarAviso } from "./emitir.js";
+import { diaUruguay, enviarProgramados, leEscribieronDesde, mandarAviso, PREFIJO_BITACORA } from "./emitir.js";
 import { aFormatoMeta, fechaLarga, nombrePlantilla, problemasDelTexto, rellenar } from "./plantilla.js";
 
 describe("texto del aviso", () => {
@@ -86,5 +86,105 @@ describe("envío", async () => {
     const segundo = await mandarAviso(aviso, hecho);
     assert.equal(segundo, null);
     assert.equal(await prisma.avisoEnvio.count({ where: { avisoId: aviso.id } }), 1);
+  });
+});
+
+describe("demora, bienvenida y condición", async () => {
+  const admin = await prisma.user.findFirst({ where: { deletedAt: null, role: { name: "ADMIN" } }, select: { id: true } });
+  const avisos: string[] = [];
+  const proyectos: string[] = [];
+  after(async () => {
+    await prisma.avisoAutomatico.deleteMany({ where: { id: { in: avisos } } });
+    await prisma.project.deleteMany({ where: { id: { in: proyectos } } });
+    await prisma.$disconnect();
+  });
+
+  const proyectoDePrueba = async () => {
+    const p = await prisma.project.create({
+      data: {
+        code: `TEST-AVISOS-${Date.now()}`,
+        clientName: "Cliente Prueba Avisos",
+        clientPhone: "099 111 222",
+        capacityKwp: 5,
+        locationCity: "Montevideo",
+        locationProvince: "Montevideo",
+        status: "ACTIVE",
+        startDate: new Date(),
+        executedUsd: 0,
+        createdById: admin!.id,
+      },
+    });
+    proyectos.push(p.id);
+    await prisma.recorridoCheck.create({
+      data: { projectId: p.id, recorrido: "E1", codigo: "e1_bienvenida", titulo: "Bienvenida y presentación", orden: 1 },
+    });
+    return p.id;
+  };
+
+  const nuevoAviso = async (extra: { demoraMinutos?: number; condicion?: string; disparador?: string } = {}) => {
+    const a = await prisma.avisoAutomatico.create({
+      data: {
+        nombre: `prueba ${Date.now()}`,
+        disparador: extra.disparador ?? "ute.habilitado",
+        canal: "WHATSAPP",
+        estado: "ACTIVO",
+        cuerpo: "Hola {{cliente.nombre}}, UTE habilitó.",
+        activadoEn: new Date(Date.now() - 60_000),
+        demoraMinutos: extra.demoraMinutos ?? null,
+        condicion: extra.condicion ?? null,
+      },
+    });
+    avisos.push(a.id);
+    return a;
+  };
+
+  test("antes de la bienvenida queda programado, y sale cuando se hace", { skip: !admin }, async () => {
+    const id = await proyectoDePrueba();
+    const aviso = await nuevoAviso();
+    const r = await mandarAviso(aviso, { disparador: "ute.habilitado", projectId: id });
+    assert.equal(r?.estado, "PROGRAMADO");
+    assert.match(r?.detalle ?? "", /bienvenida/);
+    // Pasa el job: sigue esperando.
+    await enviarProgramados({ projectId: id });
+    assert.equal((await prisma.avisoEnvio.findUnique({ where: { id: r!.id } }))?.estado, "PROGRAMADO");
+    // Se hace la bienvenida: ya no espera (en desarrollo no sale al cliente, pero deja de estar programado).
+    await prisma.recorridoCheck.updateMany({ where: { projectId: id, codigo: "e1_bienvenida" }, data: { completadoEn: new Date() } });
+    await enviarProgramados({ projectId: id });
+    assert.notEqual((await prisma.avisoEnvio.findUnique({ where: { id: r!.id } }))?.estado, "PROGRAMADO");
+  });
+
+  test("el aviso de la bienvenida no se espera a sí mismo", { skip: !admin }, async () => {
+    const id = await proyectoDePrueba();
+    const aviso = await nuevoAviso({ disparador: "es.bienvenida" });
+    const r = await mandarAviso(aviso, { disparador: "es.bienvenida", projectId: id });
+    assert.notEqual(r?.estado, "PROGRAMADO");
+  });
+
+  test("con demora queda programado para el hecho + la demora", { skip: !admin }, async () => {
+    const id = await proyectoDePrueba();
+    const aviso = await nuevoAviso({ demoraMinutos: 24 * 60 });
+    const ocurrio = new Date();
+    const r = await mandarAviso(aviso, { disparador: "ute.habilitado", projectId: id, ocurrioEn: ocurrio });
+    assert.equal(r?.estado, "PROGRAMADO");
+    assert.equal(r?.salirEn?.getTime(), ocurrio.getTime() + 24 * 60 * 60_000);
+  });
+
+  test("si Experiencia Solar le escribió, la condición lo frena; los avisos no cuentan", { skip: !admin }, async () => {
+    const id = await proyectoDePrueba();
+    const desde = new Date(Date.now() - 60_000);
+    await prisma.clientInteraction.create({
+      data: { projectId: id, channel: "WHATSAPP", direction: "SALIENTE", content: `${PREFIJO_BITACORA}x»: hola`, authorId: admin!.id },
+    });
+    assert.equal(await leEscribieronDesde(id, "099 111 222", desde), false);
+    await prisma.clientInteraction.create({
+      data: { projectId: id, channel: "WHATSAPP", direction: "SALIENTE", content: "Le escribí para coordinar", authorId: admin!.id },
+    });
+    assert.equal(await leEscribieronDesde(id, "099 111 222", desde), true);
+
+    await prisma.recorridoCheck.updateMany({ where: { projectId: id, codigo: "e1_bienvenida" }, data: { completadoEn: new Date() } });
+    const aviso = await nuevoAviso({ condicion: "SIN_CONTACTO" });
+    const r = await mandarAviso(aviso, { disparador: "ute.habilitado", projectId: id, contactoDesde: desde });
+    assert.equal(r?.estado, "OMITIDO");
+    assert.match(r?.detalle ?? "", /ya le escribió/);
   });
 });

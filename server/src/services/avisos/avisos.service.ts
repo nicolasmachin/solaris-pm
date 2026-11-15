@@ -18,7 +18,7 @@ import { prisma } from "../../lib/prisma.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
 import { CHECKS_POR_RECORRIDO } from "../clientes/recorrido-checks.js";
-import { DISPARADOR_POR_CLAVE, DISPARADORES, VARIABLES, variablesDe } from "./disparadores.js";
+import { CONDICIONES, DISPARADOR_POR_CLAVE, DISPARADORES, VARIABLES, variablesDe } from "./disparadores.js";
 import { aFormatoMeta, nombrePlantilla, problemasDelTexto } from "./plantilla.js";
 
 export type Canal = "WHATSAPP" | "EMAIL";
@@ -27,6 +27,8 @@ export type DatosAviso = {
   nombre: string;
   disparador: string;
   dias?: number | null;
+  demoraMinutos?: number | null;
+  condicion?: "SIN_CONTACTO" | null;
   canal: Canal;
   asunto?: string | null;
   cuerpo: string;
@@ -41,6 +43,7 @@ export function catalogo() {
   return {
     disparadores: DISPARADORES.map((d) => ({ ...d, variables: variablesDe(d.clave) })),
     variables: Object.entries(VARIABLES).map(([clave, v]) => ({ clave, ...v })),
+    condiciones: Object.entries(CONDICIONES).map(([clave, etiqueta]) => ({ clave, etiqueta })),
     checks,
   };
 }
@@ -103,6 +106,8 @@ export async function crearAviso(d: DatosAviso, userId: string) {
       nombre: d.nombre.trim(),
       disparador: d.disparador,
       dias: DISPARADOR_POR_CLAVE.get(d.disparador)?.conDias ? d.dias ?? null : null,
+      demoraMinutos: d.demoraMinutos || null,
+      condicion: d.condicion ?? null,
       canal: d.canal,
       asunto: d.canal === "EMAIL" ? d.asunto?.trim() ?? null : null,
       cuerpo: d.cuerpo.trim(),
@@ -133,6 +138,8 @@ export async function editarAviso(id: string, d: DatosAviso, userId: string) {
       nombre: d.nombre.trim(),
       disparador: d.disparador,
       dias: DISPARADOR_POR_CLAVE.get(d.disparador)?.conDias ? d.dias ?? null : null,
+      demoraMinutos: d.demoraMinutos || null,
+      condicion: d.condicion ?? null,
       asunto: actual.canal === "EMAIL" ? d.asunto?.trim() ?? null : null,
       cuerpo: d.cuerpo.trim(),
       cierraCheck: d.cierraCheck || null,

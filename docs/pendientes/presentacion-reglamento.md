@@ -19,10 +19,11 @@ sobre una persona; lo individual se habla aparte.
 
 ## Temas para las diapositivas
 
-- **Feriados, el que más problemas dio.** Hay dos clases: los 5 pagos (1/1, 1/5,
-  18/7, 25/8, 25/12), que se pagan doble si se trabajan, y los comunes (6/1,
-  Carnaval, Turismo, 19/4, 18/5, 19/6, 12/10, 2/11), que se trabajan y se pagan
-  normal. Ejemplo: el 2 de noviembre no se paga doble. Tabla mensual/jornalero.
+- **Feriados, el que más problemas dio.** Hay dos clases: 7 pagos (los 5 de la
+  ley más el 2 de noviembre y el tercer lunes de octubre, de la construcción), que
+  se pagan doble si se trabajan, y los comunes (6/1, Carnaval, Turismo, 19/4,
+  18/5, 19/6, 12/10), que se trabajan y se pagan normal. El 2 de noviembre de este
+  año se paga doble a los que trabajaron; el de octubre ya se pagó doble.
 - **Lo que da Voltia:** Carnaval y jueves y viernes de Turismo libres pagos, 24
   y 31 enteros, licencia contada de lunes a viernes: unas dos semanas más de
   descanso pago por año. Ropa de primera dos veces por año. Flexibilidad para

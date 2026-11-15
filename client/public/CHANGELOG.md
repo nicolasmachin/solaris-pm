@@ -13,6 +13,14 @@
 - El primer mensaje del día a un lead queda anotado en su **historial de actividad**.
 - **Cada número lo ve y lo usa solo su responsable**: el de cada asesor, él solo (tampoco la gerencia comercial). La administración puede elegir arriba de la pantalla a cualquier asesor y ver y usar su número; abrir un chat no se lo marca como leído al asesor.
 
+#### Avisos automáticos
+
+- Al armar un aviso automático se puede elegir que salga **después de un tiempo**: N horas o días después del hecho.
+- Nueva opción **"Solo si Experiencia Solar no le escribió al cliente desde el hecho"**: si alguien del equipo ya le escribió por WhatsApp (desde Voltia PM o desde el celular) o anotó un contacto, el aviso no sale.
+- **Ningún aviso sale antes de la bienvenida** de Experiencia Solar: lo que pasa antes queda esperando y sale cuando se hace la bienvenida.
+- Nuevo disparador **"Bienvenida hecha"**.
+- En el registro de envíos aparecen los **programados**, con cuándo salen o si esperan la bienvenida.
+
 #### WhatsApp de Experiencia Solar
 
 - La pestaña **WhatsApp** de Experiencia Solar y la tarjeta de WhatsApp de la ficha del cliente las ve solo el responsable del número general (y la administración). Antes las veía cualquiera del área.
