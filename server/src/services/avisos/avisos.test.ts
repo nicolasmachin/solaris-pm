@@ -245,3 +245,79 @@ describe("demora, bienvenida y condición", async () => {
     assert.match(r?.detalle ?? "", /ya le escribió/);
   });
 });
+
+describe("mantenimientos", async () => {
+  const admin = await prisma.user.findFirst({ where: { deletedAt: null, role: { name: "ADMIN" } }, select: { id: true } });
+  const proyectos: string[] = [];
+  after(async () => {
+    await prisma.agendaEvento.deleteMany({ where: { projectId: { in: proyectos } } });
+    await prisma.project.deleteMany({ where: { id: { in: proyectos } } });
+    await prisma.$disconnect();
+  });
+
+  const conHabilitacion = async (habilitado: Date) => {
+    const p = await prisma.project.create({
+      data: {
+        code: `TEST-MANT-${Date.now()}-${proyectos.length}`,
+        clientName: "Cliente Prueba Mantenimiento",
+        capacityKwp: 5,
+        locationCity: "Montevideo",
+        locationProvince: "Montevideo",
+        status: "ACTIVE",
+        startDate: new Date(),
+        executedUsd: 0,
+        createdById: admin!.id,
+        postHabilitacionInicioEn: habilitado,
+      },
+    });
+    proyectos.push(p.id);
+    return p.id;
+  };
+  const mantenimiento = (projectId: string, fecha: string, hecho = false) =>
+    prisma.agendaEvento.create({
+      data: {
+        tipo: "MANTENIMIENTO",
+        titulo: "Mantenimiento",
+        projectId,
+        teamName: "Equipo",
+        createdById: admin!.id,
+        completadoEn: hecho ? new Date(fecha) : null,
+        dias: { create: [{ fecha: new Date(`${fecha}T00:00:00Z`) }] },
+      },
+    });
+
+  test("sin costo: el 1.º y el 2.º dentro de los dos primeros años", { skip: !admin }, async () => {
+    const { esMantenimientoSinCosto } = await import("./mantenimientos.js");
+    const id = await conHabilitacion(new Date("2025-01-10T00:00:00Z"));
+    await mantenimiento(id, "2026-01-12", true);
+    assert.equal((await esMantenimientoSinCosto(id, new Date("2026-01-12T00:00:00Z"))).sinCosto, true);
+    await mantenimiento(id, "2027-01-15");
+    assert.equal((await esMantenimientoSinCosto(id, new Date("2027-01-15T00:00:00Z"))).sinCosto, true);
+    // El tercero ya no.
+    await mantenimiento(id, "2027-03-01");
+    assert.equal((await esMantenimientoSinCosto(id, new Date("2027-03-01T00:00:00Z"))).sinCosto, false);
+    // Pasados los dos años (+ 6 meses de margen) tampoco, aunque sea el primero cargado.
+    const viejo = await conHabilitacion(new Date("2023-05-01T00:00:00Z"));
+    await mantenimiento(viejo, "2026-11-20");
+    const r = await esMantenimientoSinCosto(viejo, new Date("2026-11-20T00:00:00Z"));
+    assert.equal(r.sinCosto, false);
+  });
+
+  test("alerta: próximo sin agendar, y nada por aniversarios de antes del corte", { skip: !admin }, async () => {
+    const { alertasMantenimiento } = await import("./mantenimientos.js");
+    const ahora = new Date("2026-12-01T12:00:00Z");
+    // Cumple el 1.º año el 20-dic-2026: faltan 19 días.
+    const proximo = await conHabilitacion(new Date("2025-12-20T00:00:00Z"));
+    // Cumplió el 1.º el 1-oct-2026, antes del corte: no se alerta.
+    const viejo = await conHabilitacion(new Date("2025-10-01T00:00:00Z"));
+    const alertas = await alertasMantenimiento([proximo, viejo], ahora);
+    assert.match(alertas.get(proximo) ?? "", /Agendar el 1\.º mantenimiento/);
+    assert.equal(alertas.has(viejo), false);
+    // Con el mantenimiento agendado, la alerta se apaga.
+    await mantenimiento(proximo, "2026-12-22");
+    assert.equal((await alertasMantenimiento([proximo], ahora)).has(proximo), false);
+    // Vencido: pasó el aniversario sin agendar.
+    const vencido = await conHabilitacion(new Date("2025-11-20T00:00:00Z"));
+    assert.match((await alertasMantenimiento([vencido], ahora)).get(vencido) ?? "", /vencido/);
+  });
+});

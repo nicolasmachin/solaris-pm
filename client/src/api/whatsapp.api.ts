@@ -115,7 +115,7 @@ export async function getWhatsAppNumeros() {
 
 export async function conectarWhatsAppNumero(body: {
   code: string;
-  phoneNumberId: string;
+  phoneNumberId?: string;
   wabaId: string;
   businessId?: string;
   etiqueta?: string;

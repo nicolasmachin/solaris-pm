@@ -61,6 +61,19 @@ async function canjearCodigo(code: string): Promise<string> {
   return data.access_token;
 }
 
+/** El único número de la cuenta (WABA): la registración integrada conecta uno por vez. */
+async function numeroDeLaCuenta(wabaId: string, token: string): Promise<string> {
+  const r = await graph<{ data?: Array<{ id: string }> }>(`${wabaId}/phone_numbers?fields=id`, token);
+  const ids = (r.data ?? []).map((n) => n.id);
+  if (ids.length !== 1) {
+    throw badRequest(
+      "NUMERO_AMBIGUO",
+      ids.length === 0 ? "La cuenta de WhatsApp conectada no tiene números." : "La cuenta de WhatsApp tiene varios números y Meta no informó cuál se conectó.",
+    );
+  }
+  return ids[0];
+}
+
 type DatosNumero = {
   display_phone_number?: string;
   verified_name?: string;
@@ -70,7 +83,8 @@ type DatosNumero = {
 
 export async function conectarNumero(params: {
   code: string;
-  phoneNumberId: string;
+  /** En coexistencia Meta puede avisar solo la cuenta; entonces se busca acá. */
+  phoneNumberId?: string;
   wabaId: string;
   businessId?: string;
   etiqueta?: string;
@@ -88,8 +102,9 @@ export async function conectarNumero(params: {
   }
 
   const token = await canjearCodigo(params.code);
+  const phoneNumberId = params.phoneNumberId ?? (await numeroDeLaCuenta(params.wabaId, token));
   const datos = await graph<DatosNumero>(
-    `${params.phoneNumberId}?fields=display_phone_number,verified_name,is_on_biz_app,platform_type`,
+    `${phoneNumberId}?fields=display_phone_number,verified_name,is_on_biz_app,platform_type`,
     token,
   );
   await graph(`${params.wabaId}/subscribed_apps`, token, { method: "POST" });
@@ -98,7 +113,7 @@ export async function conectarNumero(params: {
   const data = {
     wabaId: params.wabaId,
     businessId: params.businessId ?? null,
-    telefono: datos.display_phone_number ?? params.phoneNumberId,
+    telefono: datos.display_phone_number ?? phoneNumberId,
     nombreVerificado: datos.verified_name ?? null,
     tokenCifrado: encryptSecret(token),
     coexistencia,
@@ -118,10 +133,10 @@ export async function conectarNumero(params: {
     syncError: null,
   };
   // El número general de Experiencia Solar es uno solo.
-  if (params.uso === "EXPERIENCIA_SOLAR") await soltarExperienciaSolar(params.phoneNumberId);
+  if (params.uso === "EXPERIENCIA_SOLAR") await soltarExperienciaSolar(phoneNumberId);
   const numero = await prisma.whatsAppNumero.upsert({
-    where: { phoneNumberId: params.phoneNumberId },
-    create: { phoneNumberId: params.phoneNumberId, ...data },
+    where: { phoneNumberId },
+    create: { phoneNumberId, ...data },
     update: data,
   });
 

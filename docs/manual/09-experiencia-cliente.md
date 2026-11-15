@@ -687,6 +687,15 @@ los que pintan la fila de rojo. La regla no es la misma para los tres:
   que todavía no ocurrió sería ruido.
 - La Regla de Oro manda sobre su check: si `avisoHabilitacionPendiente` es true
   (mira la bitácora, no el check), el aviso entra igual.
+- **Mantenimiento sin costo** (`alertasMantenimiento()` en
+  `avisos/mantenimientos.ts`, sumado al final de `marcarAvisosClave`): el 1.º o
+  el 2.º aniversario (ancla de `getAnclaAniversario()`, la misma del "Próximo
+  mantenimiento") a 30 días o menos (`DIAS_AVISO_PROXIMO`) o ya pasado, sin los
+  eventos MANTENIMIENTO de la agenda que le corresponden. Solo aniversarios desde
+  `CORTE_ALERTAS` (15-11-2026): ningún mantenimiento anterior está cargado, y sin
+  el corte salían 28 generadores de la planilla vencidos sin forma de saber si se
+  hicieron. Un aniversario anterior al corte tampoco se exige al contar el
+  siguiente.
 
 **La ficha del cliente** (`ClienteFichaPage.tsx`) es **una sola pantalla**, no
 cuatro pestañas: antes había Resumen / Pasos / Interacciones / Historial y para

@@ -19,7 +19,7 @@ export type AvisosCatalogo = {
   condiciones: Array<{ clave: AvisoCondicion; etiqueta: string }>;
 };
 
-export type AvisoCondicion = "SIN_CONTACTO" | "PORTAL_CON_MAIL" | "PORTAL_SIN_MAIL";
+export type AvisoCondicion = "SIN_CONTACTO" | "PORTAL_CON_MAIL" | "PORTAL_SIN_MAIL" | "MANTENIMIENTO_SIN_COSTO";
 
 export type Aviso = {
   id: string;

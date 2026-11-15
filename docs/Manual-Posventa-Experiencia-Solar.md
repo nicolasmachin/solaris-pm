@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.45 · del 15/11/26
+**Voltia · Uruguay** · Versión 1.46 · del 15/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1293,8 +1293,19 @@ antes de que venza el segundo año, se le recuerda la condición de la cobertura
 voladura: sin un mantenimiento en el último año, no hay cobertura.
 
 **Cómo funciona hoy:** el sistema calcula y muestra **cuándo cumple años** cada
-instalación (en la ficha, "Próximo mantenimiento"), pero **no agenda solo ni avisa
-cuando se vence**. La fecha la propone y la confirma una persona. A los clientes
+instalación (en la ficha, "Próximo mantenimiento"), pero **no agenda solo**: la
+fecha la propone y la confirma una persona.
+
+**Voltia PM avisa cuando un mantenimiento sin costo está por vencer o se venció
+sin agendarse.** En la lista de clientes, la fila se pone en rojo con *Agendar el
+1.º mantenimiento sin costo (vence el …)* cuando faltan 30 días o menos para el
+aniversario, o con *… vencido desde el …, sin agendar* si ya pasó. Se apaga
+cuando el mantenimiento queda agendado en el calendario. Solo cuenta los
+aniversarios desde el 15 de noviembre de 2026: los mantenimientos de antes no
+están cargados en Voltia PM y no se puede saber si se hicieron. Por eso **cada
+mantenimiento tiene que quedar agendado en el calendario**, con el cliente: es lo
+que apaga la alerta y lo que Voltia PM usa para saber cuál es el primero, el
+segundo y cuándo fue el último. A los clientes
 que se cargaron de la planilla anterior a Voltia PM, que no tienen fecha de
 habilitación, el aniversario se les cuenta desde la fecha de entrega de la obra:
 así también les aparece el próximo mantenimiento y les llega la encuesta de
@@ -1769,9 +1780,8 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
   todavía no se puede sumar el de otra persona de la familia o de la empresa.
 - **Los mails que se le mandan al cliente no cuentan como contacto** en el
   historial: hay que registrarlos aparte.
-- **Los mantenimientos no tienen alerta de próximo ni de vencido**, sólo la
-  cuenta de cuánto falta, y ningún aviso le propone al cliente el mantenimiento
-  pago desde el tercer año.
+- **Ningún aviso le propone todavía al cliente el mantenimiento pago** desde el
+  tercer año: está programado pero no activo.
 
 - **No hay métricas de satisfacción** consolidadas ni antigüedad de reclamos.
 - **El portal no muestra el estado ni la fecha de obra**, que es lo primero que el
@@ -2141,6 +2151,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.46 | 15 de noviembre de 2026 | Voltia PM avisa en la lista de clientes cuando un mantenimiento sin costo está por vencer o se venció sin agendarse; cada mantenimiento tiene que quedar agendado en el calendario. |
 | 1.45 | 15 de noviembre de 2026 | Si Operaciones suspende una obra sin fecha nueva, el pendiente de aviso llega igual, con el motivo; la fecha nueva llega como cualquier fecha confirmada. |
 | 1.44 | 15 de noviembre de 2026 | Al convertir la venta en proyecto, Voltia PM le crea solo el usuario del portal al cliente: con su mail si lo tiene, o con su nombre y apellido y una contraseña inicial si no; el paso de enviarle el acceso sigue abierto hasta que se le manda. |
 | 1.43 | 15 de noviembre de 2026 | Se agregan el alumbrado público en el reporte (se marca y se carga el monto de la factura), que el cliente sin mail ve su reporte en el portal, y que a los clientes de la planilla anterior el aniversario se les cuenta desde la entrega. Se registran las reglas de los mensajes de WhatsApp definidos el 15-nov, todavía no activos. Se actualiza lo que falta: los accesos al portal de los clientes que ya estaban están creados. |

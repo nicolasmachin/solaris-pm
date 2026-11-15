@@ -29,6 +29,11 @@
 - Nuevo **Suspender obra (sin fecha nueva)** en el panel de una obra confirmada: pide el motivo, le saca la fecha y el cliente queda esperando la fecha nueva. A Experiencia Solar le llega el aviso con el motivo, como en una reprogramación.
 - Avisos automáticos nuevos para eso: **obra suspendida, sin fecha nueva** y **fecha nueva tras una suspensión**, que reemplaza al de fecha confirmada para ese cliente. Si al confirmar la fecha nueva el aviso de la suspensión todavía no había salido, se cancela y le sale el de obra reprogramada.
 
+#### Mantenimientos
+
+- En la lista de Experiencia Solar, **alerta de mantenimiento sin costo** próximo (faltan 30 días o menos para el 1.º o el 2.º aniversario) o vencido sin agendar. Se apaga al agendarlo en el calendario. Cuenta desde hoy: los aniversarios anteriores no se marcan.
+- Para los avisos automáticos: la condición **"solo los dos mantenimientos sin costo"** y el disparador **"un año desde el último mantenimiento"**, para ofrecer el mantenimiento pago a quien ya usó los dos sin costo.
+
 #### Portal del cliente
 
 - Al convertir la venta en proyecto, Voltia PM le **crea solo el usuario del portal** al cliente. Con mail, el usuario es su mail y entra con el código por mail. Sin mail, el usuario es su nombre y apellido (*maria.perez*) con la contraseña inicial de siempre, que el portal le pide cambiar. El paso de mandarle el acceso sigue pendiente hasta que se le manda.
@@ -37,6 +42,10 @@
 #### WhatsApp de Experiencia Solar
 
 - La pestaña **WhatsApp** de Experiencia Solar y la tarjeta de WhatsApp de la ficha del cliente las ve solo el responsable del número general (y la administración). Antes las veía cualquiera del área.
+
+#### Arreglos
+
+- **Conectar un número de WhatsApp** vuelve a ofrecer la opción de conectar el WhatsApp Business que ya se usa en el celular, para que el número siga andando ahí. Desde un cambio de Meta solo ofrecía registrar el número como nuevo, lo que lo sacaba del celular.
 
 ## v14.7
 

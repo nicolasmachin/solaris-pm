@@ -151,11 +151,19 @@ prefijo `/api` y sin login:
 
 - El navegador (`WhatsAppNumeros.tsx` → `abrirRegistro()`) carga el SDK de
   Facebook y llama a `FB.login` con `config_id` (`WHATSAPP_SIGNUP_CONFIG_ID`),
-  `response_type: "code"` y `extras.featureType: "whatsapp_business_app_onboarding"`
-  (coexistencia). Meta devuelve los ids del número y de la cuenta por
-  `postMessage` (tipo `WA_EMBEDDED_SIGNUP`, evento `FINISH…`) y el **código de
-  un solo uso** en el callback del login. Llegan en cualquier orden: se esperan
-  los dos (5 s de tope para los ids).
+  `response_type: "code"` y `extras: { version: "v5" }`. En la v5 la opción de
+  conectar la app WhatsApp Business del celular (coexistencia) viene activada
+  por defecto. **No volver a `featureType: "whatsapp_business_app_onboarding"`
+  con `sessionInfoVersion: "3"`**: Meta dio de baja la v3 el 15-oct-2026 y un
+  pedido sin versión válida lo atiende con la v4, que ignora ese `featureType` y
+  ofrece solo "Agrega tu número de teléfono" (registrar el número para la API,
+  que lo saca del celular). Meta devuelve los ids de la cuenta y, en general, del
+  número por `postMessage` (tipo `WA_EMBEDDED_SIGNUP`, evento `FINISH…`) y el
+  **código de un solo uso** en el callback del login. Llegan en cualquier orden:
+  se esperan los dos (5 s de tope para los ids).
+- Si Meta informa solo la cuenta (pasa en coexistencia), `conectarNumero()`
+  busca el número con `GET /{waba}/phone_numbers` (`numeroDeLaCuenta()`): si la
+  cuenta tiene exactamente uno lo usa; si tiene cero o varios, corta con error.
 - `conectarNumero()`: canjea el código (`GET /oauth/access_token` con app id y
   secreto; **vence a los 30 segundos**), lee el número (`is_on_biz_app`,
   `display_phone_number`, `verified_name`), suscribe la app a la cuenta

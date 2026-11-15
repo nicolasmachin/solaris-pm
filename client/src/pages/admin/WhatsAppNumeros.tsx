@@ -123,7 +123,10 @@ async function abrirRegistro(cfg: WhatsAppRegistroConfig): Promise<{ code: strin
         config_id: cfg.configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: { setup: {}, featureType: "whatsapp_business_app_onboarding", sessionInfoVersion: "3" },
+        // v5: conectar la app WhatsApp Business del celular (coexistencia) viene
+        // activado por defecto. La v3 con featureType la dio de baja Meta el
+        // 15-oct-2026 y desde entonces sirve la v4, que ofrece solo número nuevo.
+        extras: { version: "v5" },
       },
     );
   });
@@ -251,7 +254,8 @@ export function WhatsAppNumeros() {
     setConectando(true);
     try {
       const { code, sesion } = await abrirRegistro(cfg);
-      if (!sesion.phone_number_id || !sesion.waba_id) throw new Error("Meta no informó qué número se conectó.");
+      if (!sesion.waba_id) throw new Error("Meta no informó qué cuenta se conectó.");
+      // En coexistencia Meta puede avisar solo la cuenta: el server busca el número.
       const n = await conectarWhatsAppNumero({
         code,
         phoneNumberId: sesion.phone_number_id,

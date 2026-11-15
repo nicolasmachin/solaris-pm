@@ -58,6 +58,7 @@ export const DISPARADOR_BIENVENIDA = "es.bienvenida";
 export const CONDICIONES: Record<string, string> = {
   SIN_CONTACTO: "Solo si Experiencia Solar no le escribió al cliente desde el hecho",
   PORTAL_CON_MAIL: "Clientes con mail (entran con el código por mail). Si no tiene usuario del portal, se lo crea",
+  MANTENIMIENTO_SIN_COSTO: "Solo los dos mantenimientos sin costo (el 1.º y el 2.º, dentro de los dos primeros años de habilitada)",
   PORTAL_SIN_MAIL: "Clientes sin mail (entran con usuario y contraseña). Si no tiene usuario del portal, se lo crea",
 };
 
@@ -178,6 +179,13 @@ export const DISPARADORES: Disparador[] = [
     etiqueta: "Primer reporte publicado",
     cuando: "Cuando se publica el primer reporte fotovoltaico del cliente. Una sola vez por proyecto.",
     variables: [],
+  },
+  {
+    clave: "mantenimiento.anio",
+    grupo: "Agenda",
+    etiqueta: "Un año desde el último mantenimiento",
+    cuando: "Se revisa todas las mañanas: sale al año del último mantenimiento hecho, solo a quien ya usó los dos sin costo. {{evento.fecha}} es la fecha de ese mantenimiento.",
+    variables: ["evento.fecha"],
   },
   {
     clave: "agenda.creado:VISITA_TECNICA",

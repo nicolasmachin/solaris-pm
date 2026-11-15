@@ -129,6 +129,13 @@ export const LATEST_RELEASE: Release = {
         "Avisos automáticos de obra suspendida y de fecha nueva tras una suspensión.",
       ],
     },
+    {
+      title: "Mantenimientos",
+      items: [
+        "Alerta en la lista de Experiencia Solar cuando un mantenimiento sin costo está por vencer o se venció sin agendar.",
+        "Avisos automáticos: solo los dos mantenimientos sin costo, y un año desde el último mantenimiento.",
+      ],
+    },
   ],
 };
 

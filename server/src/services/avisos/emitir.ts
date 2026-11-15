@@ -309,6 +309,12 @@ export async function enviarEnvio(envioId: string) {
     if (conUsuario) Object.assign(datos, conUsuario.datos, (envio.datosFijos as Record<string, string> | null) ?? {});
   }
 
+  if (aviso.condicion === "MANTENIMIENTO_SIN_COSTO") {
+    const { esMantenimientoSinCosto } = await import("./mantenimientos.js");
+    const r = await esMantenimientoSinCosto(projectId, envio.eventoFecha ?? envio.ocurrioEn ?? new Date());
+    if (!r.sinCosto) return cerrar({ estado: "OMITIDO", detalle: r.motivo });
+  }
+
   if (aviso.condicion === "SIN_CONTACTO") {
     const desde = envio.contactoDesde ?? envio.ocurrioEn ?? envio.createdAt;
     if (await leEscribieronDesde(projectId, cliente.proyecto.clientPhone, desde)) {

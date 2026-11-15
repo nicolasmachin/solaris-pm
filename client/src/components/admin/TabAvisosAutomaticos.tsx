@@ -185,6 +185,8 @@ export function TabAvisosAutomaticos() {
                       <span className="text-xs text-[var(--color-text-muted)]">· clientes con mail</span>
                     ) : a.condicion === "PORTAL_SIN_MAIL" ? (
                       <span className="text-xs text-[var(--color-text-muted)]">· clientes sin mail</span>
+                    ) : a.condicion === "MANTENIMIENTO_SIN_COSTO" ? (
+                      <span className="text-xs text-[var(--color-text-muted)]">· solo los dos sin costo</span>
                     ) : null}
                     <span className={`rounded-full px-2 py-0.5 text-[11px] ${ESTADO[a.estado].clase}`}>{ESTADO[a.estado].texto}</span>
                     <span className="ml-auto text-xs text-[var(--color-text-muted)]">

@@ -2,7 +2,8 @@
  * Jobs de los avisos automáticos:
  *  - cada 15 minutos, si hay plantillas en revisión, pregunta a Meta si ya las
  *    aprobó (también detecta si Meta pausó o rechazó una activa);
- *  - todas las mañanas, los avisos "faltan N días para la obra";
+ *  - todas las mañanas, los avisos "faltan N días para la obra" y "un año desde
+ *    el último mantenimiento";
  *  - cada 2 minutos, los envíos PROGRAMADOS que llegaron a su hora (la demora
  *    del aviso, o los que esperaban la bienvenida).
  * Kill switch: AVISOS_AUTOMATICOS=false.
@@ -78,6 +79,9 @@ export function startAvisosJobs() {
       try {
         const n = await avisosObraProxima();
         if (n > 0) console.log(`[avisos] obra próxima: ${n} enviados`);
+        const { avisosMantenimientoAnio } = await import("./mantenimientos.js");
+        const m = await avisosMantenimientoAnio();
+        if (m > 0) console.log(`[avisos] un año desde el último mantenimiento: ${m}`);
       } catch (err) {
         console.error("[avisos] obra próxima:", err instanceof Error ? err.message : err);
       }

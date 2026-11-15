@@ -551,6 +551,14 @@ async function marcarAvisosClave(items: ClienteListItem[]): Promise<ClienteListI
     }
     i.avisosClavePendientes = pendientes;
   }
+  // El mantenimiento sin costo próximo o vencido sin agendar: Experiencia Solar lo
+  // coordina con el cliente (ver avisos/mantenimientos.ts).
+  const { alertasMantenimiento } = await import("../avisos/mantenimientos.js");
+  const mantenimientos = await alertasMantenimiento(ids);
+  for (const i of items) {
+    const alerta = mantenimientos.get(i.projectId);
+    if (alerta) i.avisosClavePendientes.push(alerta);
+  }
   return items;
 }
 

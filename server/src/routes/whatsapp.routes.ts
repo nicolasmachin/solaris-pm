@@ -111,7 +111,7 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
     const body = z
       .object({
         code: z.string().min(10).max(2048),
-        phoneNumberId: z.string().regex(/^\d{5,30}$/),
+        phoneNumberId: z.string().regex(/^\d{5,30}$/).optional(),
         wabaId: z.string().regex(/^\d{5,30}$/),
         businessId: z.string().regex(/^\d{5,30}$/).optional(),
         etiqueta: z.string().max(60).optional(),

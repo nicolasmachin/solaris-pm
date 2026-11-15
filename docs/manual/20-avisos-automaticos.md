@@ -22,7 +22,8 @@ internos sigue con el bloqueo `internal` / `client_facing`.
    Obra, Etapas, UTE, Agenda). Debajo se ve en palabras cuándo pasa. En "Faltan N
    días para la obra" se eligen los días.
    - **Sale**: *enseguida* o *después de…* N horas o días del hecho (la demora).
-   - **Condición**: *Ninguna*; *Solo si Experiencia Solar no le escribió al
+   - **Condición**: *Ninguna*; *Solo los dos mantenimientos sin costo* (el
+     aviso de mantenimiento agendado); *Solo si Experiencia Solar no le escribió al
      cliente desde el hecho* (el recordatorio de obra, los cambios de fecha: si
      una persona ya se ocupó, no sale); o, para el acceso al portal, *Clientes
      con mail* / *Clientes sin mail*: el usuario del portal se crea si falta, y a
@@ -71,7 +72,8 @@ del proyecto.
 | `etapa.completada:<StageType>` (incluye "Obra terminada" = EJECUCION_OBRA) | `syncStageProgress()` en `project.service.ts` (`justCompleted`) y el cierre manual `PATCH /projects/:p/stages/:s` |
 | `ute.hito:<campo>` (10 hitos, sin `finalizedAt`) | `PATCH /ute-processes/:id`, solo cuando el hito pasa de vacío a una fecha; y `registrarConsultaUteEnviada()` en `email/send.service.ts` |
 | `ute.habilitado` | `marcarHabilitacionEnProyecto()` en `ute-sync.service.ts` (con varios suministros, cuando terminan todos) |
-| `agenda.creado:VISITA_TECNICA` / `:MANTENIMIENTO` | `crearAgendaEvento()` en `agenda.service.ts`, si el evento tiene proyecto |
+| `agenda.creado:VISITA_TECNICA` / `:MANTENIMIENTO` | `crearAgendaEvento()` en `agenda.service.ts`, si el evento tiene proyecto (`eventoFecha` = primer día) |
+| `mantenimiento.anio` (un año desde el último mantenimiento) | job diario `avisosMantenimientoAnio()` en `avisos/mantenimientos.ts`: mantenimientos hechos (`completadoEn`) cuyo último día fue hace un año (mira una semana para atrás, por si un día no corrió), que sean el último del proyecto, y solo si ya usó los dos sin costo (`usoLosSinCosto()`: dos hechos, o el último cae después del primer año + 6 meses). Ref: el id del mantenimiento |
 
 - `emitirHecho()` no espera ni tira error: un aviso que falla nunca frena la
   carga de una fecha. `procesarHecho()` busca los avisos **ACTIVO** del
@@ -108,6 +110,12 @@ del proyecto.
      celular). Los avisos automáticos no cuentan: en la bitácora empiezan con
      `PREFIJO_BITACORA` y en WhatsApp se reconocen por el `waMessageId` guardado
      en `avisos_envios`.
+     `MANTENIMIENTO_SIN_COSTO` (`esMantenimientoSinCosto()`): con la fecha del
+     evento, es el 1.º o el 2.º mantenimiento del proyecto **y** cae dentro de los
+     dos primeros años de habilitada + 6 meses. Si no, "No se mandó" con el
+     motivo. Se mira la fecha y no solo el conteo porque los mantenimientos de
+     antes de Voltia PM no están cargados: un cliente de la planilla en su tercer
+     año contaría su primer mantenimiento cargado como "sin costo".
      `PORTAL_CON_MAIL` / `PORTAL_SIN_MAIL`: primero `asegurarUsuarioPortal()`
      (`portal-user.service.ts`) le crea el usuario si no tiene; si no se puede,
      "Falló" con el motivo. Después sale solo si el usuario es del caso del aviso

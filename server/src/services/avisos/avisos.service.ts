@@ -28,7 +28,7 @@ export type DatosAviso = {
   disparador: string;
   dias?: number | null;
   demoraMinutos?: number | null;
-  condicion?: "SIN_CONTACTO" | "PORTAL_CON_MAIL" | "PORTAL_SIN_MAIL" | null;
+  condicion?: "SIN_CONTACTO" | "PORTAL_CON_MAIL" | "PORTAL_SIN_MAIL" | "MANTENIMIENTO_SIN_COSTO" | null;
   canal: Canal;
   asunto?: string | null;
   cuerpo: string;
