@@ -11,7 +11,11 @@
 - Cada conversación se reconoce sola con el lead por el teléfono cargado. Si el cliente escribe desde otro número, se asocia a mano al lead desde el chat.
 - En el panel del lead aparece su **WhatsApp**: los últimos mensajes, la alerta si escribió y nadie le contestó, y el botón para abrir la conversación (o escribirle por primera vez).
 - El primer mensaje del día a un lead queda anotado en su **historial de actividad**.
-- Gerencia comercial y administración pueden elegir un asesor arriba de la pantalla y **leer** su bandeja, sin escribir ni marcarla como leída.
+- **Cada número lo ve y lo usa solo su responsable**: el de cada asesor, él solo (tampoco la gerencia comercial). La administración puede elegir arriba de la pantalla a cualquier asesor y ver y usar su número; abrir un chat no se lo marca como leído al asesor.
+
+#### WhatsApp de Experiencia Solar
+
+- La pestaña **WhatsApp** de Experiencia Solar y la tarjeta de WhatsApp de la ficha del cliente las ve solo el responsable del número general (y la administración). Antes las veía cualquiera del área.
 
 ## v14.7
 

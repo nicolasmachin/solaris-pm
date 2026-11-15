@@ -1,12 +1,14 @@
 /**
- * Bandejas de WhatsApp de cada área.
+ * Bandejas de WhatsApp de cada área. Cada número lo ve y lo usa solo su
+ * responsable; el admin, cualquiera (decisión de Nicolás del 15-nov-2026).
  *
- * - Experiencia Solar (el número general): la usa cualquiera que entre al
- *   módulo. EXPERIENCIA_CLIENTES:VIEW alcanza para leer y para escribir, porque
- *   escribirle al cliente es el trabajo del módulo.
- * - Ventas (el número de cada asesor): VENTAS:VIEW. Cada asesor ve y usa la
- *   suya; gerencia comercial y admin pueden mirar la de cualquiera
- *   (`?asesor=<id>`), sin escribir ni marcarla leída.
+ * - Experiencia Solar (el número general): EXPERIENCIA_CLIENTES:VIEW y ser el
+ *   responsable del número (o admin). Si el número no tiene responsable, lo usa
+ *   cualquiera del módulo. VIEW alcanza para escribir: escribirle al cliente es
+ *   el trabajo del módulo.
+ * - Ventas (el número de cada asesor): VENTAS:VIEW y la propia. El admin elige
+ *   cualquier asesor con `?asesor=<id>` y la usa como si fuera suya, salvo que
+ *   abrir un chat no se lo marca leído al asesor.
  *
  * Ver services/whatsapp-cloud/bandejas.service.ts y docs/manual/15-whatsapp.md.
  */
@@ -23,6 +25,8 @@ import {
   asociarCliente,
   type Bandeja,
   bandejaExperienciaSolar,
+  marcaLeida,
+  puedeUsarBandeja,
   bandejaVentas,
   clienteDe,
   listarConversaciones,
@@ -34,7 +38,6 @@ import {
   whatsappDeLead,
   whatsappDeProyecto,
 } from "../services/whatsapp-cloud/bandejas.service.js";
-import { puedeVerTodoElEmbudo } from "../services/sales-panel.service.js";
 import { forbidden, unauthorized } from "../utils/errors.js";
 import { conMeta } from "./whatsapp.routes.js";
 
@@ -62,67 +65,107 @@ const enviarBody = z.discriminatedUnion("tipo", [
 
 export async function registerWhatsAppBandejasRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
+
+  /** Las rutas de una bandeja, iguales para las dos áreas: cambia de dónde sale el número. */
+  function rutasDeBandeja(
+    base: string,
+    pre: { preHandler: ReturnType<typeof authorize> },
+    bandejaDe: (request: FastifyRequest) => Promise<Bandeja>,
+    asociarSchema: z.ZodType<string | null, z.ZodTypeDef, unknown>,
+  ) {
+    /** La bandeja, solo si el usuario la puede usar. */
+    async function usable(request: FastifyRequest) {
+      const b = await bandejaDe(request);
+      if (!puedeUsarBandeja(b, ensureUser(request))) {
+        throw forbidden(`Este número de WhatsApp lo usa ${b.responsable?.nombre ?? "otra persona"}`);
+      }
+      return b;
+    }
+
+    app.get(`${base}/conversaciones/:telefono`, pre, async (request) => {
+      const { telefono } = telefonoParam.parse(request.params);
+      const b = await usable(request);
+      const [mensajes, cliente] = await Promise.all([mensajesDe(b, telefono), clienteDe(b, telefono)]);
+      return { mensajes, cliente };
+    });
+
+    app.post(`${base}/conversaciones/:telefono/leida`, pre, async (request) => {
+      const { telefono } = telefonoParam.parse(request.params);
+      const b = await usable(request);
+      const user = ensureUser(request);
+      if (marcaLeida(b, user)) await marcarLeida(b, telefono, user.id);
+      return { ok: true };
+    });
+
+    app.post(`${base}/conversaciones/:telefono/resuelta`, pre, async (request) => {
+      const { telefono } = telefonoParam.parse(request.params);
+      await marcarResuelta(await usable(request), telefono, ensureUser(request).id);
+      return { ok: true };
+    });
+
+    app.put(`${base}/conversaciones/:telefono/cliente`, pre, async (request) => {
+      const { telefono } = telefonoParam.parse(request.params);
+      const id = asociarSchema.parse(request.body);
+      const b = await usable(request);
+      await asociarCliente(b, telefono, id);
+      return { cliente: await clienteDe(b, telefono) };
+    });
+
+    app.post(`${base}/enviar`, pre, async (request, reply) => {
+      const user = ensureUser(request);
+      const body = enviarBody.parse(request.body);
+      const b = await usable(request);
+      const mensaje = await conMeta(() => mandar(b, body, user.id));
+      reply.code(201);
+      return { id: mensaje.id, estado: mensaje.estado, telefono: mensaje.telefono };
+    });
+
+    // Si Meta no contesta, la bandeja sigue andando sin plantillas (el texto libre
+    // no las necesita): un error acá aparecería en cada carga de la pantalla.
+    app.get(`${base}/plantillas`, pre, async (request) => {
+      const b = await usable(request);
+      try {
+        return await plantillasDe(b);
+      } catch (err) {
+        console.error("[whatsapp] no se pudieron traer las plantillas de la bandeja:", err instanceof Error ? err.message : err);
+        return [];
+      }
+    });
+
+    return usable;
+  }
+
+  // ─── Experiencia Solar: el número general ─────────────────────────────────
   const es = { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.VIEW) };
   const base = "/whatsapp/bandeja/experiencia-solar";
 
-  app.get(base, es, async () => {
+  rutasDeBandeja(
+    base,
+    es,
+    () => bandejaExperienciaSolar(),
+    z.object({ projectId: z.string().min(1).max(40).nullable() }).transform((b) => b.projectId),
+  );
+
+  // La lista y la tarjeta de la ficha no dan error si el número es de otro: se
+  // muestran vacías, con de quién es.
+  app.get(base, es, async (request) => {
     const b = await bandejaExperienciaSolar();
+    if (!puedeUsarBandeja(b, ensureUser(request))) {
+      return { numero: null, conversaciones: [], deOtro: b.responsable?.nombre ?? null };
+    }
     return {
       numero: b.cuenta ? { telefono: b.telefono, nombre: b.nombre } : null,
       conversaciones: await listarConversaciones(b),
     };
   });
 
-  app.get(`${base}/conversaciones/:telefono`, es, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    const b = await bandejaExperienciaSolar();
-    const [mensajes, cliente] = await Promise.all([mensajesDe(b, telefono), clienteDe(b, telefono)]);
-    return { mensajes, cliente };
-  });
-
-  app.post(`${base}/conversaciones/:telefono/leida`, es, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    await marcarLeida(await bandejaExperienciaSolar(), telefono, ensureUser(request).id);
-    return { ok: true };
-  });
-
-  app.post(`${base}/conversaciones/:telefono/resuelta`, es, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    await marcarResuelta(await bandejaExperienciaSolar(), telefono, ensureUser(request).id);
-    return { ok: true };
-  });
-
-  app.put(`${base}/conversaciones/:telefono/cliente`, es, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    const { projectId } = z.object({ projectId: z.string().min(1).max(40).nullable() }).parse(request.body);
-    const b = await bandejaExperienciaSolar();
-    await asociarCliente(b, telefono, projectId);
-    return { cliente: await clienteDe(b, telefono) };
-  });
-
-  app.post(`${base}/enviar`, es, async (request, reply) => {
-    const user = ensureUser(request);
-    const body = enviarBody.parse(request.body);
-    const b = await bandejaExperienciaSolar();
-    const mensaje = await conMeta(() => mandar(b, body, user.id));
-    reply.code(201);
-    return { id: mensaje.id, estado: mensaje.estado, telefono: mensaje.telefono };
-  });
-
-  // Si Meta no contesta, la bandeja sigue andando sin plantillas (el texto libre
-  // no las necesita): un error acá aparecería en cada carga de la pantalla.
-  app.get(`${base}/plantillas`, es, async () => {
-    try {
-      return await plantillasDe(await bandejaExperienciaSolar());
-    } catch (err) {
-      console.error("[whatsapp] no se pudieron traer las plantillas de la bandeja:", err instanceof Error ? err.message : err);
-      return [];
-    }
-  });
-
   app.get(`${base}/proyecto/:projectId`, es, async (request) => {
     const { projectId } = z.object({ projectId: z.string().min(1).max(40) }).parse(request.params);
-    return whatsappDeProyecto(await bandejaExperienciaSolar(), projectId);
+    const b = await bandejaExperienciaSolar();
+    if (!puedeUsarBandeja(b, ensureUser(request))) {
+      return { hayNumero: false, telefono: null, sinContestar: null, noLeida: false, mensajes: [] };
+    }
+    return whatsappDeProyecto(b, projectId);
   });
 
   // ─── Ventas: el número de cada asesor ─────────────────────────────────────
@@ -130,94 +173,50 @@ export async function registerWhatsAppBandejasRoutes(app: FastifyInstance) {
   const baseV = "/whatsapp/bandeja/ventas";
   const asesorQuery = z.object({ asesor: z.string().min(1).max(40).optional() });
 
-  /** La bandeja que se mira: la propia, o la de otro asesor si es gerencia. */
-  async function bandejaQueSeMira(request: FastifyRequest): Promise<{ bandeja: Bandeja; propia: boolean }> {
+  /** La propia o, para el admin, la del asesor que eligió (`?asesor=`). */
+  async function bandejaVentasDe(request: FastifyRequest): Promise<Bandeja> {
     const user = ensureUser(request);
     const { asesor } = asesorQuery.parse(request.query);
     if (asesor && asesor !== user.id) {
-      if (!puedeVerTodoElEmbudo(user.role)) throw forbidden("Solo gerencia comercial puede ver la bandeja de otro asesor");
-      return { bandeja: await bandejaVentas(asesor), propia: false };
+      if (user.role !== "ADMIN") throw forbidden("Solo el admin puede usar el número de otro asesor");
+      return bandejaVentas(asesor);
     }
-    return { bandeja: await bandejaVentas(user.id), propia: true };
+    return bandejaVentas(user.id);
   }
 
-  /** Para escribir, marcar o asociar: siempre la propia. */
-  async function bandejaPropia(request: FastifyRequest) {
-    return bandejaVentas(ensureUser(request).id);
-  }
+  rutasDeBandeja(
+    baseV,
+    ventas,
+    bandejaVentasDe,
+    z.object({ leadId: z.string().min(1).max(40).nullable() }).transform((b) => b.leadId),
+  );
 
   app.get(baseV, ventas, async (request) => {
     const user = ensureUser(request);
-    const { bandeja, propia } = await bandejaQueSeMira(request);
+    const b = await bandejaVentasDe(request);
     return {
-      numero: bandeja.cuenta ? { telefono: bandeja.telefono, nombre: bandeja.nombre } : null,
-      conversaciones: await listarConversaciones(bandeja),
-      soloLectura: !propia,
-      asesores: puedeVerTodoElEmbudo(user.role) ? await asesoresConNumero() : [],
+      numero: b.cuenta ? { telefono: b.telefono, nombre: b.nombre } : null,
+      conversaciones: await listarConversaciones(b),
+      asesores: user.role === "ADMIN" ? await asesoresConNumero() : [],
     };
   });
 
-  app.get(`${baseV}/conversaciones/:telefono`, ventas, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    const { bandeja } = await bandejaQueSeMira(request);
-    const [mensajes, cliente] = await Promise.all([mensajesDe(bandeja, telefono), clienteDe(bandeja, telefono)]);
-    return { mensajes, cliente };
-  });
-
-  app.post(`${baseV}/conversaciones/:telefono/leida`, ventas, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    await marcarLeida(await bandejaPropia(request), telefono, ensureUser(request).id);
-    return { ok: true };
-  });
-
-  app.post(`${baseV}/conversaciones/:telefono/resuelta`, ventas, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    await marcarResuelta(await bandejaPropia(request), telefono, ensureUser(request).id);
-    return { ok: true };
-  });
-
-  app.put(`${baseV}/conversaciones/:telefono/cliente`, ventas, async (request) => {
-    const { telefono } = telefonoParam.parse(request.params);
-    const { leadId } = z.object({ leadId: z.string().min(1).max(40).nullable() }).parse(request.body);
-    const b = await bandejaPropia(request);
-    await asociarCliente(b, telefono, leadId);
-    return { cliente: await clienteDe(b, telefono) };
-  });
-
-  app.post(`${baseV}/enviar`, ventas, async (request, reply) => {
-    const user = ensureUser(request);
-    const body = enviarBody.parse(request.body);
-    const b = await bandejaPropia(request);
-    const mensaje = await conMeta(() => mandar(b, body, user.id));
-    reply.code(201);
-    return { id: mensaje.id, estado: mensaje.estado, telefono: mensaje.telefono };
-  });
-
-  app.get(`${baseV}/plantillas`, ventas, async (request) => {
-    try {
-      return await plantillasDe((await bandejaQueSeMira(request)).bandeja);
-    } catch (err) {
-      console.error("[whatsapp] no se pudieron traer las plantillas de la bandeja de Ventas:", err instanceof Error ? err.message : err);
-      return [];
-    }
-  });
-
   /**
-   * El WhatsApp del panel del lead: por el número propio y, si el que mira es
-   * gerencia y no tiene número, por el del asesor del lead (solo para leer).
+   * El WhatsApp del panel del lead: por el número propio y, si el que mira es el
+   * admin y no tiene número, por el del asesor del lead.
    */
   app.get(`${baseV}/lead/:leadId`, ventas, async (request) => {
     const user = ensureUser(request);
     const { leadId } = z.object({ leadId: z.string().min(1).max(40) }).parse(request.params);
     let bandeja = await bandejaVentas(user.id);
     let asesorId: string | null = user.id;
-    if (!bandeja.cuenta && puedeVerTodoElEmbudo(user.role)) {
+    if (!bandeja.cuenta && user.role === "ADMIN") {
       const lead = await prisma.salesLead.findFirst({ where: { id: leadId, deletedAt: null }, select: { assignedToId: true } });
       if (lead?.assignedToId) {
         bandeja = await bandejaVentas(lead.assignedToId);
         asesorId = lead.assignedToId;
       }
     }
-    return { ...(await whatsappDeLead(bandeja, leadId)), asesorId, soloLectura: asesorId !== user.id };
+    return { ...(await whatsappDeLead(bandeja, leadId)), asesorId: asesorId === user.id ? null : asesorId };
   });
 }

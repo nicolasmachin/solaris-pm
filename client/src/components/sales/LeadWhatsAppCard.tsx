@@ -18,7 +18,7 @@ function haceCuanto(iso: string): string {
  * WhatsApp en el panel del lead: lo último que se habló por el número del asesor
  * y, si el cliente escribió y nadie le contestó, la alerta. El botón lleva a la
  * bandeja de Ventas con su conversación abierta. Sin número (ni propio ni, para
- * gerencia, el del asesor del lead), no se muestra.
+ * el admin, el del asesor del lead), no se muestra.
  */
 export function LeadWhatsAppCard({ leadId }: { leadId: string }) {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ export function LeadWhatsAppCard({ leadId }: { leadId: string }) {
 
   function abrir(telefono: string) {
     const q = new URLSearchParams({ tel: telefono });
-    if (data?.soloLectura && data.asesorId) q.set("asesor", data.asesorId);
+    if (data?.asesorId) q.set("asesor", data.asesorId);
     navigate(`/ventas/whatsapp?${q.toString()}`);
   }
 
@@ -41,7 +41,7 @@ export function LeadWhatsAppCard({ leadId }: { leadId: string }) {
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-primary)]">
           <MessageCircle className="h-4 w-4" /> WhatsApp
         </h3>
-        {data.telefono && (data.mensajes.length > 0 || !data.soloLectura) && (
+        {data.telefono && (
           <button
             type="button"
             onClick={() => abrir(data.sinContestar?.telefono ?? data.telefono!)}

@@ -3,11 +3,14 @@
  * desde el módulo de cada área (no desde Administración, que solo configura).
  *
  * - **Experiencia Solar**: el número general (el que tiene `uso =
- *   EXPERIENCIA_SOLAR`). Lo usa cualquiera que entre a Experiencia Solar. Si no
- *   hay ninguno conectado, cae al número de las variables de entorno, que es con
- *   el que se probó la conexión.
+ *   EXPERIENCIA_SOLAR`). Si no hay ninguno conectado, cae al número de las
+ *   variables de entorno, que es con el que se probó la conexión.
  * - **Ventas**: el número de cada asesor (`uso = VENTAS`, responsable = el
- *   asesor). Escribe solo él; gerencia comercial y admin la ven sin escribir.
+ *   asesor).
+ *
+ * Cada número lo ve y lo usa solo su responsable; el admin, cualquiera
+ * (decisión de Nicolás del 15-nov-2026). Un número sin responsable lo usa
+ * cualquiera con acceso al módulo.
  *
  * En Experiencia Solar cada conversación se une al cliente (proyecto) y en Ventas
  * al lead: por el teléfono cargado o, si escribe desde otro número, por la
@@ -42,13 +45,31 @@ export type Bandeja = {
   /** Como lo muestra Meta ("+598 98 123 456"); null si es el de las variables de entorno. */
   telefono: string | null;
   nombre: string | null;
+  /** Quién lo usa. null = cualquiera con acceso al módulo. */
+  responsable: { id: string; nombre: string } | null;
 };
+
+/** Ver y usar un número: su responsable o el admin; sin responsable, cualquiera del módulo. */
+export function puedeUsarBandeja(b: Bandeja, user: { id: string; role: string }): boolean {
+  return !b.responsable || b.responsable.id === user.id || user.role === "ADMIN";
+}
+
+/**
+ * Abrir un chat lo marca leído solo si lo abre quien atiende el número: el
+ * admin mirando el de otro no le apaga los no leídos.
+ */
+export function marcaLeida(b: Bandeja, user: { id: string }): boolean {
+  return !b.responsable || b.responsable.id === user.id;
+}
+
+const SIN_NUMERO = { cuenta: null, telefono: null, nombre: null, responsable: null };
 
 /** La bandeja de Experiencia Solar: el número general, o el del servidor si no hay ninguno conectado. */
 export async function bandejaExperienciaSolar(): Promise<Bandeja> {
   const n = await prisma.whatsAppNumero.findFirst({
     where: { uso: "EXPERIENCIA_SOLAR", estado: "CONECTADO" },
     orderBy: { conectadoEn: "desc" },
+    include: { responsable: { select: { id: true, name: true } } },
   });
   if (n) {
     return {
@@ -56,15 +77,17 @@ export async function bandejaExperienciaSolar(): Promise<Bandeja> {
       cuenta: { phoneNumberId: n.phoneNumberId, wabaId: n.wabaId, token: decryptSecret(n.tokenCifrado) },
       telefono: n.telefono,
       nombre: n.nombreVerificado,
+      responsable: n.responsable ? { id: n.responsable.id, nombre: n.responsable.name } : null,
     };
   }
   const c = whatsappConfig();
-  if (faltantesParaEnviar(c).length > 0) return { area: "EXPERIENCIA_SOLAR", cuenta: null, telefono: null, nombre: null };
+  if (faltantesParaEnviar(c).length > 0) return { area: "EXPERIENCIA_SOLAR", ...SIN_NUMERO };
   return {
     area: "EXPERIENCIA_SOLAR",
     cuenta: { phoneNumberId: c.phoneNumberId, wabaId: c.wabaId, token: c.token },
     telefono: null,
     nombre: null,
+    responsable: null,
   };
 }
 
@@ -77,17 +100,19 @@ export async function bandejaVentas(asesorId: string): Promise<Bandeja> {
   const n = await prisma.whatsAppNumero.findFirst({
     where: { uso: "VENTAS", responsableId: asesorId, estado: "CONECTADO" },
     orderBy: { conectadoEn: "desc" },
+    include: { responsable: { select: { id: true, name: true } } },
   });
-  if (!n) return { area: "VENTAS", cuenta: null, telefono: null, nombre: null };
+  if (!n) return { area: "VENTAS", ...SIN_NUMERO };
   return {
     area: "VENTAS",
     cuenta: { phoneNumberId: n.phoneNumberId, wabaId: n.wabaId, token: decryptSecret(n.tokenCifrado) },
     telefono: n.telefono,
     nombre: n.nombreVerificado,
+    responsable: n.responsable ? { id: n.responsable.id, nombre: n.responsable.name } : null,
   };
 }
 
-/** Los asesores que tienen un número de Ventas conectado (para que gerencia elija cuál mirar). */
+/** Los asesores que tienen un número de Ventas conectado (para que el admin elija cuál usar). */
 export async function asesoresConNumero() {
   const numeros = await prisma.whatsAppNumero.findMany({
     where: { uso: "VENTAS", estado: "CONECTADO", responsableId: { not: null } },

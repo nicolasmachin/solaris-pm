@@ -834,7 +834,7 @@ con el más reciente arriba, los no leídos con un círculo verde y la etiqueta 
 **Todos**, **No leídos** y **Sin contestar**. A la derecha, el chat abierto. En el
 celular se ve primero la lista y, al tocar un chat, se abre a pantalla completa.
 
-**La bandeja es del asesor:** solo él escribe desde su número. La franja de Ventas
+**La bandeja es del asesor:** solo él la ve y escribe desde su número. La franja de Ventas
 se pone en ámbar y dice quiénes esperan respuesta cuando hay chats sin contestar.
 
 **Cómo se reconoce al cliente.** Si el teléfono del cliente está cargado en el
@@ -862,10 +862,11 @@ desde Voltia PM queda en su **Historial de actividad** como «WhatsApp desde
 Voltia PM», con el texto. Así se ve que se lo contactó sin que el historial se
 llene con cada renglón de la conversación.
 
-**Lo que ve la gerencia comercial.** La gerencia comercial y la administración
-pueden elegir, arriba de la pantalla, a cualquier asesor que tenga número y
-**leer** su bandeja. No pueden escribir desde el número del asesor ni marcar sus
-chats como leídos: la bandeja sigue siendo de él.
+**Nadie más la ve.** Ni los otros asesores ni la gerencia comercial ven las
+conversaciones de un asesor. La única excepción es la Dirección: puede elegir,
+arriba de la pantalla, a cualquier asesor que tenga número, leer su bandeja y
+escribir desde ese número (el mensaje le llega al cliente desde el WhatsApp del
+asesor). Que la Dirección abra un chat no se lo marca como leído al asesor.
 
 **Lo que todavía no hace:** no avisa con una notificación cuando entra un
 mensaje (se ve en la franja de Ventas y en la bandeja); las fotos, audios y
@@ -1248,7 +1249,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.15 | 15 de noviembre de 2026 | Se agrega «El WhatsApp de Ventas»: el número de cada asesor conectado a Voltia PM, la bandeja con sus chats, cómo se reconoce al lead, la regla de las 24 horas y las plantillas, y lo que ve la gerencia comercial. En el panel del lead, la tarjeta de WhatsApp. |
+| 1.15 | 15 de noviembre de 2026 | Se agrega «El WhatsApp de Ventas»: el número de cada asesor conectado a Voltia PM, la bandeja con sus chats, cómo se reconoce al lead, la regla de las 24 horas y las plantillas, y que la bandeja la ve solo el asesor (y la Dirección). En el panel del lead, la tarjeta de WhatsApp. |
 | 1.14 | 13 de noviembre de 2026 | Desde el chat de Claude conectado a Voltia PM se pueden armar y emitir también las propuestas de empresa; hay que tener a mano la razón social y el RUT. |
 | 1.13 | 11 de noviembre de 2026 | En el Cotizador B2B, el saludo de la carta va dirigido al contacto de la empresa; sin contacto, empieza con «Estimados,». |
 | 1.12 | 10 de noviembre de 2026 | En «¿Qué se le factura?», cuando se factura una parte, «Ver detalle» muestra la cuenta de la factura, el restante sin IVA, el total y el descuento de IVA, y se puede copiar para mandarla por WhatsApp. El porcentaje y esa cuenta parten del precio de la propuesta, y el presupuesto del proyecto queda como lo que paga el cliente. |

@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.41 · del 14/11/26
+**Voltia · Uruguay** · Versión 1.42 · del 15/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1100,11 +1100,12 @@ Lo que Experiencia Solar tiene que saber:
 ### El WhatsApp general dentro de Voltia PM
 
 El número de WhatsApp general de Voltia, el que tiene el cliente para escribir,
-se usa también **desde Voltia PM**, en **Experiencia Solar → WhatsApp**. Lo puede
-usar cualquiera que entre a Experiencia Solar, no solo su responsable: así un
-mensaje no queda sin ver porque la persona de siempre no está. El número sigue
-andando en el celular como siempre; lo que se escribe en un lado aparece en el
-otro.
+se usa también **desde Voltia PM**, en **Experiencia Solar → WhatsApp**. **Lo ve y
+lo usa solo el responsable de Experiencia Solar** (y la Dirección, que puede
+entrar a cualquier número). Los demás del área no ven la pestaña WhatsApp ni la
+tarjeta de WhatsApp de la ficha. Si el responsable falta, lo cubre la Dirección.
+El número sigue andando en el celular como siempre; lo que se escribe en un lado
+aparece en el otro.
 
 **La bandeja.** Se ve y se usa igual que WhatsApp Web, el de la computadora. A la
 izquierda están todas las conversaciones, la más nueva arriba, con el nombre del
@@ -2076,6 +2077,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.42 | 15 de noviembre de 2026 | El WhatsApp general dentro de Voltia PM lo ve y lo usa solo el responsable de Experiencia Solar (y la Dirección); los demás del área ya no ven la pestaña ni la tarjeta de la ficha. |
 | 1.41 | 14 de noviembre de 2026 | La bandeja de WhatsApp de Voltia PM se ve y se usa como WhatsApp Web: iniciales del cliente, cantidad de mensajes sin leer, filtros Todos / No leídos / Sin contestar, Enter para mandar, plantillas desde la caja para escribir, y en el celular el chat a pantalla completa. Una conversación de otro número ya no dice «Sin cliente»: aparece solo con el número. |
 | 1.40 | 5 de noviembre de 2026 | El cliente que no se acuerda de su mail lo puede buscar con su nombre en la pantalla de entrada. Quien entra con el código ya no queda obligado a cambiar la contraseña temporal. |
 | 1.39 | 5 de noviembre de 2026 | En la curva del día se ve el consumo de la noche, en línea punteada, y el consumo y la compra a UTE de cada día ya la incluyen. |

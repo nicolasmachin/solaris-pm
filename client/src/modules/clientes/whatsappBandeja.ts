@@ -35,7 +35,6 @@ export const BANDEJA_ES: BandejaApi = {
   },
   queEsCliente: "cliente",
   enlaceCliente: (c) => `/clientes/${c.projectId}`,
-  compartida: true,
   alMandar: (c, qc) => {
     qc.invalidateQueries({ queryKey: ["cliente", c.projectId] });
     qc.invalidateQueries({ queryKey: ["cliente-timeline", c.projectId] });

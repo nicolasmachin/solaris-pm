@@ -8,8 +8,8 @@ const API = bandejaVentas(null);
 
 /**
  * Franja de Ventas: el WhatsApp del asesor. Si algún cliente escribió y no se le
- * contestó, en ámbar con quiénes. Sin número propio no se muestra, salvo a
- * gerencia si hay asesores con número (para entrar a mirar).
+ * contestó, en ámbar con quiénes. Sin número propio no se muestra, salvo al
+ * admin si hay asesores con número.
  */
 export function WhatsAppParaVentas() {
   const { data } = useQuery({ queryKey: [API.clave, "bandeja"], queryFn: API.getBandeja, refetchInterval: 30_000 });

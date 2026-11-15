@@ -40,7 +40,9 @@ de plantillas de esta pantalla.
 Hay dos lugares, y se separan a propósito: **Administración solo configura**; las
 conversaciones se usan desde el módulo de cada área.
 
-**Experiencia Solar → WhatsApp** (la bandeja del número general):
+**Experiencia Solar → WhatsApp** (la bandeja del número general). La ve y la usa
+solo el **responsable** del número (en Administración → WhatsApp) y el admin; a
+los demás del área no se les muestra la pestaña ni la tarjeta de la ficha:
 
 - **Se ve como WhatsApp Web** (pedido de Nicolás del 14-nov-2026): dos columnas,
   la lista de chats a la izquierda y el chat abierto a la derecha, con los colores
@@ -83,24 +85,22 @@ conversaciones se usan desde el módulo de cada área.
   como responsable y las conversaciones unidas a **leads** en vez de clientes. El
   nombre del chat lleva al panel del lead; *Asociar a un lead* busca entre los
   leads que el asesor ve en Ventas.
-- **Es del asesor**: escribe solo él. Abrir un chat lo marca leído solo en su
-  bandeja (no hay nadie más que la use).
-- **Gerencia comercial y admin** ven arriba un selector *Mi número* / cada asesor
-  con número. Al elegir un asesor la bandeja queda **para leer**: sin caja de
-  texto (un aviso abajo lo dice), sin *No hace falta contestar*, sin asociar y sin
-  marcarla leída.
-- Sin número propio, la pantalla dice cómo conectarlo; a gerencia le sugiere
+- **Es del asesor**: la ve y la usa solo él (tampoco la gerencia comercial).
+- **El admin** ve arriba un selector *Mi número* / cada asesor con número, y usa
+  la del asesor elegido como si fuera suya (manda, asocia, *No hace falta
+  contestar*), salvo que abrir un chat no se lo marca leído al asesor.
+- Sin número propio, la pantalla dice cómo conectarlo; al admin le sugiere
   elegir un asesor.
 - Se entra desde la franja **WhatsApp** del tablero de Ventas (abajo de *Leads sin
   tomar* y de la de Instagram): en ámbar con quiénes esperan respuesta si hay
   conversaciones sin contestar. No aparece si el usuario no tiene número (salvo
-  gerencia, si hay asesores con número).
+  al admin, si hay asesores con número).
 - **En el panel del lead**, tarjeta **WhatsApp** (columna derecha, arriba de
   *Pendientes*): los últimos 6 mensajes, la alerta "Escribió hace X y nadie le
   contestó" y el botón *Abrir conversación* / *Escribirle*, que lleva a la bandeja
-  con el chat abierto. Se ve por el número propio; si el que mira es gerencia sin
-  número, por el del asesor asignado al lead, para leer. Si no hay número, la
-  tarjeta no aparece.
+  con el chat abierto. Se ve por el número propio; si el que mira es el admin sin
+  número, por el del asesor asignado al lead. Si no hay número, la tarjeta no
+  aparece.
 
 **En la ficha del cliente** (Experiencia Solar → un generador):
 
@@ -210,8 +210,9 @@ prefijo `/api` y sin login:
   (`noLeidos`, el número del círculo verde) cuenta esos entrantes en la misma
   consulta de `ultimosPorTelefono()`; la lista también trae `ultimoEstado` (el
   estado del último mensaje si es saliente) para los tildes de la vista previa. Abrir la
-  conversación en la bandeja la marca leída **para todos** (la bandeja es
-  compartida). Mirar la ficha no la marca.
+  conversación en la bandeja la marca leída si la abre el responsable del número
+  (o cualquiera, si no tiene); el admin mirando el de otro no se la marca. Mirar
+  la ficha no la marca.
 - **Sin contestar**: el último mensaje de la conversación es del cliente y es
   posterior a `resueltoHasta` (*No hace falta contestar*). Un mensaje escrito
   desde el celular (eco de coexistencia) cuenta como respuesta.
@@ -226,11 +227,18 @@ prefijo `/api` y sin login:
 - `whatsappDeProyecto()` / `whatsappDeLead()`: lo que muestran la ficha y el
   panel del lead (comparten `resumenDeConversaciones()`). Usan los teléfonos
   cargados (salvo los asociados a mano a otro) más los asociados a mano a este.
-- **Ventas, quién ve qué** (`whatsapp-bandejas.routes.ts`): las lecturas aceptan
-  `?asesor=<id>`; si no es el propio, exige `puedeVerTodoElEmbudo()` (ADMIN o
-  GERENTE_COMERCIAL, el mismo criterio del embudo) y responde `soloLectura`.
-  Mandar, marcar leída o resuelta y asociar usan **siempre** la bandeja propia,
-  sin mirar el parámetro.
+- **Quién ve y usa cada número** (decisión de Nicolás del 15-nov-2026, reemplaza
+  la del 1-nov de "el general lo usa cualquiera de Experiencia Solar"):
+  `puedeUsarBandeja()` deja pasar al **responsable** del número y al **ADMIN**; un
+  número sin responsable (o el de las variables de entorno) lo usa cualquiera con
+  el permiso del módulo. En Experiencia Solar, al que no puede, la lista y la
+  tarjeta de la ficha le responden vacías con `deOtro` (el nombre del
+  responsable) y la pestaña WhatsApp se oculta; el resto de las rutas, 403. En
+  Ventas, todas las rutas aceptan `?asesor=<id>`, que solo el ADMIN puede usar
+  para otro asesor (403 al resto). `marcaLeida()`: abrir un chat lo marca leído
+  solo si lo abre el responsable (el admin no le apaga los no leídos al dueño;
+  *No hace falta contestar* sí los apaga, porque deja resuelto).
+  `rutasDeBandeja()` arma las mismas rutas para las dos áreas.
 
 **Envío** (`api.service.ts`): `POST /{GRAPH_API_VERSION}/{phone_number_id}/messages`
 con el token de la cuenta que se le pasa (`Cuenta`); sin cuenta, la de las
@@ -272,9 +280,9 @@ bandeja de Ventas, que no necesitó migración propia).
 
 | Qué | Permiso |
 |---|---|
-| Bandeja de Experiencia Solar: ver, mandar, marcar, asociar a un cliente; la tarjeta de la ficha | `EXPERIENCIA_CLIENTES:VIEW` (escribirle al cliente es el trabajo del módulo: no se pide EDIT) |
+| Bandeja de Experiencia Solar: ver, mandar, marcar, asociar a un cliente; la tarjeta de la ficha | `EXPERIENCIA_CLIENTES:VIEW` + ser el responsable del número general o ADMIN (sin responsable: cualquiera del módulo). Escribirle al cliente es el trabajo del módulo: no se pide EDIT |
 | Bandeja de Ventas propia: ver, mandar, marcar, asociar a un lead; la tarjeta del panel del lead | `VENTAS:VIEW` + tener un número de Ventas a su nombre |
-| Leer la bandeja de Ventas de otro asesor | `VENTAS:VIEW` + rol ADMIN o GERENTE_COMERCIAL (sin escribir) |
+| Ver y usar la bandeja de Ventas de otro asesor | `VENTAS:VIEW` + rol ADMIN |
 | Administración → WhatsApp (estado, números, plantillas) | `CONFIGURACION:EDIT` |
 | Conectar números, editar responsable y para qué, reintentar la sincronización | `CONFIGURACION:EDIT` |
 | Webhook | público, protegido por la firma de Meta |

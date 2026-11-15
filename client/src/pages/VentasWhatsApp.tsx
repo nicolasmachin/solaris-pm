@@ -7,9 +7,9 @@ import { getBandejaVentas } from "../api/whatsapp.api";
 import { BandejaWhatsApp } from "../components/whatsapp/BandejaWhatsApp";
 import { bandejaVentas } from "../components/sales/whatsappVentas";
 
-// Ventas → WhatsApp: las conversaciones del número del asesor, que escribe solo
-// él. Gerencia comercial y admin pueden elegir un asesor y leer las suyas.
-// Desde el panel del lead se llega con ?tel=598… (y ?asesor= si es gerencia).
+// Ventas → WhatsApp: las conversaciones del número del asesor, que ve y usa solo
+// él. El admin puede elegir cualquier asesor y usar su número.
+// Desde el panel del lead se llega con ?tel=598… (y ?asesor= si es el admin).
 export function VentasWhatsApp() {
   const [params, setParams] = useSearchParams();
   const asesor = params.get("asesor");
@@ -38,7 +38,7 @@ export function VentasWhatsApp() {
           <MessageCircle className="h-5 w-5 text-[var(--color-accent)]" /> WhatsApp
         </h1>
         <p className="text-[12px] text-[var(--color-text-muted)]">
-          {asesor ? "La bandeja de un asesor, para leer: escribe solo él." : "Las conversaciones de tu número de Ventas."}
+          {asesor ? "El número de un asesor: lo que se mande sale desde su WhatsApp." : "Las conversaciones de tu número de Ventas."}
         </p>
         {asesores.length > 0 && (
           <select

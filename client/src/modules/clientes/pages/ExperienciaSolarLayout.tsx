@@ -20,7 +20,8 @@ export function ExperienciaSolarLayout() {
   const tabs = [
     { to: "", label: "Generadores", end: true },
     { to: "recorrido", label: "Recorrido", end: false },
-    { to: "whatsapp", label: "WhatsApp", end: false, contador: sinContestar },
+    // El número general lo usa su responsable (y el admin): al resto no se le muestra.
+    ...(bandeja?.deOtro ? [] : [{ to: "whatsapp", label: "WhatsApp", end: false, contador: sinContestar }]),
     { to: "reportes", label: "Reportes FV", end: false },
     { to: "monitoreo", label: "Monitoreo", end: false },
     { to: "cobros", label: "Cobros", end: false },
