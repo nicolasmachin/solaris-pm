@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.42 · del 15/11/26
+**Voltia · Uruguay** · Versión 1.43 · del 15/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -800,6 +800,22 @@ tal al tal, tantos días—, porque un ciclo de UTE no arranca el 1 ni termina e
 le cierren. Si pregunta por qué un mes tiene 28 días y otro 33, la respuesta es
 esa: es el ciclo de su medidor, no un error.
 
+**El alumbrado público.** Algunos clientes pagan en la factura de UTE el
+alumbrado público, que UTE cobra por cuenta de la intendencia. Es un monto fijo
+por mes, que no depende del consumo, no lleva IVA y lo ajusta la intendencia dos
+veces por año. En Canelones hay dos valores: el pleno, si la calle tiene
+alumbrado, y el 40 %, si solo hay alumbrado en la localidad; los padrones rurales
+no pagan. Para que la factura estimada del reporte coincida con la de UTE, en la
+configuración del reporte del cliente se marca **Paga alumbrado público** y se
+carga el monto que figura en su factura. Se suma igual con y sin paneles, así
+que no cambia el ahorro. Hay que actualizarlo en enero y en julio, cuando cambia
+el valor.
+
+**El cliente sin mail igual ve su reporte.** Si no tiene mail cargado, el reporte
+no le llega por correo, pero queda publicado en su portal, en Reportes. Igual hay
+que conseguirle el mail: es lo que le hace llegar el reporte todos los meses y lo
+que le permite entrar al portal con el código.
+
 **La factura se le explica al mes del encendido**, con su factura real en la mano.
 Antes no sirve: no hay nada que comparar, y la explicación en abstracto no se
 retiene (Anexo E, tema 12).
@@ -1097,6 +1113,29 @@ Lo que Experiencia Solar tiene que saber:
   sale.** Queda registrado como "no se mandó" con el motivo: es una razón más
   para tener los datos de contacto completos.
 
+**Los mensajes de WhatsApp que vienen.** El 15 de noviembre de 2026 la Dirección
+dejó definidos los textos de los avisos de todo el recorrido, desde el acceso al
+portal hasta los mantenimientos. **Todavía no están activos**: salen cuando se
+conecte el número de WhatsApp y se programen sus condiciones. Cada uno se suma a
+este manual cuando se active. Lo que ya está decidido y cambia el trabajo:
+
+- **Ningún aviso automático sale antes de la bienvenida.** La bienvenida la sigue
+  mandando el responsable de Experiencia Solar, que es quien se presenta como la
+  persona que acompaña al cliente. Lo que pase antes queda esperando.
+- **En lo que puede avisar una persona, la persona va primero.** El recordatorio
+  de la obra y los avisos de cambio de fecha salen solos solo si Experiencia
+  Solar no le escribió antes al cliente: en un cambio de fecha tiene 24 horas
+  para avisarle con el motivo.
+- **Los videos y las fotos van en un mensaje aparte**, uno o dos minutos después
+  del texto, para que el cliente entienda primero de qué se trata. Cada video
+  queda además en la sección Videos del portal.
+- **El tono:** en plural, de parte de Voltia; sin el signo de pregunta de apertura;
+  "la instalación" y no "tu casa"; sin nombres internos como "consulta"; y solo
+  lo que es cierto en cualquier caso, porque el aviso no sabe si la obra se hizo
+  antes de que UTE aprobara.
+- **La alerta de la planta** por WhatsApp queda en espera hasta afinar la mesa de
+  Soporte.
+
 ### El WhatsApp general dentro de Voltia PM
 
 El número de WhatsApp general de Voltia, el que tiene el cliente para escribir,
@@ -1236,7 +1275,11 @@ voladura: sin un mantenimiento en el último año, no hay cobertura.
 
 **Cómo funciona hoy:** el sistema calcula y muestra **cuándo cumple años** cada
 instalación (en la ficha, "Próximo mantenimiento"), pero **no agenda solo ni avisa
-cuando se vence**. La fecha la propone y la confirma una persona.
+cuando se vence**. La fecha la propone y la confirma una persona. A los clientes
+que se cargaron de la planilla anterior a Voltia PM, que no tienen fecha de
+habilitación, el aniversario se les cuenta desde la fecha de entrega de la obra:
+así también les aparece el próximo mantenimiento y les llega la encuesta de
+aniversario.
 
 Esto es una decisión, no un olvido: que el sistema agende solo visitas a la
 propiedad de un cliente, sin que nadie las confirme, choca con la regla de que
@@ -1701,13 +1744,15 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 **Lo que falta:**
 
-- **Los accesos al portal no se crean solos.** Ya no hace falta el mail para
-  creárselos, pero hay que crearlos uno por uno, y mientras falten son el techo
-  de las encuestas y de los reclamos.
+- **Los accesos al portal de los clientes nuevos no se crean solos.** Desde el 6
+  de noviembre de 2026 todos los clientes que ya estaban tienen el suyo; a los
+  nuevos se les crea uno por uno desde la ficha. Un cliente tiene un solo acceso:
+  todavía no se puede sumar el de otra persona de la familia o de la empresa.
 - **Los mails que se le mandan al cliente no cuentan como contacto** en el
   historial: hay que registrarlos aparte.
-- **Los mantenimientos no tienen alerta de vencido**, sólo la cuenta de cuánto
-  falta.
+- **Los mantenimientos no tienen alerta de próximo ni de vencido**, sólo la
+  cuenta de cuánto falta, y ningún aviso le propone al cliente el mantenimiento
+  pago desde el tercer año.
 
 - **No hay métricas de satisfacción** consolidadas ni antigüedad de reclamos.
 - **El portal no muestra el estado ni la fecha de obra**, que es lo primero que el
@@ -2077,6 +2122,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.43 | 15 de noviembre de 2026 | Se agregan el alumbrado público en el reporte (se marca y se carga el monto de la factura), que el cliente sin mail ve su reporte en el portal, y que a los clientes de la planilla anterior el aniversario se les cuenta desde la entrega. Se registran las reglas de los mensajes de WhatsApp definidos el 15-nov, todavía no activos. Se actualiza lo que falta: los accesos al portal de los clientes que ya estaban están creados. |
 | 1.42 | 15 de noviembre de 2026 | El WhatsApp general dentro de Voltia PM lo ve y lo usa solo el responsable de Experiencia Solar (y la Dirección); los demás del área ya no ven la pestaña ni la tarjeta de la ficha. |
 | 1.41 | 14 de noviembre de 2026 | La bandeja de WhatsApp de Voltia PM se ve y se usa como WhatsApp Web: iniciales del cliente, cantidad de mensajes sin leer, filtros Todos / No leídos / Sin contestar, Enter para mandar, plantillas desde la caja para escribir, y en el celular el chat a pantalla completa. Una conversación de otro número ya no dice «Sin cliente»: aparece solo con el número. |
 | 1.40 | 5 de noviembre de 2026 | El cliente que no se acuerda de su mail lo puede buscar con su nombre en la pantalla de entrada. Quien entra con el código ya no queda obligado a cambiar la contraseña temporal. |

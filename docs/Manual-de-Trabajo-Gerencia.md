@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.32 — 15 de noviembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.33 — 15 de noviembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -1094,6 +1094,41 @@ su responsable, desde el 15 de noviembre de 2026.
 
 **A qué manuales afecta.** Al de Posventa (Experiencia Solar) y al de Ventas.
 
+### Los avisos automáticos de WhatsApp: después de la persona, y como una persona
+
+**Qué se decidió.** Los mensajes automáticos de WhatsApp al cliente se definieron
+para todo el recorrido, del acceso al portal a los mantenimientos, con estas
+reglas:
+
+- **Ninguno sale antes de que el responsable de Experiencia Solar haga la
+  bienvenida.** La bienvenida no es automática.
+- **Donde puede avisar una persona, la persona va primero.** El recordatorio de la
+  obra y los avisos de cambio de fecha salen solos solo si Experiencia Solar no le
+  escribió antes; en un cambio de fecha tiene 24 horas.
+- **Los mensajes se reparten en el tiempo**: no se amontonan al principio para
+  después quedar en silencio.
+- **Tienen que sonar a persona**: en plural, de parte de Voltia, sin el signo de
+  pregunta de apertura, sin nombres internos ("consulta") y sin datos que dependan
+  del orden de las cosas, porque un aviso no sabe si la obra se hizo antes de que
+  UTE aprobara.
+- **Casi todo lo que se pueda, con video**, en un mensaje aparte después del
+  texto, y el mismo video queda en el portal.
+- **Los mantenimientos:** el aviso de los dos sin costo sale solo esas dos veces;
+  desde el tercero, al año del último mantenimiento hecho se le ofrece uno pago.
+- **La alerta de la planta** no se manda hasta afinar la mesa de Soporte.
+
+Los textos los validó la Dirección uno por uno y se activan cuando se conecte el
+número y se programen sus condiciones.
+
+**Por qué.** Lo que hace sentir abandonado a un cliente es el silencio y el trato
+de máquina. Un aviso automático cubre lo que siempre es igual, pero si llega antes
+que la persona, se contradice con lo que ya pasó o suena a bot, hace más daño que
+el silencio.
+
+**Desde cuándo rige.** 15 de noviembre de 2026.
+
+**A qué manuales afecta.** Al de Experiencia Solar (los avisos que salen solos).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -1119,12 +1154,11 @@ decisión vigente.
 - Las metas y los indicadores que se siguen cada semana
 - Los roles, las gerencias y qué ve cada uno en Voltia PM
 
----
-
 ## Anexo · Registro de cambios
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.33 | 15 de noviembre de 2026 | Se registran las reglas de los avisos automáticos de WhatsApp: ninguno antes de la bienvenida, la persona va primero donde puede avisar, repartidos en el tiempo, con tono de persona y con video aparte. |
 | 0.32 | 15 de noviembre de 2026 | Cada número de WhatsApp lo ve y lo usa solo su responsable: el general, el responsable de Experiencia Solar (ya no cualquiera del área), y el de cada asesor, él solo (tampoco la gerencia comercial). La Dirección puede ver y usar cualquiera. |
 | 0.31 | 1 de noviembre de 2026 | Se registra que las conversaciones de WhatsApp con los clientes se usan dentro de Voltia PM: el número general de Voltia desde Experiencia Solar, para cualquiera del área, y el de cada asesor solo por él, desde Ventas; la ficha del cliente avisa cuando escribió y nadie le contestó. |
 | 0.30 | 30 de octubre de 2026 | Se registra que Instagram lo atiende primero un asistente con inteligencia artificial dentro de Voltia PM, con las reglas de la Dirección (contestar, dar el orden de precio, pedir factura y techo, pasar el lead al asesor comercial), y que sus cifras se cuentan desde que lo atiende Voltia PM. |
