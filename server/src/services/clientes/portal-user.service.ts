@@ -9,6 +9,8 @@
 // pertenece a un usuario NO cliente (interno), se rechaza.
 
 import { AuditAction, AuditEntityType } from "@prisma/client";
+import { randomBytes } from "node:crypto";
+
 import bcrypt from "bcryptjs";
 
 import { prisma } from "../../lib/prisma.js";
@@ -35,6 +37,12 @@ export type CreatePortalUserParams = {
   passwordTemporary?: boolean;
   phone?: string | null;
   actorUserId: string;
+  /**
+   * false cuando lo crea Voltia PM solo: el usuario existe pero nadie le mandó el
+   * acceso al cliente todavía, así que el paso del recorrido sigue abierto (lo
+   * cierra el aviso de acceso al portal al salir).
+   */
+  cerrarPasoPortal?: boolean;
 };
 
 export type CreatePortalUserResult = {
@@ -252,13 +260,13 @@ export async function createPortalUserForProject(
     userId: params.actorUserId,
     action: result.linked ? AuditAction.updated : AuditAction.created,
     description: result.linked
-      ? `Vinculó el Generador '${result.user.name}' (${identificadorDe(result.user)}) al proyecto desde Experiencia Solar`
-      : `Creó el usuario de portal '${result.user.name}' (${identificadorDe(result.user)}) desde Experiencia Solar`,
+      ? `Vinculó el Generador '${result.user.name}' (${identificadorDe(result.user)}) al proyecto${params.cerrarPasoPortal === false ? " (automático)" : " desde Experiencia Solar"}`
+      : `Creó el usuario de portal '${result.user.name}' (${identificadorDe(result.user)})${params.cerrarPasoPortal === false ? " (automático, con el mail del cliente)" : " desde Experiencia Solar"}`,
   });
 
   // Con el usuario creado (o vinculado), el paso "Envío del acceso al portal" se
   // cierra solo: el acceso existe y Voltia PM lo sabe.
-  await cerrarChecks({
+  if (params.cerrarPasoPortal !== false) await cerrarChecks({
     projectId: params.projectId,
     codigos: ["e1_portal"],
     userId: params.actorUserId,
@@ -274,4 +282,46 @@ export async function createPortalUserForProject(
     identificador: identificadorDe(result.user),
     linked: result.linked,
   };
+}
+
+/**
+ * Que el proyecto tenga su usuario del portal. Si no tiene y el cliente tiene
+ * mail cargado, se lo crea solo (sin contraseña conocida: entra con el código
+ * por mail). Lo usan la conversión del lead y el aviso de acceso al portal, que
+ * no sale sin usuario. Nunca tira error: devuelve si quedó con usuario y, si no,
+ * por qué.
+ */
+export async function asegurarUsuarioPortal(
+  projectId: string,
+  actorUserId: string,
+): Promise<{ ok: true } | { ok: false; motivo: string }> {
+  try {
+    const ya = await prisma.projectClient.findFirst({
+      where: { projectId, user: { deletedAt: null, role: { name: "CLIENT" } } },
+      select: { id: true },
+    });
+    if (ya) return { ok: true };
+    const p = await prisma.project.findFirst({
+      where: { id: projectId, deletedAt: null },
+      select: { clientName: true, nombreCliente: true, clientEmail: true, clientPhone: true },
+    });
+    if (!p) return { ok: false, motivo: "El proyecto no existe o está borrado." };
+    const email = p.clientEmail?.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { ok: false, motivo: "El cliente no tiene mail cargado para crearle el usuario del portal." };
+    }
+    await createPortalUserForProject({
+      projectId,
+      name: (p.nombreCliente || p.clientName).trim(),
+      email,
+      phone: p.clientPhone,
+      temporaryPassword: randomBytes(24).toString("base64url"),
+      passwordTemporary: false,
+      actorUserId,
+      cerrarPasoPortal: false,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, motivo: `No se pudo crear el usuario del portal: ${err instanceof Error ? err.message : String(err)}` };
+  }
 }

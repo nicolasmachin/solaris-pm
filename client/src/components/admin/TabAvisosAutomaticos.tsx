@@ -181,6 +181,8 @@ export function TabAvisosAutomaticos() {
                     ) : null}
                     {a.condicion === "SIN_CONTACTO" ? (
                       <span className="text-xs text-[var(--color-text-muted)]">· si Experiencia Solar no le escribió</span>
+                    ) : a.condicion === "CON_PORTAL" ? (
+                      <span className="text-xs text-[var(--color-text-muted)]">· con usuario del portal</span>
                     ) : null}
                     <span className={`rounded-full px-2 py-0.5 text-[11px] ${ESTADO[a.estado].clase}`}>{ESTADO[a.estado].texto}</span>
                     <span className="ml-auto text-xs text-[var(--color-text-muted)]">
@@ -342,21 +344,27 @@ function Editor({
         </select>
         {disp && <p className="mt-1 text-xs text-[var(--color-text-muted)]">{disp.cuando}</p>}
         <Demora valor={d.demoraMinutos ?? null} onCambio={(m) => setD({ ...d, demoraMinutos: m })} />
-        <label className="mt-2 flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-          <input
-            type="checkbox"
-            className="mt-1"
-            checked={d.condicion === "SIN_CONTACTO"}
-            onChange={(e) => setD({ ...d, condicion: e.target.checked ? "SIN_CONTACTO" : null })}
-          />
-          <span>
-            Solo si Experiencia Solar no le escribió al cliente desde el hecho
-            <span className="block text-xs text-[var(--color-text-muted)]">
-              Se revisa al salir: si hay un WhatsApp nuestro (desde Voltia PM o desde el celular) o un contacto anotado en
-              la bitácora, no sale. Los avisos automáticos no cuentan.
-            </span>
-          </span>
-        </label>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+          Condición
+          <select
+            className={`${inpLinea} w-auto`}
+            value={d.condicion ?? ""}
+            onChange={(e) => setD({ ...d, condicion: (e.target.value || null) as AvisoDatos["condicion"] })}
+          >
+            <option value="">Ninguna: sale siempre</option>
+            {catalogo.condiciones.map((c) => (
+              <option key={c.clave} value={c.clave}>
+                {c.etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
+        {d.condicion === "SIN_CONTACTO" && (
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+            Se revisa al salir: si hay un WhatsApp nuestro (desde Voltia PM o desde el celular) o un contacto anotado en la
+            bitácora, no sale. Los avisos automáticos no cuentan.
+          </p>
+        )}
         {disp?.conDias && (
           <div className="mt-2 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
             Faltando

@@ -28,7 +28,7 @@ export type DatosAviso = {
   disparador: string;
   dias?: number | null;
   demoraMinutos?: number | null;
-  condicion?: "SIN_CONTACTO" | null;
+  condicion?: "SIN_CONTACTO" | "CON_PORTAL" | null;
   canal: Canal;
   asunto?: string | null;
   cuerpo: string;

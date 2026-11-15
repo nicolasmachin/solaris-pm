@@ -37,7 +37,7 @@ export async function avisosObraProxima(ahora = new Date()) {
         confirmedAt: { not: null },
         segments: { some: { startDate: objetivo } },
       },
-      select: { projectId: true, segments: { select: { startDate: true } } },
+      select: { projectId: true, confirmedAt: true, segments: { select: { startDate: true } } },
     });
     for (const o of obras) {
       const primero = Math.min(...o.segments.map((s) => s.startDate.getTime()));
@@ -47,6 +47,8 @@ export async function avisosObraProxima(ahora = new Date()) {
         projectId: o.projectId,
         ref: objetivo.toISOString().slice(0, 10),
         ocurrioEn: ahora,
+        // "Experiencia Solar no le escribió" se mira desde que se confirmó la fecha.
+        contactoDesde: o.confirmedAt,
       }).catch((err) => console.error("[avisos] obra próxima:", err instanceof Error ? err.message : err));
       if (r?.estado === "ENVIADO") mandados++;
     }

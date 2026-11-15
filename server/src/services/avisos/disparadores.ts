@@ -14,7 +14,7 @@ import { UTE_HITO_LABEL } from "../ute-timeline.service.js";
 
 export type Disparador = {
   clave: string;
-  grupo: "Venta" | "Experiencia Solar" | "Obra" | "Etapas" | "UTE" | "Agenda";
+  grupo: "Venta" | "Experiencia Solar" | "Obra" | "Etapas" | "UTE" | "Encuestas y reportes" | "Agenda";
   etiqueta: string;
   /** Cuándo pasa, en palabras del usuario. */
   cuando: string;
@@ -57,6 +57,7 @@ export const DISPARADOR_BIENVENIDA = "es.bienvenida";
 /** Condiciones que se revisan al momento de salir. */
 export const CONDICIONES: Record<string, string> = {
   SIN_CONTACTO: "Solo si Experiencia Solar no le escribió al cliente desde el hecho",
+  CON_PORTAL: "Espera a que el cliente tenga usuario del portal (si tiene mail, Voltia PM se lo crea)",
 };
 
 export const DISPARADORES: Disparador[] = [
@@ -127,6 +128,41 @@ export const DISPARADORES: Disparador[] = [
     etiqueta: "UTE habilitó la instalación",
     cuando: "Cuando termina el trámite de UTE (con varios suministros, cuando terminan todos).",
     variables: ["evento.fecha"],
+  },
+  {
+    clave: "encuesta.creada:OBRA",
+    grupo: "Encuestas y reportes",
+    etiqueta: "Encuesta de la instalación creada",
+    cuando: "Cuando se genera la encuesta de la instalación (al cerrar la etapa de obra).",
+    variables: [],
+  },
+  {
+    clave: "encuesta.creada:HABILITACION",
+    grupo: "Encuestas y reportes",
+    etiqueta: "Encuesta de la habilitación creada",
+    cuando: "Cuando se genera la encuesta de la habilitación (al terminar el trámite de UTE).",
+    variables: [],
+  },
+  {
+    clave: "encuesta.creada:ANIVERSARIO",
+    grupo: "Encuestas y reportes",
+    etiqueta: "Encuesta de aniversario creada",
+    cuando: "Cuando se genera la encuesta de cada aniversario de la puesta en marcha.",
+    variables: [],
+  },
+  {
+    clave: "reporte.publicado",
+    grupo: "Encuestas y reportes",
+    etiqueta: "Reporte del mes publicado",
+    cuando: "Cuando el reporte fotovoltaico del mes se manda por mail o, si el cliente no tiene mail, se publica en el portal.",
+    variables: [],
+  },
+  {
+    clave: "reporte.primero",
+    grupo: "Encuestas y reportes",
+    etiqueta: "Primer reporte publicado",
+    cuando: "Cuando se publica el primer reporte fotovoltaico del cliente. Una sola vez por proyecto.",
+    variables: [],
   },
   {
     clave: "agenda.creado:VISITA_TECNICA",

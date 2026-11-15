@@ -22,9 +22,10 @@ internos sigue con el bloqueo `internal` / `client_facing`.
    Obra, Etapas, UTE, Agenda). Debajo se ve en palabras cuándo pasa. En "Faltan N
    días para la obra" se eligen los días.
    - **Sale**: *enseguida* o *después de…* N horas o días del hecho (la demora).
-   - **Solo si Experiencia Solar no le escribió al cliente desde el hecho**: se
-     tilda para los avisos que no tienen que salir si Experiencia Solar ya se
-     ocupó (el recordatorio de obra, los cambios de fecha).
+   - **Condición**: *Ninguna*; *Solo si Experiencia Solar no le escribió al
+     cliente desde el hecho* (el recordatorio de obra, los cambios de fecha: si
+     una persona ya se ocupó, no sale); o *Espera a que el cliente tenga usuario
+     del portal* (el acceso al portal).
 2. Se elige el canal (WhatsApp o mail; después no se cambia) y un nombre.
 3. Se escribe el mensaje. Los botones de arriba insertan los datos que tiene ese
    disparador (`{{cliente.nombre}}`, `{{obra.fecha}}`…). Abajo se ve cómo le
@@ -57,6 +58,8 @@ del proyecto.
 | Disparador | Dónde se engancha |
 |---|---|
 | `proyecto.creado` (Venta cerrada) | `POST /leads/:id/convert` en `api.routes.ts` |
+| `encuesta.creada:<OBRA\|HABILITACION\|ANIVERSARIO>` | `crearEncuestaSiNoExiste()` en `encuestas.service.ts`, solo cuando la crea (ref: id de la encuesta) |
+| `reporte.publicado` / `reporte.primero` | `avisarReportePublicado()` en `reportesFv/envio.service.ts`, en los dos lugares donde la emisión queda `publicadoEnPortal`: enviada por mail, o sin mail publicada solo en el portal. `reporte.publicado` lleva de ref la emisión; `reporte.primero` sale si no hay otra emisión publicada del proyecto, sin ref (una vez por proyecto) |
 | `es.bienvenida` (Bienvenida hecha) | `recorrido.service.ts` → `alHacerseLaBienvenida()`, cuando se cierra el paso `e1_bienvenida` (a mano en `completarCheck()` o solo en `cerrarChecks()`) |
 | `obra.fecha_confirmada` | `PATCH /calendar/:id/confirm`, junto a `activarPorHecho("fecha_confirmada")` |
 | `obra.reprogramada` | `PATCH /calendar/:id` y `PATCH /calendar/:id/reschedule`, solo cuando la fecha ya estaba confirmada y hay motivo (lo mismo que crea el check de reagenda) |
@@ -69,7 +72,8 @@ del proyecto.
 - `emitirHecho()` no espera ni tira error: un aviso que falla nunca frena la
   carga de una fecha. `procesarHecho()` busca los avisos **ACTIVO** del
   disparador y llama a `mandarAviso()` por cada uno.
-- `mandarAviso()` reserva y decide; `enviarEnvio()` manda:
+- `mandarAviso()` reserva y decide; `enviarEnvio()` manda. `salirEn` (el hecho +
+  la demora) se guarda al reservar, así el job reintenta lo que tuvo que esperar:
   1. **Reserva el hecho**: crea la fila de `avisos_envios` con
      `claveHecho = disparador|proyecto|referencia` (único por aviso). Si ya
      existe, no hace nada. Así un hecho manda cada aviso **una sola vez**, aunque
@@ -100,6 +104,11 @@ del proyecto.
      celular). Los avisos automáticos no cuentan: en la bitácora empiezan con
      `PREFIJO_BITACORA` y en WhatsApp se reconocen por el `waMessageId` guardado
      en `avisos_envios`.
+     `CON_PORTAL`: el cliente tiene que tener usuario del portal; si no tiene y
+     tiene mail, se lo crea `asegurarUsuarioPortal()` (`portal-user.service.ts`)
+     sin contraseña conocida (entra con el código por mail). Sin mail, queda
+     `PROGRAMADO` con el motivo y se reintenta en cada pasada del job: sale cuando
+     se carga el mail.
   6. Rellena el mensaje con `datosDelCliente()`. Si falta un dato (ej. la obra sin
      fecha), **no se manda** y queda el motivo.
   7. WhatsApp: `enviarPlantilla()` con la plantilla aprobada, al `clientPhone`
@@ -108,6 +117,11 @@ del proyecto.
   8. Si salió: interacción en la bitácora (`createInteraction`, canal, saliente,
      motivo SEGUIMIENTO, cierra `cierraCheck`) y entrada de auditoría del
      proyecto. El autor es el primer ADMIN (usuario de sistema).
+- **Usuario del portal con la venta**: al convertir el lead
+  (`POST /leads/:id/convert`) se llama también a `asegurarUsuarioPortal()`. Sin
+  mail no pasa nada (queda en el log). Ese alta **no cierra** el paso
+  `e1_portal` del recorrido: lo cierra el aviso de acceso al portal al salir (con
+  `cierraCheck`) o Experiencia Solar al mandarlo.
 - **Envíos programados**: el job `enviarProgramados()` (`avisos.job.ts`, cada 2
   minutos, `CRON_AVISOS_PROGRAMADOS`) manda los `PROGRAMADO` con `salirEn` ya
   pasado, de a 200. Al hacerse la bienvenida, `alHacerseLaBienvenida()` libera los

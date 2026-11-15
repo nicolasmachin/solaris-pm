@@ -43,6 +43,19 @@ interface OpcionesEnvio {
  * sin tirar en los casos "esperables" (guardas no cumplidas): esos quedan como
  * OMITIDO para que un envío en lote no se corte por un generador incompleto.
  */
+/**
+ * Avisos automáticos del reporte: "reporte publicado" cada vez y "primer reporte"
+ * la primera vez que el cliente tiene uno publicado.
+ */
+async function avisarReportePublicado(emisionId: string, projectId: string) {
+  const { emitirHecho } = await import("../avisos/emitir.js");
+  emitirHecho({ disparador: "reporte.publicado", projectId, ref: emisionId });
+  const otros = await prisma.reporteFvEmision.count({
+    where: { projectId, publicadoEnPortal: true, id: { not: emisionId } },
+  });
+  if (otros === 0) emitirHecho({ disparador: "reporte.primero", projectId });
+}
+
 export async function enviarEmision(emisionId: string, opts: OpcionesEnvio): Promise<ResultadoEnvio> {
   const emision = await prisma.reporteFvEmision.findUnique({
     where: { id: emisionId },
@@ -66,6 +79,9 @@ export async function enviarEmision(emisionId: string, opts: OpcionesEnvio): Pro
       where: { id: emisionId },
       data: { publicadoEnPortal: true, publicadoEn: new Date() },
     });
+    await avisarReportePublicado(emisionId, emision.project.id).catch((err) =>
+      console.error("[avisos] reporte publicado:", err instanceof Error ? err.message : err),
+    );
     return registrarEnvio(emisionId, {
       estado: ReporteFvEnvioEstado.OMITIDO,
       destinatarios: [],
@@ -151,6 +167,9 @@ export async function enviarEmision(emisionId: string, opts: OpcionesEnvio): Pro
       where: { id: emisionId },
       data: { publicadoEnPortal: true, publicadoEn: new Date() },
     });
+    await avisarReportePublicado(emisionId, emision.project.id).catch((err) =>
+      console.error("[avisos] reporte publicado:", err instanceof Error ? err.message : err),
+    );
 
     const resultado = await registrarEnvio(emisionId, {
       estado: ReporteFvEnvioEstado.ENVIADO,

@@ -163,6 +163,8 @@ export async function crearEncuestaSiNoExiste(params: {
     }
 
     await notificarEncuestaDisponible(params.projectId, params.tipo);
+    const { emitirHecho } = await import("../avisos/emitir.js");
+    emitirHecho({ disparador: `encuesta.creada:${params.tipo}`, projectId: params.projectId, ref: survey.id });
     return survey;
   } catch (err) {
     console.error(`[encuestas] no se pudo crear encuesta ${params.tipo} para ${params.projectId}:`, err);

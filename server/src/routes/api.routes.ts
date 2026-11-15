@@ -7857,6 +7857,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: `Creó proyecto '${project.clientName}' desde lead ${lead.code}`,
     });
     emitirHecho({ disparador: "proyecto.creado", projectId: project.id });
+    // El usuario del portal se crea solo con la venta, si el cliente tiene mail:
+    // el aviso de acceso al portal lo necesita (y si no, lo crea al salir).
+    {
+      const { asegurarUsuarioPortal } = await import("../services/clientes/portal-user.service.js");
+      const r = await asegurarUsuarioPortal(project.id, user.id);
+      if (!r.ok) console.log(`[portal] ${project.code} sin usuario del portal: ${r.motivo}`);
+    }
 
     // Copia de adjuntos del lead al proyecto. No falla la conversión si la
     // copia falla parcialmente (preferimos tener el proyecto creado).

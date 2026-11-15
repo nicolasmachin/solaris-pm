@@ -93,9 +93,11 @@ describe("demora, bienvenida y condición", async () => {
   const admin = await prisma.user.findFirst({ where: { deletedAt: null, role: { name: "ADMIN" } }, select: { id: true } });
   const avisos: string[] = [];
   const proyectos: string[] = [];
+  const usuarios: string[] = [];
   after(async () => {
     await prisma.avisoAutomatico.deleteMany({ where: { id: { in: avisos } } });
     await prisma.project.deleteMany({ where: { id: { in: proyectos } } });
+    await prisma.user.deleteMany({ where: { id: { in: usuarios } } });
     await prisma.$disconnect();
   });
 
@@ -167,6 +169,28 @@ describe("demora, bienvenida y condición", async () => {
     const r = await mandarAviso(aviso, { disparador: "ute.habilitado", projectId: id, ocurrioEn: ocurrio });
     assert.equal(r?.estado, "PROGRAMADO");
     assert.equal(r?.salirEn?.getTime(), ocurrio.getTime() + 24 * 60 * 60_000);
+  });
+
+  test("el acceso al portal espera el usuario; con mail, se lo crea solo sin cerrar el paso", { skip: !admin }, async () => {
+    const id = await proyectoDePrueba();
+    await prisma.recorridoCheck.updateMany({ where: { projectId: id, codigo: "e1_bienvenida" }, data: { completadoEn: new Date() } });
+    await prisma.recorridoCheck.create({ data: { projectId: id, recorrido: "E1", codigo: "e1_portal", titulo: "Portal", orden: 3 } });
+    const aviso = await nuevoAviso({ disparador: "es.bienvenida", condicion: "CON_PORTAL" });
+    const r = await mandarAviso(aviso, { disparador: "es.bienvenida", projectId: id });
+    assert.equal(r?.estado, "PROGRAMADO");
+    assert.match(r?.detalle ?? "", /no tiene mail/);
+
+    const mail = `prueba.avisos.${Date.now()}@ejemplo.com`;
+    await prisma.project.update({ where: { id }, data: { clientEmail: mail } });
+    await enviarProgramados({ projectId: id });
+    const tras = await prisma.avisoEnvio.findUnique({ where: { id: r!.id } });
+    assert.notEqual(tras?.estado, "PROGRAMADO", tras?.detalle ?? "");
+    const usuario = await prisma.user.findUnique({ where: { email: mail }, select: { id: true, passwordTemporary: true } });
+    assert.ok(usuario);
+    assert.equal(usuario.passwordTemporary, false);
+    const paso = await prisma.recorridoCheck.findFirst({ where: { projectId: id, codigo: "e1_portal" } });
+    assert.equal(paso?.completadoEn, null);
+    usuarios.push(usuario.id);
   });
 
   test("si Experiencia Solar le escribió, la condición lo frena; los avisos no cuentan", { skip: !admin }, async () => {

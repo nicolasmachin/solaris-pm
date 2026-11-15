@@ -461,7 +461,9 @@ se sacó entera antes de llegar a producción: queda en el historial de git.
   ocurra su hecho: no hay backfill.
 - **Se cierran solos cuando Voltia PM ve el hecho** (`cerrarChecks()`, fuente
   `hecho`): acceso al portal al crear o vincular el usuario
-  (`createPortalUserForProject`), contrato firmado al subirlo
+  (`createPortalUserForProject`; no cuando lo crea Voltia PM solo con
+  `asegurarUsuarioPortal()`, que pasa `cerrarPasoPortal: false`: el usuario
+  existe pero nadie le mandó el acceso), contrato firmado al subirlo
   (`contrato-firmado.routes`), alta en reportes cuando la config queda habilitada
   y con al menos un destinatario (`upsertConfig`). Cada cierre automático queda en
   auditoría ("Se completó solo el paso…") y en `RecorridoCheck.cierreFuente`

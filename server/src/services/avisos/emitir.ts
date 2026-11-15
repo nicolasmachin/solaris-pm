@@ -141,6 +141,9 @@ export function claveDelHecho(h: Hecho): string {
 export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
   const ocurrio = hecho.ocurrioEn ?? new Date();
   const claveHecho = claveDelHecho(hecho);
+  // Cuándo sale: el hecho + la demora. Se guarda desde ya: si al salir tiene que
+  // esperar (la bienvenida, el usuario del portal), el job lo vuelve a intentar.
+  const salirEn = new Date(ocurrio.getTime() + (aviso.demoraMinutos ?? 0) * 60_000);
 
   // Se reserva el hecho antes de mandar: si ya existe, otro proceso lo mandó.
   const yaEsta = await prisma.avisoEnvio.findUnique({
@@ -157,6 +160,7 @@ export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
         claveHecho,
         canal: aviso.canal,
         estado: "PROCESANDO",
+        salirEn,
         ocurrioEn: ocurrio,
         contactoDesde: hecho.contactoDesde ?? ocurrio,
         eventoFecha: hecho.eventoFecha ?? null,
@@ -178,7 +182,6 @@ export async function mandarAviso(aviso: Aviso, hecho: Hecho) {
     return cerrar({ estado: "OMITIDO", detalle: `El hecho tiene más de ${ANTIGUEDAD_MAX_DIAS} días: se cargó tarde.` });
   }
 
-  const salirEn = new Date(ocurrio.getTime() + (aviso.demoraMinutos ?? 0) * 60_000);
   if (salirEn.getTime() > Date.now()) {
     return cerrar({ estado: "PROGRAMADO", salirEn, detalle: null });
   }
@@ -280,6 +283,13 @@ export async function enviarEnvio(envioId: string) {
     return cerrar({ estado: "OMITIDO", detalle: "Es un generador cargado por planilla, no un proyecto de Voltia." });
   }
   const datos = { ...cliente.datos, ...((envio.datosFijos as Record<string, string> | null) ?? {}) };
+
+  if (aviso.condicion === "CON_PORTAL") {
+    const sistemaId = await usuarioSistema();
+    const { asegurarUsuarioPortal } = await import("../clientes/portal-user.service.js");
+    const r = sistemaId ? await asegurarUsuarioPortal(projectId, sistemaId) : { ok: false as const, motivo: "No hay usuario de sistema." };
+    if (!r.ok) return cerrar({ estado: "PROGRAMADO", detalle: `Espera el usuario del portal. ${r.motivo}` });
+  }
 
   if (aviso.condicion === "SIN_CONTACTO") {
     const desde = envio.contactoDesde ?? envio.ocurrioEn ?? envio.createdAt;
