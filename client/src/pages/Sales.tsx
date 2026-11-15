@@ -66,6 +66,8 @@ import { LeadRow } from "../components/sales/LeadRow";
 import { LeadCard } from "../components/sales/LeadCard";
 import { LeadsSinTomar } from "../components/sales/LeadsSinTomar";
 import { InstagramParaVentas } from "../components/sales/InstagramParaVentas";
+import { LeadWhatsAppCard } from "../components/sales/LeadWhatsAppCard";
+import { WhatsAppParaVentas } from "../components/sales/WhatsAppParaVentas";
 
 const WON_STAGE = "CERRADO_GANADO";
 const LOST_STAGE = "CERRADO_PERDIDO";
@@ -900,6 +902,8 @@ function LeadPanel({
           <LeadProposalsList leadId={leadId} clientName={lead.clientName} />
         </section>
 
+        <LeadWhatsAppCard leadId={lead.id} />
+
         <LeadTasks leadId={lead.id} canEdit={canEditSales} />
 
         <section className="mb-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
@@ -1244,6 +1248,7 @@ export function Sales() {
 
       <LeadsSinTomar onOpenLead={setSelectedLeadId} />
       <InstagramParaVentas />
+      <WhatsAppParaVentas />
 
       {view === "list" ? (
         <LeadsListView onOpenLead={setSelectedLeadId} />

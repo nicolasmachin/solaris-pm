@@ -1,5 +1,18 @@
 # Novedades
 
+## v14.8
+
+### 15 de noviembre de 2026
+
+#### WhatsApp en Ventas
+
+- Nueva pantalla **Ventas → WhatsApp**: cada asesor que tiene un número de WhatsApp a su nombre ve ahí las conversaciones de su número y las contesta desde Voltia PM, con la misma apariencia de WhatsApp Web que Experiencia Solar. La bandeja es del asesor: escribe solo él.
+- Se entra desde la franja **WhatsApp** del tablero de Ventas, que se pone en ámbar y dice quiénes esperan respuesta cuando un cliente escribió y nadie le contestó.
+- Cada conversación se reconoce sola con el lead por el teléfono cargado. Si el cliente escribe desde otro número, se asocia a mano al lead desde el chat.
+- En el panel del lead aparece su **WhatsApp**: los últimos mensajes, la alerta si escribió y nadie le contestó, y el botón para abrir la conversación (o escribirle por primera vez).
+- El primer mensaje del día a un lead queda anotado en su **historial de actividad**.
+- Gerencia comercial y administración pueden elegir un asesor arriba de la pantalla y **leer** su bandeja, sin escribir ni marcarla como leída.
+
 ## v14.7
 
 ### 14 de noviembre de 2026

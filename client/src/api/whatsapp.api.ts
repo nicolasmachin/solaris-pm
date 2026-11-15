@@ -24,7 +24,8 @@ export type WhatsAppConversacion = {
   cliente: WhatsAppCliente | null;
 };
 
-export type WhatsAppCliente = { projectId: string; codigo: string; nombre: string; aMano: boolean };
+/** El cliente (Experiencia Solar: `projectId`) o el lead (Ventas: `leadId`) de una conversación. */
+export type WhatsAppCliente = { projectId?: string; leadId?: string; codigo: string; nombre: string; aMano: boolean };
 
 export type WhatsAppMensaje = {
   id: string;
@@ -149,7 +150,13 @@ const BANDEJA_ES = "/api/whatsapp/bandeja/experiencia-solar";
 export type WhatsAppBandeja = {
   numero: { telefono: string | null; nombre: string | null } | null;
   conversaciones: WhatsAppConversacion[];
+  /** Ventas: gerencia mirando la bandeja de otro asesor. */
+  soloLectura?: boolean;
+  /** Ventas: los asesores con número, para que gerencia elija cuál mirar. */
+  asesores?: WhatsAppAsesor[];
 };
+
+export type WhatsAppAsesor = { id: string; nombre: string; telefono: string };
 
 export async function getBandejaES() {
   return (await apiClient.get<WhatsAppBandeja>(BANDEJA_ES)).data;
@@ -198,4 +205,61 @@ export type WhatsAppDeProyecto = {
 
 export async function getWhatsAppDeProyecto(projectId: string) {
   return (await apiClient.get<WhatsAppDeProyecto>(`${BANDEJA_ES}/proyecto/${projectId}`)).data;
+}
+
+// ─── Bandeja de Ventas (el número de cada asesor) ────────────────────────────
+
+const BANDEJA_VENTAS = "/api/whatsapp/bandeja/ventas";
+
+/** `asesor`: gerencia mirando la bandeja de otro (solo lectura). Sin él, la propia. */
+function deAsesor(asesor?: string | null) {
+  return asesor ? { params: { asesor } } : undefined;
+}
+
+export async function getBandejaVentas(asesor?: string | null) {
+  return (await apiClient.get<WhatsAppBandeja>(BANDEJA_VENTAS, deAsesor(asesor))).data;
+}
+
+export async function getConversacionVentas(telefono: string, asesor?: string | null) {
+  return (
+    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null }>(
+      `${BANDEJA_VENTAS}/conversaciones/${encodeURIComponent(telefono)}`,
+      deAsesor(asesor),
+    )
+  ).data;
+}
+
+export async function marcarLeidaVentas(telefono: string) {
+  await apiClient.post(`${BANDEJA_VENTAS}/conversaciones/${encodeURIComponent(telefono)}/leida`);
+}
+
+export async function marcarResueltaVentas(telefono: string) {
+  await apiClient.post(`${BANDEJA_VENTAS}/conversaciones/${encodeURIComponent(telefono)}/resuelta`);
+}
+
+export async function asociarLeadVentas(telefono: string, leadId: string | null) {
+  return (
+    await apiClient.put<{ cliente: WhatsAppCliente | null }>(
+      `${BANDEJA_VENTAS}/conversaciones/${encodeURIComponent(telefono)}/cliente`,
+      { leadId },
+    )
+  ).data;
+}
+
+export async function enviarWhatsAppVentas(body: EnviarWhatsAppBody) {
+  return (await apiClient.post<{ id: string; telefono: string; estado: string | null }>(`${BANDEJA_VENTAS}/enviar`, body)).data;
+}
+
+export async function getPlantillasVentas(asesor?: string | null) {
+  return (await apiClient.get<WhatsAppPlantilla[]>(`${BANDEJA_VENTAS}/plantillas`, deAsesor(asesor))).data;
+}
+
+export type WhatsAppDeLead = WhatsAppDeProyecto & {
+  /** De quién es el número por el que se ve (el propio o, para gerencia, el del asesor del lead). */
+  asesorId: string | null;
+  soloLectura: boolean;
+};
+
+export async function getWhatsAppDeLead(leadId: string) {
+  return (await apiClient.get<WhatsAppDeLead>(`${BANDEJA_VENTAS}/lead/${leadId}`)).data;
 }

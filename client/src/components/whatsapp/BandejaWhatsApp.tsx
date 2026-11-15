@@ -24,7 +24,6 @@ import {
   X,
 } from "lucide-react";
 
-import { getClientes } from "../../api/clientes.api";
 import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
 import type {
   EnviarWhatsAppBody,
@@ -39,9 +38,10 @@ import "./whatsapp-web.css";
 /**
  * Bandeja de WhatsApp de un área, con la apariencia de WhatsApp Web: a la
  * izquierda los chats del número (no leídos, sin contestar), a la derecha el
- * chat abierto. En el celular se ve una cosa por vez, como en WhatsApp. Hoy la
- * usa Experiencia Solar con el número general; la misma pieza sirve para el
- * número de cada asesor en Ventas, cambiando las llamadas (`BandejaApi`).
+ * chat abierto. En el celular se ve una cosa por vez, como en WhatsApp. La usan
+ * Experiencia Solar (el número general, conversaciones unidas a clientes) y
+ * Ventas (el número de cada asesor, unidas a leads), cambiando las llamadas
+ * (`BandejaApi`).
  *
  * Colores y fondo en `whatsapp-web.css` (variables `--wa-*`, claro y oscuro).
  */
@@ -52,10 +52,28 @@ export type BandejaApi = {
   getConversacion: (telefono: string) => Promise<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null }>;
   marcarLeida: (telefono: string) => Promise<void>;
   marcarResuelta: (telefono: string) => Promise<void>;
-  asociarCliente: (telefono: string, projectId: string | null) => Promise<unknown>;
+  /** `id` es un proyecto en Experiencia Solar y un lead en Ventas. */
+  asociarCliente: (telefono: string, id: string | null) => Promise<unknown>;
   enviar: (body: EnviarWhatsAppBody) => Promise<unknown>;
   getPlantillas: () => Promise<WhatsAppPlantilla[]>;
+  /** A quién se puede asociar una conversación, filtrado por lo que se escribe. */
+  buscarParaAsociar: (q: string) => Promise<OpcionAsociar[]>;
+  /** Cómo se llama lo que se asocia: "cliente" o "lead". */
+  queEsCliente: string;
+  /** Adónde lleva el nombre del chat. */
+  enlaceCliente: (c: WhatsAppCliente) => string;
+  /** Si al abrir un chat queda leído para todo el equipo (Experiencia Solar) o solo es del asesor. */
+  compartida: boolean;
+  /** Después de mandar: refrescar lo que muestre el contacto en la ficha o el lead. */
+  alMandar?: (c: WhatsAppCliente, qc: ReturnType<typeof useQueryClient>) => void;
 };
+
+export type OpcionAsociar = { id: string; nombre: string; detalle: string | null };
+
+/** El id de lo que se asoció, sea proyecto o lead. */
+function idCliente(c: WhatsAppCliente): string {
+  return c.projectId ?? c.leadId ?? "";
+}
 
 function getApiErr(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -378,15 +396,22 @@ function BotonIcono({
   );
 }
 
-/** Buscador de clientes de Experiencia Solar para asociar una conversación. */
-function AsociarCliente({ onElegir, onCancelar }: { onElegir: (projectId: string) => void; onCancelar: () => void }) {
+/** Buscador de clientes (o leads) para asociar una conversación. */
+function AsociarCliente({
+  api,
+  onElegir,
+  onCancelar,
+}: {
+  api: BandejaApi;
+  onElegir: (id: string) => void;
+  onCancelar: () => void;
+}) {
   const [q, setQ] = useState("");
-  const { data } = useQuery({ queryKey: ["clientes", {}, 1, 200], queryFn: () => getClientes({}, 1, 200) });
-  const items = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    const todos = data?.items ?? [];
-    return (t ? todos.filter((c) => c.nombre.toLowerCase().includes(t) || (c.telefono ?? "").includes(t)) : todos).slice(0, 8);
-  }, [data, q]);
+  const { data: items = [] } = useQuery({
+    queryKey: [api.clave, "asociar", q.trim().toLowerCase()],
+    queryFn: () => api.buscarParaAsociar(q.trim().toLowerCase()),
+    placeholderData: (prev) => prev,
+  });
   return (
     <div
       className="absolute right-3 top-[60px] z-30 w-[min(340px,calc(100%-1.5rem))] rounded-lg bg-[var(--wa-panel)] py-2"
@@ -397,7 +422,7 @@ function AsociarCliente({ onElegir, onCancelar }: { onElegir: (projectId: string
         <input
           autoFocus
           className="h-[35px] w-full bg-transparent text-[14px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-secundario)]"
-          placeholder="Asociar a un cliente…"
+          placeholder={`Asociar a un ${api.queEsCliente}…`}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -405,17 +430,17 @@ function AsociarCliente({ onElegir, onCancelar }: { onElegir: (projectId: string
           <X size={15} />
         </button>
       </div>
-      {items.map((c) => (
+      {items.slice(0, 8).map((c) => (
         <button
-          key={c.projectId}
+          key={c.id}
           type="button"
-          onClick={() => onElegir(c.projectId)}
+          onClick={() => onElegir(c.id)}
           className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--wa-hover)]"
         >
-          <Avatar nombre={c.nombre} semilla={c.projectId} tam={32} />
+          <Avatar nombre={c.nombre} semilla={c.id} tam={32} />
           <span className="min-w-0">
             <span className="block truncate text-[14px]">{c.nombre}</span>
-            {c.telefono && <span className="block text-[12px] text-[var(--wa-secundario)]">{c.telefono}</span>}
+            {c.detalle && <span className="block text-[12px] text-[var(--wa-secundario)]">{c.detalle}</span>}
           </span>
         </button>
       ))}
@@ -436,6 +461,7 @@ function Conversacion({
   ventanaAbierta,
   sinContestar,
   plantillas,
+  soloLectura,
   onVolver,
 }: {
   api: BandejaApi;
@@ -443,6 +469,8 @@ function Conversacion({
   ventanaAbierta: boolean;
   sinContestar: boolean;
   plantillas: WhatsAppPlantilla[];
+  /** Gerencia mirando la bandeja de un asesor: se lee, no se escribe. */
+  soloLectura: boolean;
   onVolver: () => void;
 }) {
   const qc = useQueryClient();
@@ -511,11 +539,7 @@ function Conversacion({
       toast.success("Mensaje enviado");
       refrescar();
       // El primer mensaje del día a un cliente queda como contacto en su historial.
-      if (cliente) {
-        qc.invalidateQueries({ queryKey: ["cliente", cliente.projectId] });
-        qc.invalidateQueries({ queryKey: ["cliente-timeline", cliente.projectId] });
-        qc.invalidateQueries({ queryKey: ["clientes"] });
-      }
+      if (cliente) api.alMandar?.(cliente, qc);
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo mandar el mensaje"),
   });
@@ -527,7 +551,7 @@ function Conversacion({
   });
 
   const asociar = useMutation({
-    mutationFn: (projectId: string | null) => api.asociarCliente(telefono, projectId),
+    mutationFn: (id: string | null) => api.asociarCliente(telefono, id),
     onSuccess: () => {
       setAsociando(false);
       refrescar();
@@ -557,13 +581,13 @@ function Conversacion({
         >
           <ArrowLeft size={22} />
         </button>
-        <Avatar nombre={cliente?.nombre ?? null} semilla={cliente?.projectId ?? telefono} tam={40} />
+        <Avatar nombre={cliente?.nombre ?? null} semilla={cliente ? idCliente(cliente) : telefono} tam={40} />
         <div className="min-w-0 flex-1">
           {cliente ? (
             <Link
-              to={`/clientes/${cliente.projectId}`}
+              to={api.enlaceCliente(cliente)}
               className="block truncate text-[16px] leading-[21px] text-[var(--wa-texto)] hover:underline"
-              title="Abrir la ficha del cliente"
+              title={`Abrir el ${api.queEsCliente}`}
             >
               {nombre}
             </Link>
@@ -571,8 +595,8 @@ function Conversacion({
             <p className="truncate text-[16px] leading-[21px] text-[var(--wa-texto)]">{nombre}</p>
           )}
           <p className="truncate text-[13px] leading-[20px] text-[var(--wa-secundario)]">
-            {cliente ? `${formatearTelefono(telefono)} · ${cliente.codigo}` : "No está asociado a un cliente"}
-            {cliente?.aMano && (
+            {cliente ? `${formatearTelefono(telefono)} · ${cliente.codigo}` : `No está asociado a un ${api.queEsCliente}`}
+            {cliente?.aMano && !soloLectura && (
               <>
                 {" · asociado a mano ("}
                 <button type="button" className="underline" onClick={() => asociar.mutate(null)}>
@@ -583,7 +607,7 @@ function Conversacion({
             )}
           </p>
         </div>
-        {sinContestar && (
+        {sinContestar && !soloLectura && (
           <button
             type="button"
             onClick={() => resolver.mutate()}
@@ -595,13 +619,13 @@ function Conversacion({
             <span className="hidden lg:inline">No hace falta contestar</span>
           </button>
         )}
-        {!cliente && (
-          <BotonIcono titulo="Asociar a un cliente" onClick={() => setAsociando((a) => !a)} activo={asociando}>
+        {!cliente && !soloLectura && (
+          <BotonIcono titulo={`Asociar a un ${api.queEsCliente}`} onClick={() => setAsociando((a) => !a)} activo={asociando}>
             <Link2 size={20} />
           </BotonIcono>
         )}
       </header>
-      {asociando && <AsociarCliente onElegir={(id) => asociar.mutate(id)} onCancelar={() => setAsociando(false)} />}
+      {asociando && <AsociarCliente api={api} onElegir={(id) => asociar.mutate(id)} onCancelar={() => setAsociando(false)} />}
 
       {/* Mensajes */}
       <div className="wa-fondo wa-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-1 md:px-[6%]">
@@ -619,8 +643,14 @@ function Conversacion({
         <div ref={fin} className="h-1" />
       </div>
 
+      {soloLectura && (
+        <footer className="flex min-h-[62px] shrink-0 items-center justify-center bg-[var(--wa-barra)] px-4 text-center text-[13px] text-[var(--wa-secundario)]">
+          Es la bandeja de un asesor: se puede leer, pero escribe solo él.
+        </footer>
+      )}
+
       {/* Plantillas: se abren arriba de la caja, como un panel adjunto */}
-      {modo === "plantilla" && (
+      {!soloLectura && modo === "plantilla" && (
         <div className="max-h-[55%] shrink-0 overflow-y-auto border-t border-[var(--wa-borde)] bg-[var(--wa-barra)] px-4 pb-3 pt-2 wa-scroll">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-[14px] font-medium text-[var(--wa-texto)]">Mandar una plantilla</p>
@@ -690,6 +720,7 @@ function Conversacion({
       {/* Caja para escribir */}
       {/* md:pr-[76px]: el botón flotante del asistente (abajo a la derecha, en todo
           Voltia PM) quedaba arriba del botón de enviar. */}
+      {!soloLectura && (
       <footer className="flex min-h-[62px] shrink-0 items-end gap-1 bg-[var(--wa-barra)] px-2 py-[10px] pb-[max(10px,env(safe-area-inset-bottom))] md:pl-4 md:pr-[76px]">
         <BotonIcono
           titulo="Plantillas"
@@ -752,6 +783,7 @@ function Conversacion({
           </button>
         )}
       </footer>
+      )}
     </div>
   );
 }
@@ -779,7 +811,7 @@ function FilaChat({ c, activa, onClick }: { c: WhatsAppConversacion; activa: boo
         activa ? "bg-[var(--wa-activo)]" : "hover:bg-[var(--wa-hover)]"
       }`}
     >
-      <Avatar nombre={c.cliente?.nombre ?? null} semilla={c.cliente?.projectId ?? c.telefono} />
+      <Avatar nombre={c.cliente?.nombre ?? null} semilla={c.cliente ? idCliente(c.cliente) : c.telefono} />
       <div className="flex h-full min-w-0 flex-1 flex-col justify-center border-b border-[var(--wa-borde)] pr-4">
         <div className="flex items-baseline justify-between gap-2">
           <span className="truncate text-[17px] leading-[21px] text-[var(--wa-texto)]">
@@ -837,6 +869,7 @@ export function BandejaWhatsApp({
     refetchInterval: 5000,
   });
   const hayNumero = !!data?.numero;
+  const soloLectura = !!data?.soloLectura;
   const conversaciones = data?.conversaciones ?? [];
   const { data: plantillas = [] } = useQuery({
     queryKey: [api.clave, "plantillas"],
@@ -867,7 +900,8 @@ export function BandejaWhatsApp({
     if (telefonoInicial) setSeleccion(normalizarNumero(telefonoInicial));
   }, [telefonoInicial]);
 
-  // Abrirla la marca leída (para todos: la bandeja es compartida).
+  // Abrirla la marca leída (en Experiencia Solar, para todos: la bandeja es
+  // compartida). Gerencia mirando la de un asesor no se la marca.
   const leida = useMutation({
     mutationFn: (tel: string) => api.marcarLeida(tel),
     onSuccess: () => {
@@ -876,7 +910,7 @@ export function BandejaWhatsApp({
     },
   });
   useEffect(() => {
-    if (activa?.noLeida && !leida.isPending) leida.mutate(activa.telefono);
+    if (!soloLectura && activa?.noLeida && !leida.isPending) leida.mutate(activa.telefono);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activa?.telefono, activa?.noLeida]);
 
@@ -893,7 +927,7 @@ export function BandejaWhatsApp({
 
   // Si lo escrito es un número que no tiene chat, se ofrece empezar uno (como WhatsApp).
   const numeroNuevo = normalizarNumero(busqueda);
-  const ofrecerNuevo = numeroNuevo.length >= 10 && !conversaciones.some((c) => c.telefono === numeroNuevo);
+  const ofrecerNuevo = !soloLectura && numeroNuevo.length >= 10 && !conversaciones.some((c) => c.telefono === numeroNuevo);
 
   function abrirNuevo() {
     if (numeroNuevo.length < 10) {
@@ -938,9 +972,11 @@ export function BandejaWhatsApp({
               </p>
             )}
           </div>
-          <BotonIcono titulo="Chat nuevo con un número" onClick={() => buscador.current?.focus()}>
-            <MessageSquarePlus size={21} />
-          </BotonIcono>
+          {!soloLectura && (
+            <BotonIcono titulo="Chat nuevo con un número" onClick={() => buscador.current?.focus()}>
+              <MessageSquarePlus size={21} />
+            </BotonIcono>
+          )}
         </header>
 
         <div className="shrink-0 border-b border-[var(--wa-borde)] px-3 pb-2 pt-[7px]">
@@ -949,7 +985,7 @@ export function BandejaWhatsApp({
             <input
               ref={buscador}
               className="w-full bg-transparent text-[14px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-secundario)]"
-              placeholder="Buscar un chat o escribir un número"
+              placeholder={soloLectura ? "Buscar un chat" : "Buscar un chat o escribir un número"}
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               onKeyDown={(e) => {
@@ -1032,6 +1068,7 @@ export function BandejaWhatsApp({
             ventanaAbierta={activa?.ventanaAbierta ?? false}
             sinContestar={activa?.sinContestar ?? false}
             plantillas={plantillas}
+            soloLectura={soloLectura}
             onVolver={() => setSeleccion(null)}
           />
         ) : (
@@ -1041,9 +1078,15 @@ export function BandejaWhatsApp({
             </div>
             <p className="text-[30px] font-light leading-[38px] text-[var(--wa-texto)]">WhatsApp de Voltia</p>
             <p className="mt-4 max-w-md text-[14px] leading-[20px] text-[var(--wa-secundario)]">
-              Elegí un chat de la izquierda, o escribí un número en el buscador para empezar uno.
-              <br />
-              Al abrir un chat queda leído para todo el equipo: la bandeja es compartida.
+              {soloLectura
+                ? "Elegí un chat de la izquierda para leerlo."
+                : "Elegí un chat de la izquierda, o escribí un número en el buscador para empezar uno."}
+              {api.compartida && (
+                <>
+                  <br />
+                  Al abrir un chat queda leído para todo el equipo: la bandeja es compartida.
+                </>
+              )}
             </p>
           </div>
         )}

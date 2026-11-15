@@ -97,6 +97,23 @@ const RELEASE_14_5: Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "14.8",
+  date: "15 de noviembre de 2026",
+  sections: [
+    {
+      title: "WhatsApp en Ventas",
+      items: [
+        "Nueva pantalla Ventas → WhatsApp: cada asesor con número propio ve y contesta las conversaciones de su número, con la misma apariencia de WhatsApp Web.",
+        "Las conversaciones se reconocen solas con el lead por el teléfono cargado; si escribe desde otro número, se asocia a mano.",
+        "En el panel del lead aparece su WhatsApp: los últimos mensajes, la alerta si escribió y nadie le contestó, y el botón para abrir la conversación.",
+        "El primer mensaje del día a un lead queda en su historial de actividad.",
+        "Gerencia comercial y administración pueden elegir un asesor y leer su bandeja, sin escribir.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_14_7: Release = {
   version: "14.7",
   date: "14 de noviembre de 2026",
   sections: [
@@ -1211,6 +1228,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.7",
+    shortDate: "14 nov",
+    highlights: RELEASE_14_7.sections.map((sec) => sec.title),
+  },
   {
     version: "14.6",
     shortDate: "13 nov",

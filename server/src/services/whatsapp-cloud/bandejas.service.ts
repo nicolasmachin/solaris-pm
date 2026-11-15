@@ -6,12 +6,13 @@
  *   EXPERIENCIA_SOLAR`). Lo usa cualquiera que entre a Experiencia Solar. Si no
  *   hay ninguno conectado, cae al número de las variables de entorno, que es con
  *   el que se probó la conexión.
- * - **Ventas** (próxima parte): el número de cada asesor (`uso = VENTAS`,
- *   responsable = el asesor).
+ * - **Ventas**: el número de cada asesor (`uso = VENTAS`, responsable = el
+ *   asesor). Escribe solo él; gerencia comercial y admin la ven sin escribir.
  *
- * Cada conversación se une al cliente por el teléfono cargado en el proyecto o,
- * si escribe desde otro número, por la asociación hecha a mano
- * (`whatsapp_conversaciones.projectId`). Ver docs/manual/15-whatsapp.md.
+ * En Experiencia Solar cada conversación se une al cliente (proyecto) y en Ventas
+ * al lead: por el teléfono cargado o, si escribe desde otro número, por la
+ * asociación hecha a mano (`whatsapp_conversaciones.projectId` / `leadId`).
+ * Ver docs/manual/15-whatsapp.md.
  */
 
 import { InteractionChannel, InteractionDirection } from "@prisma/client";
@@ -34,6 +35,8 @@ export const USOS_NUMERO = ["EXPERIENCIA_SOLAR", "VENTAS"] as const;
 export type UsoNumero = (typeof USOS_NUMERO)[number];
 
 export type Bandeja = {
+  /** De qué área es: define si las conversaciones se unen a clientes o a leads. */
+  area: UsoNumero;
   /** Por dónde sale y entra. null = no hay número para esta bandeja. */
   cuenta: Cuenta | null;
   /** Como lo muestra Meta ("+598 98 123 456"); null si es el de las variables de entorno. */
@@ -49,18 +52,49 @@ export async function bandejaExperienciaSolar(): Promise<Bandeja> {
   });
   if (n) {
     return {
+      area: "EXPERIENCIA_SOLAR",
       cuenta: { phoneNumberId: n.phoneNumberId, wabaId: n.wabaId, token: decryptSecret(n.tokenCifrado) },
       telefono: n.telefono,
       nombre: n.nombreVerificado,
     };
   }
   const c = whatsappConfig();
-  if (faltantesParaEnviar(c).length > 0) return { cuenta: null, telefono: null, nombre: null };
+  if (faltantesParaEnviar(c).length > 0) return { area: "EXPERIENCIA_SOLAR", cuenta: null, telefono: null, nombre: null };
   return {
+    area: "EXPERIENCIA_SOLAR",
     cuenta: { phoneNumberId: c.phoneNumberId, wabaId: c.wabaId, token: c.token },
     telefono: null,
     nombre: null,
   };
+}
+
+/**
+ * La bandeja de Ventas de un asesor: su número (`uso = VENTAS`, responsable = él).
+ * Sin número conectado no hay bandeja: no cae al de las variables de entorno,
+ * que es el general.
+ */
+export async function bandejaVentas(asesorId: string): Promise<Bandeja> {
+  const n = await prisma.whatsAppNumero.findFirst({
+    where: { uso: "VENTAS", responsableId: asesorId, estado: "CONECTADO" },
+    orderBy: { conectadoEn: "desc" },
+  });
+  if (!n) return { area: "VENTAS", cuenta: null, telefono: null, nombre: null };
+  return {
+    area: "VENTAS",
+    cuenta: { phoneNumberId: n.phoneNumberId, wabaId: n.wabaId, token: decryptSecret(n.tokenCifrado) },
+    telefono: n.telefono,
+    nombre: n.nombreVerificado,
+  };
+}
+
+/** Los asesores que tienen un número de Ventas conectado (para que gerencia elija cuál mirar). */
+export async function asesoresConNumero() {
+  const numeros = await prisma.whatsAppNumero.findMany({
+    where: { uso: "VENTAS", estado: "CONECTADO", responsableId: { not: null } },
+    select: { telefono: true, responsable: { select: { id: true, name: true } } },
+    orderBy: { conectadoEn: "asc" },
+  });
+  return numeros.filter((n) => n.responsable).map((n) => ({ id: n.responsable!.id, nombre: n.responsable!.name, telefono: n.telefono }));
 }
 
 function exigirCuenta(b: Bandeja): Cuenta {
@@ -72,8 +106,10 @@ function exigirCuenta(b: Bandeja): Cuenta {
 
 // ─── Clientes por teléfono ───────────────────────────────────────────────────
 
+/** El cliente (Experiencia Solar: `projectId`) o el lead (Ventas: `leadId`) de una conversación. */
 export type ClienteDeConversacion = {
-  projectId: string;
+  projectId?: string;
+  leadId?: string;
   codigo: string;
   nombre: string;
   /** true si se asoció a mano (escribe desde un número que no está en la ficha). */
@@ -101,6 +137,44 @@ async function proyectosPorTelefono(): Promise<Map<string, Omit<ClienteDeConvers
     for (const t of telefonosDe(p.clientPhone)) mapa.set(t, { projectId: p.id, codigo: p.code, nombre: p.clientName });
   }
   return mapa;
+}
+
+/** Teléfono → lead. Si dos leads comparten teléfono, gana el más nuevo. */
+async function leadsPorTelefono(): Promise<Map<string, Omit<ClienteDeConversacion, "aMano">>> {
+  const leads = await prisma.salesLead.findMany({
+    where: { deletedAt: null, clientPhone: { not: null } },
+    select: { id: true, code: true, clientName: true, clientPhone: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const mapa = new Map<string, Omit<ClienteDeConversacion, "aMano">>();
+  for (const l of leads) {
+    for (const t of telefonosDe(l.clientPhone)) mapa.set(t, { leadId: l.id, codigo: l.code, nombre: l.clientName });
+  }
+  return mapa;
+}
+
+function porTelefonoDe(bandeja: Bandeja) {
+  return bandeja.area === "VENTAS" ? leadsPorTelefono() : proyectosPorTelefono();
+}
+
+const INCLUDE_ASOCIADO = {
+  project: { select: { id: true, code: true, clientName: true, deletedAt: true } },
+  lead: { select: { id: true, code: true, clientName: true, deletedAt: true } },
+} as const;
+
+type EstadoConAsociado = {
+  project: { id: string; code: string; clientName: string; deletedAt: Date | null } | null;
+  lead: { id: string; code: string; clientName: string; deletedAt: Date | null } | null;
+};
+
+/** Lo asociado a mano, según el área de la bandeja (un proyecto o un lead). */
+function asociadoAMano(bandeja: Bandeja, e: EstadoConAsociado | null | undefined): ClienteDeConversacion | null {
+  if (bandeja.area === "VENTAS") {
+    const l = e?.lead;
+    return l && !l.deletedAt ? { leadId: l.id, codigo: l.code, nombre: l.clientName, aMano: true } : null;
+  }
+  const p = e?.project;
+  return p && !p.deletedAt ? { projectId: p.id, codigo: p.code, nombre: p.clientName, aMano: true } : null;
 }
 
 // ─── Conversaciones ──────────────────────────────────────────────────────────
@@ -161,24 +235,16 @@ export async function listarConversaciones(bandeja: Bandeja) {
   const phoneNumberId = bandeja.cuenta.phoneNumberId;
   const [ultimos, estados, porTelefono] = await Promise.all([
     ultimosPorTelefono(phoneNumberId),
-    prisma.whatsAppConversacion.findMany({
-      where: { phoneNumberId },
-      include: { project: { select: { id: true, code: true, clientName: true, deletedAt: true } } },
-    }),
-    proyectosPorTelefono(),
+    prisma.whatsAppConversacion.findMany({ where: { phoneNumberId }, include: INCLUDE_ASOCIADO }),
+    porTelefonoDe(bandeja),
   ]);
   const estadoDe = new Map(estados.map((e) => [e.telefono, e]));
   const ahora = Date.now();
   return ultimos
     .map((u) => {
       const e = estadoDe.get(u.telefono);
-      const aMano = e?.project && !e.project.deletedAt ? e.project : null;
       const auto = porTelefono.get(u.telefono);
-      const cliente: ClienteDeConversacion | null = aMano
-        ? { projectId: aMano.id, codigo: aMano.code, nombre: aMano.clientName, aMano: true }
-        : auto
-          ? { ...auto, aMano: false }
-          : null;
+      const cliente: ClienteDeConversacion | null = asociadoAMano(bandeja, e) ?? (auto ? { ...auto, aMano: false } : null);
       return {
         telefono: u.telefono,
         ultimoTexto: u.texto ?? `[${u.tipo}]`,
@@ -254,18 +320,33 @@ export async function marcarResuelta(bandeja: Bandeja, telefono: string, userId:
   });
 }
 
-/** Asocia la conversación a un proyecto (o la desasocia con null). */
-export async function asociarCliente(bandeja: Bandeja, telefono: string, projectId: string | null) {
+/**
+ * Asocia la conversación a un cliente (o la desasocia con null): un proyecto en
+ * Experiencia Solar, un lead en Ventas.
+ */
+export async function asociarCliente(bandeja: Bandeja, telefono: string, id: string | null) {
   const { phoneNumberId } = exigirCuenta(bandeja);
   const tel = normalizarTelefono(telefono);
-  if (projectId) {
-    const p = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: { id: true } });
+  if (bandeja.area === "VENTAS") {
+    if (id) {
+      const l = await prisma.salesLead.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+      if (!l) throw notFound("LEAD_NO_ENCONTRADO", "El lead no existe");
+    }
+    await prisma.whatsAppConversacion.upsert({
+      where: { phoneNumberId_telefono: { phoneNumberId, telefono: tel } },
+      create: { phoneNumberId, telefono: tel, leadId: id },
+      update: { leadId: id },
+    });
+    return;
+  }
+  if (id) {
+    const p = await prisma.project.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
     if (!p) throw notFound("PROYECTO_NO_ENCONTRADO", "El proyecto no existe");
   }
   await prisma.whatsAppConversacion.upsert({
     where: { phoneNumberId_telefono: { phoneNumberId, telefono: tel } },
-    create: { phoneNumberId, telefono: tel, projectId },
-    update: { projectId },
+    create: { phoneNumberId, telefono: tel, projectId: id },
+    update: { projectId: id },
   });
 }
 
@@ -275,13 +356,12 @@ export async function clienteDe(bandeja: Bandeja, telefono: string): Promise<Cli
   if (bandeja.cuenta) {
     const e = await prisma.whatsAppConversacion.findUnique({
       where: { phoneNumberId_telefono: { phoneNumberId: bandeja.cuenta.phoneNumberId, telefono: tel } },
-      include: { project: { select: { id: true, code: true, clientName: true, deletedAt: true } } },
+      include: INCLUDE_ASOCIADO,
     });
-    if (e?.project && !e.project.deletedAt) {
-      return { projectId: e.project.id, codigo: e.project.code, nombre: e.project.clientName, aMano: true };
-    }
+    const aMano = asociadoAMano(bandeja, e);
+    if (aMano) return aMano;
   }
-  const auto = (await proyectosPorTelefono()).get(tel);
+  const auto = (await porTelefonoDe(bandeja)).get(tel);
   return auto ? { ...auto, aMano: false } : null;
 }
 
@@ -310,8 +390,13 @@ export async function mandar(bandeja: Bandeja, body: MandarBody, userId: string)
           cuenta,
         });
   const cliente = await clienteDe(bandeja, body.telefono);
-  if (cliente) {
-    await registrarContactoDelDia(cliente.projectId, mensaje.texto ?? `Plantilla ${mensaje.plantilla ?? ""}`, userId).catch(
+  const texto = mensaje.texto ?? `Plantilla ${mensaje.plantilla ?? ""}`;
+  if (cliente?.leadId) {
+    await registrarContactoDelDiaLead(cliente.leadId, texto, userId).catch((err) =>
+      console.error("[whatsapp] no se pudo registrar el contacto en la actividad del lead:", err),
+    );
+  } else if (cliente?.projectId) {
+    await registrarContactoDelDia(cliente.projectId, texto, userId).catch(
       (err) => console.error("[whatsapp] no se pudo registrar el contacto en el historial:", err),
     );
   }
@@ -344,6 +429,20 @@ async function registrarContactoDelDia(projectId: string, texto: string, userId:
   });
 }
 
+/** En Ventas el contacto queda en la actividad del lead, también uno por día. */
+const ACCION_WHATSAPP_LEAD = "WhatsApp desde Voltia PM";
+
+async function registrarContactoDelDiaLead(leadId: string, texto: string, userId: string) {
+  const yaHoy = await prisma.salesActivity.findFirst({
+    where: { leadId, action: ACCION_WHATSAPP_LEAD, createdAt: { gte: inicioDelDiaUruguay() } },
+    select: { id: true },
+  });
+  if (yaHoy) return;
+  await prisma.salesActivity.create({
+    data: { leadId, userId, action: ACCION_WHATSAPP_LEAD, notes: texto.slice(0, 2000) },
+  });
+}
+
 export async function plantillasDe(bandeja: Bandeja) {
   return listarPlantillas(exigirCuenta(bandeja));
 }
@@ -360,17 +459,40 @@ export async function whatsappDeProyecto(bandeja: Bandeja, projectId: string) {
     select: { id: true, clientPhone: true },
   });
   if (!p) throw notFound("PROYECTO_NO_ENCONTRADO", "El proyecto no existe");
-  const propios = telefonosDe(p.clientPhone);
+  return resumenDeConversaciones(bandeja, telefonosDe(p.clientPhone), (a) => a.projectId, projectId);
+}
+
+/** Lo mismo para el panel del lead, por el número del asesor. */
+export async function whatsappDeLead(bandeja: Bandeja, leadId: string) {
+  const l = await prisma.salesLead.findFirst({
+    where: { id: leadId, deletedAt: null },
+    select: { id: true, clientPhone: true },
+  });
+  if (!l) throw notFound("LEAD_NO_ENCONTRADO", "El lead no existe");
+  return resumenDeConversaciones(bandeja, telefonosDe(l.clientPhone), (a) => a.leadId, leadId);
+}
+
+type Asociada = { telefono: string; projectId: string | null; leadId: string | null; leidoHasta: Date | null; resueltoHasta: Date | null };
+
+async function resumenDeConversaciones(
+  bandeja: Bandeja,
+  propios: string[],
+  asociadoA: (a: Asociada) => string | null,
+  id: string,
+) {
   if (!bandeja.cuenta) {
     return { hayNumero: false, telefono: propios[0] ?? null, sinContestar: null, noLeida: false, mensajes: [] };
   }
   const phoneNumberId = bandeja.cuenta.phoneNumberId;
-  const asociadas = await prisma.whatsAppConversacion.findMany({ where: { phoneNumberId }, select: { telefono: true, projectId: true, leidoHasta: true, resueltoHasta: true } });
-  // Los del teléfono de la ficha, salvo que se hayan asociado a mano a otro
-  // cliente; más los que se asociaron a mano a este.
-  const ajenos = new Set(asociadas.filter((a) => a.projectId && a.projectId !== projectId).map((a) => a.telefono));
+  const asociadas: Asociada[] = await prisma.whatsAppConversacion.findMany({
+    where: { phoneNumberId },
+    select: { telefono: true, projectId: true, leadId: true, leidoHasta: true, resueltoHasta: true },
+  });
+  // Los del teléfono cargado, salvo que se hayan asociado a mano a otro; más los
+  // que se asociaron a mano a este.
+  const ajenos = new Set(asociadas.filter((a) => asociadoA(a) && asociadoA(a) !== id).map((a) => a.telefono));
   const telefonos = [
-    ...new Set([...propios.filter((t) => !ajenos.has(t)), ...asociadas.filter((a) => a.projectId === projectId).map((a) => a.telefono)]),
+    ...new Set([...propios.filter((t) => !ajenos.has(t)), ...asociadas.filter((a) => asociadoA(a) === id).map((a) => a.telefono)]),
   ];
   if (telefonos.length === 0) {
     return { hayNumero: true, telefono: null, sinContestar: null, noLeida: false, mensajes: [] };
@@ -381,7 +503,7 @@ export async function whatsappDeProyecto(bandeja: Bandeja, projectId: string) {
   const principal = [...ultimos].sort((a, b) => b.ocurridoEn.getTime() - a.ocurridoEn.getTime())[0];
   const telefono = principal?.telefono ?? telefonos[0];
   const pendiente = ultimos.find((u) => estaSinContestar(u, estadoDe.get(u.telefono)?.resueltoHasta));
-  const mensajes = principal ? (await mensajesDe(bandeja, telefono, 6)) : [];
+  const mensajes = principal ? await mensajesDe(bandeja, telefono, 6) : [];
   return {
     hayNumero: true,
     telefono,

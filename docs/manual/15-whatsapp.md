@@ -8,10 +8,15 @@
 > de Meta. Todavía no hay ningún número real conectado. Los envíos siguen saliendo
 > por el número de las variables de entorno.
 >
-> **1-nov-2026, en desarrollo sin deploy:** las conversaciones salieron de
-> Administración a la **bandeja de Experiencia Solar** (número general), con el
-> botón y la alerta en la ficha del cliente. La bandeja de **Ventas** (un número
-> por asesor, botón en el lead) es la parte siguiente.
+> **1-nov-2026:** las conversaciones salieron de Administración a la **bandeja de
+> Experiencia Solar** (número general), con el botón y la alerta en la ficha del
+> cliente (en producción).
+>
+> **15-nov-2026, en desarrollo sin deploy:** la **bandeja de Ventas** (un número
+> por asesor, unida a los leads, con la tarjeta en el panel del lead). Sigue sin
+> haber números reales conectados: la configuración de registro integrado en Meta
+> todavía no ofrece la variación de WhatsApp (solo "General"), aunque la revisión
+> de la app ya se aprobó.
 
 ## Para qué existe
 
@@ -71,6 +76,31 @@ conversaciones se usan desde el módulo de cada área.
 - **No hace falta contestar** (doble tilde verde en el encabezado): apaga la alerta de sin contestar (un "gracias", un
   "ok") hasta que el cliente vuelva a escribir.
 - La pestaña muestra cuántas conversaciones tienen un mensaje sin contestar.
+
+**Ventas → WhatsApp** (la bandeja del número de cada asesor):
+
+- La misma bandeja que Experiencia Solar, pero con el número que tiene al asesor
+  como responsable y las conversaciones unidas a **leads** en vez de clientes. El
+  nombre del chat lleva al panel del lead; *Asociar a un lead* busca entre los
+  leads que el asesor ve en Ventas.
+- **Es del asesor**: escribe solo él. Abrir un chat lo marca leído solo en su
+  bandeja (no hay nadie más que la use).
+- **Gerencia comercial y admin** ven arriba un selector *Mi número* / cada asesor
+  con número. Al elegir un asesor la bandeja queda **para leer**: sin caja de
+  texto (un aviso abajo lo dice), sin *No hace falta contestar*, sin asociar y sin
+  marcarla leída.
+- Sin número propio, la pantalla dice cómo conectarlo; a gerencia le sugiere
+  elegir un asesor.
+- Se entra desde la franja **WhatsApp** del tablero de Ventas (abajo de *Leads sin
+  tomar* y de la de Instagram): en ámbar con quiénes esperan respuesta si hay
+  conversaciones sin contestar. No aparece si el usuario no tiene número (salvo
+  gerencia, si hay asesores con número).
+- **En el panel del lead**, tarjeta **WhatsApp** (columna derecha, arriba de
+  *Pendientes*): los últimos 6 mensajes, la alerta "Escribió hace X y nadie le
+  contestó" y el botón *Abrir conversación* / *Escribirle*, que lleva a la bandeja
+  con el chat abierto. Se ve por el número propio; si el que mira es gerencia sin
+  número, por el del asesor asignado al lead, para leer. Si no hay número, la
+  tarjeta no aparece.
 
 **En la ficha del cliente** (Experiencia Solar → un generador):
 
@@ -162,14 +192,20 @@ prefijo `/api` y sin login:
   resto pierde ese uso: `soltarExperienciaSolar()`). **Si no hay ninguno, cae al
   número de las variables de entorno.** Devuelve una `Cuenta` (phone number id,
   WABA y token descifrado) que se pasa a todas las llamadas a Meta.
+  `bandejaVentas(asesorId)` toma el número con `uso = VENTAS`, responsable = el
+  asesor y `CONECTADO`; **sin número no hay bandeja** (no cae al de las variables
+  de entorno, que es el general). Cada `Bandeja` lleva su `area`, que decide si
+  las conversaciones se unen a proyectos o a leads.
 - **Conversaciones**: `listarConversaciones()` agrupa `whatsapp_mensajes` por
   teléfono **dentro del número de la bandeja** (`phoneNumberId`), con el último
   mensaje y la hora del último del cliente.
 - **Cliente de la conversación**: primero la asociación a mano
-  (`whatsapp_conversaciones.projectId`); si no hay, el proyecto cuyo
+  (`whatsapp_conversaciones.projectId` en Experiencia Solar, `leadId` en Ventas);
+  si no hay, el proyecto (o el lead, en Ventas: `leadsPorTelefono()`) cuyo
   `clientPhone` normalizado coincide (`telefonosDe()` parte el campo si trae más
-  de un número; si dos proyectos comparten teléfono gana el más nuevo). **Nunca
-  por nombre.**
+  de un número; si dos comparten teléfono gana el más nuevo). En Ventas se busca
+  entre **todos** los leads no borrados, no solo los del asesor. **Nunca por
+  nombre.**
 - **No leída**: hay un mensaje del cliente posterior a `leidoHasta`. La cantidad
   (`noLeidos`, el número del círculo verde) cuenta esos entrantes en la misma
   consulta de `ultimosPorTelefono()`; la lista también trae `ultimoEstado` (el
@@ -184,9 +220,17 @@ prefijo `/api` y sin login:
   desde Voltia PM: …") en su historial (`registrarContactoDelDia()`), para que
   cuente como contacto en la cadencia sin llenar el historial con cada renglón.
   Sin motivo: no cierra pasos del recorrido. Lo escrito desde el celular y lo que
-  escribe el cliente **no** pasan al historial.
-- `whatsappDeProyecto()`: lo que muestra la ficha. Usa los teléfonos de la ficha
-  (salvo los asociados a mano a otro cliente) más los asociados a mano a este.
+  escribe el cliente **no** pasan al historial. En Ventas es lo mismo con una
+  `SalesActivity` del lead (acción "WhatsApp desde Voltia PM", el texto en las
+  notas; `registrarContactoDelDiaLead()`).
+- `whatsappDeProyecto()` / `whatsappDeLead()`: lo que muestran la ficha y el
+  panel del lead (comparten `resumenDeConversaciones()`). Usan los teléfonos
+  cargados (salvo los asociados a mano a otro) más los asociados a mano a este.
+- **Ventas, quién ve qué** (`whatsapp-bandejas.routes.ts`): las lecturas aceptan
+  `?asesor=<id>`; si no es el propio, exige `puedeVerTodoElEmbudo()` (ADMIN o
+  GERENTE_COMERCIAL, el mismo criterio del embudo) y responde `soloLectura`.
+  Mandar, marcar leída o resuelta y asociar usan **siempre** la bandeja propia,
+  sin mirar el parámetro.
 
 **Envío** (`api.service.ts`): `POST /{GRAPH_API_VERSION}/{phone_number_id}/messages`
 con el token de la cuenta que se le pasa (`Cuenta`); sin cuenta, la de las
@@ -221,14 +265,16 @@ Meta, base para medir el gasto). La migración `whatsapp_numeros_coexistencia`
 (aditiva) suma `whatsapp_numeros` y la columna `whatsapp_mensajes.origen`
 (`API` | `CELULAR` | `HISTORIAL`). La migración `whatsapp_bandejas` (aditiva)
 suma `whatsapp_numeros.uso` y `whatsapp_conversaciones` (por número y teléfono:
-`leidoHasta`, `resueltoHasta`, cliente o lead asociado a mano; `leadId` queda
-listo para la bandeja de Ventas).
+`leidoHasta`, `resueltoHasta`, cliente o lead asociado a mano; `leadId` lo usa la
+bandeja de Ventas, que no necesitó migración propia).
 
 ## Permisos
 
 | Qué | Permiso |
 |---|---|
 | Bandeja de Experiencia Solar: ver, mandar, marcar, asociar a un cliente; la tarjeta de la ficha | `EXPERIENCIA_CLIENTES:VIEW` (escribirle al cliente es el trabajo del módulo: no se pide EDIT) |
+| Bandeja de Ventas propia: ver, mandar, marcar, asociar a un lead; la tarjeta del panel del lead | `VENTAS:VIEW` + tener un número de Ventas a su nombre |
+| Leer la bandeja de Ventas de otro asesor | `VENTAS:VIEW` + rol ADMIN o GERENTE_COMERCIAL (sin escribir) |
 | Administración → WhatsApp (estado, números, plantillas) | `CONFIGURACION:EDIT` |
 | Conectar números, editar responsable y para qué, reintentar la sincronización | `CONFIGURACION:EDIT` |
 | Webhook | público, protegido por la firma de Meta |
@@ -278,7 +324,14 @@ Crear una plantilla y conectar un número quedan en auditoría.
   como número. Tampoco se puede mandar un archivo desde la bandeja.
 - **No hay aviso cuando entra un mensaje** (ni campanita ni push): se ve en la
   pestaña, en la bandeja y en la ficha.
-- **Las conversaciones de Ventas** todavía no tienen bandeja (parte siguiente).
+- **Plantillas en Ventas**: la bandeja del asesor lista las plantillas de la
+  cuenta (WABA) **de su número**. Si el registro integrado le crea una cuenta
+  propia, las plantillas aprobadas en la del número general no le sirven y hay
+  que aprobarlas de nuevo ahí. Es una suposición sobre cómo arma Meta las cuentas
+  al conectar; se confirma con el primer número real.
+- **Un asesor con dos números de Ventas**: la bandeja usa el conectado más nuevo.
+- **Un lead que se gana** sigue en la bandeja del asesor (unido al lead); la
+  conversación no pasa sola a la de Experiencia Solar, que es otro número.
 - **Anuncios "click to WhatsApp"**: el primer mensaje trae un bloque `referral`
   (id y título del anuncio, URL, `ctwa_clid`), que hoy queda solo en
   `whatsapp_mensajes.payload`. Al vincular la conversación con un lead (o crearlo
@@ -303,6 +356,9 @@ Crear una plantilla y conectar un número quedan en auditoría.
   y `whatsapp-web.css` (paleta `--wa-*` clara y oscura, el dibujo del fondo y el
   hueco de la hora en las burbujas), `client/src/modules/clientes/pages/WhatsAppESPage.tsx`,
   `client/src/modules/clientes/components/ClienteWhatsAppCard.tsx`.
+- Ventas: `client/src/pages/VentasWhatsApp.tsx`,
+  `client/src/components/sales/whatsappVentas.ts` (la `BandejaApi` por asesor),
+  `WhatsAppParaVentas.tsx` (la franja) y `LeadWhatsAppCard.tsx` (el panel del lead).
 
 ## Variables de entorno
 
