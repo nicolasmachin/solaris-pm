@@ -9,7 +9,9 @@ import axios from "axios";
 export function Login() {
   const navigate = useNavigate();
   const { isAuthenticated, setAuth } = useAuthStore();
-  const [email, setEmail] = useState("");
+  // ?usuario=… viene en el link del aviso de acceso al portal: el cliente lo
+  // encuentra ya escrito y solo pone la contraseña.
+  const [email, setEmail] = useState(() => new URLSearchParams(window.location.search).get("usuario") ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -101,6 +101,10 @@ export async function datosDelCliente(projectId: string, eventoFecha?: Date | nu
   });
   if (!p) return null;
   const nombreCompleto = (p.nombreCliente || p.clientName).trim();
+  const { usuarioPortalDe } = await import("../clientes/portal-user.service.js");
+  const portal = await usuarioPortalDe(projectId);
+  const usuario = portal?.email ?? portal?.username ?? null;
+  const app = process.env.PUBLIC_APP_URL || "https://app.voltia.com.uy";
   const obra = p.installationSchedule && !p.installationSchedule.deletedAt ? p.installationSchedule : null;
   const inicios = (obra?.segments ?? []).map((s) => s.startDate.getTime());
   const fines = (obra?.segments ?? []).map((s) => s.endDate.getTime());
@@ -110,7 +114,9 @@ export async function datosDelCliente(projectId: string, eventoFecha?: Date | nu
     "obra.fecha": inicios.length ? fechaLarga(new Date(Math.min(...inicios))) : null,
     "obra.fechaFin": fines.length ? fechaLarga(new Date(Math.max(...fines))) : null,
     "evento.fecha": eventoFecha ? fechaLarga(eventoFecha) : null,
-    "portal.link": `${process.env.PUBLIC_APP_URL || "https://app.voltia.com.uy"}/portal`,
+    "portal.link": `${app}/portal`,
+    "portal.usuario": usuario,
+    "portal.acceso": usuario ? `${app}/login?usuario=${encodeURIComponent(usuario)}` : null,
   };
   return { proyecto: p, datos };
 }
@@ -284,11 +290,23 @@ export async function enviarEnvio(envioId: string) {
   }
   const datos = { ...cliente.datos, ...((envio.datosFijos as Record<string, string> | null) ?? {}) };
 
-  if (aviso.condicion === "CON_PORTAL") {
+  // El acceso al portal: el usuario se crea si falta, y cada cliente recibe el
+  // mensaje que le corresponde según entre con mail o con usuario y contraseña.
+  if (aviso.condicion === "PORTAL_CON_MAIL" || aviso.condicion === "PORTAL_SIN_MAIL") {
     const sistemaId = await usuarioSistema();
     const { asegurarUsuarioPortal } = await import("../clientes/portal-user.service.js");
     const r = sistemaId ? await asegurarUsuarioPortal(projectId, sistemaId) : { ok: false as const, motivo: "No hay usuario de sistema." };
-    if (!r.ok) return cerrar({ estado: "PROGRAMADO", detalle: `Espera el usuario del portal. ${r.motivo}` });
+    if (!r.ok) return cerrar({ estado: "FALLIDO", detalle: r.motivo });
+    const conMail = !!r.usuario.email;
+    if (conMail !== (aviso.condicion === "PORTAL_CON_MAIL")) {
+      return cerrar({
+        estado: "OMITIDO",
+        detalle: conMail ? "El cliente entra con su mail: le corresponde el aviso para clientes con mail." : "El cliente no tiene mail: le corresponde el aviso para clientes sin mail.",
+      });
+    }
+    // Recién creado: los datos del portal se vuelven a leer.
+    const conUsuario = await datosDelCliente(projectId, envio.eventoFecha);
+    if (conUsuario) Object.assign(datos, conUsuario.datos, (envio.datosFijos as Record<string, string> | null) ?? {});
   }
 
   if (aviso.condicion === "SIN_CONTACTO") {

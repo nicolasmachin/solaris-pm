@@ -46,7 +46,7 @@ const datosSchema = z.object({
   dias: z.number().int().min(1).max(30).nullish(),
   // Hasta 60 días.
   demoraMinutos: z.number().int().min(0).max(60 * 24 * 60).nullish(),
-  condicion: z.enum(["SIN_CONTACTO", "CON_PORTAL"]).nullish(),
+  condicion: z.enum(["SIN_CONTACTO", "PORTAL_CON_MAIL", "PORTAL_SIN_MAIL"]).nullish(),
   canal: z.enum(["WHATSAPP", "EMAIL"]),
   asunto: z.string().max(200).nullish(),
   cuerpo: z.string().min(1).max(4000),

@@ -43,6 +43,8 @@ export type CreatePortalUserParams = {
    * cierra el aviso de acceso al portal al salir).
    */
   cerrarPasoPortal?: boolean;
+  /** Sin mail, el alias sale del nombre (nombre.apellido) aunque haya cédula. */
+  aliasPorNombre?: boolean;
 };
 
 export type CreatePortalUserResult = {
@@ -144,7 +146,7 @@ export async function resetPortalUserPassword(
  */
 async function resolverIdentificador(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  params: { projectId: string; name: string; email?: string | null; username?: string | null },
+  params: { projectId: string; name: string; email?: string | null; username?: string | null; aliasPorNombre?: boolean },
 ): Promise<{ email: string | null; username: string | null }> {
   const email = params.email?.trim().toLowerCase() || null;
   if (email) return { email, username: null };
@@ -175,7 +177,7 @@ async function resolverIdentificador(
     where: { id: params.projectId, deletedAt: null },
     select: { ciCliente: true },
   });
-  const porCedula = usernameDesdeCedula(project?.ciCliente ?? "");
+  const porCedula = params.aliasPorNombre ? "" : usernameDesdeCedula(project?.ciCliente ?? "");
   if (porCedula && (await libre(porCedula))) return { email: null, username: porCedula };
 
   const base = usernameDesdeNombre(params.name);
@@ -284,44 +286,59 @@ export async function createPortalUserForProject(
   };
 }
 
+/** La contraseña inicial de los accesos sin mail: la misma que usa Experiencia Solar al crearlos a mano. */
+export const CONTRASENA_INICIAL_PORTAL = "12345678";
+
+export type UsuarioPortal = { email: string | null; username: string | null };
+
 /**
- * Que el proyecto tenga su usuario del portal. Si no tiene y el cliente tiene
- * mail cargado, se lo crea solo (sin contraseña conocida: entra con el código
- * por mail). Lo usan la conversión del lead y el aviso de acceso al portal, que
- * no sale sin usuario. Nunca tira error: devuelve si quedó con usuario y, si no,
- * por qué.
+ * Que el proyecto tenga su usuario del portal, y cuál es. Si no tiene, se lo
+ * crea solo:
+ *  - con el mail del cliente, si lo tiene: entra con el código por mail, sin
+ *    contraseña conocida;
+ *  - si no, con un alias nombre.apellido y la contraseña inicial, que el portal
+ *    le pide cambiar al entrar.
+ * Lo usan la conversión del lead y el aviso de acceso al portal. Nunca tira
+ * error: devuelve el usuario o por qué no se pudo.
  */
 export async function asegurarUsuarioPortal(
   projectId: string,
   actorUserId: string,
-): Promise<{ ok: true } | { ok: false; motivo: string }> {
+): Promise<{ ok: true; usuario: UsuarioPortal } | { ok: false; motivo: string }> {
   try {
-    const ya = await prisma.projectClient.findFirst({
-      where: { projectId, user: { deletedAt: null, role: { name: "CLIENT" } } },
-      select: { id: true },
-    });
-    if (ya) return { ok: true };
+    const ya = await usuarioPortalDe(projectId);
+    if (ya) return { ok: true, usuario: ya };
     const p = await prisma.project.findFirst({
       where: { id: projectId, deletedAt: null },
       select: { clientName: true, nombreCliente: true, clientEmail: true, clientPhone: true },
     });
     if (!p) return { ok: false, motivo: "El proyecto no existe o está borrado." };
     const email = p.clientEmail?.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return { ok: false, motivo: "El cliente no tiene mail cargado para crearle el usuario del portal." };
-    }
-    await createPortalUserForProject({
+    const conMail = !!email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const r = await createPortalUserForProject({
       projectId,
-      name: (p.nombreCliente || p.clientName).trim(),
-      email,
+      // El alias sale del nombre con que se lo conoce (nombre.apellido), no del de la cédula.
+      name: (conMail ? p.nombreCliente || p.clientName : p.clientName || p.nombreCliente).trim(),
+      email: conMail ? email : null,
+      aliasPorNombre: !conMail,
       phone: p.clientPhone,
-      temporaryPassword: randomBytes(24).toString("base64url"),
-      passwordTemporary: false,
+      temporaryPassword: conMail ? randomBytes(24).toString("base64url") : CONTRASENA_INICIAL_PORTAL,
+      passwordTemporary: !conMail,
       actorUserId,
       cerrarPasoPortal: false,
     });
-    return { ok: true };
+    return { ok: true, usuario: { email: r.email, username: r.username } };
   } catch (err) {
     return { ok: false, motivo: `No se pudo crear el usuario del portal: ${err instanceof Error ? err.message : String(err)}` };
   }
+}
+
+/** El usuario del portal del proyecto, o null si no tiene. */
+export async function usuarioPortalDe(projectId: string): Promise<UsuarioPortal | null> {
+  const link = await prisma.projectClient.findFirst({
+    where: { projectId, user: { deletedAt: null, role: { name: "CLIENT" } } },
+    orderBy: { createdAt: "asc" },
+    select: { user: { select: { email: true, username: true } } },
+  });
+  return link?.user ?? null;
 }

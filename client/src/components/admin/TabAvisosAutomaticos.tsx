@@ -181,8 +181,10 @@ export function TabAvisosAutomaticos() {
                     ) : null}
                     {a.condicion === "SIN_CONTACTO" ? (
                       <span className="text-xs text-[var(--color-text-muted)]">· si Experiencia Solar no le escribió</span>
-                    ) : a.condicion === "CON_PORTAL" ? (
-                      <span className="text-xs text-[var(--color-text-muted)]">· con usuario del portal</span>
+                    ) : a.condicion === "PORTAL_CON_MAIL" ? (
+                      <span className="text-xs text-[var(--color-text-muted)]">· clientes con mail</span>
+                    ) : a.condicion === "PORTAL_SIN_MAIL" ? (
+                      <span className="text-xs text-[var(--color-text-muted)]">· clientes sin mail</span>
                     ) : null}
                     <span className={`rounded-full px-2 py-0.5 text-[11px] ${ESTADO[a.estado].clase}`}>{ESTADO[a.estado].texto}</span>
                     <span className="ml-auto text-xs text-[var(--color-text-muted)]">

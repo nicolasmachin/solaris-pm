@@ -119,7 +119,7 @@ export const LATEST_RELEASE: Release = {
         "Ningún aviso sale antes de la bienvenida de Experiencia Solar: queda esperando.",
         "Nuevo disparador «Bienvenida hecha» y los envíos programados en el registro.",
         "Nuevos disparadores: encuesta creada, reporte del mes publicado y primer reporte publicado.",
-        "Al convertir la venta, se crea solo el usuario del portal del cliente que tiene mail.",
+        "Al convertir la venta, se crea solo el usuario del portal del cliente: con su mail o, si no tiene, con su nombre y apellido.",
       ],
     },
   ],

@@ -349,12 +349,18 @@ tanto", la ficha tiene que poder responder esa pregunta.
 >> Link: {link del portal}
 >>
 >> Te va a pedir cambiar la contraseña al entrar. Cualquier duda, escribime.
-**Si el cliente tiene mail, el usuario ya está creado.** Desde el 15 de noviembre
-de 2026, cuando el asesor convierte la venta en proyecto, Voltia PM le crea solo
-el usuario del portal con el mail del cliente: entra con "Entrar con un código
-por mail", sin contraseña. Eso **no** da el paso por hecho, porque el cliente
-todavía no recibió el acceso: hay que mandárselo igual. Al cliente sin mail no se
-le crea: hay que conseguir el mail o crearlo a mano.
+**El usuario ya está creado.** Desde el 15 de noviembre de 2026, cuando el asesor
+convierte la venta en proyecto, Voltia PM le crea solo el usuario del portal al
+cliente, tenga mail o no:
+
+- **Con mail**, el usuario es su mail y entra con "Entrar con un código por mail",
+  sin contraseña.
+- **Sin mail**, el usuario es su nombre y apellido con un punto en el medio (por
+  ejemplo, *maria.perez*) y la contraseña es **12345678**, que el portal le pide
+  cambiar al entrar.
+
+Eso **no** da el paso por hecho, porque el cliente todavía no recibió el acceso:
+hay que mandárselo igual.
 
 **Cómo se crea:** desde el propio paso, con el ícono a la derecha. También se
 puede desde la ficha del cliente, arriba a la derecha, con **Crear acceso al
@@ -2129,7 +2135,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.44 | 15 de noviembre de 2026 | Al convertir la venta en proyecto, Voltia PM le crea solo el usuario del portal al cliente que tiene mail; el paso de enviarle el acceso sigue abierto hasta que se le manda. |
+| 1.44 | 15 de noviembre de 2026 | Al convertir la venta en proyecto, Voltia PM le crea solo el usuario del portal al cliente: con su mail si lo tiene, o con su nombre y apellido y una contraseña inicial si no; el paso de enviarle el acceso sigue abierto hasta que se le manda. |
 | 1.43 | 15 de noviembre de 2026 | Se agregan el alumbrado público en el reporte (se marca y se carga el monto de la factura), que el cliente sin mail ve su reporte en el portal, y que a los clientes de la planilla anterior el aniversario se les cuenta desde la entrega. Se registran las reglas de los mensajes de WhatsApp definidos el 15-nov, todavía no activos. Se actualiza lo que falta: los accesos al portal de los clientes que ya estaban están creados. |
 | 1.42 | 15 de noviembre de 2026 | El WhatsApp general dentro de Voltia PM lo ve y lo usa solo el responsable de Experiencia Solar (y la Dirección); los demás del área ya no ven la pestaña ni la tarjeta de la ficha. |
 | 1.41 | 14 de noviembre de 2026 | La bandeja de WhatsApp de Voltia PM se ve y se usa como WhatsApp Web: iniciales del cliente, cantidad de mensajes sin leer, filtros Todos / No leídos / Sin contestar, Enter para mandar, plantillas desde la caja para escribir, y en el celular el chat a pantalla completa. Una conversación de otro número ya no dice «Sin cliente»: aparece solo con el número. |

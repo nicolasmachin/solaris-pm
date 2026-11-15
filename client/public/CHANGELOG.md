@@ -21,11 +21,13 @@
 - Nuevo disparador **"Bienvenida hecha"**.
 - En el registro de envíos aparecen los **programados**, con cuándo salen o si esperan la bienvenida.
 - Nuevos disparadores: **encuesta creada** (de la instalación, de la habilitación y de aniversario), **reporte del mes publicado** y **primer reporte publicado** (una sola vez por cliente).
-- Nueva condición **"espera a que el cliente tenga usuario del portal"**, para el aviso de acceso al portal.
+- Para el aviso de acceso al portal, dos condiciones nuevas: **clientes con mail** y **clientes sin mail**. Si el cliente no tiene usuario del portal, se le crea, y a cada uno le sale solo el aviso de su caso.
+- Datos nuevos para los mensajes: el **usuario del portal** del cliente y un **link para entrar con el usuario ya escrito**.
 
 #### Portal del cliente
 
-- Al convertir la venta en proyecto, Voltia PM le **crea solo el usuario del portal** al cliente que tiene mail cargado: entra con el código por mail. El paso de mandarle el acceso sigue pendiente hasta que se le manda.
+- Al convertir la venta en proyecto, Voltia PM le **crea solo el usuario del portal** al cliente. Con mail, el usuario es su mail y entra con el código por mail. Sin mail, el usuario es su nombre y apellido (*maria.perez*) con la contraseña inicial de siempre, que el portal le pide cambiar. El paso de mandarle el acceso sigue pendiente hasta que se le manda.
+- El link de acceso puede llevar el usuario: la pantalla de ingreso lo muestra ya escrito.
 
 #### WhatsApp de Experiencia Solar
 

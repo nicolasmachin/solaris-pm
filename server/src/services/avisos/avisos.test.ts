@@ -171,26 +171,41 @@ describe("demora, bienvenida y condición", async () => {
     assert.equal(r?.salirEn?.getTime(), ocurrio.getTime() + 24 * 60 * 60_000);
   });
 
-  test("el acceso al portal espera el usuario; con mail, se lo crea solo sin cerrar el paso", { skip: !admin }, async () => {
+  test("acceso al portal: crea el usuario si falta y sale el aviso que le corresponde", { skip: !admin }, async () => {
+    // Sin mail: usuario nombre.apellido con la contraseña inicial; el aviso "con mail" no le sale.
     const id = await proyectoDePrueba();
     await prisma.recorridoCheck.updateMany({ where: { projectId: id, codigo: "e1_bienvenida" }, data: { completadoEn: new Date() } });
     await prisma.recorridoCheck.create({ data: { projectId: id, recorrido: "E1", codigo: "e1_portal", titulo: "Portal", orden: 3 } });
-    const aviso = await nuevoAviso({ disparador: "es.bienvenida", condicion: "CON_PORTAL" });
-    const r = await mandarAviso(aviso, { disparador: "es.bienvenida", projectId: id });
-    assert.equal(r?.estado, "PROGRAMADO");
-    assert.match(r?.detalle ?? "", /no tiene mail/);
-
-    const mail = `prueba.avisos.${Date.now()}@ejemplo.com`;
-    await prisma.project.update({ where: { id }, data: { clientEmail: mail } });
-    await enviarProgramados({ projectId: id });
-    const tras = await prisma.avisoEnvio.findUnique({ where: { id: r!.id } });
-    assert.notEqual(tras?.estado, "PROGRAMADO", tras?.detalle ?? "");
-    const usuario = await prisma.user.findUnique({ where: { email: mail }, select: { id: true, passwordTemporary: true } });
-    assert.ok(usuario);
-    assert.equal(usuario.passwordTemporary, false);
+    const conMail = await nuevoAviso({ disparador: "es.bienvenida", condicion: "PORTAL_CON_MAIL" });
+    const r = await mandarAviso(conMail, { disparador: "es.bienvenida", projectId: id });
+    assert.equal(r?.estado, "OMITIDO");
+    assert.match(r?.detalle ?? "", /sin mail/);
+    const link = await prisma.projectClient.findFirst({ where: { projectId: id }, include: { user: true } });
+    assert.ok(link);
+    usuarios.push(link.user.id);
+    assert.equal(link.user.email, null);
+    assert.match(link.user.username ?? "", /^cliente\.prueba/);
+    assert.equal(link.user.passwordTemporary, true);
+    // Crearlo solo no cierra el paso de mandarle el acceso.
     const paso = await prisma.recorridoCheck.findFirst({ where: { projectId: id, codigo: "e1_portal" } });
     assert.equal(paso?.completadoEn, null);
-    usuarios.push(usuario.id);
+    // El aviso "sin mail" sí le corresponde (en desarrollo no sale al cliente, pero no lo descarta por la condición).
+    const sinMail = await nuevoAviso({ disparador: "es.bienvenida", condicion: "PORTAL_SIN_MAIL" });
+    const r2 = await mandarAviso(sinMail, { disparador: "es.bienvenida", projectId: id });
+    assert.doesNotMatch(r2?.detalle ?? "", /le corresponde/);
+  });
+
+  test("con mail, el usuario es el mail y entra con el código", { skip: !admin }, async () => {
+    const id = await proyectoDePrueba();
+    const mail = `prueba.avisos.${Date.now()}@ejemplo.com`;
+    await prisma.project.update({ where: { id }, data: { clientEmail: mail } });
+    const { asegurarUsuarioPortal } = await import("../clientes/portal-user.service.js");
+    const r = await asegurarUsuarioPortal(id, admin!.id);
+    assert.ok(r.ok);
+    const u = await prisma.user.findUnique({ where: { email: mail }, select: { id: true, passwordTemporary: true } });
+    assert.ok(u);
+    usuarios.push(u.id);
+    assert.equal(u.passwordTemporary, false);
   });
 
   test("si Experiencia Solar le escribió, la condición lo frena; los avisos no cuentan", { skip: !admin }, async () => {

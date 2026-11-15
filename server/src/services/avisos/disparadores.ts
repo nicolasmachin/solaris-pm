@@ -57,7 +57,8 @@ export const DISPARADOR_BIENVENIDA = "es.bienvenida";
 /** Condiciones que se revisan al momento de salir. */
 export const CONDICIONES: Record<string, string> = {
   SIN_CONTACTO: "Solo si Experiencia Solar no le escribió al cliente desde el hecho",
-  CON_PORTAL: "Espera a que el cliente tenga usuario del portal (si tiene mail, Voltia PM se lo crea)",
+  PORTAL_CON_MAIL: "Clientes con mail (entran con el código por mail). Si no tiene usuario del portal, se lo crea",
+  PORTAL_SIN_MAIL: "Clientes sin mail (entran con usuario y contraseña). Si no tiene usuario del portal, se lo crea",
 };
 
 export const DISPARADORES: Disparador[] = [
@@ -190,10 +191,15 @@ export const VARIABLES: Record<string, { etiqueta: string; ejemplo: string }> = 
   "obra.fechaFin": { etiqueta: "Último día de obra", ejemplo: "jueves 5 de noviembre" },
   "evento.fecha": { etiqueta: "Fecha del hecho (el hito, la visita)", ejemplo: "miércoles 4 de noviembre" },
   "portal.link": { etiqueta: "Link al portal de Voltia", ejemplo: "https://app.voltia.com.uy/portal" },
+  "portal.usuario": { etiqueta: "Usuario del portal (el mail o el alias)", ejemplo: "maria.perez" },
+  "portal.acceso": {
+    etiqueta: "Link para entrar, con el usuario ya escrito",
+    ejemplo: "https://app.voltia.com.uy/login?usuario=maria.perez",
+  },
 };
 
 /** Las que tienen dato con cualquier disparador. */
-export const VARIABLES_SIEMPRE = ["cliente.nombre", "cliente.nombreCompleto", "portal.link"];
+export const VARIABLES_SIEMPRE = ["cliente.nombre", "cliente.nombreCompleto", "portal.link", "portal.usuario", "portal.acceso"];
 
 export function variablesDe(disparador: string): string[] {
   const d = DISPARADOR_POR_CLAVE.get(disparador);

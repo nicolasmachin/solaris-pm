@@ -24,8 +24,10 @@ internos sigue con el bloqueo `internal` / `client_facing`.
    - **Sale**: *enseguida* o *después de…* N horas o días del hecho (la demora).
    - **Condición**: *Ninguna*; *Solo si Experiencia Solar no le escribió al
      cliente desde el hecho* (el recordatorio de obra, los cambios de fecha: si
-     una persona ya se ocupó, no sale); o *Espera a que el cliente tenga usuario
-     del portal* (el acceso al portal).
+     una persona ya se ocupó, no sale); o, para el acceso al portal, *Clientes
+     con mail* / *Clientes sin mail*: el usuario del portal se crea si falta, y a
+     cada cliente le sale solo el de su caso (se arman dos avisos con el mismo
+     disparador).
 2. Se elige el canal (WhatsApp o mail; después no se cambia) y un nombre.
 3. Se escribe el mensaje. Los botones de arriba insertan los datos que tiene ese
    disparador (`{{cliente.nombre}}`, `{{obra.fecha}}`…). Abajo se ve cómo le
@@ -104,11 +106,10 @@ del proyecto.
      celular). Los avisos automáticos no cuentan: en la bitácora empiezan con
      `PREFIJO_BITACORA` y en WhatsApp se reconocen por el `waMessageId` guardado
      en `avisos_envios`.
-     `CON_PORTAL`: el cliente tiene que tener usuario del portal; si no tiene y
-     tiene mail, se lo crea `asegurarUsuarioPortal()` (`portal-user.service.ts`)
-     sin contraseña conocida (entra con el código por mail). Sin mail, queda
-     `PROGRAMADO` con el motivo y se reintenta en cada pasada del job: sale cuando
-     se carga el mail.
+     `PORTAL_CON_MAIL` / `PORTAL_SIN_MAIL`: primero `asegurarUsuarioPortal()`
+     (`portal-user.service.ts`) le crea el usuario si no tiene; si no se puede,
+     "Falló" con el motivo. Después sale solo si el usuario es del caso del aviso
+     (tiene mail o no); si no, "No se mandó: le corresponde el otro aviso".
   6. Rellena el mensaje con `datosDelCliente()`. Si falta un dato (ej. la obra sin
      fecha), **no se manda** y queda el motivo.
   7. WhatsApp: `enviarPlantilla()` con la plantilla aprobada, al `clientPhone`
@@ -118,8 +119,13 @@ del proyecto.
      motivo SEGUIMIENTO, cierra `cierraCheck`) y entrada de auditoría del
      proyecto. El autor es el primer ADMIN (usuario de sistema).
 - **Usuario del portal con la venta**: al convertir el lead
-  (`POST /leads/:id/convert`) se llama también a `asegurarUsuarioPortal()`. Sin
-  mail no pasa nada (queda en el log). Ese alta **no cierra** el paso
+  (`POST /leads/:id/convert`) se llama también a `asegurarUsuarioPortal()`, que
+  lo crea siempre (decisión de Nicolás del 15-11-2026: el mail no es condición):
+  con mail, el usuario es el mail, sin contraseña conocida, y entra con el código
+  por mail; sin mail, un alias nombre.apellido sacado de `clientName`
+  (`aliasPorNombre`, aunque haya cédula) con `CONTRASENA_INICIAL_PORTAL`
+  (12345678, la misma de Experiencia Solar) y `passwordTemporary`, que el portal
+  le pide cambiar al entrar. Ese alta **no cierra** el paso
   `e1_portal` del recorrido: lo cierra el aviso de acceso al portal al salir (con
   `cierraCheck`) o Experiencia Solar al mandarlo.
 - **Envíos programados**: el job `enviarProgramados()` (`avisos.job.ts`, cada 2
@@ -145,6 +151,8 @@ del proyecto.
 | `{{cliente.nombre}}` | primera palabra de `nombreCliente` (o `clientName`) | todos |
 | `{{cliente.nombreCompleto}}` | `nombreCliente` o `clientName` | todos |
 | `{{portal.link}}` | `PUBLIC_APP_URL` (o app.voltia.com.uy) + `/portal` | todos |
+| `{{portal.usuario}}` | el usuario del portal del proyecto: su mail, o el alias si no tiene (`usuarioPortalDe()`) | todos (sin usuario, el aviso no sale por falta de dato) |
+| `{{portal.acceso}}` | `/login?usuario=<usuario>`: abre el login con el usuario ya escrito (`Login.tsx` lee `?usuario=`) | todos |
 | `{{obra.fecha}}` / `{{obra.fechaFin}}` | primer y último día de los tramos de la obra, "martes 3 de noviembre" | los de obra |
 | `{{evento.fecha}}` | la fecha del hito o de la visita | UTE y agenda |
 
