@@ -208,6 +208,24 @@ describe("demora, bienvenida y condición", async () => {
     assert.equal(u.passwordTemporary, false);
   });
 
+  test("fecha nueva tras una suspensión: borra la marca y cancela el aviso de suspensión que no salió", { skip: !admin }, async () => {
+    const { avisarFechaConfirmada } = await import("./cambios-de-fecha.js");
+    const id = await proyectoDePrueba();
+    await prisma.project.update({ where: { id }, data: { esperandoFechaNuevaDesde: new Date() } });
+    // El aviso de la suspensión, con 24 h de demora, todavía programado.
+    const e1 = await nuevoAviso({ disparador: "obra.suspendida", demoraMinutos: 24 * 60 });
+    const r = await mandarAviso(e1, { disparador: "obra.suspendida", projectId: id, ref: "2026-12-01", datosFijos: { "obra.fecha": "martes 1 de diciembre" } });
+    assert.equal(r?.estado, "PROGRAMADO");
+    assert.deepEqual(r?.datosFijos, { "obra.fecha": "martes 1 de diciembre" });
+
+    await avisarFechaConfirmada(id, new Date("2026-12-10T00:00:00Z"));
+    const p = await prisma.project.findUnique({ where: { id }, select: { esperandoFechaNuevaDesde: true } });
+    assert.equal(p?.esperandoFechaNuevaDesde, null);
+    const tras = await prisma.avisoEnvio.findUnique({ where: { id: r!.id } });
+    assert.equal(tras?.estado, "OMITIDO");
+    assert.match(tras?.detalle ?? "", /reprogramada/);
+  });
+
   test("si Experiencia Solar le escribió, la condición lo frena; los avisos no cuentan", { skip: !admin }, async () => {
     const id = await proyectoDePrueba();
     const desde = new Date(Date.now() - 60_000);

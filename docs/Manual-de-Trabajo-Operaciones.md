@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.12 · del 12/11/26
+**Voltia · Uruguay** · Versión 1.13 · del 15/11/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -418,6 +418,7 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - Al abrir una obra: si está confirmada o no, el equipo, las notas y el botón **Confirmar fecha** (después dice quién la confirmó y cuándo).
 - **Reprogramar:** se elige el tramo, se ponen las fechas nuevas y, si la fecha ya estaba confirmada, el motivo. Una obra puede tener **varios tramos** (por ejemplo, si se hace en dos partes): **+ Agregar tramo**.
 - Al confirmar la fecha, a Experiencia Solar le llega el aviso para comunicársela al cliente.
+- **Suspender obra (sin fecha nueva):** para una obra con la fecha confirmada que se tiene que frenar **sin saber todavía cuándo se hace**. Pide el motivo, le saca la fecha y la obra queda sin agendar. A Experiencia Solar le llega el aviso con el motivo, igual que en una reprogramación, y el cliente queda **esperando fecha nueva**: cuando se vuelve a agendar y se confirma, Voltia PM sabe que es la fecha nueva de una obra suspendida. Si ya se sabe la fecha nueva, no se suspende: se usa **Reprogramar**. **Eliminar asignación** es para una obra agendada por error, no para suspenderla.
 
 ![Una obra abierta en el calendario: confirmada o no, el equipo, los tramos y el botón Reprogramar.](captura:ops-calendario-detalle)
 
@@ -1116,6 +1117,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.13 | 15 de noviembre de 2026 | En el calendario se puede suspender una obra confirmada sin ponerle fecha nueva: pide el motivo, le avisa a Experiencia Solar y el cliente queda esperando la fecha nueva. |
 | 1.12 | 12 de noviembre de 2026 | Se agrega el registro de problemas técnicos resueltos: Claude se fija ahí antes de diagnosticar y anota solo cada problema que se resuelve en la conversación. |
 | 1.11 | 28 de octubre de 2026 | Las visitas de soporte pueden nacer de la mesa de Soporte de Voltia PM, que detecta en el día las plantas con problemas y dice qué vio el inversor. |
 | 1.10 | 28 de octubre de 2026 | En los criterios técnicos del montaje: sobre un techo de chapa se camina siempre sobre tablas, y sobre membrana asfáltica las virutas de metal se barren en el momento. |

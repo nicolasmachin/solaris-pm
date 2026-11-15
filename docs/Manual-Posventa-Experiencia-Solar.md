@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.44 · del 15/11/26
+**Voltia · Uruguay** · Versión 1.45 · del 15/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -524,6 +524,12 @@ atraso de un área. **Al cliente se le da el motivo sin nombrar áreas** (regla
 adentro. Si a un cliente le mueven la fecha tres veces, quedan tres avisos, no
 uno. Esto es a propósito: antes era una sola casilla que se tildaba una vez y
 quedaba tildada para siempre, y por eso la segunda reagenda no se avisaba.
+
+**Si la obra se suspende sin fecha nueva**, el pendiente llega igual, con el motivo
+empezando por «Obra suspendida, sin fecha nueva». Pasa cuando Operaciones tiene
+que frenar la obra y todavía no sabe cuándo se hace: al cliente se le avisa que
+se suspendió y que apenas haya fecha se le escribe. Cuando Operaciones la vuelve
+a agendar y confirma, la fecha nueva llega como cualquier fecha confirmada.
 
 ---
 
@@ -2135,6 +2141,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.45 | 15 de noviembre de 2026 | Si Operaciones suspende una obra sin fecha nueva, el pendiente de aviso llega igual, con el motivo; la fecha nueva llega como cualquier fecha confirmada. |
 | 1.44 | 15 de noviembre de 2026 | Al convertir la venta en proyecto, Voltia PM le crea solo el usuario del portal al cliente: con su mail si lo tiene, o con su nombre y apellido y una contraseña inicial si no; el paso de enviarle el acceso sigue abierto hasta que se le manda. |
 | 1.43 | 15 de noviembre de 2026 | Se agregan el alumbrado público en el reporte (se marca y se carga el monto de la factura), que el cliente sin mail ve su reporte en el portal, y que a los clientes de la planilla anterior el aniversario se les cuenta desde la entrega. Se registran las reglas de los mensajes de WhatsApp definidos el 15-nov, todavía no activos. Se actualiza lo que falta: los accesos al portal de los clientes que ya estaban están creados. |
 | 1.42 | 15 de noviembre de 2026 | El WhatsApp general dentro de Voltia PM lo ve y lo usa solo el responsable de Experiencia Solar (y la Dirección); los demás del área ya no ven la pestaña ni la tarjeta de la ficha. |

@@ -122,6 +122,13 @@ export const LATEST_RELEASE: Release = {
         "Al convertir la venta, se crea solo el usuario del portal del cliente: con su mail o, si no tiene, con su nombre y apellido.",
       ],
     },
+    {
+      title: "Calendario de obras",
+      items: [
+        "Suspender obra (sin fecha nueva): pide el motivo, le saca la fecha y el cliente queda esperando la nueva.",
+        "Avisos automáticos de obra suspendida y de fecha nueva tras una suspensión.",
+      ],
+    },
   ],
 };
 

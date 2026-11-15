@@ -77,6 +77,7 @@ import { createAuditEntriesForChanges, createAuditEntry } from "../services/audi
 import { clearUmbralNotaBajaCache } from "../services/encuestas/encuestas.service.js";
 import { activarPorHecho, crearCheckReagenda } from "../services/clientes/recorrido.service.js";
 import { emitirHecho } from "../services/avisos/emitir.js";
+import { avisarFechaConfirmada } from "../services/avisos/cambios-de-fecha.js";
 import {
   completarPorEvidencia,
   despintarPorEvidencia,
@@ -9847,11 +9848,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // calendario no generaba ninguna obligación visible: de 33 obras agendadas, 6
     // quedaron sin confirmar y sus fechas ya pasaron.
     await activarPorHecho(existing.projectId, "fecha_confirmada");
-    emitirHecho({
-      disparador: "obra.fecha_confirmada",
-      projectId: existing.projectId,
-      ref: updated.segments?.[0]?.startDate?.toISOString().slice(0, 10),
-    });
+    // La fecha confirmada, o la fecha nueva si el cliente esperaba una tras una suspensión.
+    await avisarFechaConfirmada(existing.projectId, updated.segments?.[0]?.startDate ?? null);
 
     await createAuditEntry({
       entityType: AuditEntityType.installation_schedule,
@@ -10173,6 +10171,67 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     return serializeSchedule(updated);
+  });
+
+  // Suspender una obra confirmada sin fecha nueva: se le saca la fecha (queda sin
+  // agendar), el cliente queda "esperando fecha nueva" y Experiencia Solar recibe
+  // su pendiente de aviso. Cuando se confirme la próxima fecha, el aviso al
+  // cliente es el de "fecha nueva tras una suspensión" (cambios-de-fecha.ts).
+  app.post("/calendar/:id/suspender", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = z
+      .object({ motivo: z.string().trim().min(3).max(500), forceRecalculate: z.boolean().optional() })
+      .strict()
+      .parse(request.body);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: { segments: { orderBy: { startDate: "asc" } }, project: { select: { clientName: true } } },
+    });
+    if (!existing) throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    if (!existing.confirmedAt) {
+      throw badRequest(
+        "NO_CONFIRMADA",
+        "Solo se suspende una obra con fecha confirmada. Una fecha tentativa se mueve o se elimina: al cliente no se le prometió nada.",
+      );
+    }
+
+    const guard = await deadlineRecalcGuard(existing.projectId, body.forceRecalculate ?? false);
+    if (guard) return reply.code(409).send(guard);
+
+    const fechaCancelada = existing.segments[0]?.startDate ?? null;
+    const ahora = new Date();
+    await prisma.$transaction([
+      prisma.installationSchedule.update({ where: { id: existing.id }, data: { deletedAt: ahora } }),
+      prisma.project.update({ where: { id: existing.projectId }, data: { esperandoFechaNuevaDesde: ahora } }),
+    ]);
+
+    await crearCheckReagenda(existing.projectId, `Obra suspendida, sin fecha nueva: ${body.motivo}`, null);
+    if (fechaCancelada) {
+      const { fechaLarga } = await import("../services/avisos/plantilla.js");
+      emitirHecho({
+        disparador: "obra.suspendida",
+        projectId: existing.projectId,
+        ref: toDateOnlyString(fechaCancelada) ?? undefined,
+        ocurrioEn: ahora,
+        // La fecha que se canceló: después de suspender, la obra ya no tiene fecha.
+        datosFijos: { "obra.fecha": fechaLarga(fechaCancelada) },
+      });
+    }
+
+    await createAuditEntry({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Suspendió la obra de ${existing.project.clientName}${fechaCancelada ? ` (era el ${toDateOnlyString(fechaCancelada)})` : ""}, sin fecha nueva · Motivo: ${body.motivo}`,
+    });
+
+    const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
+    reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
+    return { success: true };
   });
 
   app.delete("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request, reply) => {

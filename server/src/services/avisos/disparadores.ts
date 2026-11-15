@@ -80,7 +80,7 @@ export const DISPARADORES: Disparador[] = [
     clave: "obra.fecha_confirmada",
     grupo: "Obra",
     etiqueta: "Fecha de obra confirmada",
-    cuando: "Cuando Operaciones confirma la fecha de la obra en el calendario.",
+    cuando: "Cuando Operaciones confirma la fecha de la obra en el calendario. No sale si el cliente esperaba fecha nueva tras una suspensión (sale «Fecha nueva tras una suspensión»).",
     variables: OBRA,
   },
   {
@@ -88,6 +88,20 @@ export const DISPARADORES: Disparador[] = [
     grupo: "Obra",
     etiqueta: "Obra reprogramada",
     cuando: "Cuando se cambia la fecha de una obra que ya estaba confirmada.",
+    variables: OBRA,
+  },
+  {
+    clave: "obra.suspendida",
+    grupo: "Obra",
+    etiqueta: "Obra suspendida, sin fecha nueva",
+    cuando: "Cuando Operaciones suspende una obra confirmada sin ponerle otra fecha. {{obra.fecha}} es la fecha que se canceló. El cliente queda esperando fecha nueva.",
+    variables: OBRA,
+  },
+  {
+    clave: "obra.fecha_nueva_tras_suspension",
+    grupo: "Obra",
+    etiqueta: "Fecha nueva tras una suspensión",
+    cuando: "Cuando se confirma la fecha de un cliente que esperaba fecha nueva. En su lugar no sale «Fecha de obra confirmada».",
     variables: OBRA,
   },
   {

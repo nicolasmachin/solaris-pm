@@ -36,6 +36,7 @@ import {
   patchSchedule,
   patchSegment,
   rescheduleSchedule,
+  suspendSchedule,
   type CalendarResponse,
   type CalendarTeam,
   type InstallationSchedule,
@@ -2739,6 +2740,7 @@ function ScheduleDetail({
   const [teamId, setTeamId] = useState<string>(schedule.teamId ?? "");
   const [notes, setNotes] = useState(schedule.notes ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [suspendiendo, setSuspendiendo] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -2892,6 +2894,24 @@ function ScheduleDetail({
       <Button size="sm" variant="secondary" onClick={onReprogramClick} className="w-full">
         Reprogramar
       </Button>
+
+      {confirmed && (
+        <button
+          type="button"
+          onClick={() => setSuspendiendo(true)}
+          className="text-[11px] text-[var(--color-warning-text)] hover:opacity-80"
+          title="Sacarle la fecha sin poner otra: el cliente queda esperando la nueva"
+        >
+          Suspender obra (sin fecha nueva)
+        </button>
+      )}
+      {suspendiendo && (
+        <SuspenderObraModal
+          scheduleId={schedule.id}
+          clientName={schedule.project?.clientName ?? "el cliente"}
+          onClose={() => setSuspendiendo(false)}
+        />
+      )}
 
       {confirmDelete ? (
         <div className="flex flex-col gap-1.5">
@@ -3323,6 +3343,63 @@ function MotivoReprogramacion({ value, onChange }: { value: string; onChange: (v
         La fecha ya estaba confirmada: Experiencia Solar recibe el aviso con este motivo para contárselo al cliente.
       </p>
     </div>
+  );
+}
+
+/**
+ * Suspender una obra confirmada sin fecha nueva. Se le saca la fecha, el cliente
+ * queda "esperando fecha nueva" y Experiencia Solar recibe el pendiente de
+ * avisarle. Al confirmar la próxima fecha, el aviso automático al cliente es el
+ * de "fecha nueva tras una suspensión".
+ */
+function SuspenderObraModal({ scheduleId, clientName, onClose }: { scheduleId: string; clientName: string; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [motivo, setMotivo] = useState("");
+  const suspender = useMutation({
+    mutationFn: () => suspendSchedule(scheduleId, motivo.trim()),
+    onSuccess: () => {
+      toast.success("Obra suspendida: queda sin fecha y el cliente, esperando la nueva");
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      onClose();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo suspender la obra");
+    },
+  });
+  return (
+    <ModalShell title="Suspender obra" onClose={onClose}>
+      <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
+        La obra de {clientName} queda <strong>sin fecha</strong> y el cliente, esperando que le avisemos la nueva. Si ya
+        tenés la fecha nueva, no la suspendas: usá <strong>Reprogramar</strong>.
+      </p>
+      <label
+        htmlFor="motivo-suspension"
+        className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]"
+      >
+        Motivo de la suspensión
+      </label>
+      <textarea
+        id="motivo-suspension"
+        rows={2}
+        maxLength={500}
+        value={motivo}
+        onChange={(e) => setMotivo(e.target.value)}
+        placeholder="Por ejemplo: falta un material, el cliente pidió posponerla"
+        className="mb-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+      />
+      <p className="mb-4 text-xs text-[var(--color-text-muted)]">
+        Experiencia Solar recibe el aviso con este motivo para contárselo al cliente.
+      </p>
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button size="sm" onClick={() => suspender.mutate()} loading={suspender.isPending} disabled={motivo.trim().length < 3}>
+          Suspender
+        </Button>
+      </div>
+    </ModalShell>
   );
 }
 

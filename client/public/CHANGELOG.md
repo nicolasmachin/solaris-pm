@@ -24,6 +24,11 @@
 - Para el aviso de acceso al portal, dos condiciones nuevas: **clientes con mail** y **clientes sin mail**. Si el cliente no tiene usuario del portal, se le crea, y a cada uno le sale solo el aviso de su caso.
 - Datos nuevos para los mensajes: el **usuario del portal** del cliente y un **link para entrar con el usuario ya escrito**.
 
+#### Calendario de obras
+
+- Nuevo **Suspender obra (sin fecha nueva)** en el panel de una obra confirmada: pide el motivo, le saca la fecha y el cliente queda esperando la fecha nueva. A Experiencia Solar le llega el aviso con el motivo, como en una reprogramación.
+- Avisos automáticos nuevos para eso: **obra suspendida, sin fecha nueva** y **fecha nueva tras una suspensión**, que reemplaza al de fecha confirmada para ese cliente. Si al confirmar la fecha nueva el aviso de la suspensión todavía no había salido, se cancela y le sale el de obra reprogramada.
+
 #### Portal del cliente
 
 - Al convertir la venta en proyecto, Voltia PM le **crea solo el usuario del portal** al cliente. Con mail, el usuario es su mail y entra con el código por mail. Sin mail, el usuario es su nombre y apellido (*maria.perez*) con la contraseña inicial de siempre, que el portal le pide cambiar. El paso de mandarle el acceso sigue pendiente hasta que se le manda.

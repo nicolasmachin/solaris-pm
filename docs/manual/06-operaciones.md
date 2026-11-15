@@ -32,6 +32,10 @@ en el calendario, en vez de forzarlo dentro de una que no le corresponde.
   hecho** (y se vuelve atrás); y se **elimina**, con una confirmación en dos
   pasos dentro del mismo botón. Las obras no usan esta ficha: siguen con su
   propio panel.
+- **Suspender una obra** (panel de la obra, solo si la fecha está confirmada):
+  **"Suspender obra (sin fecha nueva)"** pide el motivo y le saca la fecha. Es
+  para cuando no hay fecha nueva todavía; si la hay, se usa **Reprogramar**. Ver
+  *Obra suspendida* en Reglas y decisiones.
 - La fila **"Mostrar"** filtra por tipo. **La combinación se guarda por usuario**
   y se recupera al volver a entrar.
 
@@ -117,6 +121,19 @@ se resuelve contra la matriz.
 
 ### Reglas y decisiones
 
+- **Obra suspendida, sin fecha nueva** (`POST /calendar/:id/suspender`,
+  `OPERACIONES:EDIT`, pedido de Nicolás del 15-11-2026 para los avisos al
+  cliente): solo con la fecha confirmada (`NO_CONFIRMADA`; una tentativa se
+  mueve o se elimina). Da de baja la obra (`deletedAt`, como "Eliminar
+  asignación", y se vuelve a agendar con "+ Nueva instalación", que la restaura),
+  marca el proyecto con `esperandoFechaNuevaDesde`, crea el pendiente de aviso de
+  Experiencia Solar (`crearCheckReagenda`, motivo "Obra suspendida, sin fecha
+  nueva: …") y dispara el aviso automático `obra.suspendida` con la fecha que se
+  canceló fijada en el mensaje. Al confirmar la próxima fecha,
+  `avisarFechaConfirmada()` (`avisos/cambios-de-fecha.ts`) borra la marca y manda
+  "Fecha nueva tras una suspensión" en lugar de "Fecha de obra confirmada" (ver
+  el capítulo 20). "Eliminar asignación" no marca nada: es para una obra
+  agendada por error.
 - **El ticket solo se puede enganchar a un evento de SOPORTE**
   (`TICKET_SOLO_EN_SOPORTE`). Un reclamo colgando de un mantenimiento aparecería
   donde no corresponde.

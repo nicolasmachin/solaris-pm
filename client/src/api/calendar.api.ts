@@ -191,6 +191,17 @@ export async function confirmSchedule(id: string): Promise<InstallationSchedule>
   return data;
 }
 
+/**
+ * Suspende una obra confirmada sin fecha nueva: le saca la fecha y el cliente
+ * queda esperando que le avisemos la nueva.
+ */
+export async function suspendSchedule(id: string, motivo: string): Promise<void> {
+  await withDeadlineConfirm(async (forceRecalculate) => {
+    await apiClient.post(`/api/calendar/${id}/suspender`, { motivo, ...(forceRecalculate ? { forceRecalculate: true } : {}) });
+    return null;
+  });
+}
+
 export async function deleteSchedule(id: string): Promise<void> {
   await withDeadlineConfirm(async (forceRecalculate) => {
     await apiClient.delete(`/api/calendar/${id}`, {

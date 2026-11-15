@@ -842,6 +842,10 @@ model Project {
   // el aviso al cliente de que ya puede encender. Mientras esté null y
   // postHabilitacionInicioEn tenga valor, el cron alerta a las 24/48hs.
   avisoHabilitacionEn             DateTime?                      @db.Timestamptz(6)
+  /// La obra se suspendió sin fecha nueva (Operaciones → Suspender obra): el
+  /// cliente quedó esperando que le avisemos la nueva. Al confirmar la próxima
+  /// fecha se le manda el aviso "fecha nueva tras una suspensión" y se borra.
+  esperandoFechaNuevaDesde        DateTime?                      @db.Timestamptz(6)
   // Override manual del recorrido E1/E2/E3 en Experiencia Solar (útil para
   // clientes importados sin pipeline). Si está seteado, pisa el derivado.
   recorridoManual                 String?
