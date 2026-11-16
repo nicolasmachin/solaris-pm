@@ -13,6 +13,8 @@ import {
   getAvisosEnvios,
   mandarAvisoAMeta,
   pausarAviso,
+  quitarAdjuntoAviso,
+  subirAdjuntoAviso,
   type Aviso,
   type AvisoCanal,
   type AvisoDatos,
@@ -69,10 +71,24 @@ const VACIO: AvisoDatos = {
   asunto: "",
   cuerpo: "",
   cierraCheck: null,
+  adjuntoTexto: "",
+  adjuntoUnaVez: false,
 };
 
 const HORA = 60;
 const DIA = 24 * HORA;
+
+/** Si el video o la foto están completos y falta mandarlos a Meta. */
+function adjuntoParaMandar(a: Aviso): boolean {
+  return !!a.adjuntoArchivo && !!a.adjuntoTexto?.trim() && (!a.adjuntoPlantillaEstado || a.adjuntoPlantillaEstado === "REJECTED");
+}
+
+function estadoPlantillaAdjunto(a: Aviso): string {
+  if (!a.adjuntoPlantillaEstado) return a.adjuntoArchivo && a.adjuntoTexto ? "sin mandar a Meta" : "incompleto";
+  if (a.adjuntoPlantillaEstado === "APPROVED") return "aprobado por Meta";
+  if (a.adjuntoPlantillaEstado === "REJECTED") return `rechazado por Meta${a.adjuntoPlantillaMotivo ? `: ${a.adjuntoPlantillaMotivo}` : ""}`;
+  return "en revisión de Meta";
+}
 
 /** "2 horas", "1 día": la demora como se dice. */
 export function demoraEnPalabras(minutos: number): string {
@@ -152,6 +168,7 @@ export function TabAvisosAutomaticos() {
             invalidar();
             setEditando(null);
           }}
+          onRefrescar={invalidar}
         />
       )}
 
@@ -197,6 +214,18 @@ export function TabAvisosAutomaticos() {
                     </span>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-[13px] text-[var(--color-text-secondary)]">{a.cuerpo}</p>
+                  {(a.adjuntoArchivo || a.adjuntoTexto) && (
+                    <div className="mt-2 rounded-md border border-dashed border-[var(--color-border)] p-2 text-[12px] text-[var(--color-text-secondary)]">
+                      <p className="mb-1 text-[11px] text-[var(--color-text-muted)]">
+                        Después, {a.adjuntoTipo === "IMAGEN" ? "una foto" : "un video"}
+                        {a.adjuntoNombre ? ` («${a.adjuntoNombre}»)` : " (falta subir el archivo)"}
+                        {a.adjuntoUnaVez ? " · solo la primera vez por cliente" : ""}
+                        {" · "}
+                        {estadoPlantillaAdjunto(a)}
+                      </p>
+                      <p className="whitespace-pre-wrap">{a.adjuntoTexto || "(falta el texto)"}</p>
+                    </div>
+                  )}
                   {a.estado === "RECHAZADO" && (
                     <p className="mt-2 text-xs text-red-500">
                       Meta lo rechazó{a.plantillaMotivo ? `: ${a.plantillaMotivo}` : ""}. Corregí el texto y mandalo de nuevo.
@@ -211,7 +240,7 @@ export function TabAvisosAutomaticos() {
                         <Pencil size={13} /> Editar
                       </Button>
                     )}
-                    {puedeEditar && a.canal === "WHATSAPP" && (a.estado === "BORRADOR" || a.estado === "RECHAZADO") && (
+                    {puedeEditar && a.canal === "WHATSAPP" && (a.estado === "BORRADOR" || a.estado === "RECHAZADO" || adjuntoParaMandar(a)) && (
                       <Button size="sm" loading={accion.isPending} onClick={() => accion.mutate({ tipo: "meta", id: a.id })}>
                         <Send size={13} /> Mandar a Meta
                       </Button>
@@ -261,11 +290,14 @@ function Editor({
   catalogo,
   onCerrar,
   onGuardado,
+  onRefrescar,
 }: {
   aviso: Aviso | null;
   catalogo: AvisosCatalogo;
   onCerrar: () => void;
   onGuardado: () => void;
+  /** Refresca la lista sin cerrar el editor (al subir o quitar el archivo). */
+  onRefrescar: () => void;
 }) {
   const [d, setD] = useState<AvisoDatos>(
     aviso
@@ -279,6 +311,8 @@ function Editor({
           asunto: aviso.asunto ?? "",
           cuerpo: aviso.cuerpo,
           cierraCheck: aviso.cierraCheck,
+          adjuntoTexto: aviso.adjuntoTexto ?? "",
+          adjuntoUnaVez: aviso.adjuntoUnaVez,
         }
       : VACIO,
   );
@@ -295,7 +329,12 @@ function Editor({
 
   const guardar = useMutation({
     mutationFn: async (yMeta: boolean) => {
-      const datos = { ...d, dias: disp?.conDias ? d.dias : null, asunto: d.canal === "EMAIL" ? d.asunto : null };
+      const datos = {
+        ...d,
+        dias: disp?.conDias ? d.dias : null,
+        asunto: d.canal === "EMAIL" ? d.asunto : null,
+        adjuntoTexto: d.canal === "WHATSAPP" ? d.adjuntoTexto : null,
+      };
       const r = aviso ? await editarAviso(aviso.id, datos) : await crearAviso(datos);
       if (yMeta) await mandarAvisoAMeta(r.id);
       return yMeta;
@@ -458,6 +497,17 @@ function Editor({
         )}
       </div>
 
+      {d.canal === "WHATSAPP" && (
+        <Adjunto
+          aviso={aviso}
+          texto={d.adjuntoTexto ?? ""}
+          unaVez={!!d.adjuntoUnaVez}
+          onTexto={(t) => setD({ ...d, adjuntoTexto: t })}
+          onUnaVez={(v) => setD({ ...d, adjuntoUnaVez: v })}
+          onCambio={onRefrescar}
+        />
+      )}
+
       <div>
         <label className={lbl}>Paso de Experiencia Solar que deja hecho (opcional)</label>
         <select className={inp} value={d.cierraCheck ?? ""} onChange={(e) => setD({ ...d, cierraCheck: e.target.value || null })}>
@@ -585,6 +635,100 @@ function Demora({ valor, onCambio }: { valor: number | null; onCambio: (minutos:
           del hecho.
         </>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * El video o la foto que sale en un segundo mensaje, un par de minutos después
+ * del texto. Es otra plantilla de Meta, con su propio texto. El archivo se sube
+ * con el aviso ya guardado.
+ */
+function Adjunto({
+  aviso,
+  texto,
+  unaVez,
+  onTexto,
+  onUnaVez,
+  onCambio,
+}: {
+  aviso: Aviso | null;
+  texto: string;
+  unaVez: boolean;
+  onTexto: (t: string) => void;
+  onUnaVez: (v: boolean) => void;
+  onCambio: () => void;
+}) {
+  // Lo que devuelve el servidor al subir o quitar: el editor no se cierra.
+  const [actual, setActual] = useState(aviso);
+  const subir = useMutation({
+    mutationFn: (f: File) => subirAdjuntoAviso(actual!.id, f),
+    onSuccess: (a) => {
+      toast.success("Archivo subido.");
+      setActual(a);
+      onCambio();
+    },
+    onError: (err) => toast.error(errMsg(err)),
+  });
+  const quitar = useMutation({
+    mutationFn: () => quitarAdjuntoAviso(actual!.id),
+    onSuccess: (a) => {
+      toast.success("Se quitó el video o la foto.");
+      setActual(a);
+      onTexto("");
+      onCambio();
+    },
+    onError: (err) => toast.error(errMsg(err)),
+  });
+  return (
+    <div className="rounded-lg border border-dashed border-[var(--color-border)] p-3">
+      <label className={lbl}>Video o foto después del mensaje (opcional)</label>
+      <p className="mb-2 text-xs text-[var(--color-text-muted)]">
+        Sale en un segundo mensaje, un par de minutos después del texto. Video MP4 de hasta 16 MB, o foto JPG o PNG de hasta 5
+        MB. Es otra plantilla: Meta la revisa aparte, y el aviso se activa con las dos aprobadas.
+      </p>
+      {actual ? (
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+          {actual.adjuntoNombre ? (
+            <span>
+              {actual.adjuntoTipo === "IMAGEN" ? "Foto" : "Video"}: «{actual.adjuntoNombre}»
+            </span>
+          ) : (
+            <span className="text-[var(--color-text-muted)]">Sin archivo.</span>
+          )}
+          <label className="cursor-pointer rounded-md border border-[var(--color-border)] px-2 py-1 text-xs hover:bg-[var(--color-bg-hover)]">
+            {subir.isPending ? "Subiendo…" : actual.adjuntoNombre ? "Reemplazar" : "Subir archivo"}
+            <input
+              type="file"
+              accept="video/mp4,image/jpeg,image/png"
+              className="hidden"
+              disabled={subir.isPending}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) subir.mutate(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {(actual.adjuntoNombre || actual.adjuntoTexto) && (
+            <button type="button" className="text-xs text-red-500 hover:underline" onClick={() => quitar.mutate()}>
+              Quitar
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="mb-2 text-xs text-[var(--color-text-muted)]">El archivo se sube después de guardar el aviso.</p>
+      )}
+      <textarea
+        className={`${inp} min-h-[70px]`}
+        placeholder="El texto que va con el video o la foto"
+        value={texto}
+        onChange={(e) => onTexto(e.target.value)}
+      />
+      <label className="mt-2 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+        <input type="checkbox" checked={unaVez} onChange={(e) => onUnaVez(e.target.checked)} />
+        Solo la primera vez por cliente (por ejemplo, el video del primer reporte)
+      </label>
     </div>
   );
 }

@@ -6613,6 +6613,24 @@ model AvisoAutomatico {
   /// Paso del recorrido de Experiencia Solar que el aviso deja hecho al salir
   /// (código de RecorridoCheck), para que nadie lo mande dos veces.
   cierraCheck        String?
+  /// Video o foto que sale en un SEGUNDO mensaje, un par de minutos después del
+  /// texto (solo WhatsApp). Es otra plantilla de Meta, con el archivo en la
+  /// cabecera: Meta lo baja de una dirección pública (`adjuntoToken`).
+  adjuntoTipo             String?   // VIDEO | IMAGEN
+  /// Ruta del archivo dentro del storage (storage/avisos/<id>/…).
+  adjuntoArchivo          String?
+  adjuntoMime             String?
+  adjuntoNombre           String?
+  /// Parte de la dirección pública del archivo: sin ella no se puede adivinar.
+  adjuntoToken            String?   @unique
+  /// El texto que va con el video o la foto.
+  adjuntoTexto            String?   @db.Text
+  /// Solo la primera vez por cliente (el video del primer reporte).
+  adjuntoUnaVez           Boolean   @default(false)
+  adjuntoPlantillaNombre  String?
+  adjuntoPlantillaId      String?
+  adjuntoPlantillaEstado  String?
+  adjuntoPlantillaMotivo  String?
   /// Desde cuándo está activo: solo cuentan los hechos posteriores.
   activadoEn         DateTime?    @db.Timestamptz(6)
   creadoPorId        String?
@@ -6651,6 +6669,8 @@ model AvisoEnvio {
   contactoDesde DateTime?     @db.Timestamptz(6)
   /// Fecha que va como {{evento.fecha}}.
   eventoFecha DateTime?       @db.Timestamptz(6)
+  /// Es el segundo mensaje de un aviso: el video o la foto que va después del texto.
+  esAdjunto   Boolean         @default(false)
   /// Datos del mensaje fijados al momento del hecho (ej. la fecha de obra que se
   /// suspendió, que después ya no existe). Pisan a los que se calculan al salir.
   datosFijos  Json?

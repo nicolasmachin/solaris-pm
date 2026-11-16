@@ -19,6 +19,7 @@ import { badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
 import { CHECKS_POR_RECORRIDO } from "../clientes/recorrido-checks.js";
 import { CONDICIONES, DISPARADOR_POR_CLAVE, DISPARADORES, VARIABLES, variablesDe } from "./disparadores.js";
+import { sinPlantillaAdjunto, tieneAdjunto } from "./adjunto.js";
 import { aFormatoMeta, nombrePlantilla, problemasDelTexto } from "./plantilla.js";
 
 export type Canal = "WHATSAPP" | "EMAIL";
@@ -33,6 +34,9 @@ export type DatosAviso = {
   asunto?: string | null;
   cuerpo: string;
   cierraCheck?: string | null;
+  /** El texto del video o la foto que sale después (el archivo se sube aparte). */
+  adjuntoTexto?: string | null;
+  adjuntoUnaVez?: boolean;
 };
 
 /** Lo que la pantalla necesita para armar un aviso. */
@@ -57,6 +61,10 @@ function validar(d: DatosAviso) {
   if (d.canal === "EMAIL" && !d.asunto?.trim()) throw badRequest("SIN_ASUNTO", "El mail necesita asunto.");
   const problemas = problemasDelTexto(d.cuerpo, d.disparador, d.canal);
   if (d.canal === "EMAIL" && d.asunto) problemas.push(...problemasDelTexto(d.asunto, d.disparador, "EMAIL"));
+  if (d.adjuntoTexto?.trim()) {
+    if (d.canal !== "WHATSAPP") throw badRequest("NO_ES_WHATSAPP", "El video o la foto solo van en los avisos de WhatsApp.");
+    problemas.push(...problemasDelTexto(d.adjuntoTexto, d.disparador, "WHATSAPP").map((p) => `Texto del video o la foto: ${p}`));
+  }
   if (problemas.length > 0) throw badRequest("TEXTO_INVALIDO", problemas.join(" "));
   if (d.cierraCheck) {
     const validos = new Set(Object.values(CHECKS_POR_RECORRIDO).flat().map((c) => c.codigo));
@@ -112,6 +120,8 @@ export async function crearAviso(d: DatosAviso, userId: string) {
       asunto: d.canal === "EMAIL" ? d.asunto?.trim() ?? null : null,
       cuerpo: d.cuerpo.trim(),
       cierraCheck: d.cierraCheck || null,
+      adjuntoTexto: d.adjuntoTexto?.trim() || null,
+      adjuntoUnaVez: !!d.adjuntoUnaVez,
       creadoPorId: userId,
     },
   });
@@ -130,6 +140,9 @@ export async function editarAviso(id: string, d: DatosAviso, userId: string) {
   if (d.canal !== actual.canal) throw badRequest("CANAL_FIJO", "El canal no se cambia: creá otro aviso.");
   validar(d);
   const cambiaTexto = d.cuerpo.trim() !== actual.cuerpo;
+  // El texto del video es otra plantilla: si cambia, esa vuelve a aprobarse.
+  const adjuntoTexto = d.adjuntoTexto === undefined ? actual.adjuntoTexto : d.adjuntoTexto?.trim() || null;
+  const cambiaAdjunto = adjuntoTexto !== actual.adjuntoTexto;
   // En WhatsApp, un texto nuevo es una plantilla nueva: vuelve a borrador y se apaga.
   const reinicia = actual.canal === "WHATSAPP" && cambiaTexto;
   const a = await prisma.avisoAutomatico.update({
@@ -143,6 +156,11 @@ export async function editarAviso(id: string, d: DatosAviso, userId: string) {
       asunto: actual.canal === "EMAIL" ? d.asunto?.trim() ?? null : null,
       cuerpo: d.cuerpo.trim(),
       cierraCheck: d.cierraCheck || null,
+      adjuntoTexto,
+      adjuntoUnaVez: d.adjuntoUnaVez === undefined ? actual.adjuntoUnaVez : !!d.adjuntoUnaVez,
+      ...(cambiaAdjunto ? sinPlantillaAdjunto() : {}),
+      // Con un video nuevo sin aprobar, un aviso activo no puede seguir saliendo a medias.
+      ...(cambiaAdjunto && adjuntoTexto && actual.estado === "ACTIVO" && !reinicia ? { estado: "PAUSADO" } : {}),
       ...(reinicia
         ? {
             estado: "BORRADOR",
@@ -164,41 +182,79 @@ export async function editarAviso(id: string, d: DatosAviso, userId: string) {
   return a;
 }
 
-/** Manda el texto a Meta como plantilla nueva. */
+/**
+ * Manda a Meta lo que falta aprobar: el texto (si está en borrador o lo
+ * rechazaron) y el video o la foto (si tiene y no se mandó o lo rechazaron).
+ */
 export async function mandarAMeta(id: string, userId: string) {
   const a = await obtener(id);
   if (a.canal !== "WHATSAPP") throw badRequest("NO_ES_WHATSAPP", "Solo los avisos de WhatsApp pasan por Meta.");
-  if (a.estado !== "BORRADOR" && a.estado !== "RECHAZADO") {
-    throw badRequest("YA_ENVIADO", "Este texto ya se mandó a Meta. Para cambiarlo, editá el mensaje.");
+  const texto = a.estado === "BORRADOR" || a.estado === "RECHAZADO";
+  const adjunto = tieneAdjunto(a) && (!a.adjuntoPlantillaEstado || a.adjuntoPlantillaEstado === "REJECTED");
+  if (!texto && !adjunto) {
+    throw badRequest("YA_ENVIADO", "Ya se mandó todo a Meta. Para cambiarlo, editá el mensaje.");
   }
-  const { crearPlantilla } = await import("../whatsapp-cloud/api.service.js");
+  const { crearPlantilla, subirEjemploMeta } = await import("../whatsapp-cloud/api.service.js");
   // La plantilla se crea en la cuenta del número general: es por donde sale el aviso.
   const { bandejaExperienciaSolar } = await import("../whatsapp-cloud/bandejas.service.js");
   const { cuenta } = await bandejaExperienciaSolar();
   if (!cuenta) throw badRequest("SIN_NUMERO", "No hay un número de WhatsApp para Experiencia Solar.");
-  const { cuerpo, variables, ejemplos } = aFormatoMeta(a.cuerpo);
-  const nombre = nombrePlantilla(a.nombre, randomBytes(2).toString("hex"));
-  const r = await crearPlantilla({ nombre, categoria: "UTILITY", idioma: a.plantillaIdioma, cuerpo, ejemplos }, cuenta);
-  const estadoMeta = r.status?.toUpperCase() ?? "PENDING";
-  const actualizado = await prisma.avisoAutomatico.update({
-    where: { id },
-    data: {
-      plantillaNombre: nombre,
-      plantillaId: r.id,
-      plantillaEstado: estadoMeta,
-      plantillaMotivo: null,
-      plantillaVariables: variables,
-      estado: estadoMeta === "APPROVED" ? "LISTO" : estadoMeta === "REJECTED" ? "RECHAZADO" : "EN_REVISION",
-    },
-  });
-  await auditar(id, userId, `Mandó a Meta la plantilla «${nombre}» del aviso «${a.nombre}»`);
+
+  let actualizado = a;
+  if (texto) {
+    const { cuerpo, variables, ejemplos } = aFormatoMeta(a.cuerpo);
+    const nombre = nombrePlantilla(a.nombre, randomBytes(2).toString("hex"));
+    const r = await crearPlantilla({ nombre, categoria: "UTILITY", idioma: a.plantillaIdioma, cuerpo, ejemplos }, cuenta);
+    const estadoMeta = r.status?.toUpperCase() ?? "PENDING";
+    actualizado = await prisma.avisoAutomatico.update({
+      where: { id },
+      data: {
+        plantillaNombre: nombre,
+        plantillaId: r.id,
+        plantillaEstado: estadoMeta,
+        plantillaMotivo: null,
+        plantillaVariables: variables,
+        estado: estadoMeta === "APPROVED" ? "LISTO" : estadoMeta === "REJECTED" ? "RECHAZADO" : "EN_REVISION",
+      },
+    });
+    await auditar(id, userId, `Mandó a Meta la plantilla «${nombre}» del aviso «${a.nombre}»`);
+  }
+  if (adjunto) {
+    const { readFile } = await import("node:fs/promises");
+    const { rutaAbsoluta } = await import("./adjunto.js");
+    const archivo = await readFile(rutaAbsoluta(a.adjuntoArchivo!));
+    const handle = await subirEjemploMeta(archivo, a.adjuntoMime ?? "video/mp4", a.adjuntoNombre ?? "ejemplo", cuenta);
+    const { cuerpo, ejemplos } = aFormatoMeta(a.adjuntoTexto!);
+    const nombre = nombrePlantilla(`${a.nombre} ${a.adjuntoTipo === "VIDEO" ? "video" : "foto"}`, randomBytes(2).toString("hex"));
+    const r = await crearPlantilla(
+      {
+        nombre,
+        categoria: "UTILITY",
+        idioma: a.plantillaIdioma,
+        cuerpo,
+        ejemplos,
+        cabecera: { formato: a.adjuntoTipo === "VIDEO" ? "VIDEO" : "IMAGE", handle },
+      },
+      cuenta,
+    );
+    actualizado = await prisma.avisoAutomatico.update({
+      where: { id },
+      data: {
+        adjuntoPlantillaNombre: nombre,
+        adjuntoPlantillaId: r.id,
+        adjuntoPlantillaEstado: r.status?.toUpperCase() ?? "PENDING",
+        adjuntoPlantillaMotivo: null,
+      },
+    });
+    await auditar(id, userId, `Mandó a Meta la plantilla «${nombre}» (con ${a.adjuntoTipo === "VIDEO" ? "video" : "foto"}) del aviso «${a.nombre}»`);
+  }
   return actualizado;
 }
 
 /** Trae de Meta el estado de las plantillas en revisión (y de las activas, por si Meta las pausó). */
 export async function refrescarPlantillas() {
   const pendientes = await prisma.avisoAutomatico.findMany({
-    where: { deletedAt: null, canal: "WHATSAPP", plantillaNombre: { not: null } },
+    where: { deletedAt: null, canal: "WHATSAPP", OR: [{ plantillaNombre: { not: null } }, { adjuntoPlantillaNombre: { not: null } }] },
   });
   if (pendientes.length === 0) return 0;
   const { bandejaExperienciaSolar } = await import("../whatsapp-cloud/bandejas.service.js");
@@ -208,7 +264,18 @@ export async function refrescarPlantillas() {
   const deMeta = new Map((await listarPlantillas(cuenta)).map((p) => [p.name, p]));
   let cambios = 0;
   for (const a of pendientes) {
-    const p = deMeta.get(a.plantillaNombre!);
+    const pa = a.adjuntoPlantillaNombre ? deMeta.get(a.adjuntoPlantillaNombre) : null;
+    if (pa && pa.status.toUpperCase() !== a.adjuntoPlantillaEstado) {
+      await prisma.avisoAutomatico.update({
+        where: { id: a.id },
+        data: {
+          adjuntoPlantillaEstado: pa.status.toUpperCase(),
+          adjuntoPlantillaMotivo: pa.rejected_reason && pa.rejected_reason !== "NONE" ? pa.rejected_reason : null,
+        },
+      });
+      cambios++;
+    }
+    const p = a.plantillaNombre ? deMeta.get(a.plantillaNombre) : null;
     if (!p) continue;
     const estadoMeta = p.status.toUpperCase();
     if (estadoMeta === a.plantillaEstado) continue;
@@ -228,6 +295,9 @@ export async function activarAviso(id: string, userId: string) {
   const a = await obtener(id);
   if (a.canal === "WHATSAPP" && a.plantillaEstado !== "APPROVED") {
     throw badRequest("SIN_APROBAR", "Meta todavía no aprobó el mensaje: se activa cuando esté aprobado.");
+  }
+  if (tieneAdjunto(a) && a.adjuntoPlantillaEstado !== "APPROVED") {
+    throw badRequest("SIN_APROBAR", "Meta todavía no aprobó el mensaje del video o la foto: se activa cuando estén aprobados los dos.");
   }
   if (a.estado === "ACTIVO") return a;
   const r = await prisma.avisoAutomatico.update({ where: { id }, data: { estado: "ACTIVO", activadoEn: new Date() } });

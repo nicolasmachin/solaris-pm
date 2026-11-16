@@ -37,6 +37,13 @@ export type Aviso = {
   plantillaEstado: string | null;
   plantillaMotivo: string | null;
   cierraCheck: string | null;
+  adjuntoTipo: "VIDEO" | "IMAGEN" | null;
+  adjuntoNombre: string | null;
+  adjuntoArchivo: string | null;
+  adjuntoTexto: string | null;
+  adjuntoUnaVez: boolean;
+  adjuntoPlantillaEstado: string | null;
+  adjuntoPlantillaMotivo: string | null;
   activadoEn: string | null;
   creadoPor: string | null;
   createdAt: string;
@@ -53,6 +60,8 @@ export type AvisoDatos = {
   asunto?: string | null;
   cuerpo: string;
   cierraCheck?: string | null;
+  adjuntoTexto?: string | null;
+  adjuntoUnaVez?: boolean;
 };
 
 export type AvisoEnvio = {
@@ -82,3 +91,9 @@ export const mandarAvisoAMeta = (id: string) => apiClient.post<Aviso>(`/api/avis
 export const activarAviso = (id: string) => apiClient.post<Aviso>(`/api/avisos/${id}/activar`).then((r) => r.data);
 export const pausarAviso = (id: string) => apiClient.post<Aviso>(`/api/avisos/${id}/pausar`).then((r) => r.data);
 export const borrarAviso = (id: string) => apiClient.delete(`/api/avisos/${id}`);
+export const subirAdjuntoAviso = (id: string, archivo: File) => {
+  const form = new FormData();
+  form.append("file", archivo);
+  return apiClient.post<Aviso>(`/api/avisos/${id}/adjunto`, form).then((r) => r.data);
+};
+export const quitarAdjuntoAviso = (id: string) => apiClient.delete<Aviso>(`/api/avisos/${id}/adjunto`).then((r) => r.data);

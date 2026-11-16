@@ -134,10 +134,18 @@ export async function enviarPlantilla(params: {
   texto?: string;
   /** Por qué número sale. Sin cuenta, el de las variables de entorno. */
   cuenta?: Cuenta;
+  /** Video o foto de la cabecera, para las plantillas que la tienen: Meta lo baja de `link`. */
+  cabecera?: { tipo: "video" | "image"; link: string };
 }) {
   const telefono = normalizarTelefono(params.telefono);
   const cuenta = params.cuenta ?? cuentaDelServidor();
   const variables = (params.variables ?? []).filter((v) => v.trim() !== "");
+  const components = [
+    ...(params.cabecera
+      ? [{ type: "header", parameters: [{ type: params.cabecera.tipo, [params.cabecera.tipo]: { link: params.cabecera.link } }] }]
+      : []),
+    ...(variables.length > 0 ? [{ type: "body", parameters: variables.map((v) => ({ type: "text", text: v })) }] : []),
+  ];
   const respuesta = await llamarMeta<RespuestaEnvio>(`${cuenta.phoneNumberId}/messages`, {
     method: "POST",
     body: {
@@ -147,16 +155,14 @@ export async function enviarPlantilla(params: {
       template: {
         name: params.nombre,
         language: { code: params.idioma },
-        ...(variables.length > 0
-          ? { components: [{ type: "body", parameters: variables.map((v) => ({ type: "text", text: v })) }] }
-          : {}),
+        ...(components.length > 0 ? { components } : {}),
       },
     },
   }, cuenta);
   return registrarSaliente({
     respuesta,
     telefono,
-    tipo: "template",
+    tipo: params.cabecera ? params.cabecera.tipo : "template",
     texto: params.texto ?? (variables.length > 0 ? variables.join(" · ") : null),
     plantilla: params.nombre,
     userId: params.userId,
@@ -220,6 +226,8 @@ export async function crearPlantilla(
     idioma: string;
     cuerpo: string;
     ejemplos: string[];
+    /** Video o foto en la cabecera: Meta pide un ejemplo subido antes (`subirEjemploMeta`). */
+    cabecera?: { formato: "VIDEO" | "IMAGE"; handle: string };
   },
   cuenta: Cuenta = cuentaDelServidor(),
 ) {
@@ -238,6 +246,9 @@ export async function crearPlantilla(
       language: params.idioma,
       category: params.categoria,
       components: [
+        ...(params.cabecera
+          ? [{ type: "HEADER", format: params.cabecera.formato, example: { header_handle: [params.cabecera.handle] } }]
+          : []),
         {
           type: "BODY",
           text: params.cuerpo,
@@ -246,4 +257,29 @@ export async function crearPlantilla(
       ],
     },
   }, cuenta);
+}
+
+/**
+ * Sube un archivo de ejemplo a Meta (subida reanudable de la app) y devuelve el
+ * "handle" que pide una plantilla con video o foto en la cabecera. Es solo para
+ * la revisión: al mandar, el archivo va por su dirección pública.
+ */
+export async function subirEjemploMeta(archivo: Buffer, mime: string, nombre: string, cuenta: Cuenta = cuentaDelServidor()): Promise<string> {
+  const c = whatsappConfig();
+  if (!c.appId) throw badRequest("WHATSAPP_NO_CONFIGURADO", "Falta configurar en el servidor: META_APP_ID.");
+  const inicio = new URL(graphUrl(`${c.appId}/uploads`));
+  inicio.searchParams.set("file_name", nombre);
+  inicio.searchParams.set("file_length", String(archivo.length));
+  inicio.searchParams.set("file_type", mime);
+  const r1 = await fetch(inicio, { method: "POST", headers: { Authorization: `Bearer ${cuenta.token}` } });
+  const d1 = (await r1.json().catch(() => ({}))) as { id?: string; error?: { message?: string } };
+  if (!r1.ok || !d1.id) throw new MetaApiError(d1.error?.message ?? "Meta no abrió la subida del ejemplo", r1.status, d1.error ?? d1);
+  const r2 = await fetch(graphUrl(d1.id), {
+    method: "POST",
+    headers: { Authorization: `OAuth ${cuenta.token}`, file_offset: "0" },
+    body: new Uint8Array(archivo),
+  });
+  const d2 = (await r2.json().catch(() => ({}))) as { h?: string; error?: { message?: string } };
+  if (!r2.ok || !d2.h) throw new MetaApiError(d2.error?.message ?? "Meta no aceptó el archivo de ejemplo", r2.status, d2.error ?? d2);
+  return d2.h;
 }

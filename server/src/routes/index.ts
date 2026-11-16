@@ -47,7 +47,7 @@ import { registerUteSuministroRoutes } from "./ute-suministro.routes.js";
 import { registerVisitasRoutes } from "./visitas.routes.js";
 import { registerWhatsAppRoutes } from "./whatsapp.routes.js";
 import { registerWhatsAppBandejasRoutes } from "./whatsapp-bandejas.routes.js";
-import { registerAvisosRoutes } from "./avisos.routes.js";
+import { registerAvisosPublicoRoutes, registerAvisosRoutes } from "./avisos.routes.js";
 import { registerWhatsAppWebhookRoutes } from "./whatsapp-webhook.routes.js";
 import { registerInstagramConectorWebhookRoutes } from "./instagram-conector-webhook.routes.js";
 import { registerInstagramWebhookRoutes } from "./instagram-webhook.routes.js";
@@ -75,6 +75,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerInstagramWebhookRoutes);
   await app.register(registerMarketingRoutes, { prefix: "/api" });
   await app.register(registerAvisosRoutes, { prefix: "/api" });
+  await app.register(registerAvisosPublicoRoutes, { prefix: "/api" });
   await app.register(registerApiRoutes, { prefix: "/api" });
   await app.register(registerCuentasPorPagarRoutes, { prefix: "/api" });
   await app.register(registerConciliacionBancoRoutes, { prefix: "/api" });

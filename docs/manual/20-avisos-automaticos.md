@@ -33,16 +33,22 @@ internos sigue con el bloqueo `internal` / `client_facing`.
 3. Se escribe el mensaje. Los botones de arriba insertan los datos que tiene ese
    disparador (`{{cliente.nombre}}`, `{{obra.fecha}}`…). Abajo se ve cómo le
    llega, con datos de ejemplo.
-4. Opcional: **"Paso de Experiencia Solar que deja hecho"**. Cuando el aviso sale,
+4. Opcional, en WhatsApp: **"Video o foto después del mensaje"**. Se escribe el
+   texto que va con el archivo y, con el aviso ya guardado, se sube un video MP4
+   (hasta 16 MB) o una foto JPG o PNG (hasta 5 MB). **"Solo la primera vez por
+   cliente"** es para el video del primer reporte. Sale en un segundo mensaje, un
+   par de minutos después del texto. Es otra plantilla: "Mandar a Meta" manda la
+   que falte, y el aviso se activa con las dos aprobadas.
+5. Opcional: **"Paso de Experiencia Solar que deja hecho"**. Cuando el aviso sale,
    ese paso del recorrido (E1/E2/E3) queda tildado, para que nadie le mande lo
    mismo a mano.
-5. **WhatsApp**: "Guardar y mandar a Meta". El estado pasa a *En revisión de
+6. **WhatsApp**: "Guardar y mandar a Meta". El estado pasa a *En revisión de
    Meta*. Cuando Meta lo aprueba (minutos u horas) pasa a *Aprobado, sin activar*
    y aparece **Activar**. Si lo rechaza, queda *Rechazado por Meta* con el motivo:
    se corrige el texto y se manda de nuevo.
    **Mail**: no pasa por Meta, se guarda y se activa.
-6. **Activar**: desde ese momento sale con cada hecho nuevo. **Pausar** lo frena.
-7. **Ver envíos** (por aviso) o **Registro de envíos** (todos): cuándo, a qué
+7. **Activar**: desde ese momento sale con cada hecho nuevo. **Pausar** lo frena.
+8. **Ver envíos** (por aviso) o **Registro de envíos** (todos): cuándo, a qué
    cliente, a qué número o mail, y el resultado — *Enviado* (en WhatsApp además
    entregado / leído), *Falló*, *No se mandó*, con el motivo, o *Programado*
    (con cuándo sale, o "Espera a que Experiencia Solar haga la bienvenida"). Pasando el mouse
@@ -138,6 +144,24 @@ del proyecto.
   le pide cambiar al entrar. Ese alta **no cierra** el paso
   `e1_portal` del recorrido: lo cierra el aviso de acceso al portal al salir (con
   `cierraCheck`) o Experiencia Solar al mandarlo.
+- **Video o foto después del texto** (`avisos/adjunto.ts`): campos `adjunto*` del
+  aviso. El archivo se sube por `POST /avisos/:id/adjunto` (multipart, MP4 /
+  JPG / PNG, límites de WhatsApp 16 y 5 MB) a `storage/avisos/<id>/` y se sirve
+  **sin sesión** en `GET /api/publico/avisos/adjunto/:token` (Meta lo baja al
+  mandar; el token, de 24 bytes al azar, es lo que lo protege). `mandarAMeta()`
+  manda lo que falta: el texto y/o la plantilla del adjunto, con el archivo en la
+  cabecera (`HEADER` VIDEO o IMAGE). Meta pide un ejemplo subido antes:
+  `subirEjemploMeta()` usa la subida reanudable de la app (`/{META_APP_ID}/uploads`)
+  y devuelve el `header_handle`. Reemplazar el archivo no pide aprobación nueva
+  (la plantilla sirve para cualquier archivo del mismo tipo); cambiar de video a
+  foto, o el texto del adjunto, sí. `activarAviso()` exige las dos aprobadas.
+  Al salir el texto (`ENVIADO`), `programarAdjunto()` crea un segundo envío
+  `esAdjunto`, `PROGRAMADO` a `DEMORA_ADJUNTO_MS` (90 s), con clave
+  `<hecho>|adjunto`, o `adjunto|<proyecto>` si es "solo la primera vez" (el
+  único: un segundo intento choca con el único y no se programa). Lo manda el job:
+  sin volver a mirar bienvenida ni condiciones (ya las pasó el texto), con la
+  cabecera `link` = la dirección pública. En la bitácora queda como «Aviso
+  automático «nombre (video)»: [video] …».
 - **Envíos programados**: el job `enviarProgramados()` (`avisos.job.ts`, cada 2
   minutos, `CRON_AVISOS_PROGRAMADOS`) manda los `PROGRAMADO` con `salirEn` ya
   pasado, de a 200. Al hacerse la bienvenida, `alHacerseLaBienvenida()` libera los
@@ -152,7 +176,8 @@ del proyecto.
   (`CRON_AVISOS_PLANTILLAS`) mientras haya avisos de WhatsApp.
 - Tablas: `avisos_automaticos` y `avisos_envios` (migración
   `20261030021111_avisos_automaticos`; la demora, la condición y los envíos
-  programados, `20261115213917_avisos_demora_bienvenida`, aditiva).
+  programados, `20261115213917_avisos_demora_bienvenida`; el video o la foto,
+  `*_avisos_adjunto_video_foto`; todas aditivas).
 
 ### Variables
 

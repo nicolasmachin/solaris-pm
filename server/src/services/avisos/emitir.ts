@@ -279,6 +279,8 @@ export async function enviarEnvio(envioId: string) {
   if (aviso.estado !== "ACTIVO" || aviso.deletedAt) {
     return cerrar({ estado: "OMITIDO", detalle: "El aviso se pausó o se borró antes de salir." });
   }
+  // El video o la foto: el texto ya salió y pasó todas las reglas.
+  if (envio.esAdjunto) return enviarAdjunto(envio, aviso, cerrar);
   if (!(await bienvenidaHecha(aviso, projectId))) {
     return cerrar({ estado: "PROGRAMADO", detalle: ESPERA_BIENVENIDA });
   }
@@ -355,6 +357,7 @@ export async function enviarEnvio(envioId: string) {
         texto,
       });
       await cerrar({ estado: "ENVIADO", texto, destino: real, waMessageId: msg.waMessageId, detalle: null });
+      await programarAdjunto(aviso, envio);
     } else {
       const { sendEmail } = await import("../email.service.js");
       const { renderEmailLayout } = await import("../email/layout.js");
@@ -381,6 +384,79 @@ export async function enviarEnvio(envioId: string) {
   }
 
   await registrarEnviado(aviso, projectId, texto);
+  return prisma.avisoEnvio.findUnique({ where: { id: envio.id } });
+}
+
+/**
+ * Después del texto, el video o la foto: un envío aparte, un par de minutos más
+ * tarde (nunca antes que el texto). Con "solo la primera vez", la clave es la
+ * del cliente: el segundo reporte ya no lo lleva.
+ */
+export async function programarAdjunto(aviso: Aviso, envio: { projectId: string | null; claveHecho: string; ocurrioEn: Date | null }) {
+  const { DEMORA_ADJUNTO_MS, tieneAdjunto } = await import("./adjunto.js");
+  if (!tieneAdjunto(aviso) || !envio.projectId) return;
+  try {
+    await prisma.avisoEnvio.create({
+      data: {
+        avisoId: aviso.id,
+        projectId: envio.projectId,
+        claveHecho: aviso.adjuntoUnaVez ? `adjunto|${envio.projectId}` : `${envio.claveHecho}|adjunto`,
+        canal: aviso.canal,
+        estado: "PROGRAMADO",
+        esAdjunto: true,
+        ocurrioEn: envio.ocurrioEn,
+        salirEn: new Date(Date.now() + DEMORA_ADJUNTO_MS),
+      },
+    });
+  } catch (err) {
+    // Ya lo tuvo (solo la primera vez): no se repite.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return;
+    throw err;
+  }
+}
+
+async function enviarAdjunto(
+  envio: { id: string; projectId: string | null; eventoFecha: Date | null },
+  aviso: Aviso,
+  cerrar: (data: Cierre) => Promise<Prisma.AvisoEnvioGetPayload<object>>,
+) {
+  const projectId = envio.projectId!;
+  const { tieneAdjunto, urlPublica } = await import("./adjunto.js");
+  if (!tieneAdjunto(aviso) || !aviso.adjuntoToken) {
+    return cerrar({ estado: "OMITIDO", detalle: "Se quitó el video o la foto del aviso antes de salir." });
+  }
+  const cliente = await datosDelCliente(projectId, envio.eventoFecha);
+  if (!cliente || cliente.proyecto.deletedAt) return cerrar({ estado: "OMITIDO", detalle: "El proyecto no existe o está borrado." });
+  const { texto, faltan } = rellenar(aviso.adjuntoTexto!, cliente.datos);
+  if (faltan.length > 0) return cerrar({ estado: "OMITIDO", texto, detalle: `Faltan datos para el mensaje: ${faltan.join(", ")}.` });
+  const { enviarPlantilla, normalizarTelefono } = await import("../whatsapp-cloud/api.service.js");
+  const real = cliente.proyecto.clientPhone ? normalizarTelefono(cliente.proyecto.clientPhone) : "";
+  if (real.length < 10) return cerrar({ estado: "OMITIDO", texto, detalle: "El proyecto no tiene un celular válido cargado." });
+  const destino = env.nodeEnv === "production" ? real : process.env.AVISOS_DEV_TELEFONO || "";
+  if (!destino) return cerrar({ estado: "OMITIDO", texto, destino: real, detalle: "En desarrollo no se le escribe al cliente (falta AVISOS_DEV_TELEFONO)." });
+  if (aviso.adjuntoPlantillaEstado !== "APPROVED" || !aviso.adjuntoPlantillaNombre) {
+    return cerrar({ estado: "FALLIDO", texto, destino: real, detalle: "La plantilla del video o la foto no está aprobada por Meta." });
+  }
+  const etiqueta = aviso.adjuntoTipo === "VIDEO" ? "video" : "foto";
+  try {
+    const { bandejaExperienciaSolar } = await import("../whatsapp-cloud/bandejas.service.js");
+    const { cuenta } = await bandejaExperienciaSolar();
+    if (!cuenta) return cerrar({ estado: "FALLIDO", texto, destino: real, detalle: "No hay un número de WhatsApp para Experiencia Solar." });
+    const msg = await enviarPlantilla({
+      cuenta,
+      telefono: destino,
+      nombre: aviso.adjuntoPlantillaNombre,
+      idioma: aviso.plantillaIdioma,
+      variables: variablesDelTexto(aviso.adjuntoTexto!).map((v) => cliente.datos[v] ?? ""),
+      userId: await usuarioSistema(),
+      texto: `[${etiqueta}] ${texto}`,
+      cabecera: { tipo: aviso.adjuntoTipo === "VIDEO" ? "video" : "image", link: urlPublica(aviso.adjuntoToken) },
+    });
+    await cerrar({ estado: "ENVIADO", texto, destino: real, waMessageId: msg.waMessageId, detalle: null });
+  } catch (err) {
+    return cerrar({ estado: "FALLIDO", texto, detalle: err instanceof Error ? err.message : String(err) });
+  }
+  await registrarEnviado({ ...aviso, nombre: `${aviso.nombre} (${etiqueta})`, cierraCheck: null }, projectId, `[${etiqueta}] ${texto}`);
   return prisma.avisoEnvio.findUnique({ where: { id: envio.id } });
 }
 

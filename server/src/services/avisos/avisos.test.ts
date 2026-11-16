@@ -321,3 +321,59 @@ describe("mantenimientos", async () => {
     assert.match((await alertasMantenimiento([vencido], ahora)).get(vencido) ?? "", /vencido/);
   });
 });
+
+describe("video o foto después del texto", async () => {
+  const admin = await prisma.user.findFirst({ where: { deletedAt: null, role: { name: "ADMIN" } }, select: { id: true } });
+  const proyecto = await prisma.project.findFirst({ where: { deletedAt: null, importedFromCsv: false }, select: { id: true } });
+  const avisos: string[] = [];
+  after(async () => {
+    const { quitarAdjunto } = await import("./adjunto.js");
+    for (const id of avisos) await quitarAdjunto(id).catch(() => {});
+    await prisma.avisoAutomatico.deleteMany({ where: { id: { in: avisos } } });
+    await prisma.$disconnect();
+  });
+
+  test("acepta MP4 y JPG/PNG con los límites de WhatsApp, y lo sirve por su token", { skip: !admin }, async () => {
+    const { guardarAdjunto, archivoPorToken } = await import("./adjunto.js");
+    const a = await prisma.avisoAutomatico.create({
+      data: { nombre: `prueba adjunto ${Date.now()}`, disparador: "ute.habilitado", canal: "WHATSAPP", cuerpo: "Hola {{cliente.nombre}}." },
+    });
+    avisos.push(a.id);
+    await assert.rejects(guardarAdjunto(a.id, { buffer: Buffer.from("x"), mimetype: "application/pdf", filename: "a.pdf" }), /MP4/);
+    await assert.rejects(
+      guardarAdjunto(a.id, { buffer: Buffer.alloc(6 * 1024 * 1024), mimetype: "image/png", filename: "a.png" }),
+      /5 MB/,
+    );
+    const con = await guardarAdjunto(a.id, { buffer: Buffer.from("video"), mimetype: "video/mp4", filename: "v.mp4" });
+    assert.equal(con.adjuntoTipo, "VIDEO");
+    assert.ok(con.adjuntoToken && con.adjuntoToken.length >= 20);
+    const servido = await archivoPorToken(con.adjuntoToken!);
+    assert.equal(servido?.mime, "video/mp4");
+    servido?.stream.destroy();
+    assert.equal(await archivoPorToken("token-que-no-existe-0000000"), null);
+  });
+
+  test("solo la primera vez por cliente: el segundo hecho no lo programa", { skip: !admin || !proyecto }, async () => {
+    const { programarAdjunto } = await import("./emitir.js");
+    const a = await prisma.avisoAutomatico.create({
+      data: {
+        nombre: `prueba primera vez ${Date.now()}`,
+        disparador: "reporte.publicado",
+        canal: "WHATSAPP",
+        cuerpo: "Hola {{cliente.nombre}}.",
+        adjuntoArchivo: "x/y.mp4",
+        adjuntoTexto: "Mirá el video.",
+        adjuntoUnaVez: true,
+      },
+    });
+    avisos.push(a.id);
+    const base = { projectId: proyecto!.id, ocurrioEn: new Date() };
+    await programarAdjunto(a, { ...base, claveHecho: "reporte.publicado|p|1" });
+    await programarAdjunto(a, { ...base, claveHecho: "reporte.publicado|p|2" });
+    const envios = await prisma.avisoEnvio.findMany({ where: { avisoId: a.id } });
+    assert.equal(envios.length, 1);
+    assert.equal(envios[0].esAdjunto, true);
+    assert.equal(envios[0].estado, "PROGRAMADO");
+    assert.ok(envios[0].salirEn!.getTime() > Date.now());
+  });
+});

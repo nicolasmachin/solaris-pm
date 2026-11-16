@@ -136,6 +136,13 @@ export const LATEST_RELEASE: Release = {
         "Avisos automáticos: solo los dos mantenimientos sin costo, y un año desde el último mantenimiento.",
       ],
     },
+    {
+      title: "Avisos con video o foto",
+      items: [
+        "Un aviso de WhatsApp puede llevar un video o una foto, que sale en un segundo mensaje un par de minutos después del texto.",
+        "Opción «solo la primera vez por cliente», para el video del primer reporte.",
+      ],
+    },
   ],
 };
 

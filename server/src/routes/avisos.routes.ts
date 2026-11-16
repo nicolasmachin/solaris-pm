@@ -21,8 +21,9 @@ import {
   pausarAviso,
   refrescarPlantillas,
 } from "../services/avisos/avisos.service.js";
+import { archivoPorToken, guardarAdjunto, quitarAdjunto } from "../services/avisos/adjunto.js";
 import { MetaApiError } from "../services/whatsapp-cloud/api.service.js";
-import { AppError, unauthorized } from "../utils/errors.js";
+import { AppError, badRequest, notFound, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -51,6 +52,8 @@ const datosSchema = z.object({
   asunto: z.string().max(200).nullish(),
   cuerpo: z.string().min(1).max(4000),
   cierraCheck: z.string().max(60).nullish(),
+  adjuntoTexto: z.string().max(1024).nullish(),
+  adjuntoUnaVez: z.boolean().optional(),
 });
 
 const idParam = z.object({ id: z.string().min(1) });
@@ -87,6 +90,28 @@ export async function registerAvisosRoutes(app: FastifyInstance) {
     return editarAviso(id, datosSchema.parse(request.body), user.id);
   });
 
+  // El video o la foto que sale después del texto. Los límites son los de WhatsApp.
+  app.post("/avisos/:id/adjunto", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = idParam.parse(request.params);
+    const part = await request.file({ limits: { fileSize: 16 * 1024 * 1024, files: 1 } });
+    if (!part) throw badRequest("SIN_ARCHIVO", "No llegó ningún archivo.");
+    const buffer = await part.toBuffer().catch(() => {
+      throw badRequest("MUY_GRANDE", "WhatsApp acepta videos de hasta 16 MB y fotos de hasta 5 MB.");
+    });
+    const a = await guardarAdjunto(id, { buffer, mimetype: part.mimetype, filename: part.filename });
+    await auditarAdjunto(id, user.id, `Subió ${a.adjuntoTipo === "VIDEO" ? "el video" : "la foto"} «${part.filename}» del aviso «${a.nombre}»`);
+    return a;
+  });
+
+  app.delete("/avisos/:id/adjunto", editar, async (request) => {
+    const user = ensureUser(request);
+    const { id } = idParam.parse(request.params);
+    const a = await quitarAdjunto(id);
+    await auditarAdjunto(id, user.id, `Quitó el video o la foto del aviso «${a.nombre}»`);
+    return a;
+  });
+
   app.post("/avisos/:id/meta", editar, async (request) => {
     const user = ensureUser(request);
     const { id } = idParam.parse(request.params);
@@ -110,5 +135,28 @@ export async function registerAvisosRoutes(app: FastifyInstance) {
     const { id } = idParam.parse(request.params);
     await borrarAviso(id, user.id);
     return reply.status(204).send();
+  });
+}
+
+async function auditarAdjunto(avisoId: string, userId: string, description: string) {
+  const { createAuditEntry } = await import("../services/audit.service.js");
+  const { AuditAction, AuditEntityType } = await import("@prisma/client");
+  await createAuditEntry({ entityType: AuditEntityType.aviso_automatico, entityId: avisoId, userId, action: AuditAction.updated, description });
+}
+
+/**
+ * La dirección pública del video o la foto de un aviso: Meta lo baja de acá al
+ * mandar el mensaje. Sin sesión (Meta no tiene), protegida por el token, que no
+ * se puede adivinar.
+ */
+export async function registerAvisosPublicoRoutes(app: FastifyInstance) {
+  app.get("/publico/avisos/adjunto/:token", async (request, reply) => {
+    const { token } = z.object({ token: z.string().min(20).max(60) }).parse(request.params);
+    const archivo = await archivoPorToken(token);
+    if (!archivo) throw notFound("ARCHIVO_NO_ENCONTRADO", "No existe.");
+    reply.header("Content-Type", archivo.mime);
+    reply.header("Content-Length", String(archivo.size));
+    reply.header("Cache-Control", "public, max-age=3600");
+    return reply.send(archivo.stream);
   });
 }

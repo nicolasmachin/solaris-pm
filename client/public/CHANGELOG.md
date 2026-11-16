@@ -34,6 +34,12 @@
 - En la lista de Experiencia Solar, **alerta de mantenimiento sin costo** próximo (faltan 30 días o menos para el 1.º o el 2.º aniversario) o vencido sin agendar. Se apaga al agendarlo en el calendario. Cuenta desde hoy: los aniversarios anteriores no se marcan.
 - Para los avisos automáticos: la condición **"solo los dos mantenimientos sin costo"** y el disparador **"un año desde el último mantenimiento"**, para ofrecer el mantenimiento pago a quien ya usó los dos sin costo.
 
+#### Avisos con video o foto
+
+- Un aviso de WhatsApp puede llevar **un video o una foto** con su texto, que sale en un segundo mensaje un par de minutos después. Se sube desde el mismo aviso (video MP4 de hasta 16 MB o foto JPG o PNG de hasta 5 MB).
+- Opción **"solo la primera vez por cliente"**, para el video del primer reporte.
+- El video o la foto es otra plantilla que Meta revisa aparte: el aviso se activa cuando las dos están aprobadas.
+
 #### Portal del cliente
 
 - Al convertir la venta en proyecto, Voltia PM le **crea solo el usuario del portal** al cliente. Con mail, el usuario es su mail y entra con el código por mail. Sin mail, el usuario es su nombre y apellido (*maria.perez*) con la contraseña inicial de siempre, que el portal le pide cambiar. El paso de mandarle el acceso sigue pendiente hasta que se le manda.
