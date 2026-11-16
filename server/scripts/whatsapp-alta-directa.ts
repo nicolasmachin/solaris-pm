@@ -11,7 +11,7 @@
  *
  * Uso (en el servidor de producción):
  *   docker compose -f docker-compose.prod.yml exec server npx tsx scripts/whatsapp-alta-directa.ts \
- *     --business <id del portafolio> --telefono 59892369535 --responsable july@voltia.com.uy --uso VENTAS \
+ *     --business <id del portafolio> [--waba <id de la cuenta>] --telefono 59892369535 --responsable july@voltia.com.uy --uso VENTAS \
  *     --por nicolas@voltia.com.uy [--aplicar]
  *
  * Sin --aplicar solo muestra qué número encontró y qué guardaría.
@@ -58,12 +58,21 @@ async function main() {
     process.exit(1);
   }
 
-  const cuentas = await get<{ data?: Array<{ id: string; name?: string }> }>(
-    `${business}/owned_whatsapp_business_accounts?fields=id,name&limit=100`,
+  // Las cuentas que el token puede usar salen de sus permisos (debug_token): listar
+  // las del portafolio pide business_management, que el usuario del sistema no tiene.
+  const dbg = await get<{ data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }> } }>(
+    `debug_token?input_token=${encodeURIComponent(token)}`,
     token,
   );
+  const ids = new Set<string>();
+  for (const g of dbg.data?.granular_scopes ?? []) {
+    if (g.scope.startsWith("whatsapp_business")) for (const id of g.target_ids ?? []) ids.add(id);
+  }
+  const extra = arg("waba");
+  if (extra) ids.add(extra);
+  const cuentas = { data: [...ids].map((id) => ({ id, name: undefined as string | undefined })) };
   let encontrado: { waba: string; tel: Telefono } | null = null;
-  for (const c of cuentas.data ?? []) {
+  for (const c of cuentas.data) {
     const tels = await get<{ data?: Telefono[] }>(
       `${c.id}/phone_numbers?fields=id,display_phone_number,verified_name,is_on_biz_app`,
       token,
@@ -74,7 +83,7 @@ async function main() {
     }
   }
   if (!encontrado) {
-    console.error(`No encontré el ${telefono} en las cuentas del portafolio ${business}. ¿Está asignada la cuenta al usuario del sistema?`);
+    console.error(`No encontré el ${telefono} en las cuentas que puede usar el token (${[...ids].join(", ") || "ninguna"}). ¿Está asignada la cuenta al usuario del sistema? Si sabés el id de la cuenta, pasalo con --waba.`);
     process.exit(1);
   }
 
