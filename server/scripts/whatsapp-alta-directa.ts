@@ -73,11 +73,10 @@ async function main() {
   const cuentas = { data: [...ids].map((id) => ({ id, name: undefined as string | undefined })) };
   let encontrado: { waba: string; tel: Telefono } | null = null;
   for (const c of cuentas.data) {
-    const tels = await get<{ data?: Telefono[] }>(
-      `${c.id}/phone_numbers?fields=id,display_phone_number,verified_name,is_on_biz_app`,
-      token,
-    );
+    const tels = await get<{ data?: Telefono[] }>(`${c.id}/phone_numbers?fields=id,display_phone_number,verified_name`, token);
     for (const t of tels.data ?? []) {
+      // is_on_biz_app no se puede pedir en la lista: se lee del número.
+      t.is_on_biz_app = (await get<Telefono>(`${t.id}?fields=is_on_biz_app`, token).catch(() => ({}) as Telefono)).is_on_biz_app;
       console.log(`cuenta ${c.id} (${c.name ?? "sin nombre"}): ${t.display_phone_number} — app Business: ${t.is_on_biz_app === true ? "sí" : "no"}`);
       if ((t.display_phone_number ?? "").replace(/\D/g, "") === telefono) encontrado = { waba: c.id, tel: t };
     }
