@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { getBandejaVentas } from "../api/whatsapp.api";
 import { BandejaWhatsApp } from "../components/whatsapp/BandejaWhatsApp";
 import { bandejaVentas } from "../components/sales/whatsappVentas";
+import { useAuthStore } from "../store/auth.store";
 
 // Ventas → WhatsApp: las conversaciones del número del asesor, que ve y usa solo
 // él. El admin puede elegir cualquier asesor y usar su número.
@@ -17,15 +18,27 @@ export function VentasWhatsApp() {
   // La misma consulta que la bandeja (se comparte): de acá salen los asesores.
   const { data } = useQuery({ queryKey: [api.clave, "bandeja"], queryFn: api.getBandeja, refetchInterval: 5000 });
   const asesores = data?.asesores ?? [];
+  const yo = useAuthStore((s) => s.user?.id);
+  // "Mi número" solo para quien tiene uno; el que no (admin), entra directo al
+  // primer asesor en vez de ver un aviso.
+  const tengoNumero = asesores.some((a) => a.id === yo);
+  useEffect(() => {
+    if (!asesor && asesores.length > 0 && !tengoNumero) elegir(asesores[0].id, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asesor, asesores.length, tengoNumero]);
 
-  function elegir(id: string) {
-    setParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (id) next.set("asesor", id);
-      else next.delete("asesor");
-      next.delete("tel");
-      return next;
-    });
+  function elegir(id: string, inicial = false) {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (id) next.set("asesor", id);
+        else next.delete("asesor");
+        // Al entrar se respeta el chat pedido (?tel=); al cambiar de asesor, no.
+        if (!inicial) next.delete("tel");
+        return next;
+      },
+      { replace: inicial },
+    );
   }
 
   return (
@@ -46,7 +59,7 @@ export function VentasWhatsApp() {
             value={asesor ?? ""}
             onChange={(e) => elegir(e.target.value)}
           >
-            <option value="">Mi número</option>
+            {tengoNumero && <option value="">Mi número</option>}
             {asesores.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.nombre} · {a.telefono}

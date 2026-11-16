@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.15 · del 15/11/26
+**Voltia · Uruguay** · Versión 1.16 · del 16/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -591,8 +591,10 @@ para que no se repita.
 Todo el trabajo de Ventas se hace en **Voltia PM**, en dos lugares: en
 **Ventas** (en el menú de arriba), todo lo que pasa antes de la venta —el lead,
 las propuestas, el cierre—; y en **Proyectos**, el onboarding, una vez que la
-venta se convirtió en proyecto. Acá van las pantallas en el orden en que el
-asesor las usa. *Qué* se hace y *por qué* está en el capítulo 2; acá, *dónde* se
+venta se convirtió en proyecto. Al pasar el mouse por **Ventas** se abre su
+submenú: **Pipeline** (el tablero de leads), **Contactos**, **Empresas** y
+**WhatsApp**; en el celular, cada una es una línea del menú. Acá van las
+pantallas en el orden en que el asesor las usa. *Qué* se hace y *por qué* está en el capítulo 2; acá, *dónde* se
 hace y *cómo*.
 
 ### El pipeline comercial
@@ -824,9 +826,9 @@ escribe desde el celular y lo que se escribe desde Voltia PM es la misma
 conversación, y el cliente no nota la diferencia. Lo conecta Administración, con
 el asesor presente, porque hay que escanear un código desde su celular.
 
-**Dónde se entra:** en Ventas, la franja **WhatsApp** que está arriba del
-tablero, o el botón **Abrir conversación** del panel del lead. Si el asesor no
-tiene su número conectado, la franja no aparece.
+**Dónde se entra:** en el menú de arriba, **Ventas → WhatsApp** (al pasar el
+mouse por Ventas se abre el submenú). También desde la franja **WhatsApp** que
+está arriba del tablero, o el botón **Abrir conversación** del panel del lead.
 
 **Cómo se ve:** igual que WhatsApp Web. A la izquierda, los chats del número,
 con el más reciente arriba, los no leídos con un círculo verde y la etiqueta roja
@@ -866,13 +868,64 @@ llene con cada renglón de la conversación.
 conversaciones de un asesor. La única excepción es la Dirección: puede elegir,
 arriba de la pantalla, a cualquier asesor que tenga número, leer su bandeja y
 escribir desde ese número (el mensaje le llega al cliente desde el WhatsApp del
-asesor). Que la Dirección abra un chat no se lo marca como leído al asesor.
+asesor). Como la Dirección no tiene número propio, entra directo a la bandeja
+del primer asesor. Que la Dirección abra un chat no se lo marca como leído al
+asesor. En el chat, arriba de cada mensaje mandado desde Voltia PM figura quién
+del equipo lo mandó; eso lo ve solo el equipo, al cliente le llega desde el
+WhatsApp del asesor como cualquier otro mensaje.
 
 **Lo que todavía no hace:** no avisa con una notificación cuando entra un
 mensaje (se ve en la franja de Ventas y en la bandeja); las fotos, audios y
 documentos que manda el cliente se ven como «Foto», «Audio» o «Documento», sin
 poder abrirlos desde Voltia PM; y desde Voltia PM no se pueden mandar archivos.
 Para eso, el celular.
+
+### Los contactos y las empresas
+
+**Qué son.** Voltia PM guarda a los clientes como en cualquier CRM: cada
+**persona** es un **contacto** (nombre, teléfono, mail y cédula) y cada
+**empresa** cliente es una **empresa** (razón social, nombre de fantasía, RUT y
+datos), con sus contactos. Un contacto puede estar en más de una empresa.
+
+**El lead no es el cliente.** El lead es la **oportunidad**: conserva su propio
+nombre, que suele ser el de la obra («Fedoril S.A. Garzón»), y **apunta** a su
+contacto y, si el cliente es una empresa, a la empresa. Lo mismo el proyecto. Así,
+la misma persona con un lead viejo, uno nuevo y un proyecto aparece una sola vez,
+con todo junto.
+
+**Dónde se entra:** **Ventas → Contactos** y **Ventas → Empresas**, en el submenú
+de Ventas. Cada pantalla tiene un buscador (por nombre, teléfono, mail, cédula o
+empresa) y el botón **Nuevo**.
+
+**La ficha.** Al tocar un contacto o una empresa se abre su ficha: los datos,
+que se corrigen ahí mismo y se guardan con **Guardar**; sus empresas (o sus
+contactos, si es una empresa); y sus **leads y proyectos**, que se abren con un
+clic.
+
+**Vincular un contacto a una empresa.** Desde la ficha de la empresa, **+ Agregar
+contacto** y se lo busca por nombre; o desde la ficha del contacto, **+ Vincular a
+una empresa**. En la empresa se anota el **cargo** de cada contacto («Dueño»,
+«Encargado de mantenimiento») y, con la estrella, cuál es el **principal**. La X
+lo desvincula (no lo borra).
+
+**Un teléfono es de un solo contacto.** Si se carga un teléfono que ya tiene otra
+persona, Voltia PM avisa de quién es y no lo guarda. Cuando dos personas
+comparten un celular (una pareja, padre e hijo), el teléfono va en la que lo usa
+y la otra queda sin teléfono.
+
+**Borrar.** Un contacto o una empresa con leads o proyectos no se puede borrar:
+primero hay que pasar esos leads o proyectos a otro.
+
+**De dónde salieron los primeros.** Los contactos y empresas se armaron a partir
+de los leads y proyectos que ya existían, uniendo a la misma persona por teléfono
+o mail. Las empresas se reconocieron por el nombre (S.A., S.R.L., hotel, club).
+Algunas empresas quedaron **sin contacto** porque el lead tenía solo el nombre de
+la empresa: el asesor que la atiende lo completa cuando lo sabe.
+
+**Lo que todavía no hace:** el contacto y la empresa todavía no se eligen desde
+el lead ni desde el proyecto (se ven y se corrigen desde Contactos y Empresas), y
+el WhatsApp todavía reconoce al cliente por el teléfono del lead, no por el del
+contacto. Las dos cosas vienen en las próximas etapas.
 
 ### La propuesta: armarla, publicarla y mandarla
 
@@ -1249,6 +1302,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.16 | 16 de noviembre de 2026 | Se agrega «Los contactos y las empresas»: cada persona es un contacto y cada empresa cliente una empresa, el lead apunta a ellos y conserva el nombre de la obra, un teléfono es de un solo contacto. Al WhatsApp de Ventas se entra desde el submenú de Ventas; la Dirección entra directo a la bandeja del primer asesor, y figura quién del equipo mandó cada mensaje (solo lo ve el equipo). |
 | 1.15 | 15 de noviembre de 2026 | Se agrega «El WhatsApp de Ventas»: el número de cada asesor conectado a Voltia PM, la bandeja con sus chats, cómo se reconoce al lead, la regla de las 24 horas y las plantillas, y que la bandeja la ve solo el asesor (y la Dirección). En el panel del lead, la tarjeta de WhatsApp. |
 | 1.14 | 13 de noviembre de 2026 | Desde el chat de Claude conectado a Voltia PM se pueden armar y emitir también las propuestas de empresa; hay que tener a mano la razón social y el RUT. |
 | 1.13 | 11 de noviembre de 2026 | En el Cotizador B2B, el saludo de la carta va dirigido al contacto de la empresa; sin contacto, empieza con «Estimados,». |

@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuthStore } from "../../store/auth.store";
 import { NotificationBell } from "../notifications/NotificationBell";
@@ -37,6 +37,40 @@ function FinanzasNavLink({ navLinkClass }: { navLinkClass: (p: { isActive: boole
         </span>
       )}
     </NavLink>
+  );
+}
+
+// Ventas con submenú: Pipeline, Contactos, Empresas y WhatsApp. Se abre al pasar el mouse o con el
+// teclado (focus-within); el clic en "Ventas" lleva al pipeline.
+function VentasNavMenu({ navLinkClass }: { navLinkClass: (p: { isActive: boolean }) => string }) {
+  const { pathname } = useLocation();
+  const item = (to: string, label: string, activo: boolean) => (
+    <NavLink
+      to={to}
+      end
+      className={`block whitespace-nowrap rounded px-3 py-1.5 text-sm ${
+        activo
+          ? "text-[var(--color-nav-active-text)]"
+          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text-primary)]"
+      }`}
+    >
+      {label}
+    </NavLink>
+  );
+  return (
+    <div className="group relative">
+      <NavLink to="/ventas" className={() => navLinkClass({ isActive: pathname.startsWith("/ventas") })}>
+        Ventas
+      </NavLink>
+      <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2 opacity-0 transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+        <div className="min-w-[150px] rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] p-1 shadow-lg">
+          {item("/ventas", "Pipeline", pathname === "/ventas")}
+          {item("/ventas/contactos", "Contactos", pathname.startsWith("/ventas/contactos"))}
+          {item("/ventas/empresas", "Empresas", pathname.startsWith("/ventas/empresas"))}
+          {item("/ventas/whatsapp", "WhatsApp", pathname.startsWith("/ventas/whatsapp"))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -204,9 +238,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
             </NavLink>
           </CanAccess>
           <CanAccess module="VENTAS" action="VIEW">
-            <NavLink to="/ventas" className={navLinkClass}>
-              Ventas
-            </NavLink>
+            <VentasNavMenu navLinkClass={navLinkClass} />
           </CanAccess>
           <CanAccess module="EXPERIENCIA_CLIENTES" action="VIEW">
             <NavLink to="/clientes" className={navLinkClass}>

@@ -5,7 +5,7 @@
 > instalaciones en una misma propuesta", "Costeo a medida de una cotización",
 > "Cotizador B2B: propuestas a empresas", "Qué se le factura: se define al
 > crear el proyecto", "Comisión del asesor: cómo se registra al ganar",
-> "Leads sin tomar" e "Instagram: contestar desde Ventas". El resto del módulo funciona en producción pero
+> "Leads sin tomar", "Instagram: contestar desde Ventas" y "Contactos y empresas (CRM)". El resto del módulo funciona en producción pero
 > todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
@@ -1109,3 +1109,84 @@ no manda nada.
 `contestarDesdeVentas()` manda con `enviarMensaje()` y marca `tomadaEn` y
 `tomadaPorId` si no estaba tomada. El "leído" es el mismo que en Marketing. El
 mail de derivación del asistente trae el link a esta pantalla.
+
+---
+
+# Contactos y empresas (CRM)
+
+## Para qué existe
+
+Hasta noviembre de 2026 el cliente era texto suelto copiado en cada lead y cada
+proyecto (`clientName`, `clientPhone`, `clientEmail`): la misma persona con un
+lead y un proyecto eran dos copias que no se conocían, y no había forma de
+modelar una empresa con varias personas. Desde v14.9 hay **Contactos** (personas)
+y **Empresas**, y los leads y proyectos apuntan a ellos.
+
+## Cómo se usa
+
+Submenú de Ventas (`Topbar.tsx` → `VentasNavMenu`): **Pipeline**, **Contactos**
+(`/ventas/contactos`), **Empresas** (`/ventas/empresas`) y **WhatsApp**. Las dos
+pantallas (`pages/VentasCrm.tsx`) son un listado con buscador y una ficha en panel
+lateral (`?id=` en la URL, así se puede linkear) con los datos editables, el
+vínculo contacto ↔ empresa (cargo y principal) y los leads y proyectos.
+
+## Cómo funciona
+
+- **Modelos** (`schema.prisma`): `Contacto` (`contactos`), `Empresa` (`empresas`)
+  y `ContactoEmpresa` (`contactos_empresas`, clave `contactoId+empresaId`, con
+  `cargo` y `principal`). `SalesLead` y `Project` ganan `contactoId` y
+  `empresaId` (nullable, `onDelete: SetNull`). En `Project` la relación se llama
+  `empresaCliente` porque `empresa` ya existía: es el booleano de titular
+  empresa para UTE, que no tiene nada que ver.
+- **Servicio**: `services/crm/contactos.service.ts` (listar, ficha, crear, editar,
+  borrar, `vincular()`, `desvincular()`), rutas en `routes/crm.routes.ts`
+  (`/api/crm/...`). Auditoría con `AuditEntityType.contacto` y `.empresa`.
+- **Teléfono**: se guarda solo con dígitos y código de país (`normalizarTelefono()`
+  de ese servicio, que usa la de WhatsApp: "099 123 456" → `59899123456`). Es la
+  clave que van a usar las bandejas de WhatsApp en la fase 3.
+- **Un teléfono, un contacto**: `exigirTelefonoLibre()` lo controla al crear y
+  editar. No hay índice único en la base (la regla es de aplicación).
+- **Un principal por empresa**: `vincular()` con `principal: true` apaga el resto.
+- **Pasaje inicial**: `scripts/crm-pasar-contactos.ts`. Agrupa leads y proyectos
+  por teléfono (últimos 8 dígitos) o mail (union-find); en cada grupo, una persona
+  por nombre distinto (el primero se queda con el teléfono y el mail; dos nombres
+  donde uno empieza como el otro son la misma persona) y, si algún nombre es de
+  empresa (`esNombreDeEmpresa()` / `separarEmpresaPersona()`: S.A., S.R.L.,
+  S.A.S., hotel, club…; "X S.A. — Persona" se separa; "FEDORIL SA Garzón" →
+  empresa "FEDORIL SA"), una empresa con esas personas como contactos. Sin nombre
+  de persona no se inventa un contacto: la empresa se queda con el teléfono y el
+  mail. Al final aplica `ajustesRevisados()`: las correcciones de la revisión con
+  Nicolás del 15-nov-2026 (teléfonos de familiares, contactos de Barenof y Hotel
+  Lamas). Modo prueba por defecto; `--aplicar --por <email>` guarda; `--json`
+  arma la lista con datos exportados de otra base y nunca guarda. Es idempotente:
+  salta lo que ya tiene `contactoId` o `empresaId`.
+
+## Permisos
+
+Módulo VENTAS: VIEW ve las dos pantallas, CREATE da de alta, EDIT edita y
+vincula, DELETE borra.
+
+## Reglas y decisiones
+
+- El **lead conserva su nombre** (es la oportunidad u obra) y no se renombra al
+  vincularlo: "FEDORIL SA Garzón" sigue llamándose así y apunta a la empresa
+  FEDORIL SA.
+- **Un teléfono es de un contacto.** Cuando una pareja o un padre e hijo comparten
+  un celular, el teléfono va en el que lo usa y el otro queda sin teléfono.
+- Contactos y empresas se **borran solo si no tienen leads ni proyectos**
+  (baja lógica, `deletedAt`).
+
+## Casos borde
+
+- `clientName`, `clientPhone` y `clientEmail` de lead y proyecto **siguen
+  existiendo y siendo los que usan** el pipeline, las propuestas, el portal, los
+  avisos y WhatsApp. Esta fase 1 no los reemplaza: los contactos son una capa
+  nueva al lado. La fase 2 (elegir contacto y empresa desde el lead y el
+  proyecto) y la fase 3 (WhatsApp e Instagram por contacto, crear contacto desde
+  un chat, reconocer usuarios de Voltia) están pendientes.
+- Editar el teléfono de un contacto **no** cambia el del lead ni el del proyecto,
+  ni al revés.
+- Los leads nuevos que se crean después del pasaje **no** generan contacto solos
+  todavía (fase 2). Se puede volver a correr el pasaje: solo toma lo que no tiene
+  contacto.
+

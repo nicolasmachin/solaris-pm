@@ -1,5 +1,22 @@
 # Novedades
 
+## v14.9
+
+### 16 de noviembre de 2026
+
+#### Contactos y empresas
+
+- **Ventas** tiene un submenú: **Pipeline**, **Contactos**, **Empresas** y **WhatsApp**.
+- Nueva sección **Contactos**: cada persona con su teléfono, mail y cédula, con un buscador por nombre, teléfono, mail o empresa. La ficha muestra sus empresas, sus leads y sus proyectos.
+- Nueva sección **Empresas**: razón social, nombre de fantasía, RUT y datos de contacto. La ficha muestra sus contactos (con cargo y cuál es el principal), sus leads y sus proyectos.
+- Un contacto se puede vincular a una o más empresas, desde la ficha de cualquiera de los dos.
+- **Un teléfono es de un solo contacto**: si se carga uno que ya tiene otro, avisa de quién es.
+- Los contactos y empresas se arman a partir de los leads y proyectos que ya existían: cada lead y cada proyecto queda apuntando a su persona y, si es una empresa, a la empresa. El lead conserva su propio nombre, que es el de la obra.
+
+#### WhatsApp de Ventas
+
+- Quien no tiene un número propio (la administración) entra directo a la bandeja del primer asesor, sin el aviso de "no tenés número". La opción "Mi número" aparece solo para quien tiene uno.
+
 ## v14.8
 
 ### 15 de noviembre de 2026

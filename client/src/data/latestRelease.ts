@@ -97,6 +97,30 @@ const RELEASE_14_5: Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "14.9",
+  date: "16 de noviembre de 2026",
+  sections: [
+    {
+      title: "Contactos y empresas",
+      items: [
+        "Ventas tiene un submenú: Pipeline, Contactos, Empresas y WhatsApp.",
+        "Nueva sección Contactos: cada persona con su teléfono, mail y cédula, y una ficha con sus empresas, leads y proyectos.",
+        "Nueva sección Empresas: razón social, RUT y datos, con sus contactos (cargo y principal), leads y proyectos.",
+        "Un contacto se vincula a una o más empresas desde la ficha de cualquiera de los dos.",
+        "Un teléfono es de un solo contacto: si ya lo tiene otro, avisa de quién es.",
+        "Los contactos y empresas se arman a partir de los leads y proyectos que ya existían.",
+      ],
+    },
+    {
+      title: "WhatsApp de Ventas",
+      items: [
+        "Quien no tiene número propio entra directo a la bandeja del primer asesor; «Mi número» aparece solo para quien tiene uno.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_14_8: Release = {
   version: "14.8",
   date: "15 de noviembre de 2026",
   sections: [
@@ -1263,6 +1287,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.8",
+    shortDate: "15 nov",
+    highlights: RELEASE_14_8.sections.map((sec) => sec.title),
+  },
   {
     version: "14.7",
     shortDate: "14 nov",

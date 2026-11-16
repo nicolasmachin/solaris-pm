@@ -16,6 +16,8 @@ const Projects = lazy(() => import("./pages/Projects").then((module) => ({ defau
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail").then((module) => ({ default: module.ProjectDetail })));
 const Sales = lazy(() => import("./pages/Sales").then((module) => ({ default: module.Sales })));
 const VentasInstagram = lazy(() => import("./pages/VentasInstagram").then((module) => ({ default: module.VentasInstagram })));
+const VentasContactos = lazy(() => import("./pages/VentasCrm").then((module) => ({ default: module.VentasContactos })));
+const VentasEmpresas = lazy(() => import("./pages/VentasCrm").then((module) => ({ default: module.VentasEmpresas })));
 const VentasWhatsApp = lazy(() => import("./pages/VentasWhatsApp").then((module) => ({ default: module.VentasWhatsApp })));
 const Metrics = lazy(() => import("./pages/Metrics").then((module) => ({ default: module.Metrics })));
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })));
@@ -326,6 +328,22 @@ export function App() {
           element={
             <PermissionRoute module="VENTAS" action="VIEW">
               <VentasInstagram />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/ventas/contactos"
+          element={
+            <PermissionRoute module="VENTAS" action="VIEW">
+              <VentasContactos />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/ventas/empresas"
+          element={
+            <PermissionRoute module="VENTAS" action="VIEW">
+              <VentasEmpresas />
             </PermissionRoute>
           }
         />

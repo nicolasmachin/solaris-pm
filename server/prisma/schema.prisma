@@ -103,6 +103,8 @@ enum TaskOrigin {
 
 enum AuditEntityType {
   project
+  contacto
+  empresa
   solar_system
   stage
   substage
@@ -716,6 +718,8 @@ model User {
   marketingAutomatizaciones      MarketingAutomatizacion[]      @relation("MarketingAutomatizacionActualizadaPor")
   cierresMes                     CierreMes[]                    @relation("CierreMesCerradoPor")
   reaperturasMes                 CierreMes[]                    @relation("CierreMesReabiertoPor")
+  contactosCreados               Contacto[]                     @relation("ContactoCreadoPor")
+  empresasCreadas                Empresa[]                      @relation("EmpresaCreadaPor")
 
   @@index([deletedAt])
   @@index([tenantId])
@@ -872,6 +876,11 @@ model Project {
   // Generador "liviano" cargado por CSV en Experiencia Solar: existe como cliente
   // pero sin pipeline/obra. Se excluye de la lista de Proyectos (solo vive en
   // Experiencia Solar) hasta que, si alguna vez, se lo convierta en proyecto real.
+  // CRM: la persona y, si el cliente es una empresa, la empresa.
+  contactoId                      String?
+  contacto                        Contacto?                      @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+  empresaId                       String?
+  empresaCliente                  Empresa?                       @relation(fields: [empresaId], references: [id], onDelete: SetNull)
   importedFromCsv                 Boolean                        @default(false)
   // Omitido de métricas y SLA: proyectos viejos/de seguimiento sin todo cargado
   // que distorsionan los indicadores. Sigue existiendo y visible en el resto de
@@ -1932,6 +1941,12 @@ model SalesLead {
   closedAt                DateTime?               @db.Timestamptz(6)
   assignedToId            String?
   assignedTo              User?                   @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  // CRM: la persona y, si es una empresa, la empresa. El lead conserva su propio
+  // nombre (es la oportunidad u obra: "Fedoril S.A. Garzón").
+  contactoId              String?
+  contacto                Contacto?               @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+  empresaId               String?
+  empresaCliente          Empresa?                @relation(fields: [empresaId], references: [id], onDelete: SetNull)
   convertedToProjectId    String?
   convertedToProject      Project?                @relation("LeadConvertedTo", fields: [convertedToProjectId], references: [id], onDelete: SetNull)
   convertedAt             DateTime?               @db.Timestamptz(6)
@@ -6580,65 +6595,65 @@ model SoporteEstadoHuawei {
 /// que Meta tiene que aprobar antes de poder activarlo.
 /// Ver docs/manual/20-avisos-automaticos.md.
 model AvisoAutomatico {
-  id                 String       @id @default(cuid())
-  nombre             String
+  id                     String       @id @default(cuid())
+  nombre                 String
   /// Clave del catálogo de disparadores (avisos/disparadores.ts), ej.
   /// "obra.fecha_confirmada", "ute.hito:solicitudSentAt", "etapa.completada:EJECUCION_OBRA".
-  disparador         String
+  disparador             String
   /// Solo para disparadores con días (ej. "la obra es en N días").
-  dias               Int?
+  dias                   Int?
   /// Cuánto espera después del hecho antes de salir, en minutos (la pantalla
   /// lo pide en horas o días). Null o 0 = sale enseguida.
-  demoraMinutos      Int?
+  demoraMinutos          Int?
   /// Condición que se revisa al momento de salir. "SIN_CONTACTO": solo sale si
   /// Experiencia Solar no le escribió al cliente desde el hecho (ningún WhatsApp
   /// saliente ni contacto registrado, sin contar los avisos automáticos).
-  condicion          String?
+  condicion              String?
   /// WHATSAPP | EMAIL
-  canal              String
+  canal                  String
   /// BORRADOR | EN_REVISION (Meta) | RECHAZADO (Meta) | LISTO | ACTIVO | PAUSADO
-  estado             String       @default("BORRADOR")
+  estado                 String       @default("BORRADOR")
   /// Asunto del mail (solo EMAIL).
-  asunto             String?
+  asunto                 String?
   /// El texto con variables {{cliente.nombre}}.
-  cuerpo             String       @db.Text
+  cuerpo                 String       @db.Text
   /// Plantilla de Meta (solo WHATSAPP): nombre, idioma, estado y, si la
   /// rechazaron, el motivo. `variables` es el orden de {{1}}, {{2}}… en Meta.
-  plantillaNombre    String?
-  plantillaIdioma    String       @default("es")
-  plantillaId        String?
-  plantillaEstado    String?
-  plantillaMotivo    String?
-  plantillaVariables Json?
+  plantillaNombre        String?
+  plantillaIdioma        String       @default("es")
+  plantillaId            String?
+  plantillaEstado        String?
+  plantillaMotivo        String?
+  plantillaVariables     Json?
   /// Paso del recorrido de Experiencia Solar que el aviso deja hecho al salir
   /// (código de RecorridoCheck), para que nadie lo mande dos veces.
-  cierraCheck        String?
+  cierraCheck            String?
   /// Video o foto que sale en un SEGUNDO mensaje, un par de minutos después del
   /// texto (solo WhatsApp). Es otra plantilla de Meta, con el archivo en la
   /// cabecera: Meta lo baja de una dirección pública (`adjuntoToken`).
-  adjuntoTipo             String?   // VIDEO | IMAGEN
+  adjuntoTipo            String? // VIDEO | IMAGEN
   /// Ruta del archivo dentro del storage (storage/avisos/<id>/…).
-  adjuntoArchivo          String?
-  adjuntoMime             String?
-  adjuntoNombre           String?
+  adjuntoArchivo         String?
+  adjuntoMime            String?
+  adjuntoNombre          String?
   /// Parte de la dirección pública del archivo: sin ella no se puede adivinar.
-  adjuntoToken            String?   @unique
+  adjuntoToken           String?      @unique
   /// El texto que va con el video o la foto.
-  adjuntoTexto            String?   @db.Text
+  adjuntoTexto           String?      @db.Text
   /// Solo la primera vez por cliente (el video del primer reporte).
-  adjuntoUnaVez           Boolean   @default(false)
-  adjuntoPlantillaNombre  String?
-  adjuntoPlantillaId      String?
-  adjuntoPlantillaEstado  String?
-  adjuntoPlantillaMotivo  String?
+  adjuntoUnaVez          Boolean      @default(false)
+  adjuntoPlantillaNombre String?
+  adjuntoPlantillaId     String?
+  adjuntoPlantillaEstado String?
+  adjuntoPlantillaMotivo String?
   /// Desde cuándo está activo: solo cuentan los hechos posteriores.
-  activadoEn         DateTime?    @db.Timestamptz(6)
-  creadoPorId        String?
-  creadoPor          User?        @relation("AvisoAutomaticoCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
-  envios             AvisoEnvio[]
-  createdAt          DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt          DateTime     @updatedAt @db.Timestamptz(6)
-  deletedAt          DateTime?    @db.Timestamptz(6)
+  activadoEn             DateTime?    @db.Timestamptz(6)
+  creadoPorId            String?
+  creadoPor              User?        @relation("AvisoAutomaticoCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  envios                 AvisoEnvio[]
+  createdAt              DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime     @updatedAt @db.Timestamptz(6)
+  deletedAt              DateTime?    @db.Timestamptz(6)
 
   @@index([disparador])
   @@map("avisos_automaticos")
@@ -6649,37 +6664,37 @@ model AvisoAutomatico {
 /// el mismo hecho mande el aviso dos veces (se reabre una etapa, se vuelve a
 /// cargar una fecha…).
 model AvisoEnvio {
-  id          String          @id @default(cuid())
-  avisoId     String
-  aviso       AvisoAutomatico @relation(fields: [avisoId], references: [id], onDelete: Cascade)
-  projectId   String?
-  project     Project?        @relation("AvisoEnvioProject", fields: [projectId], references: [id], onDelete: SetNull)
+  id            String          @id @default(cuid())
+  avisoId       String
+  aviso         AvisoAutomatico @relation(fields: [avisoId], references: [id], onDelete: Cascade)
+  projectId     String?
+  project       Project?        @relation("AvisoEnvioProject", fields: [projectId], references: [id], onDelete: SetNull)
   /// Identifica el hecho: "<disparador>|<proyecto>|<referencia>".
-  claveHecho  String
-  canal       String
+  claveHecho    String
+  canal         String
   /// Teléfono o mail al que salió (o al que se iba a mandar).
-  destino     String?
+  destino       String?
   /// PROGRAMADO (espera su hora o la bienvenida) | ENVIADO | FALLIDO | OMITIDO
-  estado      String
+  estado        String
   /// Cuándo sale (PROGRAMADO): el hecho + la demora del aviso.
-  salirEn     DateTime?       @db.Timestamptz(6)
+  salirEn       DateTime?       @db.Timestamptz(6)
   /// Cuándo pasó el hecho.
-  ocurrioEn   DateTime?       @db.Timestamptz(6)
+  ocurrioEn     DateTime?       @db.Timestamptz(6)
   /// Desde cuándo se mira si Experiencia Solar le escribió (condición SIN_CONTACTO).
-  contactoDesde DateTime?     @db.Timestamptz(6)
+  contactoDesde DateTime?       @db.Timestamptz(6)
   /// Fecha que va como {{evento.fecha}}.
-  eventoFecha DateTime?       @db.Timestamptz(6)
+  eventoFecha   DateTime?       @db.Timestamptz(6)
   /// Es el segundo mensaje de un aviso: el video o la foto que va después del texto.
-  esAdjunto   Boolean         @default(false)
+  esAdjunto     Boolean         @default(false)
   /// Datos del mensaje fijados al momento del hecho (ej. la fecha de obra que se
   /// suspendió, que después ya no existe). Pisan a los que se calculan al salir.
-  datosFijos  Json?
+  datosFijos    Json?
   /// Por qué falló o por qué no se mandó.
-  detalle     String?
+  detalle       String?
   /// El texto tal como salió, ya con los datos del cliente.
-  texto       String?         @db.Text
-  waMessageId String?
-  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  texto         String?         @db.Text
+  waMessageId   String?
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
 
   @@unique([avisoId, claveHecho])
   @@index([projectId])
@@ -6947,4 +6962,71 @@ model CasoTecnico {
   @@index([fecha])
   @@index([projectId])
   @@map("casos_tecnicos")
+}
+
+/// CRM de Ventas: una persona. Los leads y proyectos apuntan a ella; si el
+/// cliente es una empresa, también a la empresa. Un teléfono es de un contacto.
+model Contacto {
+  id          String            @id @default(cuid())
+  nombre      String
+  /// Solo dígitos, con código de país (59899123456). Es la clave para reconocer
+  /// los chats de WhatsApp.
+  telefono    String?
+  email       String?
+  documento   String?
+  notas       String?
+  empresas    ContactoEmpresa[]
+  leads       SalesLead[]
+  projects    Project[]
+  createdById String?
+  createdBy   User?             @relation("ContactoCreadoPor", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt   DateTime?         @db.Timestamptz(6)
+  createdAt   DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime          @updatedAt @db.Timestamptz(6)
+
+  @@index([telefono])
+  @@index([email])
+  @@index([deletedAt])
+  @@map("contactos")
+}
+
+/// CRM de Ventas: una empresa cliente, con sus contactos.
+model Empresa {
+  id             String            @id @default(cuid())
+  razonSocial    String
+  nombreFantasia String?
+  rut            String?
+  telefono       String?
+  email          String?
+  direccion      String?
+  notas          String?
+  contactos      ContactoEmpresa[]
+  leads          SalesLead[]
+  projects       Project[]
+  createdById    String?
+  createdBy      User?             @relation("EmpresaCreadaPor", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?         @db.Timestamptz(6)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(6)
+
+  @@index([rut])
+  @@index([deletedAt])
+  @@map("empresas")
+}
+
+/// Un contacto trabaja en (o representa a) una empresa. Puede estar en varias.
+model ContactoEmpresa {
+  contactoId String
+  contacto   Contacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  empresaId  String
+  empresa    Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  /// "Dueño", "Encargado de mantenimiento"…
+  cargo      String?
+  /// El contacto principal de la empresa (al que van los avisos).
+  principal  Boolean  @default(false)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([contactoId, empresaId])
+  @@index([empresaId])
+  @@map("contactos_empresas")
 }

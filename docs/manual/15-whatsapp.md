@@ -17,6 +17,12 @@
 > haber números reales conectados: la configuración de registro integrado en Meta
 > todavía no ofrece la variación de WhatsApp (solo "General"), aunque la revisión
 > de la app ya se aprobó.
+>
+> **15/16-nov-2026, en producción:** primer número real conectado, el de July
+> Correa (Ventas), en coexistencia. **No por el botón**: Meta no deja que el
+> portafolio dueño de la app termine el registro integrado con su propia app, así
+> que se dio de alta con el token del usuario del sistema (ver *Números propios
+> de Voltia: alta directa*, abajo). El historial no se pudo traer.
 
 ## Para qué existe
 
@@ -86,11 +92,14 @@ los demás del área no se les muestra la pestaña ni la tarjeta de la ficha:
   nombre del chat lleva al panel del lead; *Asociar a un lead* busca entre los
   leads que el asesor ve en Ventas.
 - **Es del asesor**: la ve y la usa solo él (tampoco la gerencia comercial).
-- **El admin** ve arriba un selector *Mi número* / cada asesor con número, y usa
-  la del asesor elegido como si fuera suya (manda, asocia, *No hace falta
-  contestar*), salvo que abrir un chat no se lo marca leído al asesor.
-- Sin número propio, la pantalla dice cómo conectarlo; al admin le sugiere
-  elegir un asesor.
+- **El admin** ve arriba un selector con cada asesor con número, y usa la del
+  asesor elegido como si fuera suya (manda, asocia, *No hace falta contestar*),
+  salvo que abrir un chat no se lo marca leído al asesor (decidido: queda no
+  leído hasta que lo abra el dueño del número, aunque ya se haya contestado). *Mi
+  número* aparece solo si el usuario tiene uno; si no, entra directo al primer
+  asesor (`VentasWhatsApp.tsx`, compara `asesores` con el usuario logueado).
+- Sin número propio y sin asesores con número, la pantalla dice cómo conectarlo.
+- Se entra por el submenú **Ventas → WhatsApp** (`Topbar.tsx` → `VentasNavMenu`).
 - Se entra desde la franja **WhatsApp** del tablero de Ventas (abajo de *Leads sin
   tomar* y de la de Instagram): en ámbar con quiénes esperan respuesta si hay
   conversaciones sin contestar. No aparece si el usuario no tiene número (salvo
@@ -355,6 +364,55 @@ Crear una plantilla y conectar un número quedan en auditoría.
   de `services/sales/origen-lead.ts` (cap. 02, Origen del lead). Falta verificar
   con un anuncio de prueba que el `referral` llega también con el número en modo
   coexistencia; es una suposición.
+
+## Números propios de Voltia: alta directa
+
+Lo que pasó al conectar el número de July (15-nov-2026), porque va a pasar con
+**todos** los números de Voltia:
+
+- **El registro integrado usa la v5 de Meta** (`extras: { version: "v5" }` en
+  `abrirRegistro()`). La v3 con `featureType: "whatsapp_business_app_onboarding"`
+  se dio de baja el 15-oct-2026; desde entonces Meta atiende ese pedido como v4,
+  que ignora el `featureType` y ofrece solo "Agrega tu número" (registrar para la
+  API, que saca el número del celular). En la v5 la coexistencia viene por
+  defecto.
+- **En la v5 no hay una pantalla de "conectar la app WhatsApp Business"**: en
+  "Agrega tu número de teléfono" se deja "Crea uno nuevo" y se escribe el número
+  que ya está en la app; Meta lo detecta, muestra el perfil del negocio y sigue
+  con el QR. Peligro real solo si después pide un **código por SMS**: ahí es el
+  camino de número nuevo.
+- **El QR se escanea desde el celular**: WhatsApp Business → chat de *Facebook
+  Business* → *Conectar*. En un Xiaomi entró en un bucle de "Desbloquea para
+  vincular" (huella/PIN) que se resolvió **apagando el desbloqueo facial**.
+- **El último paso falla** con `#1690130 "<id> no es un identificador del negocio
+  válido"`: el portafolio que elige (Voltia, 297023135227633) es el dueño de la
+  app, y Meta no deja "compartirse" el número a sí mismo. El portafolio aparece
+  fijo, sin opción de elegir otro. El número **igual queda conectado** en
+  coexistencia dentro del portafolio Voltia.
+- **Alta directa**: `scripts/whatsapp-alta-directa.ts` lo registra en
+  `whatsapp_numeros` con el token del usuario del sistema `voltia-pm`
+  (`WHATSAPP_TOKEN`) en vez del token de la integración, con
+  `registrarNumero()` de `numeros.service.ts` (lo mismo que hace el botón después
+  de canjear el código). Antes hay que darle a `voltia-pm` **acceso total** a la
+  cuenta (Configuración del negocio → Cuentas de WhatsApp → la cuenta → Asignar
+  personas).
+- **Las dos cuentas de Meta**: desde 2026 Meta separa la *cuenta de WhatsApp*
+  (la que guarda el número; su id sale en Configuración del negocio → Cuentas de
+  WhatsApp, `selected_asset_id`) de la *cuenta de mensajes* (Cuentas → Cuentas de
+  mensajes). La API solo acepta la de mensajes: con la otra responde `#100 /
+  2388339 "This API is not supported for this WhatsApp Business Account"`. Al
+  script se le pasa `--waba <id de la cuenta de mensajes>`, porque el token del
+  sistema no tiene `business_management` para listarlas.
+- **El historial y los contactos no se traen**: `smb_app_data` responde "This API
+  is only available to WhatsApp Business App phone numbers onboarded on to
+  WhatsApp Business Platform", porque el registro integrado no terminó. Mandar,
+  recibir y los mensajes escritos desde el celular (`smb_message_echoes`) sí
+  andan.
+- **El primer mensaje entrante** después de conectar llegó como `unsupported` con
+  error `131060 "This message is unavailable"`; los siguientes llegaron bien.
+- Para el próximo número: botón Conectar número hasta el QR (ignorar el error del
+  final) → asignar `voltia-pm` a la cuenta de mensajes → script en modo prueba →
+  `--aplicar`. Pendiente: llevar ese último paso a un botón en Administración.
 
 ## Archivos
 
