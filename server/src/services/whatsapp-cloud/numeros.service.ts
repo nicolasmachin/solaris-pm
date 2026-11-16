@@ -81,8 +81,7 @@ type DatosNumero = {
   platform_type?: string;
 };
 
-export async function conectarNumero(params: {
-  code: string;
+type DatosAlta = {
   /** En coexistencia Meta puede avisar solo la cuenta; entonces se busca acá. */
   phoneNumberId?: string;
   wabaId: string;
@@ -91,7 +90,9 @@ export async function conectarNumero(params: {
   responsableId?: string;
   uso?: "EXPERIENCIA_SOLAR" | "VENTAS";
   userId: string;
-}) {
+};
+
+export async function conectarNumero(params: DatosAlta & { code: string }) {
   const faltan = faltantesParaConectar();
   if (faltan.length > 0) {
     throw badRequest("WHATSAPP_NO_CONFIGURADO", `Falta configurar en el servidor: ${faltan.join(", ")}.`);
@@ -102,6 +103,18 @@ export async function conectarNumero(params: {
   }
 
   const token = await canjearCodigo(params.code);
+  return registrarNumero(token, params);
+}
+
+/**
+ * Guarda un número con el token con que se lo va a usar: el de la integración
+ * (registro integrado) o el del usuario del sistema de Voltia, cuando el número
+ * quedó en el mismo portafolio dueño de la app (ver scripts/whatsapp-alta-directa.ts).
+ */
+export async function registrarNumero(token: string, params: DatosAlta) {
+  if (!isEncryptionConfigured()) {
+    throw badRequest("SIN_CIFRADO", "Falta SMTP_ENCRYPTION_KEY en el servidor para guardar el token cifrado.");
+  }
   const phoneNumberId = params.phoneNumberId ?? (await numeroDeLaCuenta(params.wabaId, token));
   const datos = await graph<DatosNumero>(
     `${phoneNumberId}?fields=display_phone_number,verified_name,is_on_biz_app,platform_type`,
