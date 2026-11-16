@@ -8,6 +8,11 @@ export async function login(email: string, password: string): Promise<AuthRespon
 }
 
 // Entrar sin contraseña: se pide un código al mail y se entra con él.
+/** "No puedo entrar": el cliente deja su nombre y su teléfono y Experiencia Solar lo contacta. */
+export async function pedirAyudaParaEntrar(datos: { nombre: string; telefono: string; mensaje?: string }) {
+  await apiClient.post("/api/publico/portal/no-puedo-entrar", datos);
+}
+
 export async function requestLoginCode(email: string): Promise<{ sentTo: string; minutes: number }> {
   const { data } = await apiClient.post<{ sentTo: string; minutes: number }>("/auth/login-code/request", { email });
   return data;

@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, getMe, requestLoginCode, suggestLoginEmails, verifyLoginCode } from "../api/auth.api";
+import { login, getMe, pedirAyudaParaEntrar, requestLoginCode, suggestLoginEmails, verifyLoginCode } from "../api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { Button } from "../components/ui/Button";
 import type { ApiError, AuthResponse } from "../types/api.types";
@@ -342,8 +342,80 @@ export function Login() {
               </>
             )}
           </div>
+
+          <NoPuedoEntrar />
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * "No puedo entrar": quien no logra entrar deja su nombre y su teléfono, y a
+ * Experiencia Solar le llega como pendiente para escribirle. Le habla al
+ * cliente: va en voseo.
+ */
+function NoPuedoEntrar() {
+  const [abierto, setAbierto] = useState(false);
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [listo, setListo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function mandar(e: FormEvent) {
+    e.preventDefault();
+    setEnviando(true);
+    setError(null);
+    try {
+      await pedirAyudaParaEntrar({ nombre: nombre.trim(), telefono: telefono.trim(), mensaje: mensaje.trim() || undefined });
+      setListo(true);
+    } catch (err) {
+      const msg = axios.isAxiosError(err) ? (err.response?.data as { message?: string } | undefined)?.message : undefined;
+      setError(msg ?? "No se pudo mandar. Probá de nuevo en un rato.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  const campo =
+    "w-full px-3 py-2 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)]";
+
+  if (listo) {
+    return (
+      <p className="mt-4 border-t border-[var(--color-border)] pt-4 text-center text-xs text-[var(--color-text-secondary)]">
+        Listo, recibimos tu pedido. Te vamos a escribir al {telefono.trim()} para ayudarte a entrar.
+      </p>
+    );
+  }
+  if (!abierto) {
+    return (
+      <div className="mt-4 border-t border-[var(--color-border)] pt-4 text-center">
+        <button type="button" onClick={() => setAbierto(true)} className="text-xs text-[var(--color-text-muted)] hover:underline">
+          ¿No podés entrar? Pedinos ayuda
+        </button>
+      </div>
+    );
+  }
+  return (
+    <form onSubmit={mandar} className="mt-4 space-y-2 border-t border-[var(--color-border)] pt-4">
+      <p className="text-xs text-[var(--color-text-secondary)]">
+        Dejanos tu nombre y tu celular y te escribimos para ayudarte a entrar.
+      </p>
+      <input className={campo} placeholder="Nombre y apellido" autoComplete="name" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <input className={campo} placeholder="Celular" type="tel" autoComplete="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+      <textarea
+        className={campo}
+        rows={2}
+        placeholder="¿Qué pasa cuando querés entrar? (opcional)"
+        value={mensaje}
+        onChange={(e) => setMensaje(e.target.value)}
+      />
+      {error && <p className="text-xs text-[var(--color-danger-text)]">{error}</p>}
+      <Button type="submit" size="sm" className="w-full" loading={enviando} disabled={nombre.trim().length < 2 || telefono.trim().length < 6}>
+        Pedir ayuda
+      </Button>
+    </form>
   );
 }

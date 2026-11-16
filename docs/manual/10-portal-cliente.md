@@ -2,7 +2,8 @@
 
 > **Capítulo parcial.** Están escritas y al día las secciones "El Inicio del
 > portal", "Generación y consumo", "Mis documentos", "Videos", "El menú del
-> portal" y "Ver el portal como lo ve el cliente". El resto funciona en producción
+> portal", "Ver el portal como lo ve el cliente" y "Entrar: el link con usuario,
+> No puedo entrar y otro acceso". El resto funciona en producción
 > pero todavía no está documentado.
 
 Lo que ve el cliente final: su planta, el trámite UTE, reclamos, documentos, encuestas y reportes.
@@ -288,6 +289,57 @@ como la ve él.
   muestra lo mismo para todos ellos.
 - **Un usuario CLIENT que mande la cabecera a mano** recibe 403: no tiene
   `EXPERIENCIA_CLIENTES:VIEW` (verificado contra la API).
+
+---
+
+# Entrar: el link con usuario, "No puedo entrar" y otro acceso
+
+## Para qué existe
+
+Para que el cliente entre sin ayuda y, si no puede, para que Experiencia Solar se
+entere sin depender de que él escriba por WhatsApp (pedido de Nicolás del
+15-11-2026, para los avisos automáticos de posventa).
+
+## Cómo funciona
+
+- **El usuario se crea solo con la venta** (`asegurarUsuarioPortal()` en
+  `clientes/portal-user.service.ts`, llamado al convertir el lead): con mail, el
+  usuario es el mail, sin contraseña conocida, y entra con el código por mail;
+  sin mail, un alias nombre.apellido con la contraseña inicial (12345678) que
+  pide cambiar. Detalle en el capítulo 20.
+- **Link con el usuario ya escrito**: `Login.tsx` toma `?usuario=` de la URL como
+  valor inicial del campo. Es lo que arma la variable `{{portal.acceso}}` de los
+  avisos (`/login?usuario=<usuario>`).
+- **"¿No podés entrar? Pedinos ayuda"** (`NoPuedoEntrar` en `Login.tsx`): nombre,
+  celular y un comentario opcional a `POST /api/publico/portal/no-puedo-entrar`,
+  **sin sesión**, con límite de 10 pedidos cada 10 minutos por IP
+  (`tooManyAttempts`, el mismo del login del conector). `registrarNoPuedoEntrar()`
+  (`portal/no-puedo-entrar.service.ts`) crea un `Task` URGENT, con vencimiento a
+  un día hábil, asignado a todos los usuarios con rol EXPERIENCIA_SOLAR (o al
+  primer admin si no hay), con el título que empieza por `TITULO_NO_PUEDE_ENTRAR`.
+  Si el celular normalizado coincide con el `clientPhone` de un proyecto
+  (`telefonosDe()`, gana el más nuevo), la tarea queda en ese proyecto y
+  `marcarAvisosClave()` suma "No puede entrar al portal: pidió ayuda" a sus avisos
+  clave (fila en rojo) mientras la tarea no esté completada
+  (`pedidosSinResolver()`). Queda en auditoría.
+- **Agregar otro acceso** (ficha de Experiencia Solar, `AccesoPortalAcciones.tsx`,
+  con el cliente que ya tiene acceso): abre `CrearUsuarioModal` con `otroAcceso`,
+  los campos vacíos. Es el mismo `POST /clientes/:projectId/portal-user`, que ya
+  aceptaba más de un usuario por proyecto (`ProjectClient`).
+
+## Permisos
+
+- El pedido de ayuda: público, con límite por IP.
+- Agregar otro acceso: `EXPERIENCIA_CLIENTES:CREATE`, como crear el primero.
+
+## Casos borde
+
+- **"Reenviar acceso" con dos accesos** falla con `AMBIGUOUS_PORTAL_USER`
+  (`resetPortalUserPassword()` no sabe a cuál resetear): se resuelve desde
+  Administración.
+- **El pedido de ayuda no le contesta al cliente**: no se le escribe a un número
+  que llegó de un formulario abierto. Le escribe una persona.
+- Un celular cargado en varios proyectos (la misma familia) cae en el más nuevo.
 
 ---
 

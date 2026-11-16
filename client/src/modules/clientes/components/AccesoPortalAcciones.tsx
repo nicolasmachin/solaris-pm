@@ -22,7 +22,7 @@ export function AccesoPortalAcciones({ ficha }: { ficha: ClienteFicha }) {
   const navigate = useNavigate();
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const activarPreview = usePortalPreviewStore((s) => s.activar);
-  const [modal, setModal] = useState<"crear" | "reenviar" | null>(null);
+  const [modal, setModal] = useState<"crear" | "reenviar" | "otro" | null>(null);
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
 
   async function copiarEnlace() {
@@ -60,6 +60,16 @@ export function AccesoPortalAcciones({ ficha }: { ficha: ClienteFicha }) {
               <Send className="h-3.5 w-3.5 shrink-0" /> Reenviar acceso
             </button>
           )}
+          {canCreate && (
+            <button
+              type="button"
+              className={botonNormal}
+              title="Un acceso más para el mismo proyecto: otra persona de la familia o de la empresa, con su propio usuario"
+              onClick={() => setModal("otro")}
+            >
+              <UserPlus className="h-3.5 w-3.5 shrink-0" /> Agregar otro acceso
+            </button>
+          )}
         </>
       ) : canCreate ? (
         <button
@@ -79,6 +89,7 @@ export function AccesoPortalAcciones({ ficha }: { ficha: ClienteFicha }) {
 
       {modal === "crear" && <CrearUsuarioModal cliente={ficha} onClose={() => setModal(null)} />}
       {modal === "reenviar" && <ReenviarAccesoModal cliente={ficha} onClose={() => setModal(null)} />}
+      {modal === "otro" && <CrearUsuarioModal cliente={ficha} otroAcceso onClose={() => setModal(null)} />}
     </div>
   );
 }

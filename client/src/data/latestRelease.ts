@@ -120,6 +120,8 @@ export const LATEST_RELEASE: Release = {
         "Nuevo disparador «Bienvenida hecha» y los envíos programados en el registro.",
         "Nuevos disparadores: encuesta creada, reporte del mes publicado y primer reporte publicado.",
         "Al convertir la venta, se crea solo el usuario del portal del cliente: con su mail o, si no tiene, con su nombre y apellido.",
+        "«¿No podés entrar? Pedinos ayuda» en el ingreso: le llega a Experiencia Solar como pendiente con plazo.",
+        "Agregar otro acceso al portal para otra persona de la familia o de la empresa.",
       ],
     },
     {

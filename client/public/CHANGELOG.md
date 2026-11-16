@@ -44,6 +44,8 @@
 
 - Al convertir la venta en proyecto, Voltia PM le **crea solo el usuario del portal** al cliente. Con mail, el usuario es su mail y entra con el código por mail. Sin mail, el usuario es su nombre y apellido (*maria.perez*) con la contraseña inicial de siempre, que el portal le pide cambiar. El paso de mandarle el acceso sigue pendiente hasta que se le manda.
 - El link de acceso puede llevar el usuario: la pantalla de ingreso lo muestra ya escrito.
+- En la pantalla de ingreso, **"¿No podés entrar? Pedinos ayuda"**: el cliente deja su nombre y su celular, y a Experiencia Solar le llega como pendiente urgente con plazo de un día hábil. Si el celular es de un cliente, su fila se pone en rojo hasta resolverlo.
+- En la ficha del cliente, **Agregar otro acceso** al portal, para otra persona de la familia o de la empresa.
 
 #### WhatsApp de Experiencia Solar
 

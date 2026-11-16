@@ -25,9 +25,15 @@ export function CrearUsuarioModal({
   cliente,
   onClose,
   onCreado,
+  otroAcceso = false,
 }: {
   cliente: ClienteListItem;
   onClose: () => void;
+  /**
+   * Un acceso más para el mismo proyecto (otra persona de la familia o de la
+   * empresa): los datos arrancan vacíos, porque no son los del titular.
+   */
+  otroAcceso?: boolean;
   /**
    * Se llama apenas el usuario queda creado — no al cerrar el modal. La
    * contraseña sólo se conoce en este momento (después queda hasheada) y el
@@ -41,9 +47,9 @@ export function CrearUsuarioModal({
   useLockBodyScroll(true);
   const referente = useAuthStore((s) => s.user?.name ?? null);
 
-  const [name, setName] = useState(cliente.nombre ?? "");
-  const [email, setEmail] = useState(cliente.mail ?? "");
-  const [phone, setPhone] = useState(cliente.telefono ?? "");
+  const [name, setName] = useState(otroAcceso ? "" : cliente.nombre ?? "");
+  const [email, setEmail] = useState(otroAcceso ? "" : cliente.mail ?? "");
+  const [phone, setPhone] = useState(otroAcceso ? "" : cliente.telefono ?? "");
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
   const [done, setDone] = useState<CrearPortalUserResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -95,14 +101,14 @@ export function CrearUsuarioModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Crear usuario de portal"
+        aria-label={otroAcceso ? "Agregar otro acceso al portal" : "Crear usuario de portal"}
         className="relative flex w-full max-w-md flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-app)] shadow-2xl"
       >
         <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border)] p-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[var(--color-text-primary)]">
               <User size={16} className="text-[var(--color-accent)]" />
-              <span className="font-medium">Crear usuario de portal</span>
+              <span className="font-medium">{otroAcceso ? "Agregar otro acceso al portal" : "Crear usuario de portal"}</span>
             </div>
             <p className="mt-0.5 truncate text-[11px] text-[var(--color-text-muted)]">{cliente.nombre}</p>
           </div>

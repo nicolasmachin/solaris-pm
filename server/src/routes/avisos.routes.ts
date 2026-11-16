@@ -150,6 +150,25 @@ async function auditarAdjunto(avisoId: string, userId: string, description: stri
  * se puede adivinar.
  */
 export async function registerAvisosPublicoRoutes(app: FastifyInstance) {
+  // "No puedo entrar" del ingreso al portal: sin sesión (justamente no puede
+  // entrar), con límite de pedidos por IP. Le llega a Experiencia Solar como
+  // pendiente; ver services/portal/no-puedo-entrar.service.ts.
+  app.post("/publico/portal/no-puedo-entrar", async (request) => {
+    const { tooManyAttempts } = await import("./mcp/rate-limit.js");
+    if (tooManyAttempts(`no-puedo-entrar:${request.ip}`)) {
+      throw new AppError(429, "DEMASIADOS_PEDIDOS", "Ya recibimos tu pedido. Te vamos a escribir.");
+    }
+    const body = z
+      .object({
+        nombre: z.string().trim().min(2).max(120),
+        telefono: z.string().trim().min(6).max(30),
+        mensaje: z.string().trim().max(1000).nullish(),
+      })
+      .parse(request.body);
+    const { registrarNoPuedoEntrar } = await import("../services/portal/no-puedo-entrar.service.js");
+    return registrarNoPuedoEntrar(body);
+  });
+
   app.get("/publico/avisos/adjunto/:token", async (request, reply) => {
     const { token } = z.object({ token: z.string().min(20).max(60) }).parse(request.params);
     const archivo = await archivoPorToken(token);

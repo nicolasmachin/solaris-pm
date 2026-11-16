@@ -559,6 +559,12 @@ async function marcarAvisosClave(items: ClienteListItem[]): Promise<ClienteListI
     const alerta = mantenimientos.get(i.projectId);
     if (alerta) i.avisosClavePendientes.push(alerta);
   }
+  // El cliente pidió ayuda para entrar al portal ("No puedo entrar") y nadie lo resolvió.
+  const { pedidosSinResolver } = await import("../portal/no-puedo-entrar.service.js");
+  const pedidos = await pedidosSinResolver(ids);
+  for (const i of items) {
+    if (pedidos.has(i.projectId)) i.avisosClavePendientes.push("No puede entrar al portal: pidió ayuda");
+  }
   return items;
 }
 

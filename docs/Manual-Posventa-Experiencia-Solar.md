@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.46 · del 15/11/26
+**Voltia · Uruguay** · Versión 1.47 · del 15/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -372,6 +372,20 @@ contraseña ya adentro**.
 > Si el cliente ya tenía acceso de antes, la plantilla trae su usuario pero deja
 > la contraseña en blanco: **no se puede recuperar**. Para mandársela hay que
 > resetearla con el botón de reenviar (**Reenviar acceso**, arriba en la ficha).
+
+**Otra persona de la familia o de la empresa** puede tener su propio acceso al
+mismo proyecto: arriba en la ficha, **Agregar otro acceso**, con su nombre y su
+mail (o sin mail: se arma con su nombre). Cada uno entra con su usuario y ve lo
+mismo.
+
+**Si el cliente no puede entrar**, en la pantalla de ingreso tiene **"¿No podés
+entrar? Pedinos ayuda"**: deja su nombre, su celular y, si quiere, qué le pasa. A
+Experiencia Solar le llega como **pendiente urgente, con plazo de un día hábil**,
+en Mis tareas. Si el celular es el de un cliente, el pendiente queda en su
+proyecto y la fila del cliente se pone en rojo con *"No puede entrar al portal:
+pidió ayuda"* hasta que se completa el pendiente. Si no coincide con nadie, el
+pendiente llega igual, con los datos que dejó. No se le contesta por un aviso
+automático: le escribe una persona.
 
 En la misma fila de la ficha están **Copiar enlace del portal**, para mandarle
 solo la dirección, y **Ver como el cliente**, que abre su portal tal como lo ve
@@ -1774,10 +1788,9 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 **Lo que falta:**
 
-- **Los accesos al portal de los clientes nuevos no se crean solos.** Desde el 6
-  de noviembre de 2026 todos los clientes que ya estaban tienen el suyo; a los
-  nuevos se les crea uno por uno desde la ficha. Un cliente tiene un solo acceso:
-  todavía no se puede sumar el de otra persona de la familia o de la empresa.
+- **"Reenviar acceso" no funciona con un cliente que tiene más de un acceso**:
+  no sabe a cuál resetearle la contraseña. Ese caso se resuelve desde
+  Administración.
 - **Los mails que se le mandan al cliente no cuentan como contacto** en el
   historial: hay que registrarlos aparte.
 - **Ningún aviso le propone todavía al cliente el mantenimiento pago** desde el
@@ -2151,6 +2164,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.47 | 15 de noviembre de 2026 | Se puede agregar otro acceso al portal para otra persona de la familia o de la empresa; el cliente que no puede entrar pide ayuda desde la pantalla de ingreso y le llega a Experiencia Solar como pendiente con plazo de un día hábil. |
 | 1.46 | 15 de noviembre de 2026 | Voltia PM avisa en la lista de clientes cuando un mantenimiento sin costo está por vencer o se venció sin agendarse; cada mantenimiento tiene que quedar agendado en el calendario. |
 | 1.45 | 15 de noviembre de 2026 | Si Operaciones suspende una obra sin fecha nueva, el pendiente de aviso llega igual, con el motivo; la fecha nueva llega como cualquier fecha confirmada. |
 | 1.44 | 15 de noviembre de 2026 | Al convertir la venta en proyecto, Voltia PM le crea solo el usuario del portal al cliente: con su mail si lo tiene, o con su nombre y apellido y una contraseña inicial si no; el paso de enviarle el acceso sigue abierto hasta que se le manda. |
