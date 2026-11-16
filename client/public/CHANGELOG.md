@@ -16,8 +16,13 @@
 - Un **lead nuevo** queda vinculado solo: si el teléfono ya es de un contacto, a ese; si no, se crea. Si el nombre es de una empresa («X S.A. — Juan Pérez») o el lead es de empresa, también se crea o se reconoce la empresa. Lo mismo un proyecto cargado a mano.
 - Al **ganar el lead**, el proyecto queda con el mismo contacto y la misma empresa, y las **ampliaciones** heredan los del proyecto original.
 
-#### WhatsApp de Ventas
+#### WhatsApp
 
+- Cada chat se reconoce por el **contacto**: aparece con el nombre de la persona (y su empresa) y lleva a su lead o cliente; si todavía no tiene, a su ficha de contacto.
+- Los números del **equipo de Voltia** (el teléfono de su usuario) aparecen con su nombre y su rol, por ejemplo «Equipo Voltia · Operaciones», y no cuentan como sin contestar.
+- Si el número no es de nadie, se ve el **nombre que la persona tiene en su WhatsApp**, con un «~» adelante.
+- Al **asociar** un chat se busca entre leads o clientes, contactos y personas del equipo, y con **+ Crear contacto con este número** se lo da de alta desde el chat.
+- El WhatsApp del panel del lead y de la ficha del cliente también reconoce el teléfono de su contacto.
 - Quien no tiene un número propio (la administración) entra directo a la bandeja del primer asesor, sin el aviso de "no tenés número". La opción "Mi número" aparece solo para quien tiene uno.
 
 ## v14.8

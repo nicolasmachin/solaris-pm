@@ -343,10 +343,12 @@ Crear una plantilla y conectar un número quedan en auditoría.
 - **Las plantillas mandadas** se ven como *Plantilla · nombre*: el texto que
   recibió el cliente no se guarda en `whatsapp_mensajes`, así que el chat no lo
   muestra.
-- **El nombre de perfil de WhatsApp** de quien escribe (el que en WhatsApp sale
-  como «~ Nombre» para los que no están agendados) no se guarda: el webhook guarda
-  el mensaje, no el bloque `contacts`. Por eso un número sin cliente se ve solo
-  como número. Tampoco se puede mandar un archivo desde la bandeja.
+- **El nombre de perfil de WhatsApp** de quien escribe llega en el bloque
+  `contacts` de cada mensaje entrante y se guarda en
+  `whatsapp_conversaciones.nombrePerfil` (se pisa con el último). La bandeja lo
+  muestra como «~ Nombre» mientras el chat no sea de nadie. Los chats anteriores
+  al 16-nov-2026 no lo tienen hasta que la persona vuelva a escribir. No se puede
+  mandar un archivo desde la bandeja.
 - **No hay aviso cuando entra un mensaje** (ni campanita ni push): se ve en la
   pestaña, en la bandeja y en la ficha.
 - **Plantillas en Ventas**: la bandeja del asesor lista las plantillas de la
@@ -364,6 +366,38 @@ Crear una plantilla y conectar un número quedan en auditoría.
   de `services/sales/origen-lead.ts` (cap. 02, Origen del lead). Falta verificar
   con un anuncio de prueba que el `referral` llega también con el número en modo
   coexistencia; es una suposición.
+
+## Quién es cada chat (CRM, desde v14.9)
+
+`porTelefonoDe()` en `bandejas.service.ts` arma teléfono → quién, de menor a
+mayor prioridad:
+
+1. el teléfono suelto del lead (Ventas) o del proyecto (Experiencia Solar), como
+   antes (`leadsPorTelefono()`, `proyectosPorTelefono()`);
+2. el **contacto** del CRM con ese teléfono (`contactosPorTelefono()`): nombre de
+   la persona (con su empresa principal) y, por él, su lead más nuevo (Ventas) o
+   su proyecto más nuevo (Experiencia Solar); sin lead ni proyecto, solo el
+   contacto (`contactoId`, código «Contacto» o «Contacto de la empresa»);
+3. un **usuario del equipo** con ese teléfono en su perfil (`usuariosPorTelefono()`,
+   salvo el rol CLIENT, que son los clientes del portal y se llama «Generador»):
+   código «Equipo Voltia · <rol>» e `interno: true`.
+
+La asociación a mano gana sobre todo. `whatsapp_conversaciones` tiene, además de
+`leadId` y `projectId`, `contactoId` y `usuarioId`; `asociarCliente()` recibe el
+id del lead o proyecto, o `contacto:<id>` / `usuario:<id>`, y deja una sola
+asociación. Las conversaciones **internas** no cuentan como sin contestar.
+
+En la pantalla (`BandejaWhatsApp.tsx`), el buscador de *Asociar* junta lo de la
+bandeja (leads o clientes) con `GET /crm/contactos` y `GET /crm/usuarios`, y
+ofrece *+ Crear contacto con este número* (`POST /crm/contactos`, con el nombre de
+perfil precargado): una vez creado, el chat se reconoce solo por el teléfono.
+Esas dos rutas aceptan VENTAS o EXPERIENCIA_CLIENTES (VIEW para buscar, CREATE
+para crear). El nombre del chat lleva al lead o cliente; si solo hay contacto, a
+`/ventas/contactos?id=`; un usuario del equipo no tiene enlace.
+
+El WhatsApp del panel del lead y de la ficha del cliente
+(`whatsappDeLead()` / `whatsappDeProyecto()`) junta el teléfono del lead o
+proyecto con el de su contacto.
 
 ## Números propios de Voltia: alta directa
 

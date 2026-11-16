@@ -115,8 +115,12 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
-      title: "WhatsApp de Ventas",
+      title: "WhatsApp",
       items: [
+        "Cada chat se reconoce por el contacto y lleva a su lead o cliente; si no tiene, a su ficha.",
+        "Los números del equipo de Voltia aparecen con nombre y rol, y no cuentan como sin contestar.",
+        "Si el número no es de nadie, se ve el nombre que la persona tiene en su WhatsApp.",
+        "Al asociar un chat se busca entre leads o clientes, contactos y equipo, y se crea el contacto desde el chat.",
         "Quien no tiene número propio entra directo a la bandeja del primer asesor; «Mi número» aparece solo para quien tiene uno.",
       ],
     },

@@ -135,6 +135,12 @@ function exigirCuenta(b: Bandeja): Cuenta {
 export type ClienteDeConversacion = {
   projectId?: string;
   leadId?: string;
+  /** CRM: el contacto (persona) de la conversación, tenga o no lead o cliente. */
+  contactoId?: string;
+  /** Un usuario de Voltia: la conversación es interna. */
+  usuarioId?: string;
+  /** Interna (un usuario de Voltia): no cuenta como sin contestar. */
+  interno?: boolean;
   codigo: string;
   nombre: string;
   /** true si se asoció a mano (escribe desde un número que no está en la ficha). */
@@ -178,22 +184,88 @@ async function leadsPorTelefono(): Promise<Map<string, Omit<ClienteDeConversacio
   return mapa;
 }
 
-function porTelefonoDe(bandeja: Bandeja) {
-  return bandeja.area === "VENTAS" ? leadsPorTelefono() : proyectosPorTelefono();
+/**
+ * Teléfono → contacto del CRM y, por él, su lead más nuevo (Ventas) o su
+ * proyecto más nuevo (Experiencia Solar). El nombre que se muestra es el de la
+ * persona; el código, el del lead o proyecto (o la empresa, si no tiene).
+ */
+async function contactosPorTelefono(area: UsoNumero): Promise<Map<string, Omit<ClienteDeConversacion, "aMano">>> {
+  const contactos = await prisma.contacto.findMany({
+    where: { deletedAt: null, telefono: { not: null } },
+    select: {
+      id: true,
+      nombre: true,
+      telefono: true,
+      empresas: { select: { empresa: { select: { razonSocial: true } } }, orderBy: { principal: "desc" }, take: 1 },
+      leads: { where: { deletedAt: null }, select: { id: true, code: true }, orderBy: { createdAt: "desc" }, take: 1 },
+      projects: { where: { deletedAt: null }, select: { id: true, code: true }, orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+  const mapa = new Map<string, Omit<ClienteDeConversacion, "aMano">>();
+  for (const c of contactos) {
+    const empresa = c.empresas[0]?.empresa.razonSocial;
+    const lead = c.leads[0];
+    const proyecto = c.projects[0];
+    const base = { contactoId: c.id, nombre: empresa ? `${c.nombre} · ${empresa}` : c.nombre };
+    if (area === "VENTAS" && lead) mapa.set(c.telefono!, { ...base, leadId: lead.id, codigo: lead.code });
+    else if (area === "EXPERIENCIA_SOLAR" && proyecto) mapa.set(c.telefono!, { ...base, projectId: proyecto.id, codigo: proyecto.code });
+    else mapa.set(c.telefono!, { ...base, codigo: empresa ? "Contacto de la empresa" : "Contacto" });
+  }
+  return mapa;
+}
+
+/** Teléfono → usuario del equipo de Voltia (el teléfono de su perfil): conversación interna. */
+async function usuariosPorTelefono(): Promise<Map<string, Omit<ClienteDeConversacion, "aMano">>> {
+  const usuarios = await prisma.user.findMany({
+    // Los clientes del portal (rol CLIENT, "Generador") no son equipo.
+    where: { deletedAt: null, phone: { not: null }, role: { name: { not: "CLIENT" } } },
+    select: { id: true, name: true, phone: true, role: { select: { label: true } } },
+  });
+  const mapa = new Map<string, Omit<ClienteDeConversacion, "aMano">>();
+  for (const u of usuarios) {
+    for (const t of telefonosDe(u.phone)) {
+      mapa.set(t, { usuarioId: u.id, nombre: u.name, codigo: `Equipo Voltia · ${u.role.label}`, interno: true });
+    }
+  }
+  return mapa;
+}
+
+/**
+ * Quién es cada teléfono, de menor a mayor prioridad: el teléfono suelto del
+ * lead o proyecto, el contacto del CRM y, por encima de todo, un usuario de Voltia.
+ */
+async function porTelefonoDe(bandeja: Bandeja) {
+  const [sueltos, contactos, usuarios] = await Promise.all([
+    bandeja.area === "VENTAS" ? leadsPorTelefono() : proyectosPorTelefono(),
+    contactosPorTelefono(bandeja.area),
+    usuariosPorTelefono(),
+  ]);
+  return new Map([...sueltos, ...contactos, ...usuarios]);
 }
 
 const INCLUDE_ASOCIADO = {
   project: { select: { id: true, code: true, clientName: true, deletedAt: true } },
   lead: { select: { id: true, code: true, clientName: true, deletedAt: true } },
+  contacto: { select: { id: true, nombre: true, deletedAt: true } },
+  usuario: { select: { id: true, name: true, deletedAt: true, role: { select: { label: true } } } },
 } as const;
 
 type EstadoConAsociado = {
   project: { id: string; code: string; clientName: string; deletedAt: Date | null } | null;
   lead: { id: string; code: string; clientName: string; deletedAt: Date | null } | null;
+  contacto?: { id: string; nombre: string; deletedAt: Date | null } | null;
+  usuario?: { id: string; name: string; deletedAt: Date | null; role: { label: string } } | null;
 };
 
-/** Lo asociado a mano, según el área de la bandeja (un proyecto o un lead). */
+/**
+ * Lo asociado a mano: un usuario de Voltia, un contacto del CRM o, según el área
+ * de la bandeja, un proyecto o un lead.
+ */
 function asociadoAMano(bandeja: Bandeja, e: EstadoConAsociado | null | undefined): ClienteDeConversacion | null {
+  const u = e?.usuario;
+  if (u && !u.deletedAt) return { usuarioId: u.id, nombre: u.name, codigo: `Equipo Voltia · ${u.role.label}`, interno: true, aMano: true };
+  const c = e?.contacto;
+  if (c && !c.deletedAt) return { contactoId: c.id, nombre: c.nombre, codigo: "Contacto", aMano: true };
   if (bandeja.area === "VENTAS") {
     const l = e?.lead;
     return l && !l.deletedAt ? { leadId: l.id, codigo: l.code, nombre: l.clientName, aMano: true } : null;
@@ -280,7 +352,8 @@ export async function listarConversaciones(bandeja: Bandeja) {
         ventanaAbierta: !!u.ultimoEntranteEn && ahora - u.ultimoEntranteEn.getTime() < VENTANA_MS,
         noLeida: estaNoLeida(u.ultimoEntranteEn, e?.leidoHasta),
         noLeidos: estaNoLeida(u.ultimoEntranteEn, e?.leidoHasta) ? Number(u.noLeidos) : 0,
-        sinContestar: estaSinContestar(u, e?.resueltoHasta),
+        sinContestar: !cliente?.interno && estaSinContestar(u, e?.resueltoHasta),
+        nombrePerfil: e?.nombrePerfil ?? null,
         cliente,
       };
     })
@@ -349,9 +422,34 @@ export async function marcarResuelta(bandeja: Bandeja, telefono: string, userId:
  * Asocia la conversación a un cliente (o la desasocia con null): un proyecto en
  * Experiencia Solar, un lead en Ventas.
  */
+/**
+ * Asocia a mano una conversación. `id` es un lead (Ventas) o un proyecto
+ * (Experiencia Solar); con prefijo `contacto:` o `usuario:`, un contacto del CRM
+ * o un usuario de Voltia. null quita la asociación.
+ */
 export async function asociarCliente(bandeja: Bandeja, telefono: string, id: string | null) {
   const { phoneNumberId } = exigirCuenta(bandeja);
   const tel = normalizarTelefono(telefono);
+  const where = { phoneNumberId_telefono: { phoneNumberId, telefono: tel } };
+  const nada = { leadId: null, projectId: null, contactoId: null, usuarioId: null };
+  if (id === null) {
+    await prisma.whatsAppConversacion.updateMany({ where: { phoneNumberId, telefono: tel }, data: nada });
+    return;
+  }
+  if (id.startsWith("contacto:")) {
+    const contactoId = id.slice("contacto:".length);
+    const c = await prisma.contacto.findFirst({ where: { id: contactoId, deletedAt: null }, select: { id: true } });
+    if (!c) throw notFound("CONTACTO_NO_ENCONTRADO", "El contacto no existe");
+    await prisma.whatsAppConversacion.upsert({ where, create: { phoneNumberId, telefono: tel, ...nada, contactoId }, update: { ...nada, contactoId } });
+    return;
+  }
+  if (id.startsWith("usuario:")) {
+    const usuarioId = id.slice("usuario:".length);
+    const u = await prisma.user.findFirst({ where: { id: usuarioId, deletedAt: null }, select: { id: true } });
+    if (!u) throw notFound("USUARIO_NO_ENCONTRADO", "El usuario no existe");
+    await prisma.whatsAppConversacion.upsert({ where, create: { phoneNumberId, telefono: tel, ...nada, usuarioId }, update: { ...nada, usuarioId } });
+    return;
+  }
   if (bandeja.area === "VENTAS") {
     if (id) {
       const l = await prisma.salesLead.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
@@ -360,7 +458,7 @@ export async function asociarCliente(bandeja: Bandeja, telefono: string, id: str
     await prisma.whatsAppConversacion.upsert({
       where: { phoneNumberId_telefono: { phoneNumberId, telefono: tel } },
       create: { phoneNumberId, telefono: tel, leadId: id },
-      update: { leadId: id },
+      update: { leadId: id, contactoId: null, usuarioId: null },
     });
     return;
   }
@@ -371,8 +469,18 @@ export async function asociarCliente(bandeja: Bandeja, telefono: string, id: str
   await prisma.whatsAppConversacion.upsert({
     where: { phoneNumberId_telefono: { phoneNumberId, telefono: tel } },
     create: { phoneNumberId, telefono: tel, projectId: id },
-    update: { projectId: id },
+    update: { projectId: id, contactoId: null, usuarioId: null },
   });
+}
+
+/** El nombre que tiene puesto en su WhatsApp quien escribe (si ya escribió). */
+export async function nombrePerfilDe(bandeja: Bandeja, telefono: string): Promise<string | null> {
+  if (!bandeja.cuenta) return null;
+  const e = await prisma.whatsAppConversacion.findUnique({
+    where: { phoneNumberId_telefono: { phoneNumberId: bandeja.cuenta.phoneNumberId, telefono: normalizarTelefono(telefono) } },
+    select: { nombrePerfil: true },
+  });
+  return e?.nombrePerfil ?? null;
 }
 
 /** El cliente de una conversación: el asociado a mano o, si no, el del teléfono. */
@@ -481,20 +589,23 @@ export async function plantillasDe(bandeja: Bandeja) {
 export async function whatsappDeProyecto(bandeja: Bandeja, projectId: string) {
   const p = await prisma.project.findFirst({
     where: { id: projectId, deletedAt: null },
-    select: { id: true, clientPhone: true },
+    select: { id: true, clientPhone: true, contacto: { select: { telefono: true } } },
   });
   if (!p) throw notFound("PROYECTO_NO_ENCONTRADO", "El proyecto no existe");
-  return resumenDeConversaciones(bandeja, telefonosDe(p.clientPhone), (a) => a.projectId, projectId);
+  const propios = [...new Set([...telefonosDe(p.clientPhone), ...(p.contacto?.telefono ? [p.contacto.telefono] : [])])];
+  return resumenDeConversaciones(bandeja, propios, (a) => a.projectId, projectId);
 }
 
 /** Lo mismo para el panel del lead, por el número del asesor. */
 export async function whatsappDeLead(bandeja: Bandeja, leadId: string) {
   const l = await prisma.salesLead.findFirst({
     where: { id: leadId, deletedAt: null },
-    select: { id: true, clientPhone: true },
+    select: { id: true, clientPhone: true, contacto: { select: { telefono: true } } },
   });
   if (!l) throw notFound("LEAD_NO_ENCONTRADO", "El lead no existe");
-  return resumenDeConversaciones(bandeja, telefonosDe(l.clientPhone), (a) => a.leadId, leadId);
+  // El teléfono del lead y el de su contacto del CRM.
+  const propios = [...new Set([...telefonosDe(l.clientPhone), ...(l.contacto?.telefono ? [l.contacto.telefono] : [])])];
+  return resumenDeConversaciones(bandeja, propios, (a) => a.leadId, leadId);
 }
 
 type Asociada = { telefono: string; projectId: string | null; leadId: string | null; leidoHasta: Date | null; resueltoHasta: Date | null };

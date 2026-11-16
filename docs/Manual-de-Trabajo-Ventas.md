@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.17 · del 16/11/26
+**Voltia · Uruguay** · Versión 1.18 · del 16/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -839,11 +839,19 @@ celular se ve primero la lista y, al tocar un chat, se abre a pantalla completa.
 **La bandeja es del asesor:** solo él la ve y escribe desde su número. La franja de Ventas
 se pone en ámbar y dice quiénes esperan respuesta cuando hay chats sin contestar.
 
-**Cómo se reconoce al cliente.** Si el teléfono del cliente está cargado en el
-lead, el chat aparece con su nombre y, al tocarlo, se abre el panel del lead. Si
-el cliente escribe desde otro número, el chat aparece solo con el número: con el
-ícono de enlace, arriba del chat, se lo **asocia a un lead** buscándolo por
-nombre. Voltia PM nunca adivina por el nombre.
+**Cómo se reconoce al cliente.** Voltia PM busca el número entre los
+**contactos**: si es de uno, el chat aparece con el nombre de la persona (y su
+empresa) y, al tocarlo, se abre su lead más reciente; si el contacto todavía no
+tiene lead, se abre su ficha. Si el número es de alguien del **equipo de
+Voltia** (el teléfono de su usuario), aparece con su nombre y su rol —«Equipo
+Voltia · Operaciones»— y no cuenta como sin contestar. Si no es de nadie, se ve el
+nombre que la persona tiene en su WhatsApp, con un «~» adelante.
+
+**Asociar un chat.** Con el ícono de enlace, arriba del chat, se busca de quién
+es: un lead, un contacto o una persona del equipo. Si es alguien nuevo, **+ Crear
+contacto con este número** lo da de alta ahí mismo, con el nombre que tiene en
+WhatsApp ya escrito; desde su ficha se le arma después el lead. Voltia PM nunca
+adivina por el nombre: reconoce por el número.
 
 **Mandar un mensaje.** Se escribe en la caja de abajo y **Enter manda**
 (Shift+Enter baja de línea; en el celular se manda con el botón). WhatsApp tiene
@@ -938,9 +946,7 @@ Conviene mirar la tarjeta Cliente al crear el lead: si eligió mal (un familiar
 con el mismo celular, por ejemplo), se corrige con Cambiar.
 
 **Lo que todavía no hace:** cambiar el teléfono en el lead no cambia el del
-contacto, ni al revés (se corrige cada uno en su lugar), y el WhatsApp todavía
-reconoce al cliente por el teléfono del lead, no por el del contacto. Eso viene en
-la próxima etapa.
+contacto, ni al revés (se corrige cada uno en su lugar).
 
 ### La propuesta: armarla, publicarla y mandarla
 
@@ -1317,6 +1323,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.18 | 16 de noviembre de 2026 | El WhatsApp reconoce el chat por el contacto (y por él, su lead); los números del equipo de Voltia aparecen con nombre y rol; el número desconocido muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre leads, contactos y equipo, y se crea el contacto desde el chat. |
 | 1.17 | 16 de noviembre de 2026 | La tarjeta **Cliente** en el panel del lead y en el proyecto, para ver y cambiar el contacto y la empresa; un lead nuevo queda vinculado solo a su contacto y empresa, y al ganarlo el proyecto queda con los mismos. |
 | 1.16 | 16 de noviembre de 2026 | Se agrega «Los contactos y las empresas»: cada persona es un contacto y cada empresa cliente una empresa, el lead apunta a ellos y conserva el nombre de la obra, un teléfono es de un solo contacto. Al WhatsApp de Ventas se entra desde el submenú de Ventas; la Dirección entra directo a la bandeja del primer asesor, y figura quién del equipo mandó cada mensaje (solo lo ve el equipo). |
 | 1.15 | 15 de noviembre de 2026 | Se agrega «El WhatsApp de Ventas»: el número de cada asesor conectado a Voltia PM, la bandeja con sus chats, cómo se reconoce al lead, la regla de las 24 horas y las plantillas, y que la bandeja la ve solo el asesor (y la Dirección). En el panel del lead, la tarjeta de WhatsApp. |

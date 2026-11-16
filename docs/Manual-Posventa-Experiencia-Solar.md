@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.47 · del 15/11/26
+**Voltia · Uruguay** · Versión 1.48 · del 16/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1196,9 +1196,19 @@ contesta con texto libre, como en el celular. Si pasó más tiempo, WhatsApp sol
 deja mandar un **mensaje aprobado por Meta** (lo que la pantalla llama
 "plantilla"): es una regla de WhatsApp, no de Voltia.
 
+**Cómo se reconoce a quién escribe.** Voltia PM busca el número entre los
+**contactos** (las personas que Ventas tiene cargadas, con su teléfono) y, por
+el contacto, llega a su cliente. Si el número es de alguien del **equipo de
+Voltia** (el teléfono de su usuario), el chat aparece con su nombre y su rol
+—«Equipo Voltia · Operaciones», por ejemplo— y no cuenta como sin contestar. Si
+el número no es de nadie, se ve el nombre que la persona tiene puesto en su
+WhatsApp, con un «~» adelante, como lo muestra WhatsApp a quien no está agendado.
+
 **Cuando el cliente escribe desde otro número** (el de un familiar, el de la
-empresa), la conversación aparece solo con el número. Con **Asociar a un
-cliente** (el ícono de enlace arriba del chat) se elige de quién es, y desde ahí se ve en su ficha.
+empresa), con **Asociar** (el ícono de enlace arriba del chat) se busca de
+quién es: un cliente, un contacto o una persona del equipo. Si es alguien nuevo,
+**+ Crear contacto con este número** lo da de alta ahí mismo, con el nombre que
+tiene en WhatsApp ya escrito.
 
 **Cuando no hace falta contestar** (un "gracias", un "ok"), **No hace falta
 contestar** saca la marca roja. Vuelve a aparecer si el cliente escribe de nuevo.
@@ -2164,6 +2174,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.48 | 16 de noviembre de 2026 | En el WhatsApp: el chat se reconoce por el contacto (la persona con su teléfono) y, por él, su cliente; los números del equipo de Voltia aparecen con nombre y rol y no cuentan como sin contestar; el número que no es de nadie muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre clientes, contactos y equipo, y se puede crear el contacto desde el chat. |
 | 1.47 | 15 de noviembre de 2026 | Se puede agregar otro acceso al portal para otra persona de la familia o de la empresa; el cliente que no puede entrar pide ayuda desde la pantalla de ingreso y le llega a Experiencia Solar como pendiente con plazo de un día hábil. |
 | 1.46 | 15 de noviembre de 2026 | Voltia PM avisa en la lista de clientes cuando un mantenimiento sin costo está por vencer o se venció sin agendarse; cada mantenimiento tiene que quedar agendado en el calendario. |
 | 1.45 | 15 de noviembre de 2026 | Si Operaciones suspende una obra sin fecha nueva, el pendiente de aviso llega igual, con el motivo; la fecha nueva llega como cualquier fecha confirmada. |

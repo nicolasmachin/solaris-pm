@@ -40,6 +40,8 @@ type MetaHistorial = {
 
 type MetaValue = {
   metadata?: { phone_number_id?: string; display_phone_number?: string };
+  /** Quién escribe: el nombre que tiene puesto en su WhatsApp. */
+  contacts?: Array<{ wa_id?: string; profile?: { name?: string } }>;
   messages?: MetaMensaje[];
   statuses?: MetaEstado[];
   /** smb_message_echoes: lo que el negocio escribió desde el celular. */
@@ -179,6 +181,20 @@ export async function procesarWebhook(payload: MetaPayload): Promise<Resultado> 
       if (change.field !== "messages") continue;
 
       for (const m of value.messages ?? []) mensajes += await guardarMensaje(m, phoneNumberId, "API");
+
+      // El nombre de WhatsApp de quien escribe: se muestra en la bandeja mientras
+      // el chat no sea de un contacto, un lead o un cliente.
+      for (const c of value.contacts ?? []) {
+        const nombre = c.profile?.name?.trim().slice(0, 120);
+        if (!c.wa_id || !nombre) continue;
+        await prisma.whatsAppConversacion
+          .upsert({
+            where: { phoneNumberId_telefono: { phoneNumberId, telefono: c.wa_id } },
+            create: { phoneNumberId, telefono: c.wa_id, nombrePerfil: nombre },
+            update: { nombrePerfil: nombre },
+          })
+          .catch((err) => console.error("[whatsapp] no se pudo guardar el nombre de perfil:", err instanceof Error ? err.message : err));
+      }
 
       for (const s of value.statuses ?? []) {
         const ocurridoEn = fechaDe(s.timestamp);

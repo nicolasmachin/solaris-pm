@@ -120,3 +120,8 @@ export async function cambiarVinculo(
   const url = "leadId" in destino ? `/api/crm/leads/${destino.leadId}/vinculo` : `/api/crm/proyectos/${destino.projectId}/vinculo`;
   await apiClient.put(url, d);
 }
+
+/** Usuarios de Voltia (para asociar un chat interno), con su rol. */
+export async function getUsuariosVoltia(q?: string) {
+  return (await apiClient.get<Array<{ id: string; nombre: string; telefono: string | null; rol: string }>>("/api/crm/usuarios", { params: q ? { q } : {} })).data;
+}

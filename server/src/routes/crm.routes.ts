@@ -10,7 +10,8 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize } from "../middleware/authorize.middleware.js";
+import { authorize, authorizeAny } from "../middleware/authorize.middleware.js";
+import { prisma } from "../lib/prisma.js";
 import { authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import {
   borrarContacto,
@@ -60,13 +61,31 @@ export async function registerCrmRoutes(app: FastifyInstance) {
   const editar = { preHandler: authorize(Module.VENTAS, Action.EDIT) };
   const borrar = { preHandler: authorize(Module.VENTAS, Action.DELETE) };
 
+  // Buscar y crear contactos también se usa desde la bandeja de WhatsApp de
+  // Experiencia Solar (asociar un chat, crear el contacto desde el chat).
+  const verDesdeChat = { preHandler: authorizeAny([{ module: Module.VENTAS, action: Action.VIEW }, { module: Module.EXPERIENCIA_CLIENTES, action: Action.VIEW }]) };
+  const crearDesdeChat = { preHandler: authorizeAny([{ module: Module.VENTAS, action: Action.CREATE }, { module: Module.EXPERIENCIA_CLIENTES, action: Action.CREATE }]) };
+
+  // ─── Usuarios de Voltia (para asociar un chat interno) ───
+  app.get("/crm/usuarios", verDesdeChat, async (request) => {
+    const { q } = z.object({ q: z.string().max(100).optional() }).parse(request.query);
+    const texto = q?.trim();
+    const usuarios = await prisma.user.findMany({
+      where: { deletedAt: null, ...(texto ? { name: { contains: texto, mode: "insensitive" as const } } : {}) },
+      select: { id: true, name: true, phone: true, role: { select: { label: true, name: true } } },
+      orderBy: { name: "asc" },
+      take: 20,
+    });
+    return usuarios.filter((u) => u.role.name !== "CLIENT").map((u) => ({ id: u.id, nombre: u.name, telefono: u.phone, rol: u.role.label }));
+  });
+
   // ─── Contactos ───
-  app.get("/crm/contactos", ver, async (request) => {
+  app.get("/crm/contactos", verDesdeChat, async (request) => {
     const { q } = z.object({ q: z.string().max(100).optional() }).parse(request.query);
     return listarContactos(q);
   });
   app.get("/crm/contactos/:id", ver, async (request) => fichaContacto(idParam.parse(request.params).id));
-  app.post("/crm/contactos", crear, async (request, reply) => {
+  app.post("/crm/contactos", crearDesdeChat, async (request, reply) => {
     const c = await crearContacto(contactoBody.parse(request.body), ensureUser(request).id);
     reply.code(201);
     return c;

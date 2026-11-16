@@ -22,10 +22,23 @@ export type WhatsAppConversacion = {
   noLeidos?: number;
   sinContestar: boolean;
   cliente: WhatsAppCliente | null;
+  /** El nombre que tiene puesto en su WhatsApp quien escribe. */
+  nombrePerfil?: string | null;
 };
 
 /** El cliente (Experiencia Solar: `projectId`) o el lead (Ventas: `leadId`) de una conversación. */
-export type WhatsAppCliente = { projectId?: string; leadId?: string; codigo: string; nombre: string; aMano: boolean };
+export type WhatsAppCliente = {
+  projectId?: string;
+  leadId?: string;
+  /** CRM: el contacto de la conversación (tenga o no lead o cliente). */
+  contactoId?: string;
+  /** Un usuario de Voltia: conversación interna, no cuenta como sin contestar. */
+  usuarioId?: string;
+  interno?: boolean;
+  codigo: string;
+  nombre: string;
+  aMano: boolean;
+};
 
 export type WhatsAppMensaje = {
   id: string;
@@ -164,7 +177,7 @@ export async function getBandejaES() {
 
 export async function getConversacionES(telefono: string) {
   return (
-    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null }>(
+    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null }>(
       `${BANDEJA_ES}/conversaciones/${encodeURIComponent(telefono)}`,
     )
   ).data;
@@ -222,7 +235,7 @@ export async function getBandejaVentas(asesor?: string | null) {
 
 export async function getConversacionVentas(telefono: string, asesor?: string | null) {
   return (
-    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null }>(
+    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null }>(
       `${BANDEJA_VENTAS}/conversaciones/${encodeURIComponent(telefono)}`,
       deAsesor(asesor),
     )

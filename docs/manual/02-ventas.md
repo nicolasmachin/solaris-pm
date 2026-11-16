@@ -1199,9 +1199,10 @@ pide VENTAS:CREATE.
 
 - `clientName`, `clientPhone` y `clientEmail` de lead y proyecto **siguen
   existiendo y siendo los que usan** el pipeline, las propuestas, el portal, los
-  avisos y WhatsApp. Los contactos son una capa al lado, no los reemplazan. La
-  fase 3 (WhatsApp e Instagram por contacto, crear contacto desde un chat,
-  reconocer usuarios de Voltia) está pendiente.
+  avisos. Los contactos son una capa al lado, no los reemplazan. WhatsApp sí
+  reconoce por contacto (fase 3; detalle en el capítulo 15, *Quién es cada
+  chat*). Instagram no tiene vínculo propio con el contacto: lo tiene a través del
+  lead que se crea desde la bandeja de Instagram, que `crearLead()` vincula solo.
 - Editar el teléfono de un contacto **no** cambia el del lead ni el del proyecto,
   ni al revés.
 - Un lead nuevo con el teléfono de un contacto existente se vincula a ese

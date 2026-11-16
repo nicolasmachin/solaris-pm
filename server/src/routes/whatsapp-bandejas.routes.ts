@@ -23,6 +23,7 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import {
   asesoresConNumero,
   asociarCliente,
+  nombrePerfilDe,
   type Bandeja,
   bandejaExperienciaSolar,
   marcaLeida,
@@ -85,8 +86,8 @@ export async function registerWhatsAppBandejasRoutes(app: FastifyInstance) {
     app.get(`${base}/conversaciones/:telefono`, pre, async (request) => {
       const { telefono } = telefonoParam.parse(request.params);
       const b = await usable(request);
-      const [mensajes, cliente] = await Promise.all([mensajesDe(b, telefono), clienteDe(b, telefono)]);
-      return { mensajes, cliente };
+      const [mensajes, cliente, nombrePerfil] = await Promise.all([mensajesDe(b, telefono), clienteDe(b, telefono), nombrePerfilDe(b, telefono)]);
+      return { mensajes, cliente, nombrePerfil };
     });
 
     app.post(`${base}/conversaciones/:telefono/leida`, pre, async (request) => {

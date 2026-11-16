@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
+import { crearContacto, getContactos, getUsuariosVoltia, telefonoLindo } from "../../api/crm.api";
 import type {
   EnviarWhatsAppBody,
   WhatsAppBandeja,
@@ -49,7 +50,7 @@ export type BandejaApi = {
   /** Prefijo de las claves de caché, distinto por bandeja. */
   clave: string;
   getBandeja: () => Promise<WhatsAppBandeja>;
-  getConversacion: (telefono: string) => Promise<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null }>;
+  getConversacion: (telefono: string) => Promise<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null }>;
   marcarLeida: (telefono: string) => Promise<void>;
   marcarResuelta: (telefono: string) => Promise<void>;
   /** `id` es un proyecto en Experiencia Solar y un lead en Ventas. */
@@ -68,9 +69,21 @@ export type BandejaApi = {
 
 export type OpcionAsociar = { id: string; nombre: string; detalle: string | null };
 
-/** El id de lo que se asoció, sea proyecto o lead. */
+/** El id de lo que se asoció: proyecto, lead, contacto o usuario de Voltia. */
 function idCliente(c: WhatsAppCliente): string {
-  return c.projectId ?? c.leadId ?? "";
+  return c.projectId ?? c.leadId ?? c.contactoId ?? c.usuarioId ?? "";
+}
+
+/** Adónde lleva el nombre del chat: el lead o cliente; si no tiene, la ficha del contacto. */
+function enlaceDe(api: BandejaApi, c: WhatsAppCliente): string | null {
+  if (c.leadId || c.projectId) return api.enlaceCliente(c);
+  if (c.contactoId) return `/ventas/contactos?id=${c.contactoId}`;
+  return null;
+}
+
+/** "~ Nombre": como WhatsApp muestra a quien no está agendado. */
+function nombreDePerfil(nombrePerfil: string | null | undefined): string | null {
+  return nombrePerfil ? `~ ${nombrePerfil}` : null;
 }
 
 function getApiErr(err: unknown) {
@@ -394,25 +407,72 @@ function BotonIcono({
   );
 }
 
-/** Buscador de clientes (o leads) para asociar una conversación. */
+/**
+ * Buscador para asociar una conversación: los leads o clientes de la bandeja, los
+ * contactos del CRM y las personas de Voltia (chat interno). También crea el
+ * contacto con el número del chat.
+ */
 function AsociarCliente({
   api,
+  telefono,
+  nombrePerfil,
   onElegir,
+  onCreado,
   onCancelar,
 }: {
   api: BandejaApi;
+  telefono: string;
+  nombrePerfil: string | null;
   onElegir: (id: string) => void;
+  onCreado: () => void;
   onCancelar: () => void;
 }) {
   const [q, setQ] = useState("");
+  const [creando, setCreando] = useState(false);
+  const [nombreNuevo, setNombreNuevo] = useState(nombrePerfil ?? "");
+  const texto = q.trim().toLowerCase();
   const { data: items = [] } = useQuery({
-    queryKey: [api.clave, "asociar", q.trim().toLowerCase()],
-    queryFn: () => api.buscarParaAsociar(q.trim().toLowerCase()),
+    queryKey: [api.clave, "asociar", texto],
+    queryFn: () => api.buscarParaAsociar(texto),
     placeholderData: (prev) => prev,
   });
+  const { data: contactos = [] } = useQuery({
+    queryKey: ["crm-asociar-contactos", texto],
+    queryFn: () => getContactos(texto),
+    enabled: texto.length >= 2,
+    placeholderData: (prev) => prev,
+  });
+  const { data: equipo = [] } = useQuery({
+    queryKey: ["crm-asociar-usuarios", texto],
+    queryFn: () => getUsuariosVoltia(texto),
+    enabled: texto.length >= 2,
+    placeholderData: (prev) => prev,
+  });
+  const crear = useMutation({
+    mutationFn: () => crearContacto({ nombre: nombreNuevo.trim(), telefono }),
+    onSuccess: () => {
+      toast.success("Contacto creado");
+      onCreado();
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo crear el contacto"),
+  });
+
+  const opciones: Array<{ id: string; nombre: string; detalle: string | null; grupo: string }> = [
+    ...items.slice(0, 6).map((c) => ({ ...c, grupo: api.queEsCliente === "lead" ? "Leads" : "Clientes" })),
+    ...(texto.length >= 2
+      ? contactos.slice(0, 5).map((c) => ({
+          id: `contacto:${c.id}`,
+          nombre: c.nombre,
+          detalle: [telefonoLindo(c.telefono), c.empresas[0]?.empresa.razonSocial].filter(Boolean).join(" · ") || null,
+          grupo: "Contactos",
+        }))
+      : []),
+    ...(texto.length >= 2 ? equipo.slice(0, 4).map((u) => ({ id: `usuario:${u.id}`, nombre: u.nombre, detalle: u.rol, grupo: "Equipo Voltia" })) : []),
+  ];
+
   return (
     <div
-      className="absolute right-3 top-[60px] z-30 w-[min(340px,calc(100%-1.5rem))] rounded-lg bg-[var(--wa-panel)] py-2"
+      className="absolute right-3 top-[60px] z-30 w-[min(360px,calc(100%-1.5rem))] rounded-lg bg-[var(--wa-panel)] py-2"
       style={{ boxShadow: "0 2px 5px rgba(11,20,26,.26), 0 2px 10px rgba(11,20,26,.16)" }}
     >
       <div className="mx-3 mb-1 flex items-center gap-2 rounded-lg bg-[var(--wa-buscador)] px-3">
@@ -420,7 +480,7 @@ function AsociarCliente({
         <input
           autoFocus
           className="h-[35px] w-full bg-transparent text-[14px] text-[var(--wa-texto)] outline-none placeholder:text-[var(--wa-secundario)]"
-          placeholder={`Asociar a un ${api.queEsCliente}…`}
+          placeholder={`Buscar ${api.queEsCliente}, contacto o persona de Voltia…`}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -428,20 +488,52 @@ function AsociarCliente({
           <X size={15} />
         </button>
       </div>
-      {items.slice(0, 8).map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => onElegir(c.id)}
-          className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--wa-hover)]"
-        >
-          <Avatar nombre={c.nombre} semilla={c.id} tam={32} />
-          <span className="min-w-0">
-            <span className="block truncate text-[14px]">{c.nombre}</span>
-            {c.detalle && <span className="block text-[12px] text-[var(--wa-secundario)]">{c.detalle}</span>}
-          </span>
-        </button>
-      ))}
+      <div className="max-h-[50vh] overflow-y-auto">
+        {opciones.map((c, i) => (
+          <Fragment key={c.id}>
+            {(i === 0 || opciones[i - 1].grupo !== c.grupo) && (
+              <p className="px-3 pb-0.5 pt-2 text-[11px] uppercase tracking-wide text-[var(--wa-secundario)]">{c.grupo}</p>
+            )}
+            <button
+              type="button"
+              onClick={() => onElegir(c.id)}
+              className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--wa-hover)]"
+            >
+              <Avatar nombre={c.nombre} semilla={c.id} tam={32} />
+              <span className="min-w-0">
+                <span className="block truncate text-[14px]">{c.nombre}</span>
+                {c.detalle && <span className="block truncate text-[12px] text-[var(--wa-secundario)]">{c.detalle}</span>}
+              </span>
+            </button>
+          </Fragment>
+        ))}
+      </div>
+      <div className="mt-1 border-t border-[var(--wa-borde)] px-3 pt-2">
+        {creando ? (
+          <div className="flex items-center gap-2">
+            <input
+              autoFocus
+              className="h-[32px] min-w-0 flex-1 rounded-md bg-[var(--wa-buscador)] px-2 text-[13.5px] text-[var(--wa-texto)] outline-none"
+              placeholder="Nombre del contacto"
+              value={nombreNuevo}
+              onChange={(e) => setNombreNuevo(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && nombreNuevo.trim() && crear.mutate()}
+            />
+            <button
+              type="button"
+              disabled={!nombreNuevo.trim() || crear.isPending}
+              onClick={() => crear.mutate()}
+              className="rounded-full bg-[var(--wa-acento)] px-3 py-1 text-[13px] text-white disabled:opacity-50"
+            >
+              Crear
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setCreando(true)} className="text-[13.5px] text-[var(--wa-acento-texto)] hover:underline">
+            + Crear contacto con este número
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -562,7 +654,9 @@ function Conversacion({
     setModoElegido(true);
   }
 
-  const nombre = cliente?.nombre ?? formatearTelefono(telefono);
+  const nombrePerfil = data?.nombrePerfil ?? null;
+  const nombre = cliente?.nombre ?? nombreDePerfil(nombrePerfil) ?? formatearTelefono(telefono);
+  const enlace = cliente ? enlaceDe(api, cliente) : null;
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
@@ -578,11 +672,11 @@ function Conversacion({
         </button>
         <Avatar nombre={cliente?.nombre ?? null} semilla={cliente ? idCliente(cliente) : telefono} tam={40} />
         <div className="min-w-0 flex-1">
-          {cliente ? (
+          {enlace ? (
             <Link
-              to={api.enlaceCliente(cliente)}
+              to={enlace}
               className="block truncate text-[16px] leading-[21px] text-[var(--wa-texto)] hover:underline"
-              title={`Abrir el ${api.queEsCliente}`}
+              title={cliente?.leadId || cliente?.projectId ? `Abrir el ${api.queEsCliente}` : "Abrir la ficha del contacto"}
             >
               {nombre}
             </Link>
@@ -614,13 +708,26 @@ function Conversacion({
             <span className="hidden lg:inline">No hace falta contestar</span>
           </button>
         )}
-        {!cliente && (
+        {/* Se puede asociar si no es de nadie, o si es solo un contacto sin lead ni cliente. */}
+        {(!cliente || (!cliente.leadId && !cliente.projectId && !cliente.usuarioId && !cliente.aMano)) && (
           <BotonIcono titulo={`Asociar a un ${api.queEsCliente}`} onClick={() => setAsociando((a) => !a)} activo={asociando}>
             <Link2 size={20} />
           </BotonIcono>
         )}
       </header>
-      {asociando && <AsociarCliente api={api} onElegir={(id) => asociar.mutate(id)} onCancelar={() => setAsociando(false)} />}
+      {asociando && (
+        <AsociarCliente
+          api={api}
+          telefono={telefono}
+          nombrePerfil={nombrePerfil}
+          onElegir={(id) => asociar.mutate(id)}
+          onCreado={() => {
+            setAsociando(false);
+            refrescar();
+          }}
+          onCancelar={() => setAsociando(false)}
+        />
+      )}
 
       {/* Mensajes */}
       <div className="wa-fondo wa-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-1 md:px-[6%]">
@@ -802,7 +909,7 @@ function FilaChat({ c, activa, onClick }: { c: WhatsAppConversacion; activa: boo
       <div className="flex h-full min-w-0 flex-1 flex-col justify-center border-b border-[var(--wa-borde)] pr-4">
         <div className="flex items-baseline justify-between gap-2">
           <span className="truncate text-[17px] leading-[21px] text-[var(--wa-texto)]">
-            {c.cliente?.nombre ?? formatearTelefono(c.telefono)}
+            {c.cliente?.nombre ?? nombreDePerfil(c.nombrePerfil) ?? formatearTelefono(c.telefono)}
           </span>
           <span
             className={`shrink-0 text-[12px] leading-[14px] ${
@@ -905,7 +1012,7 @@ export function BandejaWhatsApp({
     return conversaciones.filter(
       (c) =>
         (filtro === "todos" || (filtro === "noLeidos" ? c.noLeida : c.sinContestar)) &&
-        (!q || c.telefono.includes(q.replace(/\D/g, "") || "\u0000") || (c.cliente?.nombre ?? "").toLowerCase().includes(q)),
+        (!q || c.telefono.includes(q.replace(/\D/g, "") || "\u0000") || (c.cliente?.nombre ?? c.nombrePerfil ?? "").toLowerCase().includes(q)),
     );
   }, [conversaciones, filtro, busqueda]);
   const cuantasNoLeidas = conversaciones.filter((c) => c.noLeida).length;

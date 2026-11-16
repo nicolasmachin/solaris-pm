@@ -719,6 +719,7 @@ model User {
   cierresMes                     CierreMes[]                    @relation("CierreMesCerradoPor")
   reaperturasMes                 CierreMes[]                    @relation("CierreMesReabiertoPor")
   contactosCreados               Contacto[]                     @relation("ContactoCreadoPor")
+  whatsappConversacionesInternas WhatsAppConversacion[]         @relation("WhatsAppConversacionUsuario")
   empresasCreadas                Empresa[]                      @relation("EmpresaCreadaPor")
 
   @@index([deletedAt])
@@ -5947,6 +5948,14 @@ model WhatsAppConversacion {
   project       Project?   @relation("WhatsAppConversacionProject", fields: [projectId], references: [id], onDelete: SetNull)
   leadId        String?
   lead          SalesLead? @relation("WhatsAppConversacionLead", fields: [leadId], references: [id], onDelete: SetNull)
+  /// CRM: asociada a mano a un contacto (sin lead ni proyecto todavía).
+  contactoId    String?
+  contacto      Contacto?  @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+  /// Asociada a mano a un usuario de Voltia: es una conversación interna.
+  usuarioId     String?
+  usuario       User?      @relation("WhatsAppConversacionUsuario", fields: [usuarioId], references: [id], onDelete: SetNull)
+  /// El nombre que la persona tiene puesto en su WhatsApp (llega con cada mensaje).
+  nombrePerfil  String?
   createdAt     DateTime   @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime   @updatedAt @db.Timestamptz(6)
 
@@ -6967,22 +6976,23 @@ model CasoTecnico {
 /// CRM de Ventas: una persona. Los leads y proyectos apuntan a ella; si el
 /// cliente es una empresa, también a la empresa. Un teléfono es de un contacto.
 model Contacto {
-  id          String            @id @default(cuid())
-  nombre      String
+  id                     String                 @id @default(cuid())
+  nombre                 String
   /// Solo dígitos, con código de país (59899123456). Es la clave para reconocer
   /// los chats de WhatsApp.
-  telefono    String?
-  email       String?
-  documento   String?
-  notas       String?
-  empresas    ContactoEmpresa[]
-  leads       SalesLead[]
-  projects    Project[]
-  createdById String?
-  createdBy   User?             @relation("ContactoCreadoPor", fields: [createdById], references: [id], onDelete: SetNull)
-  deletedAt   DateTime?         @db.Timestamptz(6)
-  createdAt   DateTime          @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime          @updatedAt @db.Timestamptz(6)
+  telefono               String?
+  email                  String?
+  documento              String?
+  notas                  String?
+  empresas               ContactoEmpresa[]
+  leads                  SalesLead[]
+  projects               Project[]
+  whatsappConversaciones WhatsAppConversacion[]
+  createdById            String?
+  createdBy              User?                  @relation("ContactoCreadoPor", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt              DateTime?              @db.Timestamptz(6)
+  createdAt              DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime               @updatedAt @db.Timestamptz(6)
 
   @@index([telefono])
   @@index([email])
