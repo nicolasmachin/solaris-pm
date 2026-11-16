@@ -25,6 +25,10 @@
 - El WhatsApp del panel del lead y de la ficha del cliente también reconoce el teléfono de su contacto.
 - Quien no tiene un número propio (la administración) entra directo a la bandeja del primer asesor, sin el aviso de "no tenés número". La opción "Mi número" aparece solo para quien tiene uno.
 
+#### Arreglos
+
+- En WhatsApp, un mensaje que Meta no deja ver desde Voltia PM (pasa con el primer mensaje de alguien que nunca escribió, o si se usa WhatsApp para Windows) ahora dice «Mensaje no disponible acá: miralo en el celular», en vez de «[unsupported]».
+
 ## v14.8
 
 ### 15 de noviembre de 2026

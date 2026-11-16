@@ -171,6 +171,9 @@ const TIPOS: Record<string, { icono: typeof Camera; texto: string }> = {
   sticker: { icono: Sticker, texto: "Sticker" },
   location: { icono: MapPin, texto: "Ubicación" },
   template: { icono: FileText, texto: "Plantilla" },
+  // Coexistencia: Meta a veces no pasa el contenido (error 131060, típico en el
+  // primer mensaje de alguien o si se usa WhatsApp para Windows). Está en el celular.
+  unsupported: { icono: Smartphone, texto: "Mensaje no disponible acá: miralo en el celular" },
 };
 
 /** "Foto", "Audio"… con su ícono, para mensajes sin texto. */

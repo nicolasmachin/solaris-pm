@@ -442,8 +442,14 @@ Lo que pasó al conectar el número de July (15-nov-2026), porque va a pasar con
   WhatsApp Business Platform", porque el registro integrado no terminó. Mandar,
   recibir y los mensajes escritos desde el celular (`smb_message_echoes`) sí
   andan.
-- **El primer mensaje entrante** después de conectar llegó como `unsupported` con
-  error `131060 "This message is unavailable"`; los siguientes llegaron bien.
+- **Mensajes `unsupported` con error `131060 "This message is unavailable"`**:
+  limitación de la coexistencia. Pasa con el primer mensaje de alguien que nunca
+  le escribió a ese número (le pasó al de prueba de Nicolás y al de un lead nuevo
+  el 16-nov) y, según proveedores, cuando el mensaje pasa por un dispositivo
+  vinculado que Meta no replica (WhatsApp para Windows, Wear OS). El mensaje está
+  en el celular; a la API no llega el contenido y no hay forma de pedirlo. La
+  bandeja lo muestra como «Mensaje no disponible acá: miralo en el celular»
+  (`TIPOS.unsupported` en `BandejaWhatsApp.tsx`).
 - Para el próximo número: botón Conectar número hasta el QR (ignorar el error del
   final) → asignar `voltia-pm` a la cuenta de mensajes → script en modo prueba →
   `--aplicar`. Pendiente: llevar ese último paso a un botón en Administración.
