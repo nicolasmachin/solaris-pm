@@ -13,6 +13,7 @@ import type { Project, ProjectAmpliacion, Stage } from "../types/api.types";
 import { todayLocalISO } from "../utils/date";
 
 import { ProjectHeader } from "../components/project/ProjectHeader";
+import { TarjetaCliente } from "../components/crm/TarjetaCliente";
 import { AmpliacionModal } from "../components/project/AmpliacionModal";
 import { KpiCards } from "../components/project/KpiCards";
 import { PipelineExpandido } from "../components/project/PipelineExpandido";
@@ -936,6 +937,16 @@ export function ProjectDetail() {
         // puede crear una obra pueda crear una ampliación.
         onAmpliar={canViewObra ? () => setShowAmpliacion(true) : undefined}
       />
+
+      <div className="mt-4">
+        <TarjetaCliente
+          destino={{ projectId: project.id }}
+          vinculo={{ contacto: project.contacto ?? null, empresaCliente: project.empresaCliente ?? null }}
+          sugerencia={{ nombre: project.clientName, telefono: project.clientPhone ?? null, email: project.clientEmail ?? null }}
+          puedeEditar={canDeleteProject}
+          queryKey={["project", project.id]}
+        />
+      </div>
 
       {project.ampliaciones && project.ampliaciones.length > 0 && (
         <AmpliacionesRow ampliaciones={project.ampliaciones} onOpen={(id) => navigate(`/projects/${id}`)} />

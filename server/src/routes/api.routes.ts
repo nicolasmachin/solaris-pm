@@ -1,3 +1,4 @@
+import { VINCULO_SELECT, resolverVinculo } from "../services/crm/contactos.service.js";
 import { getDatosTecnicosObra, montajeDePreIngenieria } from "../services/datos-tecnicos-obra.service.js";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -1699,6 +1700,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           select: { id: true, code: true, capacityKwp: true, status: true, createdAt: true },
           orderBy: { code: "asc" },
         },
+        ...VINCULO_SELECT,
         stages: {
           where: { deletedAt: null },
           orderBy: { order: "asc" },
@@ -1805,6 +1807,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return {
       ...serializeProject(project),
+      contacto: project.contacto,
+      empresaCliente: project.empresaCliente,
       precioPropuestaUsd,
       installationSchedule,
       solarSystems: project.solarSystems.map(serializeSolarSystem),
@@ -1863,10 +1867,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       : addDays(startDate, 90);
 
     const code = await generateProjectCode();
+    // CRM: un proyecto cargado a mano (sin lead) también queda con su contacto.
+    const vinculo = await resolverVinculo(
+      { nombre: body.clientName, telefono: body.clientPhone, email: body.clientEmail },
+      user.id,
+    );
 
     const project = await prisma.project.create({
       data: {
         code,
+        ...vinculo,
         clientName: body.clientName,
         capacityKwp: new Prisma.Decimal(body.capacityKwp),
         locationCity: body.locationCity,
@@ -7442,6 +7452,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           include: { user: { select: { id: true, name: true } } },
         },
         convertedToProject: { select: { id: true, code: true, clientName: true } },
+        ...VINCULO_SELECT,
         proposals: {
           orderBy: { createdAt: "desc" },
         },
@@ -7486,6 +7497,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       assignedTo: lead.assignedTo,
       convertedToProject: lead.convertedToProject,
       convertedAt: lead.convertedAt,
+      contacto: lead.contacto,
+      empresaCliente: lead.empresaCliente,
       comments: lead.comments.map(serializeComment),
       activities: lead.activities.map((a) => ({
         id: a.id,
@@ -7786,6 +7799,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         modalidadPago: body.modalidadPago ?? null,
         ...(body.facturacion ? datosFacturacion(body.facturacion) : {}),
         salespersonId: lead.assignedToId ?? null,
+        // CRM: el proyecto es del mismo contacto y empresa que el lead.
+        contactoId: lead.contactoId ?? null,
+        empresaId: lead.empresaId ?? null,
         createdById: user.id,
       },
     });

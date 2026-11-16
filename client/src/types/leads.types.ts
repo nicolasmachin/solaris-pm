@@ -1,3 +1,4 @@
+import type { CrmVinculo } from "../api/crm.api";
 import type { ProposalVariante } from "./proposals-v2";
 
 import type { Comment, ProjectListItem } from "./api.types";
@@ -158,6 +159,9 @@ export interface LeadDetail {
   lastReclamoAt: string | null;
   assignedTo: { id: string; name: string } | null;
   convertedToProject: Pick<ProjectListItem, "id" | "code" | "clientName"> | null;
+  /** CRM: el contacto y la empresa del lead. */
+  contacto?: CrmVinculo["contacto"];
+  empresaCliente?: CrmVinculo["empresaCliente"];
   convertedAt: string | null;
   comments: Comment[];
   activities: LeadActivity[];

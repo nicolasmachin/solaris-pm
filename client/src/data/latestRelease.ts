@@ -109,6 +109,9 @@ export const LATEST_RELEASE: Release = {
         "Un contacto se vincula a una o más empresas desde la ficha de cualquiera de los dos.",
         "Un teléfono es de un solo contacto: si ya lo tiene otro, avisa de quién es.",
         "Los contactos y empresas se arman a partir de los leads y proyectos que ya existían.",
+        "Tarjeta Cliente en el panel del lead y en el proyecto: el contacto y la empresa, y «Cambiar» para elegir otros o crear el contacto.",
+        "Un lead nuevo queda vinculado solo a su contacto (por el teléfono) y, si es una empresa, a la empresa.",
+        "Al ganar el lead, el proyecto queda con el mismo contacto y empresa; las ampliaciones los heredan.",
       ],
     },
     {

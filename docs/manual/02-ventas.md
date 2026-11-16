@@ -1161,10 +1161,29 @@ vínculo contacto ↔ empresa (cargo y principal) y los leads y proyectos.
   arma la lista con datos exportados de otra base y nunca guarda. Es idempotente:
   salta lo que ya tiene `contactoId` o `empresaId`.
 
+- **Vínculo de leads y proyectos (fase 2)**: `resolverVinculo()` arma el
+  contacto y la empresa a partir de nombre, teléfono y mail: si el teléfono (o,
+  sin teléfono, el mail) ya es de un contacto, lo reusa aunque el nombre sea otro;
+  si no, lo crea. La empresa sale de `separarEmpresaPersona()` o del
+  `tipoCliente = EMPRESA`; se busca por razón social exacta (sin mayúsculas) o se
+  crea. Lo llaman `crearLead()` (`leads.service.ts`, si no vienen `contactoId` ni
+  `empresaId`: lo usan la pantalla, el conector MCP y la bandeja de Instagram) y
+  el alta manual de proyecto (`POST /projects`). La conversión (`POST
+  /leads/:id/convert`) copia los del lead y la ampliación los hereda
+  (`CAMPOS_HEREDADOS` de `ampliacion.service.ts`).
+- **Cambio a mano**: `cambiarVinculo()` vía `PUT /crm/leads/:id/vinculo` y `PUT
+  /crm/proyectos/:id/vinculo`; si vienen contacto y empresa, los vincula entre sí.
+  En la pantalla, `components/crm/TarjetaCliente.tsx` (panel del lead en
+  `Sales.tsx` y debajo del encabezado en `ProjectDetail.tsx`). `GET /leads/:id`
+  y `GET /projects/:id` devuelven `contacto` y `empresaCliente` (`VINCULO_SELECT`).
+
 ## Permisos
 
 Módulo VENTAS: VIEW ve las dos pantallas, CREATE da de alta, EDIT edita y
-vincula, DELETE borra.
+vincula (también el contacto de un lead), DELETE borra. Cambiar el contacto de un
+proyecto pide EDIT en algún módulo del pipeline del proyecto
+(`authorizeProjectEditAnyPipeline`); crear un contacto nuevo desde el proyecto
+pide VENTAS:CREATE.
 
 ## Reglas y decisiones
 
@@ -1180,13 +1199,15 @@ vincula, DELETE borra.
 
 - `clientName`, `clientPhone` y `clientEmail` de lead y proyecto **siguen
   existiendo y siendo los que usan** el pipeline, las propuestas, el portal, los
-  avisos y WhatsApp. Esta fase 1 no los reemplaza: los contactos son una capa
-  nueva al lado. La fase 2 (elegir contacto y empresa desde el lead y el
-  proyecto) y la fase 3 (WhatsApp e Instagram por contacto, crear contacto desde
-  un chat, reconocer usuarios de Voltia) están pendientes.
+  avisos y WhatsApp. Los contactos son una capa al lado, no los reemplazan. La
+  fase 3 (WhatsApp e Instagram por contacto, crear contacto desde un chat,
+  reconocer usuarios de Voltia) está pendiente.
 - Editar el teléfono de un contacto **no** cambia el del lead ni el del proyecto,
   ni al revés.
-- Los leads nuevos que se crean después del pasaje **no** generan contacto solos
-  todavía (fase 2). Se puede volver a correr el pasaje: solo toma lo que no tiene
-  contacto.
+- Un lead nuevo con el teléfono de un contacto existente se vincula a ese
+  contacto **aunque el nombre sea otro** (un familiar con el mismo celular):
+  regla "un teléfono, un contacto". Se corrige con *Cambiar*.
+- Un lead de una empresa ya conocida pero con un teléfono nuevo y sin nombre de
+  persona queda vinculado a la empresa, y ese teléfono **no** se guarda en ella
+  (queda solo en el lead).
 

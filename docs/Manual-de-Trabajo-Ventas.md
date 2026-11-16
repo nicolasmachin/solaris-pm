@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.16 · del 16/11/26
+**Voltia · Uruguay** · Versión 1.17 · del 16/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -922,10 +922,25 @@ o mail. Las empresas se reconocieron por el nombre (S.A., S.R.L., hotel, club).
 Algunas empresas quedaron **sin contacto** porque el lead tenía solo el nombre de
 la empresa: el asesor que la atiende lo completa cuando lo sabe.
 
-**Lo que todavía no hace:** el contacto y la empresa todavía no se eligen desde
-el lead ni desde el proyecto (se ven y se corrigen desde Contactos y Empresas), y
-el WhatsApp todavía reconoce al cliente por el teléfono del lead, no por el del
-contacto. Las dos cosas vienen en las próximas etapas.
+**El cliente de cada lead.** En el panel del lead, arriba de los datos, está la
+tarjeta **Cliente**: el contacto y, si es una empresa, la empresa; cada uno lleva
+a su ficha. Con **Cambiar** se elige otro contacto (buscándolo por nombre o
+teléfono), otra empresa, se quita la empresa cuando el cliente es una persona, o
+—si el lead no tiene contacto— se crea con un clic con el nombre y el teléfono
+del lead. La misma tarjeta está en el proyecto.
+
+**Lo que hace solo Voltia PM.** Al crear un lead, lo vincula: si el teléfono ya
+es de un contacto, a ese contacto (aunque el lead tenga otro nombre); si no, crea
+el contacto. Si el nombre es de una empresa («Frigorífico del Sur S.A. — Marcelo
+Ríos») o el lead se marcó de empresa, también reconoce o crea la empresa. Al
+**ganar** el lead, el proyecto queda con el mismo contacto y la misma empresa.
+Conviene mirar la tarjeta Cliente al crear el lead: si eligió mal (un familiar
+con el mismo celular, por ejemplo), se corrige con Cambiar.
+
+**Lo que todavía no hace:** cambiar el teléfono en el lead no cambia el del
+contacto, ni al revés (se corrige cada uno en su lugar), y el WhatsApp todavía
+reconoce al cliente por el teléfono del lead, no por el del contacto. Eso viene en
+la próxima etapa.
 
 ### La propuesta: armarla, publicarla y mandarla
 
@@ -1302,6 +1317,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.17 | 16 de noviembre de 2026 | La tarjeta **Cliente** en el panel del lead y en el proyecto, para ver y cambiar el contacto y la empresa; un lead nuevo queda vinculado solo a su contacto y empresa, y al ganarlo el proyecto queda con los mismos. |
 | 1.16 | 16 de noviembre de 2026 | Se agrega «Los contactos y las empresas»: cada persona es un contacto y cada empresa cliente una empresa, el lead apunta a ellos y conserva el nombre de la obra, un teléfono es de un solo contacto. Al WhatsApp de Ventas se entra desde el submenú de Ventas; la Dirección entra directo a la bandeja del primer asesor, y figura quién del equipo mandó cada mensaje (solo lo ve el equipo). |
 | 1.15 | 15 de noviembre de 2026 | Se agrega «El WhatsApp de Ventas»: el número de cada asesor conectado a Voltia PM, la bandeja con sus chats, cómo se reconoce al lead, la regla de las 24 horas y las plantillas, y que la bandeja la ve solo el asesor (y la Dirección). En el panel del lead, la tarjeta de WhatsApp. |
 | 1.14 | 13 de noviembre de 2026 | Desde el chat de Claude conectado a Voltia PM se pueden armar y emitir también las propuestas de empresa; hay que tener a mano la razón social y el RUT. |

@@ -102,6 +102,8 @@ async function copiarDocumentoUte(
 const CAMPOS_HEREDADOS = {
   tenantId: true,
   clientName: true,
+  contactoId: true,
+  empresaId: true,
   locationCity: true,
   locationProvince: true,
   clientEmail: true,

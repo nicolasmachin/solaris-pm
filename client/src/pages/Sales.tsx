@@ -66,6 +66,7 @@ import { LeadRow } from "../components/sales/LeadRow";
 import { LeadCard } from "../components/sales/LeadCard";
 import { LeadsSinTomar } from "../components/sales/LeadsSinTomar";
 import { InstagramParaVentas } from "../components/sales/InstagramParaVentas";
+import { TarjetaCliente } from "../components/crm/TarjetaCliente";
 import { LeadWhatsAppCard } from "../components/sales/LeadWhatsAppCard";
 import { WhatsAppParaVentas } from "../components/sales/WhatsAppParaVentas";
 
@@ -749,6 +750,14 @@ function LeadPanel({
             <PresentacionExperienciaSolar clientName={lead.clientName} />
           </div>
         )}
+
+        <TarjetaCliente
+          destino={{ leadId: lead.id }}
+          vinculo={{ contacto: lead.contacto ?? null, empresaCliente: lead.empresaCliente ?? null }}
+          sugerencia={{ nombre: lead.clientName, telefono: lead.clientPhone, email: lead.clientEmail }}
+          puedeEditar={canEditSales}
+          queryKey={["lead-detail", lead.id]}
+        />
 
         <section className="mb-5 space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="grid gap-3">

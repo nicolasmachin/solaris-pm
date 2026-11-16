@@ -106,3 +106,17 @@ export function telefonoLindo(t: string | null): string {
   const m = t.match(/^598(\d{2})(\d{3})(\d{3})$/);
   return m ? `+598 ${m[1]} ${m[2]} ${m[3]}` : `+${t}`;
 }
+
+/** El contacto y la empresa de un lead o un proyecto. */
+export type CrmVinculo = {
+  contacto: { id: string; nombre: string; telefono: string | null; email: string | null } | null;
+  empresaCliente: { id: string; razonSocial: string; rut: string | null } | null;
+};
+
+export async function cambiarVinculo(
+  destino: { leadId: string } | { projectId: string },
+  d: { contactoId?: string | null; empresaId?: string | null },
+) {
+  const url = "leadId" in destino ? `/api/crm/leads/${destino.leadId}/vinculo` : `/api/crm/proyectos/${destino.projectId}/vinculo`;
+  await apiClient.put(url, d);
+}

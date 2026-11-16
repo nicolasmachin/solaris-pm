@@ -13,6 +13,7 @@ import { AuditAction, AuditEntityType, OrigenLead, Prisma, ProposalVariante, Sal
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../audit.service.js";
 import { congelarComisionAlGanar } from "../commission/commission.service.js";
+import { resolverVinculo } from "../crm/contactos.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { diaUruguayIso } from "../../utils/uruguay.js";
 import { normalizarOrigen, ORIGEN_LEAD_LABEL } from "./origen-lead.js";
@@ -114,6 +115,9 @@ export interface CrearLeadInput {
   /** "¿Cómo nos conoció?". Opcional acá: la pantalla lo exige, la API y el conector no. */
   origen?: OrigenLead | null;
   origenDetalle?: string | null;
+  /** CRM: si no vienen, se buscan o crean a partir del nombre, el teléfono y el mail. */
+  contactoId?: string | null;
+  empresaId?: string | null;
 }
 
 export async function crearLead(params: {
@@ -125,10 +129,23 @@ export async function crearLead(params: {
   // Valida antes de consumir un código: OTRO sin detalle no se guarda.
   const origen = normalizarOrigen(data);
   const code = await generateLeadCode();
+  const vinculo =
+    data.contactoId || data.empresaId
+      ? { contactoId: data.contactoId ?? null, empresaId: data.empresaId ?? null }
+      : await resolverVinculo(
+          {
+            nombre: data.clientName,
+            telefono: data.clientPhone,
+            email: data.clientEmail,
+            esEmpresa: data.tipoCliente === ProposalVariante.EMPRESA,
+          },
+          actor.id,
+        );
 
   const lead = await prisma.salesLead.create({
     data: {
       code,
+      ...vinculo,
       clientName: data.clientName,
       tipoCliente: data.tipoCliente ?? ProposalVariante.RESIDENCIAL,
       clientEmail: data.clientEmail ?? null,

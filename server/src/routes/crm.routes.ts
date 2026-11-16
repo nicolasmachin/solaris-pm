@@ -1,7 +1,8 @@
 /**
  * CRM de Ventas: Contactos y Empresas (services/crm/contactos.service.ts).
  * Permisos del módulo VENTAS: VIEW para ver, CREATE para dar de alta, EDIT para
- * editar y vincular, DELETE para borrar.
+ * editar y vincular, DELETE para borrar. Cambiar el contacto de un proyecto pide
+ * EDIT en alguno de los módulos del pipeline del proyecto.
  */
 
 import { Action, Module } from "@prisma/client";
@@ -10,8 +11,10 @@ import { z } from "zod";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
+import { authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import {
   borrarContacto,
+  cambiarVinculo,
   borrarEmpresa,
   crearContacto,
   crearEmpresa,
@@ -105,6 +108,17 @@ export async function registerCrmRoutes(app: FastifyInstance) {
   app.delete("/crm/empresas/:id/contactos/:contactoId", editar, async (request, reply) => {
     const { id, contactoId } = z.object({ id: z.string().min(1), contactoId: z.string().min(1) }).parse(request.params);
     await desvincular(id, contactoId, ensureUser(request).id);
+    reply.code(204);
+  });
+
+  // ─── Contacto y empresa de un lead o un proyecto ───
+  const vinculoBody = z.object({ contactoId: z.string().min(1).nullable().optional(), empresaId: z.string().min(1).nullable().optional() });
+  app.put("/crm/leads/:id/vinculo", editar, async (request, reply) => {
+    await cambiarVinculo({ leadId: idParam.parse(request.params).id }, vinculoBody.parse(request.body), ensureUser(request).id);
+    reply.code(204);
+  });
+  app.put("/crm/proyectos/:id/vinculo", { preHandler: authorizeProjectEditAnyPipeline(Action.EDIT) }, async (request, reply) => {
+    await cambiarVinculo({ projectId: idParam.parse(request.params).id }, vinculoBody.parse(request.body), ensureUser(request).id);
     reply.code(204);
   });
 }

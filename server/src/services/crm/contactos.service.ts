@@ -365,3 +365,109 @@ export async function desvincular(empresaId: string, contactoId: string, userId:
     description: `Desvinculó a ${v.contacto.nombre} de ${v.empresa.razonSocial}`,
   });
 }
+
+// ─── Vínculo de leads y proyectos ────────────────────────────────────────────
+
+type Db = Prisma.TransactionClient | typeof prisma;
+
+/**
+ * El contacto y la empresa para un lead o proyecto nuevo, a partir de sus datos
+ * sueltos. Si el teléfono (o, sin teléfono, el mail) ya es de un contacto, se usa
+ * ese; si no, se crea. Si el nombre es de una empresa ("X S.A.", "X S.A. —
+ * Persona") o el lead es de tipo empresa, se busca o crea la empresa. Nunca
+ * inventa un contacto con el nombre de una empresa: sin persona, la empresa se
+ * queda con el teléfono y el mail.
+ */
+export async function resolverVinculo(
+  datos: { nombre: string; telefono?: string | null; email?: string | null; esEmpresa?: boolean },
+  userId: string,
+  db: Db = prisma,
+): Promise<{ contactoId: string | null; empresaId: string | null }> {
+  const telefono = normalizarTelefono(datos.telefono);
+  const email = datos.email?.trim().toLowerCase() || null;
+  let { empresa: nombreEmpresa, persona } = separarEmpresaPersona(datos.nombre);
+  if (datos.esEmpresa && !nombreEmpresa && persona) {
+    nombreEmpresa = persona;
+    persona = null;
+  }
+
+  const existente = telefono
+    ? await db.contacto.findFirst({ where: { telefono, deletedAt: null }, orderBy: { createdAt: "asc" } })
+    : email
+      ? await db.contacto.findFirst({ where: { email, deletedAt: null }, orderBy: { createdAt: "asc" } })
+      : null;
+
+  let empresaId: string | null = null;
+  if (nombreEmpresa) {
+    const e =
+      (await db.empresa.findFirst({ where: { razonSocial: { equals: nombreEmpresa, mode: "insensitive" }, deletedAt: null } })) ??
+      (await db.empresa.create({
+        data: {
+          razonSocial: nombreEmpresa,
+          createdById: userId,
+          // Sin persona, el teléfono y el mail quedan en la empresa.
+          ...(!persona && !existente ? { telefono, email } : {}),
+        },
+      }));
+    empresaId = e.id;
+  }
+
+  let contactoId = existente?.id ?? null;
+  if (!contactoId && persona) {
+    const c = await db.contacto.create({ data: { nombre: persona, telefono, email, createdById: userId } });
+    contactoId = c.id;
+  }
+  if (contactoId && empresaId) {
+    const ya = await db.contactoEmpresa.findUnique({ where: { contactoId_empresaId: { contactoId, empresaId } } });
+    if (!ya) {
+      const tienePrincipal = await db.contactoEmpresa.count({ where: { empresaId, principal: true } });
+      await db.contactoEmpresa.create({ data: { contactoId, empresaId, principal: tienePrincipal === 0 } });
+    }
+  }
+  return { contactoId, empresaId };
+}
+
+/** Cambia a mano el contacto y la empresa de un lead o un proyecto. */
+export async function cambiarVinculo(
+  destino: { leadId: string } | { projectId: string },
+  d: { contactoId?: string | null; empresaId?: string | null },
+  userId: string,
+) {
+  if (d.contactoId) {
+    const c = await prisma.contacto.findFirst({ where: { id: d.contactoId, deletedAt: null }, select: { id: true } });
+    if (!c) throw notFound("CONTACTO_NO_ENCONTRADO", "El contacto no existe");
+  }
+  if (d.empresaId) {
+    const e = await prisma.empresa.findFirst({ where: { id: d.empresaId, deletedAt: null }, select: { id: true } });
+    if (!e) throw notFound("EMPRESA_NO_ENCONTRADA", "La empresa no existe");
+  }
+  const data = {
+    ...(d.contactoId !== undefined ? { contactoId: d.contactoId } : {}),
+    ...(d.empresaId !== undefined ? { empresaId: d.empresaId } : {}),
+  };
+  const select = {
+    clientName: true,
+    contacto: { select: { nombre: true } },
+    empresaCliente: { select: { razonSocial: true } },
+  } as const;
+  const r =
+    "leadId" in destino
+      ? await prisma.salesLead.update({ where: { id: destino.leadId }, data, select })
+      : await prisma.project.update({ where: { id: destino.projectId }, data, select });
+  // Si se eligieron los dos, quedan vinculados entre sí.
+  if (d.contactoId && d.empresaId) await vincular(d.empresaId, d.contactoId, {}, userId);
+  await createAuditEntry({
+    entityType: "leadId" in destino ? AuditEntityType.lead : AuditEntityType.project,
+    entityId: "leadId" in destino ? destino.leadId : destino.projectId,
+    projectId: "projectId" in destino ? destino.projectId : null,
+    userId,
+    action: AuditAction.updated,
+    description: `Vinculó ${r.clientName} con ${[r.contacto?.nombre, r.empresaCliente?.razonSocial].filter(Boolean).join(" · ") || "ningún contacto"}`,
+  });
+}
+
+/** Lo que se muestra del contacto y la empresa en el lead y el proyecto. */
+export const VINCULO_SELECT = {
+  contacto: { select: { id: true, nombre: true, telefono: true, email: true } },
+  empresaCliente: { select: { id: true, razonSocial: true, rut: true } },
+} satisfies Prisma.SalesLeadSelect;

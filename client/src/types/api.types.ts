@@ -497,6 +497,9 @@ export interface Project {
   modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | "OTRO" | null;
   /** Qué se acordó, cuando la modalidad es OTRO. */
   modalidadPagoNota?: string | null;
+  /** CRM: el contacto y la empresa del cliente (solo en el detalle). */
+  contacto?: { id: string; nombre: string; telefono: string | null; email: string | null } | null;
+  empresaCliente?: { id: string; razonSocial: string; rut: string | null } | null;
 }
 
 // ─── Substage patch response ──────────────────────────────────────────────────

@@ -29,26 +29,13 @@ import { Sheet } from "../components/ui/Sheet";
 import { Spinner } from "../components/ui/Spinner";
 import { usePermission } from "../hooks/usePermission";
 import { STAGE_LABELS } from "../types/leads.types";
+import { Elegir, INPUT, useBusqueda } from "../components/crm/Elegir";
 
 // CRM de Ventas: Contactos (personas) y Empresas, con su vínculo. Los leads y
 // proyectos apuntan a un contacto y, si el cliente es una empresa, a la empresa.
 
-const INPUT =
-  "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-[13px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]";
-
 function getApiErr(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-}
-
-/** Texto del buscador, con un pequeño retardo para no consultar en cada tecla. */
-function useBusqueda(): [string, string, (v: string) => void] {
-  const [texto, setTexto] = useState("");
-  const [q, setQ] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => setQ(texto.trim()), 250);
-    return () => clearTimeout(t);
-  }, [texto]);
-  return [texto, q, setTexto];
 }
 
 function Encabezado({ titulo, icono, texto, setTexto, onNuevo }: { titulo: string; icono: ReactNode; texto: string; setTexto: (v: string) => void; onNuevo: () => void }) {
@@ -115,49 +102,6 @@ function Vinculados({ leads, projects }: { leads: CrmLeadRef[]; projects: CrmPro
         </li>
       ))}
     </ul>
-  );
-}
-
-/** Buscador para elegir un contacto o una empresa a vincular. */
-function Elegir<T extends { id: string }>({
-  buscar,
-  etiqueta,
-  excluir,
-  onElegir,
-  placeholder,
-}: {
-  buscar: (q: string) => Promise<T[]>;
-  etiqueta: (x: T) => string;
-  excluir: string[];
-  onElegir: (x: T) => void;
-  placeholder: string;
-}) {
-  const [texto, q, setTexto] = useBusqueda();
-  const { data = [] } = useQuery({ queryKey: ["crm-elegir", placeholder, q], queryFn: () => buscar(q), enabled: q.length >= 2 });
-  const opciones = data.filter((x) => !excluir.includes(x.id)).slice(0, 8);
-  return (
-    <div className="space-y-1">
-      <input className={INPUT} placeholder={placeholder} value={texto} onChange={(e) => setTexto(e.target.value)} autoFocus />
-      {q.length >= 2 && (
-        <ul className="max-h-56 overflow-auto rounded-lg border border-[var(--color-border)]">
-          {opciones.length === 0 && <li className="px-3 py-2 text-[13px] text-[var(--color-text-muted)]">Sin resultados</li>}
-          {opciones.map((x) => (
-            <li key={x.id}>
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-[13px] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
-                onClick={() => {
-                  onElegir(x);
-                  setTexto("");
-                }}
-              >
-                {etiqueta(x)}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }
 

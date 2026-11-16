@@ -12,6 +12,9 @@
 - Un contacto se puede vincular a una o más empresas, desde la ficha de cualquiera de los dos.
 - **Un teléfono es de un solo contacto**: si se carga uno que ya tiene otro, avisa de quién es.
 - Los contactos y empresas se arman a partir de los leads y proyectos que ya existían: cada lead y cada proyecto queda apuntando a su persona y, si es una empresa, a la empresa. El lead conserva su propio nombre, que es el de la obra.
+- En el panel del lead y en el proyecto hay una tarjeta **Cliente** con el contacto y la empresa, que llevan a su ficha. Con **Cambiar** se elige otro contacto u otra empresa, se quita la empresa (si es una persona) o se crea el contacto con los datos del lead.
+- Un **lead nuevo** queda vinculado solo: si el teléfono ya es de un contacto, a ese; si no, se crea. Si el nombre es de una empresa («X S.A. — Juan Pérez») o el lead es de empresa, también se crea o se reconoce la empresa. Lo mismo un proyecto cargado a mano.
+- Al **ganar el lead**, el proyecto queda con el mismo contacto y la misma empresa, y las **ampliaciones** heredan los del proyecto original.
 
 #### WhatsApp de Ventas
 
