@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.19 · del 16/11/26
+**Voltia · Uruguay** · Versión 1.20 · del 16/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -882,6 +882,28 @@ asesor. En el chat, arriba de cada mensaje mandado desde Voltia PM figura quién
 del equipo lo mandó; eso lo ve solo el equipo, al cliente le llega desde el
 WhatsApp del asesor como cualquier otro mensaje.
 
+**El asistente del primer mensaje.** Cuando le escribe por primera vez alguien
+nuevo (sin conversación, ni lead, ni proyecto), un asistente con inteligencia
+artificial le contesta **el speech en nombre del asesor**, adaptado a lo que
+preguntó: espera unos minutos y lo manda en varios mensajes, con 20 a 40 segundos
+entre uno y otro, como una persona. De noche (de 21 a 8) espera a las 8 de la
+mañana. Si el asesor contesta antes, el asistente no hace nada; si escribe
+mientras el asistente está mandando, se corta. En el chat, los mensajes del
+asistente dicen **Asistente** arriba (eso lo ve solo el equipo; al cliente le
+llegan desde el WhatsApp del asesor), y arriba del chat un aviso dice qué hizo.
+
+En la lista de chats:
+- **Punto verde**: el asistente mandó el speech y se espera al cliente.
+- **Etiqueta roja**: necesita al asesor, con el motivo: «Mandó la factura: para
+  cotizar» (se crea el lead solo), «Contestó al speech», «preguntó si es un bot»,
+  o lo que el asistente no contesta (un reclamo, una pregunta que no está en el
+  speech). Además le llega una **notificación** al asesor.
+
+El asistente se prende o se apaga por número en Administración → WhatsApp. **En
+prueba** decide qué contestaría pero no manda nada: lo que habría mandado se ve
+arriba del chat. Sus reglas se editan en Marketing → Automatizaciones («Speech
+inicial del WhatsApp de Ventas»).
+
 **Fotos, audios, videos y documentos.** Se ven dentro del chat como en
 WhatsApp: la foto se abre en grande con un clic, el audio se escucha ahí y abajo
 aparece **lo que dice, escrito** (Voltia PM transcribe todos los audios), el
@@ -1335,6 +1357,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.20 | 16 de noviembre de 2026 | Se agrega el asistente del primer mensaje del WhatsApp: le manda el speech al cliente nuevo en nombre del asesor, con ritmo de persona y de día; punto verde cuando lo mandó y etiqueta roja con el motivo cuando necesita al asesor. |
 | 1.19 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |
 | 1.18 | 16 de noviembre de 2026 | El WhatsApp reconoce el chat por el contacto (y por él, su lead); los números del equipo de Voltia aparecen con nombre y rol; el número desconocido muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre leads, contactos y equipo, y se crea el contacto desde el chat. |
 | 1.17 | 16 de noviembre de 2026 | La tarjeta **Cliente** en el panel del lead y en el proyecto, para ver y cambiar el contacto y la empresa; un lead nuevo queda vinculado solo a su contacto y empresa, y al ganarlo el proyecto queda con los mismos. |

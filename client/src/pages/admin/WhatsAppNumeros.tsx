@@ -1,3 +1,4 @@
+import type { AsistenteModo } from "../../api/whatsapp.api";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -162,7 +163,7 @@ function SelectUso({ value, onChange }: { value: WhatsAppUso | null; onChange: (
 function FilaNumero({ n, usuarios }: { n: WhatsAppNumero; usuarios: Array<{ id: string; name: string }> }) {
   const qc = useQueryClient();
   const actualizar = useMutation({
-    mutationFn: (body: { etiqueta?: string | null; responsableId?: string | null; uso?: WhatsAppUso | null }) =>
+    mutationFn: (body: { etiqueta?: string | null; responsableId?: string | null; uso?: WhatsAppUso | null; asistente?: AsistenteModo }) =>
       actualizarWhatsAppNumero(n.id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["whatsapp-numeros"] });
@@ -202,6 +203,28 @@ function FilaNumero({ n, usuarios }: { n: WhatsAppNumero; usuarios: Array<{ id: 
           }}
         />
         {n.etiqueta && <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">{n.etiqueta}</p>}
+        {n.uso === "VENTAS" && (
+          <label className="mt-2 block text-[11px] text-[var(--color-text-muted)]">
+            Asistente del speech
+            <select
+              className={`${INPUT} mt-0.5`}
+              value={n.asistente ?? "APAGADO"}
+              onChange={(e) => {
+                const asistente = e.target.value as AsistenteModo;
+                if (
+                  asistente === "ACTIVO" &&
+                  !window.confirm("El asistente le va a contestar a los clientes nuevos con el speech, en nombre del responsable. ¿Prenderlo?")
+                )
+                  return;
+                actualizar.mutate({ asistente });
+              }}
+            >
+              <option value="APAGADO">Apagado</option>
+              <option value="PRUEBA">En prueba (decide, no manda)</option>
+              <option value="ACTIVO">Prendido</option>
+            </select>
+          </label>
+        )}
       </td>
       <td className="px-3 py-2">
         <select

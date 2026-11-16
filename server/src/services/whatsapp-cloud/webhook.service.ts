@@ -4,6 +4,7 @@
  * tiempo, así que el mismo mensaje o el mismo estado pueden llegar dos veces.
  */
 
+import { alEntrarMensaje } from "./asistente.service.js";
 import { bajarArchivoDeFondo, mediaDe } from "./media.service.js";
 import { Prisma } from "@prisma/client";
 
@@ -112,6 +113,12 @@ async function guardarMensaje(m: MetaMensaje, phoneNumberId: string, origen: "AP
     });
     // Foto, audio, video o documento: se baja ya (Meta lo guarda poco tiempo).
     if (mediaDe(m.type ?? "", m)) bajarArchivoDeFondo(creado.id);
+    // El asistente de Ventas: el speech a un cliente nuevo, o pasarle el chat al asesor.
+    if (origen === "API") {
+      void alEntrarMensaje(phoneNumberId, creado.telefono, creado.tipo).catch((err) =>
+        console.error("[whatsapp] falló el asistente al entrar el mensaje:", err instanceof Error ? err.message : err),
+      );
+    }
     return 1;
   } catch (err) {
     if (!esDuplicado(err)) throw err;

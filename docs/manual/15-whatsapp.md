@@ -399,6 +399,47 @@ Crear una plantilla y conectar un número quedan en auditoría.
   con su texto y su transcripción, marcado `BORRADO_EN_LIMPIEZA` para no volver a
   pedirlo. No corre solo: se corre a mano cuando haga falta.
 
+## Asistente del primer mensaje (Ventas, desde v14.9)
+
+`services/whatsapp-cloud/asistente.service.ts`. Reglas en la automatización
+`whatsapp` (`server/config/instagram/whatsapp.md`, editable en Marketing →
+Automatizaciones; disparador `whatsapp`), con `{ASESOR}` = primer nombre del
+responsable del número y `{DATOS}` = el texto `_datos`. Usa `pedirJson()` del
+asistente de Instagram (modelo `INSTAGRAM_MODELO`, función de IA
+`whatsapp_asistente`).
+
+- **Cuándo**: `alEntrarMensaje()` desde el webhook, por cada entrante, si el
+  número es de Ventas, está CONECTADO, tiene responsable y `asistente` ≠ APAGADO,
+  y la automatización está activa. Programa (`asistenteEstado = PROGRAMADO`,
+  `asistenteEn` = espera de la automatización, 120–300 s; de 21 a 8 de Uruguay,
+  a las 8 + 2–12 min, `cuandoContestar()`) solo si el chat es nuevo: ningún
+  saliente, ningún entrante de más de 24 h, y `clienteDe()` sin lead, proyecto ni
+  usuario del equipo. Un `unsupported` (131060) no se programa. Cada entrante
+  nuevo corre la espera.
+- **El job** (`revisarAsistente()`, cada 10 s, arrancado en `index.ts`): toma lo
+  vencido una sola vez. `contestar()`: si una persona ya escribió (saliente con
+  `origen` ≠ ASISTENTE), pasa a HUMANO; si no, Claude devuelve `{mensajes,
+  derivar, motivo}`. `derivar` → `pasarAlAsesor()`; sin mensajes → HUMANO; en
+  PRUEBA → SOMBRA con `asistenteSombra`; si no, ENVIANDO con
+  `asistentePendientes` y `mandarSiguiente()` de a uno (`enviarTexto()` con
+  `origen: "ASISTENTE"`, sin `enviadoPor`), 20–40 s entre uno y otro. Si escribe
+  una persona en el medio, se corta (HUMANO). Al terminar, SPEECH.
+- **Después del speech**: el próximo entrante del cliente → `pasarAlAsesor()`
+  (ASESOR, `asistenteMotivo`, notificación `whatsapp_requiere_asesor` al
+  responsable con link a la bandeja). Si es foto o documento, «Mandó la factura:
+  para cotizar» y `crearLead()` (origen OTRO, «WhatsApp (contestó el asistente
+  de Ventas)», asignado al responsable) asociado a la conversación.
+- **Pantalla**: `listarConversaciones()` devuelve `asistente {estado, motivo}`;
+  la lista muestra punto verde en SPEECH y el motivo en la etiqueta roja cuando
+  pasó al asesor (el «sin contestar» es el de siempre: el último mensaje es del
+  cliente). `asistenteDe()` alimenta el aviso arriba del chat (`AvisoAsistente`).
+  Administración → WhatsApp: `whatsapp_numeros.asistente` (APAGADO | PRUEBA |
+  ACTIVO), solo para números de Ventas, auditado.
+- **Supuestos sin verificar**: que el asesor sea mujer («asesora comercial» está
+  en las reglas, porque la primera es July); que un mensaje que el cliente manda
+  justo mientras el asistente manda el speech se tome como respuesta (lo pasa al
+  asesor, que es lo seguro).
+
 ## Quién es cada chat (CRM, desde v14.9)
 
 `porTelefonoDe()` en `bandejas.service.ts` arma teléfono → quién, de menor a

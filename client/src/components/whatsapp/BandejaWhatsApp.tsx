@@ -35,7 +35,7 @@ import type {
   WhatsAppMensaje,
   WhatsAppPlantilla,
 } from "../../api/whatsapp.api";
-import { blobArchivo, type ArchivoAEnviar } from "../../api/whatsapp.api";
+import { blobArchivo, type ArchivoAEnviar, type AsistenteDeChat } from "../../api/whatsapp.api";
 import "./whatsapp-web.css";
 
 /**
@@ -52,7 +52,7 @@ export type BandejaApi = {
   /** Prefijo de las claves de caché, distinto por bandeja. */
   clave: string;
   getBandeja: () => Promise<WhatsAppBandeja>;
-  getConversacion: (telefono: string) => Promise<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null }>;
+  getConversacion: (telefono: string) => Promise<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null; asistente?: AsistenteDeChat | null }>;
   marcarLeida: (telefono: string) => Promise<void>;
   marcarResuelta: (telefono: string) => Promise<void>;
   /** `id` es un proyecto en Experiencia Solar y un lead en Ventas. */
@@ -385,8 +385,8 @@ export function Burbuja({
         title={m.enviadoPor ? `Lo mandó ${m.enviadoPor}` : undefined}
       >
         {cola && <Colita saliente={saliente} />}
-        {cola && saliente && m.enviadoPor && (
-          <p className="mb-0.5 text-[12.5px] font-medium leading-[18px] text-[var(--wa-acento-texto)]">{m.enviadoPor}</p>
+        {cola && saliente && (m.enviadoPor || m.origen === "ASISTENTE") && (
+          <p className="mb-0.5 text-[12.5px] font-medium leading-[18px] text-[var(--wa-acento-texto)]">{m.enviadoPor ?? "Asistente"}</p>
         )}
         {m.plantilla && (
           <p
@@ -752,6 +752,7 @@ function Conversacion({
   }
 
   const nombrePerfil = data?.nombrePerfil ?? null;
+  const asistente = data?.asistente ?? null;
   const nombre = cliente?.nombre ?? nombreDePerfil(nombrePerfil) ?? formatearTelefono(telefono);
   const enlace = cliente ? enlaceDe(api, cliente) : null;
 
@@ -825,6 +826,8 @@ function Conversacion({
           onCancelar={() => setAsociando(false)}
         />
       )}
+
+      {asistente && <AvisoAsistente a={asistente} />}
 
       {/* Mensajes */}
       <div className="wa-fondo wa-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-1 md:px-[6%]">
@@ -1023,6 +1026,34 @@ function Conversacion({
   );
 }
 
+/** Lo que hizo (o va a hacer) el asistente de Ventas en este chat. Lo ve solo el equipo. */
+function AvisoAsistente({ a }: { a: AsistenteDeChat }) {
+  const hora = a.en ? new Date(a.en).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : null;
+  const texto: Record<AsistenteDeChat["estado"], string | null> = {
+    PROGRAMADO: `El asistente le va a contestar con el speech${hora ? ` a las ${hora}` : ""}. Si le contestás vos antes, no manda nada.`,
+    ENVIANDO: "El asistente le está mandando el speech. Si escribís vos, se corta.",
+    SPEECH: "El asistente le mandó el speech. Cuando el cliente conteste, te lo pasa a vos.",
+    ASESOR: `El asistente te pasó este chat${a.motivo ? `: ${a.motivo}` : "."}`,
+    SOMBRA: "Modo prueba: el asistente no mandó nada. Esto es lo que habría mandado:",
+    HUMANO: null,
+  };
+  if (!texto[a.estado]) return null;
+  return (
+    <div className="shrink-0 border-b border-[var(--wa-borde)] bg-[var(--wa-aviso)] px-4 py-2 text-[12.5px] leading-[17px] text-[var(--wa-aviso-texto)]">
+      <p>{texto[a.estado]}</p>
+      {a.estado === "SOMBRA" && a.sombra && (
+        <ol className="mt-1 list-decimal space-y-1 pl-5">
+          {a.sombra.map((m, i) => (
+            <li key={i} className="whitespace-pre-wrap">
+              {m}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 /**
  * Graba una nota de voz con el micrófono (MediaRecorder). El servidor la pasa al
  * formato de nota de voz de WhatsApp.
@@ -1107,10 +1138,18 @@ function FilaChat({ c, activa, onClick }: { c: WhatsAppConversacion; activa: boo
           <VistaPrevia c={c} />
           {c.sinContestar && (
             <span
-              className="shrink-0 rounded-full border border-[var(--wa-peligro)] px-1.5 text-[10.5px] leading-[15px] text-[var(--wa-peligro)]"
-              title="El último mensaje es del cliente y nadie le contestó"
+              className="max-w-[45%] shrink-0 truncate rounded-full border border-[var(--wa-peligro)] px-1.5 text-[10.5px] leading-[15px] text-[var(--wa-peligro)]"
+              title={c.asistente?.estado === "ASESOR" ? `El asistente te lo pasó: ${c.asistente.motivo ?? ""}` : "El último mensaje es del cliente y nadie le contestó"}
             >
-              Sin contestar
+              {c.asistente?.estado === "ASESOR" && c.asistente.motivo ? c.asistente.motivo : "Sin contestar"}
+            </span>
+          )}
+          {!c.sinContestar && c.asistente?.estado === "SPEECH" && (
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--wa-acento)]" title="El asistente le mandó el speech: se espera al cliente" />
+          )}
+          {(c.asistente?.estado === "PROGRAMADO" || c.asistente?.estado === "ENVIANDO") && (
+            <span className="shrink-0 text-[10.5px] italic text-[var(--wa-secundario)]" title="El asistente le va a contestar con el speech">
+              asistente…
             </span>
           )}
           {noLeidos > 0 && (

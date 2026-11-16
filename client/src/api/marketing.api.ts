@@ -66,7 +66,7 @@ export interface MarketingAutomatizacion {
   id: string;
   nombre: string;
   activa: boolean;
-  disparador: "comentario" | "privado" | "seguimiento" | "texto";
+  disparador: "comentario" | "privado" | "seguimiento" | "texto" | "whatsapp";
   palabras: string[];
   publicaciones: string[];
   link: string;

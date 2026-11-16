@@ -138,6 +138,7 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
         etiqueta: z.string().max(60).nullable().optional(),
         responsableId: z.string().min(1).max(40).nullable().optional(),
         uso: z.enum(USOS_NUMERO).nullable().optional(),
+        asistente: z.enum(["APAGADO", "PRUEBA", "ACTIVO"]).optional(),
       })
       .parse(request.body);
     return actualizarNumero(id, body, ensureUser(request).id);

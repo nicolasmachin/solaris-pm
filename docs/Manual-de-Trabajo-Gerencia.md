@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.33 — 15 de noviembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.34 — 16 de noviembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -1129,6 +1129,34 @@ el silencio.
 
 **A qué manuales afecta.** Al de Experiencia Solar (los avisos que salen solos).
 
+### El primer mensaje de un cliente nuevo por WhatsApp lo contesta un asistente, en nombre del asesor
+
+**Qué se decidió.** El primer mensaje que llega al WhatsApp de un asesor de un
+**cliente nuevo** (alguien que nunca había escrito, sin lead ni proyecto) lo
+contesta un asistente con inteligencia artificial, que le manda **el speech de
+Ventas en nombre del asesor**, adaptado a lo que preguntó. Rige desde el 16 de
+noviembre de 2026. Las reglas:
+
+- **Como una persona:** espera unos minutos antes de contestar, y manda el speech
+  en varios mensajes con 20 a 40 segundos entre uno y otro.
+- **De noche no contesta:** lo que entra entre las 21 y las 8 se contesta a las 8
+  de la mañana, todos los días, también el fin de semana.
+- **Solo el primer contacto:** si el asesor contesta antes, el asistente no hace
+  nada. Lo que el cliente conteste después del speech lo sigue el asesor en
+  persona; si manda la factura, se crea el lead y le llega el aviso «para cotizar».
+- **No contesta lo que no le toca:** reclamos de clientes, preguntas que no están
+  en el speech, proveedores, pedidos con datos para cotizar. Se lo pasa al asesor.
+- **No miente sobre lo que es:** si el cliente pregunta si es un robot, no
+  contesta y le pasa el chat al asesor. No dice que es una persona.
+
+**Por qué.** El primer mensaje se estaba contestando tarde, y la primera
+respuesta rápida es la que más pesa para no perder al cliente. El speech ya es
+siempre el mismo, así que no hace falta una persona para mandarlo; sí para todo
+lo que viene después. Que no niegue lo que es protege la confianza del cliente
+en el momento en que se le está por vender.
+
+**A qué manuales afecta:** Ventas (el WhatsApp de Ventas).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -1158,6 +1186,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.34 | 16 de noviembre de 2026 | Se registra que el primer mensaje de un cliente nuevo por WhatsApp lo contesta un asistente con el speech, en nombre del asesor: con ritmo de persona, de día, solo el primer contacto y sin negar lo que es. |
 | 0.33 | 15 de noviembre de 2026 | Se registran las reglas de los avisos automáticos de WhatsApp: ninguno antes de la bienvenida, la persona va primero donde puede avisar, repartidos en el tiempo, con tono de persona y con video aparte. |
 | 0.32 | 15 de noviembre de 2026 | Cada número de WhatsApp lo ve y lo usa solo su responsable: el general, el responsable de Experiencia Solar (ya no cualquiera del área), y el de cada asesor, él solo (tampoco la gerencia comercial). La Dirección puede ver y usar cualquiera. |
 | 0.31 | 1 de noviembre de 2026 | Se registra que las conversaciones de WhatsApp con los clientes se usan dentro de Voltia PM: el número general de Voltia desde Experiencia Solar, para cualquiera del área, y el de cada asesor solo por él, desde Ventas; la ficha del cliente avisa cuando escribió y nadie le contestó. |

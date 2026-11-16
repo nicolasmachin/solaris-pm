@@ -256,6 +256,9 @@ enum NotificationType {
   // Ventas: entró un lead sin vendedor (por ejemplo, desde Marketing). A quien
   // tenga VENTAS:TOMAR_LEAD.
   lead_sin_tomar
+  // WhatsApp de Ventas: el asistente mandó el speech y el cliente contestó (o
+  // mandó la factura, o preguntó algo que no le toca): al responsable del número.
+  whatsapp_requiere_asesor
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
@@ -5916,6 +5919,9 @@ model WhatsAppNumero {
   responsableId     String?
   responsable       User?     @relation("WhatsAppNumeroResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
   /// CONECTADO | DESCONECTADO
+  /// Asistente de Ventas (IA del speech inicial): APAGADO | PRUEBA (decide pero
+  /// no manda) | ACTIVO.
+  asistente         String    @default("APAGADO")
   estado            String    @default("CONECTADO")
   /// Sincronización de contactos e historial (solo coexistencia): se puede
   /// pedir una sola vez por conexión y dentro de las 24 h.
@@ -5942,31 +5948,44 @@ model WhatsAppNumero {
 /// decidió que no hacía falta contestar, y a qué cliente o lead se asoció a mano
 /// (cuando escribe desde un número que no está cargado en la ficha).
 model WhatsAppConversacion {
-  id            String     @id @default(cuid())
-  phoneNumberId String
+  id                  String     @id @default(cuid())
+  phoneNumberId       String
   /// Teléfono del otro lado, en formato internacional sin "+" (598…).
-  telefono      String
+  telefono            String
   /// Lo leído en la bandeja: los entrantes posteriores cuentan como no leídos.
-  leidoHasta    DateTime?  @db.Timestamptz(6)
-  leidoPorId    String?
-  leidoPor      User?      @relation("WhatsAppConversacionLeidaPor", fields: [leidoPorId], references: [id], onDelete: SetNull)
+  leidoHasta          DateTime?  @db.Timestamptz(6)
+  leidoPorId          String?
+  leidoPor            User?      @relation("WhatsAppConversacionLeidaPor", fields: [leidoPorId], references: [id], onDelete: SetNull)
   /// "No hace falta contestar": apaga la alerta de sin contestar hasta el próximo
   /// mensaje del cliente.
-  resueltoHasta DateTime?  @db.Timestamptz(6)
-  projectId     String?
-  project       Project?   @relation("WhatsAppConversacionProject", fields: [projectId], references: [id], onDelete: SetNull)
-  leadId        String?
-  lead          SalesLead? @relation("WhatsAppConversacionLead", fields: [leadId], references: [id], onDelete: SetNull)
+  resueltoHasta       DateTime?  @db.Timestamptz(6)
+  projectId           String?
+  project             Project?   @relation("WhatsAppConversacionProject", fields: [projectId], references: [id], onDelete: SetNull)
+  leadId              String?
+  lead                SalesLead? @relation("WhatsAppConversacionLead", fields: [leadId], references: [id], onDelete: SetNull)
   /// CRM: asociada a mano a un contacto (sin lead ni proyecto todavía).
-  contactoId    String?
-  contacto      Contacto?  @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+  contactoId          String?
+  contacto            Contacto?  @relation(fields: [contactoId], references: [id], onDelete: SetNull)
   /// Asociada a mano a un usuario de Voltia: es una conversación interna.
-  usuarioId     String?
-  usuario       User?      @relation("WhatsAppConversacionUsuario", fields: [usuarioId], references: [id], onDelete: SetNull)
+  usuarioId           String?
+  usuario             User?      @relation("WhatsAppConversacionUsuario", fields: [usuarioId], references: [id], onDelete: SetNull)
   /// El nombre que la persona tiene puesto en su WhatsApp (llega con cada mensaje).
-  nombrePerfil  String?
-  createdAt     DateTime   @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime   @updatedAt @db.Timestamptz(6)
+  nombrePerfil        String?
+  /// Asistente de Ventas (IA que manda el speech inicial). null = no intervino.
+  /// PROGRAMADO (va a contestar en asistenteEn) | ENVIANDO (mandando de a uno) |
+  /// SPEECH (lo mandó, punto verde) | ASESOR (necesita al asesor, punto rojo) |
+  /// HUMANO (contestó una persona antes) | SOMBRA (modo prueba: no mandó nada).
+  asistenteEstado     String?
+  /// Por qué necesita al asesor ("Mandó la factura: para cotizar"…).
+  asistenteMotivo     String?
+  /// Cuándo actúa (contestar, o mandar el mensaje siguiente).
+  asistenteEn         DateTime?  @db.Timestamptz(6)
+  /// Los mensajes que faltan mandar, en orden.
+  asistentePendientes Json?
+  /// En modo prueba: lo que habría mandado.
+  asistenteSombra     Json?
+  createdAt           DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime   @updatedAt @db.Timestamptz(6)
 
   @@unique([phoneNumberId, telefono])
   @@index([projectId])

@@ -70,6 +70,10 @@ export const NOTIFICATION_TYPE_META: Record<
     label: "Lead sin tomar",
     description: "Entró un lead sin vendedor (por ejemplo, desde Marketing): el primero que lo toma se lo queda.",
   },
+  whatsapp_requiere_asesor: {
+    label: "WhatsApp: necesita al asesor",
+    description: "El asistente del WhatsApp de Ventas le mandó el speech a un cliente nuevo y el cliente contestó, mandó la factura o preguntó algo que tiene que ver el asesor.",
+  },
   soporte_alerta: {
     label: "Alerta de Soporte",
     description: "El vigía de Soporte detectó una planta que no genera, no comunica, tiene una falla o rinde menos de lo normal.",

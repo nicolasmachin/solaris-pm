@@ -240,7 +240,13 @@ const NOMBRE_USO: Record<string, string> = { EXPERIENCIA_SOLAR: "Experiencia Sol
 
 export async function actualizarNumero(
   id: string,
-  cambios: { etiqueta?: string | null; responsableId?: string | null; uso?: "EXPERIENCIA_SOLAR" | "VENTAS" | null },
+  cambios: {
+    etiqueta?: string | null;
+    responsableId?: string | null;
+    uso?: "EXPERIENCIA_SOLAR" | "VENTAS" | null;
+    /** Asistente de Ventas (speech inicial con IA): APAGADO | PRUEBA | ACTIVO. */
+    asistente?: "APAGADO" | "PRUEBA" | "ACTIVO";
+  },
   userId: string,
 ) {
   const numero = await prisma.whatsAppNumero.findUnique({ where: { id } });
@@ -252,9 +258,19 @@ export async function actualizarNumero(
       ...(cambios.etiqueta !== undefined ? { etiqueta: cambios.etiqueta?.trim() || null } : {}),
       ...(cambios.responsableId !== undefined ? { responsableId: cambios.responsableId } : {}),
       ...(cambios.uso !== undefined ? { uso: cambios.uso } : {}),
+      ...(cambios.asistente !== undefined ? { asistente: cambios.asistente } : {}),
     },
-    select: { id: true, etiqueta: true, responsableId: true, uso: true },
+    select: { id: true, etiqueta: true, responsableId: true, uso: true, asistente: true },
   });
+  if (cambios.asistente !== undefined && cambios.asistente !== numero.asistente) {
+    await createAuditEntry({
+      entityType: AuditEntityType.user,
+      entityId: userId,
+      userId,
+      action: AuditAction.updated,
+      description: `Asistente de WhatsApp del ${numero.telefono}: ${{ APAGADO: "apagado", PRUEBA: "en prueba (no manda)", ACTIVO: "prendido" }[cambios.asistente]}`,
+    });
+  }
   // Cambiar la bandeja cambia quién ve las conversaciones y por dónde salen los
   // avisos automáticos: queda en auditoría.
   if (cambios.uso !== undefined && cambios.uso !== numero.uso) {

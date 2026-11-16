@@ -24,6 +24,7 @@ export type WhatsAppConversacion = {
   cliente: WhatsAppCliente | null;
   /** El nombre que tiene puesto en su WhatsApp quien escribe. */
   nombrePerfil?: string | null;
+  asistente?: AsistenteDeChat | null;
 };
 
 /** El cliente (Experiencia Solar: `projectId`) o el lead (Ventas: `leadId`) de una conversación. */
@@ -99,7 +100,19 @@ export type WhatsAppRegistroConfig = {
   graphVersion: string;
 };
 
+/** Asistente de Ventas (IA del speech inicial). */
+export type AsistenteModo = "APAGADO" | "PRUEBA" | "ACTIVO";
+
+/** Qué hizo el asistente en un chat. */
+export type AsistenteDeChat = {
+  estado: "PROGRAMADO" | "ENVIANDO" | "SPEECH" | "ASESOR" | "HUMANO" | "SOMBRA";
+  motivo: string | null;
+  sombra?: string[] | null;
+  en?: string | null;
+};
+
 export type WhatsAppNumero = {
+  asistente?: AsistenteModo;
   id: string;
   phoneNumberId: string;
   wabaId: string;
@@ -146,7 +159,7 @@ export async function sincronizarWhatsAppNumero(id: string) {
 
 export async function actualizarWhatsAppNumero(
   id: string,
-  body: { etiqueta?: string | null; responsableId?: string | null; uso?: WhatsAppUso | null },
+  body: { etiqueta?: string | null; responsableId?: string | null; uso?: WhatsAppUso | null; asistente?: AsistenteModo },
 ) {
   return (await apiClient.patch(`/api/whatsapp/numeros/${id}`, body)).data;
 }
@@ -179,7 +192,7 @@ export async function getBandejaES() {
 
 export async function getConversacionES(telefono: string) {
   return (
-    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null }>(
+    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null; asistente?: AsistenteDeChat | null }>(
       `${BANDEJA_ES}/conversaciones/${encodeURIComponent(telefono)}`,
     )
   ).data;
@@ -237,7 +250,7 @@ export async function getBandejaVentas(asesor?: string | null) {
 
 export async function getConversacionVentas(telefono: string, asesor?: string | null) {
   return (
-    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null }>(
+    await apiClient.get<{ mensajes: WhatsAppMensaje[]; cliente: WhatsAppCliente | null; nombrePerfil?: string | null; asistente?: AsistenteDeChat | null }>(
       `${BANDEJA_VENTAS}/conversaciones/${encodeURIComponent(telefono)}`,
       deAsesor(asesor),
     )

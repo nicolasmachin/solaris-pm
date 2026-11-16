@@ -359,8 +359,11 @@ export async function listarConversaciones(bandeja: Bandeja) {
         ventanaAbierta: !!u.ultimoEntranteEn && ahora - u.ultimoEntranteEn.getTime() < VENTANA_MS,
         noLeida: estaNoLeida(u.ultimoEntranteEn, e?.leidoHasta),
         noLeidos: estaNoLeida(u.ultimoEntranteEn, e?.leidoHasta) ? Number(u.noLeidos) : 0,
+        // Lo que el asistente le pasa al asesor siempre termina en un mensaje del
+        // cliente: queda "sin contestar" solo, con el motivo en `asistente`.
         sinContestar: !cliente?.interno && estaSinContestar(u, e?.resueltoHasta),
         nombrePerfil: e?.nombrePerfil ?? null,
+        asistente: e?.asistenteEstado ? { estado: e.asistenteEstado, motivo: e.asistenteMotivo } : null,
         cliente,
       };
     })
@@ -506,6 +509,22 @@ export async function nombrePerfilDe(bandeja: Bandeja, telefono: string): Promis
     select: { nombrePerfil: true },
   });
   return e?.nombrePerfil ?? null;
+}
+
+/** Qué hizo el asistente de Ventas en esta conversación (y, en prueba, qué habría mandado). */
+export async function asistenteDe(bandeja: Bandeja, telefono: string) {
+  if (!bandeja.cuenta) return null;
+  const e = await prisma.whatsAppConversacion.findUnique({
+    where: { phoneNumberId_telefono: { phoneNumberId: bandeja.cuenta.phoneNumberId, telefono: normalizarTelefono(telefono) } },
+    select: { asistenteEstado: true, asistenteMotivo: true, asistenteSombra: true, asistenteEn: true },
+  });
+  if (!e?.asistenteEstado) return null;
+  return {
+    estado: e.asistenteEstado,
+    motivo: e.asistenteMotivo,
+    sombra: (e.asistenteSombra as string[] | null) ?? null,
+    en: e.asistenteEn?.toISOString() ?? null,
+  };
 }
 
 /** El cliente de una conversación: el asociado a mano o, si no, el del teléfono. */

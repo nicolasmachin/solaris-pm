@@ -61,6 +61,7 @@ const DISPARADOR: Record<MarketingAutomatizacion["disparador"], string> = {
   comentario: "Cuando alguien comenta",
   seguimiento: "Al día siguiente del speech, si no contestó",
   texto: "Texto común",
+  whatsapp: "Primer mensaje de un cliente nuevo al WhatsApp de Ventas",
 };
 
 function Automatizacion({ a, puedeEditar }: { a: MarketingAutomatizacion; puedeEditar: boolean }) {
@@ -109,7 +110,7 @@ function Automatizacion({ a, puedeEditar }: { a: MarketingAutomatizacion; puedeE
                 </a>
               </>
             )}
-            {(a.disparador === "privado" || a.disparador === "comentario") && (
+            {(a.disparador === "privado" || a.disparador === "comentario" || a.disparador === "whatsapp") && (
               <>
                 {" "}
                 · espera {a.espera[0]}–{a.espera[1]} s

@@ -26,6 +26,9 @@
 - **Fotos, audios, videos y documentos** se ven dentro del chat: la foto se abre en grande, el audio se escucha y abajo aparece **lo que dice, escrito**, el video se reproduce y el documento se abre o se baja.
 - **Mandar archivos**: con el **clip** se manda una foto, un video, un audio o un documento (lo escrito va como texto de la foto), y con el **micrófono** se graba una nota de voz.
 - Las fotos y los videos se achican al guardarlos y al mandarlos, para que no ocupen de más.
+- **Asistente del primer mensaje** en el WhatsApp de Ventas: a un cliente nuevo le contesta el speech en nombre del asesor, adaptado a lo que preguntó, a los pocos minutos y en varios mensajes, como una persona. De noche espera a las 8. Si el asesor contesta antes, no hace nada.
+- En la lista de chats, **punto verde** cuando el asistente mandó el speech y **etiqueta roja con el motivo** cuando necesita al asesor (por ejemplo, «Mandó la factura: para cotizar», que además crea el lead). Al asesor le llega una notificación.
+- El asistente se prende por número en Administración → WhatsApp, con un modo **en prueba** que muestra lo que habría mandado sin mandar nada.
 - Quien no tiene un número propio (la administración) entra directo a la bandeja del primer asesor, sin el aviso de "no tenés número". La opción "Mi número" aparece solo para quien tiene uno.
 
 #### Arreglos

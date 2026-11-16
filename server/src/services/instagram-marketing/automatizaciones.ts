@@ -21,7 +21,7 @@ import type { MarketingAutomatizacion, Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { asistenteConfig } from "./config.js";
 
-export const DISPARADORES = ["comentario", "privado", "seguimiento", "texto"] as const;
+export const DISPARADORES = ["comentario", "privado", "seguimiento", "texto", "whatsapp"] as const;
 export type Disparador = (typeof DISPARADORES)[number];
 
 export type Automatizacion = {

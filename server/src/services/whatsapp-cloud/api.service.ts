@@ -92,6 +92,8 @@ async function registrarSaliente(params: {
   phoneNumberId: string;
   /** Archivo mandado: se guarda junto al mensaje para mostrarlo sin pedirlo a Meta. */
   archivo?: { path: string; mime: string; bloque: Record<string, unknown> };
+  /** "ASISTENTE" si lo mandó el asistente de Ventas (por defecto, API). */
+  origen?: string;
 }) {
   const waMessageId = params.respuesta.messages?.[0]?.id;
   if (!waMessageId) throw new MetaApiError("Meta no devolvió el id del mensaje", 502, params.respuesta);
@@ -111,6 +113,7 @@ async function registrarSaliente(params: {
         ? { ...params.respuesta, [params.tipo]: params.archivo.bloque }
         : params.respuesta) as unknown as Prisma.InputJsonValue,
       ...(params.archivo ? { archivoPath: params.archivo.path, archivoMime: params.archivo.mime } : {}),
+      ...(params.origen ? { origen: params.origen } : {}),
     },
   });
   // El webhook a veces avisa "enviado" antes de que se guarde esta fila: si ya
@@ -176,7 +179,7 @@ export async function enviarPlantilla(params: {
 }
 
 /** Manda texto libre. Solo dentro de la ventana de 24 h: fuera de ella Meta lo rechaza. */
-export async function enviarTexto(params: { telefono: string; texto: string; userId: string; cuenta?: Cuenta }) {
+export async function enviarTexto(params: { telefono: string; texto: string; userId: string | null; cuenta?: Cuenta; origen?: string }) {
   const telefono = normalizarTelefono(params.telefono);
   const cuenta = params.cuenta ?? cuentaDelServidor();
   if (!(await ventanaAbierta(telefono, cuenta.phoneNumberId))) {
@@ -197,6 +200,7 @@ export async function enviarTexto(params: { telefono: string; texto: string; use
     plantilla: null,
     userId: params.userId,
     phoneNumberId: cuenta.phoneNumberId,
+    origen: params.origen,
   });
 }
 

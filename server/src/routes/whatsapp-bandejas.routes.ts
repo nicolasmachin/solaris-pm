@@ -24,6 +24,7 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import {
   asesoresConNumero,
   archivoDeMensaje,
+  asistenteDe,
   mandarArchivo,
   asociarCliente,
   nombrePerfilDe,
@@ -89,8 +90,13 @@ export async function registerWhatsAppBandejasRoutes(app: FastifyInstance) {
     app.get(`${base}/conversaciones/:telefono`, pre, async (request) => {
       const { telefono } = telefonoParam.parse(request.params);
       const b = await usable(request);
-      const [mensajes, cliente, nombrePerfil] = await Promise.all([mensajesDe(b, telefono), clienteDe(b, telefono), nombrePerfilDe(b, telefono)]);
-      return { mensajes, cliente, nombrePerfil };
+      const [mensajes, cliente, nombrePerfil, asistente] = await Promise.all([
+        mensajesDe(b, telefono),
+        clienteDe(b, telefono),
+        nombrePerfilDe(b, telefono),
+        asistenteDe(b, telefono),
+      ]);
+      return { mensajes, cliente, nombrePerfil, asistente };
     });
 
     // Foto, audio, video o documento de un mensaje (la pantalla lo pide con la sesión).
