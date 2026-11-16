@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.48 · del 16/11/26
+**Voltia · Uruguay** · Versión 1.49 · del 16/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1210,6 +1210,24 @@ quién es: un cliente, un contacto o una persona del equipo. Si es alguien nuevo
 **+ Crear contacto con este número** lo da de alta ahí mismo, con el nombre que
 tiene en WhatsApp ya escrito.
 
+**Fotos, audios, videos y documentos.** Se ven dentro del chat como en
+WhatsApp: la foto se abre en grande con un clic, el audio se escucha ahí y abajo
+aparece **lo que dice, escrito** (Voltia PM transcribe todos los audios), el
+video se reproduce y el documento se abre o se baja. Para **mandar**, con la
+ventana de 24 horas abierta: el **clip** adjunta una foto, un video, un audio o
+un documento (lo escrito en la caja va como texto de la foto o el video), y el
+**micrófono** graba una nota de voz, que le llega al cliente como cualquier nota
+de voz de WhatsApp. Las fotos y los videos se achican antes de guardarlos y
+mandarlos: la calidad alcanza para trabajar. WhatsApp acepta fotos de hasta 5 MB,
+videos y audios de hasta 16 MB y documentos de hasta 100 MB.
+
+**Lo que todavía no hace:** no avisa con una notificación cuando entra un
+mensaje (se ve en la pestaña WhatsApp y en la bandeja). Además, el **primer
+mensaje de cada chat que ya existía** antes de conectar el número —y los que
+pasan por WhatsApp en una computadora con Windows— WhatsApp no se los pasa a
+Voltia PM: se ven como «Mensaje no disponible acá: miralo en el celular», y hay
+que leerlos en el celular.
+
 **Cuando no hace falta contestar** (un "gracias", un "ok"), **No hace falta
 contestar** saca la marca roja. Vuelve a aparecer si el cliente escribe de nuevo.
 
@@ -2174,6 +2192,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.49 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |
 | 1.48 | 16 de noviembre de 2026 | En el WhatsApp: el chat se reconoce por el contacto (la persona con su teléfono) y, por él, su cliente; los números del equipo de Voltia aparecen con nombre y rol y no cuentan como sin contestar; el número que no es de nadie muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre clientes, contactos y equipo, y se puede crear el contacto desde el chat. |
 | 1.47 | 15 de noviembre de 2026 | Se puede agregar otro acceso al portal para otra persona de la familia o de la empresa; el cliente que no puede entrar pide ayuda desde la pantalla de ingreso y le llega a Experiencia Solar como pendiente con plazo de un día hábil. |
 | 1.46 | 15 de noviembre de 2026 | Voltia PM avisa en la lista de clientes cuando un mantenimiento sin costo está por vencer o se venció sin agendarse; cada mantenimiento tiene que quedar agendado en el calendario. |

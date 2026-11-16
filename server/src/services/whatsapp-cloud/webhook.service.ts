@@ -4,6 +4,7 @@
  * tiempo, así que el mismo mensaje o el mismo estado pueden llegar dos veces.
  */
 
+import { bajarArchivoDeFondo, mediaDe } from "./media.service.js";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
@@ -96,7 +97,7 @@ export function direccionDe(m: MetaMensaje): "ENTRANTE" | "SALIENTE" {
 async function guardarMensaje(m: MetaMensaje, phoneNumberId: string, origen: "API" | "CELULAR" | "HISTORIAL", telefonoCliente?: string) {
   const direccion = origen === "API" ? "ENTRANTE" : direccionDe(m);
   try {
-    await prisma.whatsAppMensaje.create({
+    const creado = await prisma.whatsAppMensaje.create({
       data: {
         waMessageId: m.id,
         direccion,
@@ -109,6 +110,8 @@ async function guardarMensaje(m: MetaMensaje, phoneNumberId: string, origen: "AP
         payload: m as unknown as Prisma.InputJsonValue,
       },
     });
+    // Foto, audio, video o documento: se baja ya (Meta lo guarda poco tiempo).
+    if (mediaDe(m.type ?? "", m)) bajarArchivoDeFondo(creado.id);
     return 1;
   } catch (err) {
     if (!esDuplicado(err)) throw err;

@@ -337,9 +337,9 @@ Crear una plantilla y conectar un número quedan en auditoría.
   alguien lo asocia a mano. La asociación vale solo para ese número de Voltia.
 - **Si Meta no devuelve las plantillas**, la bandeja sigue andando sin ellas (se
   loguea el error): el texto libre no las necesita.
-- **Mensajes que no son texto** (fotos, audios, documentos) se muestran como
-  «Foto», «Audio», «Documento»… con su ícono, o con el pie de foto si lo tiene:
-  todavía no se bajan ni se ven.
+- **Fotos, audios, videos, documentos y stickers** (ver *Archivos*, abajo) se
+  bajan de Meta al llegar y se muestran en la burbuja. Las reacciones y las
+  ediciones se guardan pero se muestran como «[reaction]» / «[edit]».
 - **Las plantillas mandadas** se ven como *Plantilla · nombre*: el texto que
   recibió el cliente no se guarda en `whatsapp_mensajes`, así que el chat no lo
   muestra.
@@ -366,6 +366,38 @@ Crear una plantilla y conectar un número quedan en auditoría.
   de `services/sales/origen-lead.ts` (cap. 02, Origen del lead). Falta verificar
   con un anuncio de prueba que el `referral` llega también con el número en modo
   coexistencia; es una suposición.
+
+## Archivos (desde v14.9)
+
+- **Al llegar** (entrante, eco del celular o historial), `guardarMensaje()` del
+  webhook dispara `bajarArchivoDeFondo()` (`media.service.ts`): `GET /{media_id}`
+  con el token del número (o el del servidor) da una URL que vence en minutos;
+  se baja con el mismo token y se guarda en `storage/whatsapp/<phoneNumberId>/
+  <id del mensaje>.<ext>` (`archivoPath`, `archivoMime` de `whatsapp_mensajes`).
+  Las fotos se pasan a JPG de hasta 1600 px (`comprimirFoto()`); los videos se
+  pasan de fondo a MP4 720p con `transcodeToStandard()` (el de los videos de
+  obra); audios y documentos quedan como llegan.
+- **Lo que no se bajó** (lo anterior a esto, o si Meta falló) se baja la primera
+  vez que se abre: `GET …/bandeja/…/mensajes/:id/archivo` (`archivoDeMensaje()`).
+  Meta guarda los archivos unos 30 días; pasado eso queda `archivoError`. La
+  pantalla los pide con la sesión (`blobArchivo()`, porque la autenticación va
+  por encabezado) y los muestra en `ArchivoWhatsApp` de `BandejaWhatsApp.tsx`.
+- **Audios**: después de bajarlos se transcriben con Whisper (`transcribir()`,
+  función de IA `whatsapp_audio`, queda en el gasto de IA) a
+  `whatsapp_mensajes.transcripcion`. Si falla, el audio se escucha igual.
+- **Mandar**: `POST …/enviar-archivo` (multipart: `telefono`, `caption`,
+  `notaDeVoz`, archivo) → `mandarArchivo()`: achica (`comprimir()`), convierte
+  las notas de voz grabadas en el navegador (webm) a OGG/Opus con ffmpeg
+  (`aNotaDeVoz()`: es el único formato que WhatsApp muestra como nota de voz),
+  controla los límites de WhatsApp (`LIMITE_ENVIO`: foto 5 MB, audio y video
+  16 MB, documento 100 MB), guarda la copia y llama a `enviarArchivo()`
+  (`api.service.ts`): `POST /{phone_number_id}/media` y después `/messages` con
+  el id. Solo con la ventana de 24 h abierta. El mensaje queda con `archivoPath`
+  (no se vuelve a pedir a Meta) y el bloque del archivo en `payload`.
+- **Limpieza**: `scripts/whatsapp-limpiar-archivos.ts --dias N [--aplicar]`
+  (N ≥ 30) borra los archivos de los mensajes de más de N días; el mensaje queda
+  con su texto y su transcripción, marcado `BORRADO_EN_LIMPIEZA` para no volver a
+  pedirlo. No corre solo: se corre a mano cuando haga falta.
 
 ## Quién es cada chat (CRM, desde v14.9)
 

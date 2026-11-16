@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, MessageCircle } from "lucide-react";
 
-import { getWhatsAppDeProyecto } from "../../../api/whatsapp.api";
+import { getWhatsAppDeProyecto, urlArchivoES } from "../../../api/whatsapp.api";
 import { ListaMensajes } from "../../../components/whatsapp/BandejaWhatsApp";
 
 function haceCuanto(iso: string): string {
@@ -76,7 +76,7 @@ export function ClienteWhatsAppCard({ projectId }: { projectId: string }) {
         <p className="text-[12px] text-[var(--color-text-muted)]">Todavía no hay mensajes con este cliente por WhatsApp.</p>
       ) : (
         <div className="wa-web wa-fondo rounded-md px-3 py-2">
-          <ListaMensajes mensajes={data.mensajes} chica />
+          <ListaMensajes mensajes={data.mensajes} chica urlArchivo={urlArchivoES} />
         </div>
       )}
     </div>

@@ -1,5 +1,7 @@
 import {
   asociarClienteES,
+  urlArchivoES,
+  enviarArchivoES,
   enviarWhatsAppES,
   getBandejaES,
   getConversacionES,
@@ -26,6 +28,8 @@ export const BANDEJA_ES: BandejaApi = {
   asociarCliente: asociarClienteES,
   enviar: enviarWhatsAppES,
   getPlantillas: getPlantillasES,
+  urlArchivo: urlArchivoES,
+  enviarArchivo: enviarArchivoES,
   // Los clientes son pocos: se traen una vez por minuto y se filtran acá.
   buscarParaAsociar: async (q) => {
     const { items } = await clientesRecientes();

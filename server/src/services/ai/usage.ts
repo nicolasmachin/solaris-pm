@@ -25,6 +25,7 @@ export const AI_FEATURES = {
   efp: "Proyecto Final de Ingeniería",
   visita_informe: "Informe de visita técnica",
   visita_audio: "Transcripción de audios de visita",
+  whatsapp_audio: "Transcripción de audios de WhatsApp",
   minuta: "Lectura de minutas",
   ute_extract: "Lectura de cédulas y facturas UTE",
   novedades_mail: "Mail de novedades",

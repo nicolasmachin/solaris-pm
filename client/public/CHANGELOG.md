@@ -23,6 +23,9 @@
 - Si el número no es de nadie, se ve el **nombre que la persona tiene en su WhatsApp**, con un «~» adelante.
 - Al **asociar** un chat se busca entre leads o clientes, contactos y personas del equipo, y con **+ Crear contacto con este número** se lo da de alta desde el chat.
 - El WhatsApp del panel del lead y de la ficha del cliente también reconoce el teléfono de su contacto.
+- **Fotos, audios, videos y documentos** se ven dentro del chat: la foto se abre en grande, el audio se escucha y abajo aparece **lo que dice, escrito**, el video se reproduce y el documento se abre o se baja.
+- **Mandar archivos**: con el **clip** se manda una foto, un video, un audio o un documento (lo escrito va como texto de la foto), y con el **micrófono** se graba una nota de voz.
+- Las fotos y los videos se achican al guardarlos y al mandarlos, para que no ocupen de más.
 - Quien no tiene un número propio (la administración) entra directo a la bandeja del primer asesor, sin el aviso de "no tenés número". La opción "Mi número" aparece solo para quien tiene uno.
 
 #### Arreglos

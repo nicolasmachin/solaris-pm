@@ -121,6 +121,8 @@ export const LATEST_RELEASE: Release = {
         "Los números del equipo de Voltia aparecen con nombre y rol, y no cuentan como sin contestar.",
         "Si el número no es de nadie, se ve el nombre que la persona tiene en su WhatsApp.",
         "Al asociar un chat se busca entre leads o clientes, contactos y equipo, y se crea el contacto desde el chat.",
+        "Fotos, audios (con lo que dicen, escrito), videos y documentos se ven dentro del chat.",
+        "Se mandan fotos, videos, audios y documentos con el clip, y notas de voz con el micrófono.",
         "Quien no tiene número propio entra directo a la bandeja del primer asesor; «Mi número» aparece solo para quien tiene uno.",
       ],
     },

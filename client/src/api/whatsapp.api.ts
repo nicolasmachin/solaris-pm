@@ -54,6 +54,8 @@ export type WhatsAppMensaje = {
   /** API (Voltia PM) | CELULAR (escrito en el celular) | HISTORIAL */
   origen?: string;
   ocurridoEn: string;
+  /** Foto, audio, video o documento: se pide aparte con la sesión. */
+  archivo?: { mime: string | null; nombre: string | null; error: string | null; transcripcion: string | null } | null;
 };
 
 export type WhatsAppPlantilla = {
@@ -277,4 +279,37 @@ export type WhatsAppDeLead = WhatsAppDeProyecto & {
 
 export async function getWhatsAppDeLead(leadId: string) {
   return (await apiClient.get<WhatsAppDeLead>(`${BANDEJA_VENTAS}/lead/${leadId}`)).data;
+}
+
+/** Dónde se pide el archivo de un mensaje (foto, audio, video, documento). */
+export function urlArchivoES(mensajeId: string) {
+  return `${BANDEJA_ES}/mensajes/${mensajeId}/archivo`;
+}
+export function urlArchivoVentas(mensajeId: string, asesor?: string | null) {
+  return `${BANDEJA_VENTAS}/mensajes/${mensajeId}/archivo${asesor ? `?asesor=${encodeURIComponent(asesor)}` : ""}`;
+}
+
+/** Baja el archivo con la sesión y devuelve una URL local para mostrarlo. */
+export async function blobArchivo(url: string) {
+  const r = await apiClient.get<Blob>(url, { responseType: "blob" });
+  return URL.createObjectURL(r.data);
+}
+
+export type ArchivoAEnviar = { telefono: string; archivo: Blob; nombre: string; caption?: string; notaDeVoz?: boolean };
+
+function formArchivo(d: ArchivoAEnviar) {
+  const f = new FormData();
+  // Los campos van antes que el archivo: el servidor los lee al recibirlo.
+  f.append("telefono", d.telefono);
+  if (d.caption) f.append("caption", d.caption);
+  if (d.notaDeVoz) f.append("notaDeVoz", "1");
+  f.append("archivo", d.archivo, d.nombre);
+  return f;
+}
+
+export async function enviarArchivoES(d: ArchivoAEnviar) {
+  return (await apiClient.post(`${BANDEJA_ES}/enviar-archivo`, formArchivo(d))).data;
+}
+export async function enviarArchivoVentas(d: ArchivoAEnviar, asesor?: string | null) {
+  return (await apiClient.post(`${BANDEJA_VENTAS}/enviar-archivo`, formArchivo(d), deAsesor(asesor))).data;
 }

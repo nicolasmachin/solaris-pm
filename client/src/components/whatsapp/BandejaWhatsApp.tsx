@@ -22,6 +22,7 @@ import {
   Sticker,
   Video,
   X,
+  Paperclip,
 } from "lucide-react";
 
 import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
@@ -34,6 +35,7 @@ import type {
   WhatsAppMensaje,
   WhatsAppPlantilla,
 } from "../../api/whatsapp.api";
+import { blobArchivo, type ArchivoAEnviar } from "../../api/whatsapp.api";
 import "./whatsapp-web.css";
 
 /**
@@ -57,6 +59,10 @@ export type BandejaApi = {
   asociarCliente: (telefono: string, id: string | null) => Promise<unknown>;
   enviar: (body: EnviarWhatsAppBody) => Promise<unknown>;
   getPlantillas: () => Promise<WhatsAppPlantilla[]>;
+  /** Dónde se pide el archivo (foto, audio, video, documento) de un mensaje. */
+  urlArchivo: (mensajeId: string) => string;
+  /** Manda una foto, un audio, un video o un documento. */
+  enviarArchivo: (d: ArchivoAEnviar) => Promise<unknown>;
   /** A quién se puede asociar una conversación, filtrado por lo que se escribe. */
   buscarParaAsociar: (q: string) => Promise<OpcionAsociar[]>;
   /** Cómo se llama lo que se asocia: "cliente" o "lead". */
@@ -294,7 +300,70 @@ function Colita({ saliente }: { saliente: boolean }) {
  * la derecha. `cola` = primera de una tanda del mismo lado (lleva la colita y
  * quién la mandó). Afuera de la bandeja se usa dentro de un `.wa-web`.
  */
-export function Burbuja({ m, chica = false, cola = true }: { m: WhatsAppMensaje; chica?: boolean; cola?: boolean }) {
+/**
+ * La foto, el audio (con su transcripción), el video o el documento de un
+ * mensaje. Se baja con la sesión al mostrarse.
+ */
+function ArchivoWhatsApp({ m, url }: { m: WhatsAppMensaje; url: string }) {
+  const { data: src, isLoading, isError } = useQuery({
+    queryKey: ["whatsapp-archivo", url],
+    queryFn: () => blobArchivo(url),
+    staleTime: Infinity,
+    gcTime: 30 * 60_000,
+    retry: 1,
+  });
+  const a = m.archivo!;
+  const mime = a.mime ?? "";
+  if (isLoading) return <div className="wa-burbuja-texto mb-1 h-10 animate-pulse rounded bg-[var(--wa-hover)]" />;
+  if (isError || !src) {
+    return (
+      <p className="mb-1 text-[12.5px] italic text-[var(--wa-secundario)]">
+        <TipoSinTexto tipo={m.tipo} /> · no se pudo traer{a.error ? ` (${a.error})` : ""}
+      </p>
+    );
+  }
+  if (m.tipo === "image" || m.tipo === "sticker") {
+    return (
+      <a href={src} target="_blank" rel="noreferrer" className="mb-1 block">
+        <img src={src} alt="Foto" className={`rounded-[6px] object-cover ${m.tipo === "sticker" ? "max-h-32" : "max-h-[320px] w-full"}`} />
+      </a>
+    );
+  }
+  if (m.tipo === "audio" || m.tipo === "voice") {
+    return (
+      <div className="mb-1 min-w-[240px]">
+        <audio controls src={src} className="h-10 w-full" preload="metadata" />
+        {a.transcripcion && <p className="wa-burbuja-texto mt-1 text-[13px] italic leading-[18px] text-[var(--wa-secundario)]">«{a.transcripcion}»</p>}
+      </div>
+    );
+  }
+  if (m.tipo === "video") return <video controls src={src} className="mb-1 max-h-[320px] w-full rounded-[6px]" preload="metadata" />;
+  return (
+    <a
+      href={src}
+      download={a.nombre ?? undefined}
+      target="_blank"
+      rel="noreferrer"
+      className="mb-1 flex items-center gap-2 rounded-[6px] bg-[var(--wa-hover)] px-3 py-2 hover:underline"
+    >
+      <FileText size={22} className="shrink-0 text-[var(--wa-icono)]" />
+      <span className="min-w-0 truncate text-[13.5px]">{a.nombre ?? (mime.includes("pdf") ? "Documento PDF" : "Documento")}</span>
+    </a>
+  );
+}
+
+export function Burbuja({
+  m,
+  chica = false,
+  cola = true,
+  urlArchivo,
+}: {
+  m: WhatsAppMensaje;
+  chica?: boolean;
+  cola?: boolean;
+  /** Si viene, muestra la foto, el audio, el video o el documento del mensaje. */
+  urlArchivo?: (mensajeId: string) => string;
+}) {
   const saliente = m.direccion === "SALIENTE";
   const celular = m.origen === "CELULAR";
   // Lugar reservado al final del texto para que la hora no lo pise.
@@ -328,9 +397,11 @@ export function Burbuja({ m, chica = false, cola = true }: { m: WhatsAppMensaje;
             <FileText size={12} className="shrink-0" /> Plantilla · {m.plantilla}
           </p>
         )}
-        {conTexto ? (
+        {m.archivo && urlArchivo && <ArchivoWhatsApp m={m} url={urlArchivo(m.id)} />}
+        {/* Con el archivo a la vista, el nombre del documento no se repite como texto. */}
+        {conTexto && !(m.archivo && urlArchivo && m.texto === m.archivo.nombre) ? (
           <span className={`whitespace-pre-wrap break-words ${m.error ? "" : "wa-burbuja-texto"}`}>{m.texto}</span>
-        ) : (
+        ) : m.archivo && urlArchivo ? null : (
           !m.plantilla && (
             <span className={`italic text-[var(--wa-secundario)] ${m.error ? "" : "wa-burbuja-texto"}`}>
               <TipoSinTexto tipo={m.tipo} />
@@ -355,7 +426,15 @@ export function Burbuja({ m, chica = false, cola = true }: { m: WhatsAppMensaje;
 }
 
 /** Los mensajes con separadores de día y colitas al empezar cada tanda. */
-export function ListaMensajes({ mensajes, chica = false }: { mensajes: WhatsAppMensaje[]; chica?: boolean }) {
+export function ListaMensajes({
+  mensajes,
+  chica = false,
+  urlArchivo,
+}: {
+  mensajes: WhatsAppMensaje[];
+  chica?: boolean;
+  urlArchivo?: (mensajeId: string) => string;
+}) {
   return (
     <>
       {mensajes.map((m, i) => {
@@ -374,7 +453,7 @@ export function ListaMensajes({ mensajes, chica = false }: { mensajes: WhatsAppM
                 </span>
               </div>
             )}
-            <Burbuja m={m} chica={chica} cola={cola} />
+            <Burbuja m={m} chica={chica} cola={cola} urlArchivo={urlArchivo} />
           </Fragment>
         );
       })}
@@ -634,6 +713,21 @@ function Conversacion({
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo mandar el mensaje"),
   });
 
+  const enviarArchivo = useMutation({
+    mutationFn: (d: Omit<ArchivoAEnviar, "telefono">) => api.enviarArchivo({ ...d, telefono }),
+    onSuccess: () => {
+      setTexto("");
+      toast.success("Enviado");
+      refrescar();
+      if (cliente) api.alMandar?.(cliente, qc);
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo mandar el archivo"),
+  });
+  const adjunto = useRef<HTMLInputElement>(null);
+  const grabador = useGrabador((audio, mime) =>
+    enviarArchivo.mutate({ archivo: audio, nombre: `nota-de-voz.${mime.includes("mp4") ? "m4a" : "webm"}`, notaDeVoz: true }),
+  );
+
   const resolver = useMutation({
     mutationFn: () => api.marcarResuelta(telefono),
     onSuccess: refrescar,
@@ -744,7 +838,7 @@ function Conversacion({
             </span>
           </div>
         )}
-        <ListaMensajes mensajes={mensajes} />
+        <ListaMensajes mensajes={mensajes} urlArchivo={api.urlArchivo} />
         <div ref={fin} className="h-1" />
       </div>
 
@@ -827,7 +921,38 @@ function Conversacion({
         >
           <FileText size={22} />
         </BotonIcono>
-        {ventanaAbierta ? (
+        {ventanaAbierta && (
+          <>
+            <BotonIcono titulo="Adjuntar foto, video, audio o documento" onClick={() => adjunto.current?.click()}>
+              <Paperclip size={21} />
+            </BotonIcono>
+            <input
+              ref={adjunto}
+              type="file"
+              className="hidden"
+              accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.dwg,.zip"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                // Lo escrito en la caja va como texto de la foto o el video.
+                if (f) enviarArchivo.mutate({ archivo: f, nombre: f.name, caption: texto.trim() || undefined });
+              }}
+            />
+          </>
+        )}
+        {grabador.grabando ? (
+          <div className="mx-1 flex min-h-[42px] flex-1 items-center gap-3 rounded-lg bg-[var(--wa-panel)] px-3 text-[14px] text-[var(--wa-texto)]">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+            Grabando {Math.floor(grabador.segundos / 60)}:{String(grabador.segundos % 60).padStart(2, "0")}
+            <button type="button" className="ml-auto text-[13px] text-[var(--wa-secundario)] underline" onClick={() => grabador.terminar(true)}>
+              Cancelar
+            </button>
+          </div>
+        ) : enviarArchivo.isPending ? (
+          <div className="mx-1 flex min-h-[42px] flex-1 items-center rounded-lg bg-[var(--wa-panel)] px-3 text-[14px] text-[var(--wa-secundario)]">
+            Enviando el archivo…
+          </div>
+        ) : ventanaAbierta ? (
           <textarea
             ref={caja}
             rows={1}
@@ -866,7 +991,20 @@ function Conversacion({
             </span>
           </div>
         )}
-        {ventanaAbierta && (
+        {ventanaAbierta && (grabador.grabando || (!texto.trim() && !enviarArchivo.isPending)) && (
+          <button
+            type="button"
+            onClick={() => (grabador.grabando ? grabador.terminar(false) : void grabador.empezar())}
+            aria-label={grabador.grabando ? "Enviar la nota de voz" : "Grabar una nota de voz"}
+            title={grabador.grabando ? "Enviar la nota de voz" : "Grabar una nota de voz"}
+            className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full ${
+              grabador.grabando ? "bg-[var(--wa-acento)] text-white" : "text-[var(--wa-icono)] hover:bg-[var(--wa-hover-icono)]"
+            }`}
+          >
+            {grabador.grabando ? <Send size={20} className="translate-x-[1px]" /> : <Mic size={22} />}
+          </button>
+        )}
+        {ventanaAbierta && !grabador.grabando && texto.trim() !== "" && (
           <button
             type="button"
             onClick={() => enviar.mutate()}
@@ -883,6 +1021,49 @@ function Conversacion({
       </footer>
     </div>
   );
+}
+
+/**
+ * Graba una nota de voz con el micrófono (MediaRecorder). El servidor la pasa al
+ * formato de nota de voz de WhatsApp.
+ */
+function useGrabador(onListo: (audio: Blob, mime: string) => void) {
+  const [grabando, setGrabando] = useState(false);
+  const [segundos, setSegundos] = useState(0);
+  const rec = useRef<MediaRecorder | null>(null);
+  const partes = useRef<Blob[]>([]);
+  const cancelado = useRef(false);
+  useEffect(() => {
+    if (!grabando) return;
+    const t = setInterval(() => setSegundos((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [grabando]);
+
+  async function empezar() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const r = new MediaRecorder(stream);
+      partes.current = [];
+      cancelado.current = false;
+      r.ondataavailable = (e) => e.data.size > 0 && partes.current.push(e.data);
+      r.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (!cancelado.current && partes.current.length) onListo(new Blob(partes.current, { type: r.mimeType }), r.mimeType);
+      };
+      rec.current = r;
+      r.start();
+      setSegundos(0);
+      setGrabando(true);
+    } catch {
+      toast.error("No se pudo usar el micrófono: revisá el permiso del navegador.");
+    }
+  }
+  function terminar(cancelar: boolean) {
+    cancelado.current = cancelar;
+    rec.current?.stop();
+    setGrabando(false);
+  }
+  return { grabando, segundos, empezar, terminar };
 }
 
 // ─── Lista de chats ──────────────────────────────────────────────────────────

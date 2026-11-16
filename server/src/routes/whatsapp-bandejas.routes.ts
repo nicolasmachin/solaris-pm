@@ -13,6 +13,7 @@
  * Ver services/whatsapp-cloud/bandejas.service.ts y docs/manual/15-whatsapp.md.
  */
 
+import { createReadStream } from "node:fs";
 import { Action, Module } from "@prisma/client";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
@@ -22,6 +23,8 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import {
   asesoresConNumero,
+  archivoDeMensaje,
+  mandarArchivo,
   asociarCliente,
   nombrePerfilDe,
   type Bandeja,
@@ -39,7 +42,7 @@ import {
   whatsappDeLead,
   whatsappDeProyecto,
 } from "../services/whatsapp-cloud/bandejas.service.js";
-import { forbidden, unauthorized } from "../utils/errors.js";
+import { badRequest, forbidden, unauthorized } from "../utils/errors.js";
 import { conMeta } from "./whatsapp.routes.js";
 
 function ensureUser(request: FastifyRequest) {
@@ -90,6 +93,16 @@ export async function registerWhatsAppBandejasRoutes(app: FastifyInstance) {
       return { mensajes, cliente, nombrePerfil };
     });
 
+    // Foto, audio, video o documento de un mensaje (la pantalla lo pide con la sesión).
+    app.get(`${base}/mensajes/:id/archivo`, pre, async (request, reply) => {
+      const { id } = z.object({ id: z.string().min(1).max(40) }).parse(request.params);
+      const a = await archivoDeMensaje(await usable(request), id);
+      reply.header("Content-Type", a.mime);
+      reply.header("Cache-Control", "private, max-age=86400");
+      if (a.nombre) reply.header("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(a.nombre)}`);
+      return reply.send(createReadStream(a.ruta));
+    });
+
     app.post(`${base}/conversaciones/:telefono/leida`, pre, async (request) => {
       const { telefono } = telefonoParam.parse(request.params);
       const b = await usable(request);
@@ -110,6 +123,36 @@ export async function registerWhatsAppBandejasRoutes(app: FastifyInstance) {
       const b = await usable(request);
       await asociarCliente(b, telefono, id);
       return { cliente: await clienteDe(b, telefono) };
+    });
+
+    // Foto, audio, video o documento (multipart: archivo + telefono, caption, notaDeVoz).
+    app.post(`${base}/enviar-archivo`, pre, async (request, reply) => {
+      const user = ensureUser(request);
+      const b = await usable(request);
+      const part = await request.file({ limits: { fileSize: 200 * 1024 * 1024, files: 1 } });
+      if (!part) throw badRequest("SIN_ARCHIVO", "No llegó ningún archivo.");
+      const bytes = await part.toBuffer().catch(() => {
+        throw badRequest("MUY_GRANDE", "El archivo es demasiado grande.");
+      });
+      const campo = (k: string) => {
+        const f = part.fields[k] as { value?: unknown } | undefined;
+        return typeof f?.value === "string" ? f.value : undefined;
+      };
+      const telefono = z.string().min(6).max(20).parse(campo("telefono"));
+      const mensaje = await conMeta(() =>
+        mandarArchivo(
+          b,
+          {
+            telefono,
+            archivo: { bytes, mime: part.mimetype || "application/octet-stream", nombre: part.filename || "archivo" },
+            caption: campo("caption")?.slice(0, 1024) ?? null,
+            notaDeVoz: campo("notaDeVoz") === "1",
+          },
+          user.id,
+        ),
+      );
+      reply.code(201);
+      return { id: mensaje.id, estado: mensaje.estado, telefono: mensaje.telefono };
     });
 
     app.post(`${base}/enviar`, pre, async (request, reply) => {

@@ -5873,6 +5873,15 @@ model WhatsAppMensaje {
   /// Cuándo lo mandó el cliente o cuándo salió (hora de WhatsApp).
   ocurridoEn    DateTime  @db.Timestamptz(6)
   /// Lo que mandó Meta o lo que respondió al enviar, tal cual.
+  /// Foto, audio, video, documento o sticker bajado de Meta: ruta relativa al
+  /// storage (whatsapp/<phoneNumberId>/<id>.<ext>). null = sin archivo o todavía
+  /// no se bajó (se baja al llegar o la primera vez que se abre).
+  archivoPath   String?
+  archivoMime   String?
+  /// Por qué no se pudo bajar (Meta guarda los archivos unos 30 días).
+  archivoError  String?
+  /// Audios: lo que dice, transcripto con Whisper al bajarlo.
+  transcripcion String?
   payload       Json
   createdAt     DateTime  @default(now()) @db.Timestamptz(6)
 

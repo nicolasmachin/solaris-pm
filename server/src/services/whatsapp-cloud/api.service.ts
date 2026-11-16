@@ -90,6 +90,8 @@ async function registrarSaliente(params: {
   plantilla: string | null;
   userId: string | null;
   phoneNumberId: string;
+  /** Archivo mandado: se guarda junto al mensaje para mostrarlo sin pedirlo a Meta. */
+  archivo?: { path: string; mime: string; bloque: Record<string, unknown> };
 }) {
   const waMessageId = params.respuesta.messages?.[0]?.id;
   if (!waMessageId) throw new MetaApiError("Meta no devolvió el id del mensaje", 502, params.respuesta);
@@ -105,7 +107,10 @@ async function registrarSaliente(params: {
       estado: "accepted",
       ocurridoEn: new Date(),
       enviadoPorId: params.userId,
-      payload: params.respuesta as unknown as Prisma.InputJsonValue,
+      payload: (params.archivo
+        ? { ...params.respuesta, [params.tipo]: params.archivo.bloque }
+        : params.respuesta) as unknown as Prisma.InputJsonValue,
+      ...(params.archivo ? { archivoPath: params.archivo.path, archivoMime: params.archivo.mime } : {}),
     },
   });
   // El webhook a veces avisa "enviado" antes de que se guarde esta fila: si ya
@@ -192,6 +197,68 @@ export async function enviarTexto(params: { telefono: string; texto: string; use
     plantilla: null,
     userId: params.userId,
     phoneNumberId: cuenta.phoneNumberId,
+  });
+}
+
+export type TipoArchivoWhatsApp = "image" | "audio" | "video" | "document";
+
+/**
+ * Manda una foto, un audio, un video o un documento: lo sube a Meta (`/media`) y
+ * manda el mensaje con ese id. Como el texto libre, solo con la ventana de 24 h
+ * abierta. `guardado` es dónde quedó la copia en el storage (para mostrarlo).
+ */
+export async function enviarArchivo(params: {
+  telefono: string;
+  tipo: TipoArchivoWhatsApp;
+  bytes: Buffer;
+  mime: string;
+  nombre: string;
+  caption?: string | null;
+  guardado: string;
+  userId: string;
+  cuenta?: Cuenta;
+}) {
+  const telefono = normalizarTelefono(params.telefono);
+  const cuenta = params.cuenta ?? cuentaDelServidor();
+  if (!(await ventanaAbierta(telefono, cuenta.phoneNumberId))) {
+    throw badRequest(
+      "WHATSAPP_VENTANA_CERRADA",
+      "Este número no escribió en las últimas 24 horas: solo se le puede mandar una plantilla aprobada.",
+    );
+  }
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", params.mime);
+  form.append("file", new Blob([new Uint8Array(params.bytes)], { type: params.mime }), params.nombre);
+  const subida = await fetch(graphUrl(`${cuenta.phoneNumberId}/media`), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${cuenta.token}` },
+    body: form,
+  });
+  const media = (await subida.json().catch(() => ({}))) as { id?: string; error?: { message?: string; error_user_msg?: string } };
+  if (!subida.ok || !media.id) {
+    throw new MetaApiError(media.error?.error_user_msg ?? media.error?.message ?? "Meta no aceptó el archivo", subida.status, media);
+  }
+  const caption = params.tipo === "audio" ? null : params.caption?.trim() || null;
+  const bloque: Record<string, unknown> = {
+    id: media.id,
+    ...(caption ? { caption } : {}),
+    ...(params.tipo === "document" ? { filename: params.nombre } : {}),
+  };
+  const respuesta = await llamarMeta<RespuestaEnvio>(
+    `${cuenta.phoneNumberId}/messages`,
+    { method: "POST", body: { messaging_product: "whatsapp", to: telefono, type: params.tipo, [params.tipo]: bloque } },
+    cuenta,
+  );
+  return registrarSaliente({
+    respuesta,
+    telefono,
+    tipo: params.tipo,
+    texto: caption ?? (params.tipo === "document" ? params.nombre : null),
+    plantilla: null,
+    userId: params.userId,
+    phoneNumberId: cuenta.phoneNumberId,
+    archivo: { path: params.guardado, mime: params.mime, bloque: { ...bloque, mime_type: params.mime } },
   });
 }
 

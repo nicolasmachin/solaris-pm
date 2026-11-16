@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.18 · del 16/11/26
+**Voltia · Uruguay** · Versión 1.19 · del 16/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -882,11 +882,23 @@ asesor. En el chat, arriba de cada mensaje mandado desde Voltia PM figura quién
 del equipo lo mandó; eso lo ve solo el equipo, al cliente le llega desde el
 WhatsApp del asesor como cualquier otro mensaje.
 
+**Fotos, audios, videos y documentos.** Se ven dentro del chat como en
+WhatsApp: la foto se abre en grande con un clic, el audio se escucha ahí y abajo
+aparece **lo que dice, escrito** (Voltia PM transcribe todos los audios), el
+video se reproduce y el documento se abre o se baja. Para **mandar**, con la
+ventana de 24 horas abierta: el **clip** adjunta una foto, un video, un audio o
+un documento (lo escrito en la caja va como texto de la foto o el video), y el
+**micrófono** graba una nota de voz, que le llega al cliente como cualquier nota
+de voz de WhatsApp. Las fotos y los videos se achican antes de guardarlos y
+mandarlos: la calidad alcanza para trabajar. WhatsApp acepta fotos de hasta 5 MB,
+videos y audios de hasta 16 MB y documentos de hasta 100 MB.
+
 **Lo que todavía no hace:** no avisa con una notificación cuando entra un
-mensaje (se ve en la franja de Ventas y en la bandeja); las fotos, audios y
-documentos que manda el cliente se ven como «Foto», «Audio» o «Documento», sin
-poder abrirlos desde Voltia PM; y desde Voltia PM no se pueden mandar archivos.
-Para eso, el celular.
+mensaje (se ve en la franja de Ventas y en la bandeja). Además, el **primer
+mensaje de cada chat que ya existía** antes de conectar el número —y los que
+pasan por WhatsApp en una computadora con Windows— WhatsApp no se los pasa a
+Voltia PM: se ven como «Mensaje no disponible acá: miralo en el celular», y hay
+que leerlos en el celular.
 
 ### Los contactos y las empresas
 
@@ -1323,6 +1335,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.19 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |
 | 1.18 | 16 de noviembre de 2026 | El WhatsApp reconoce el chat por el contacto (y por él, su lead); los números del equipo de Voltia aparecen con nombre y rol; el número desconocido muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre leads, contactos y equipo, y se crea el contacto desde el chat. |
 | 1.17 | 16 de noviembre de 2026 | La tarjeta **Cliente** en el panel del lead y en el proyecto, para ver y cambiar el contacto y la empresa; un lead nuevo queda vinculado solo a su contacto y empresa, y al ganarlo el proyecto queda con los mismos. |
 | 1.16 | 16 de noviembre de 2026 | Se agrega «Los contactos y las empresas»: cada persona es un contacto y cada empresa cliente una empresa, el lead apunta a ellos y conserva el nombre de la obra, un teléfono es de un solo contacto. Al WhatsApp de Ventas se entra desde el submenú de Ventas; la Dirección entra directo a la bandeja del primer asesor, y figura quién del equipo mandó cada mensaje (solo lo ve el equipo). |

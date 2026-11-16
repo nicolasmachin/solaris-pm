@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, MessageCircle } from "lucide-react";
 
-import { getWhatsAppDeLead } from "../../api/whatsapp.api";
+import { getWhatsAppDeLead, urlArchivoVentas } from "../../api/whatsapp.api";
 import { ListaMensajes } from "../whatsapp/BandejaWhatsApp";
 
 function haceCuanto(iso: string): string {
@@ -69,7 +69,7 @@ export function LeadWhatsAppCard({ leadId }: { leadId: string }) {
         <p className="text-[12px] text-[var(--color-text-muted)]">Todavía no hay mensajes con este lead por WhatsApp.</p>
       ) : (
         <div className="wa-web wa-fondo rounded-md px-3 py-2">
-          <ListaMensajes mensajes={data.mensajes} chica />
+          <ListaMensajes mensajes={data.mensajes} chica urlArchivo={(id) => urlArchivoVentas(id, data.asesorId)} />
         </div>
       )}
     </section>

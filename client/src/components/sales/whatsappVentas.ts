@@ -1,5 +1,7 @@
 import {
   asociarLeadVentas,
+  urlArchivoVentas,
+  enviarArchivoVentas,
   enviarWhatsAppVentas,
   getBandejaVentas,
   getConversacionVentas,
@@ -24,6 +26,8 @@ export function bandejaVentas(asesor: string | null): BandejaApi {
     asociarCliente: (telefono, id) => asociarLeadVentas(telefono, id, asesor),
     enviar: (body) => enviarWhatsAppVentas(body, asesor),
     getPlantillas: () => getPlantillasVentas(asesor),
+    urlArchivo: (id) => urlArchivoVentas(id, asesor),
+    enviarArchivo: (d) => enviarArchivoVentas(d, asesor),
     buscarParaAsociar: async (q) => {
       const { data } = await getLeadsFlat({ q: q || undefined, limit: 8, sortBy: "leadCreatedAt", sortOrder: "desc" });
       return data.map((l) => ({ id: l.id, nombre: l.clientName, detalle: l.code }));

@@ -18,6 +18,12 @@
  * Ver docs/manual/15-whatsapp.md.
  */
 
+import { promises as fsp } from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { LIMITE_ENVIO, aNotaDeVoz, comprimir, tipoDeArchivo, type Archivo } from "./compresion.service.js";
+import { bajarArchivo, mediaDe } from "./media.service.js";
+import { getStoredFilePath } from "../file-storage.service.js";
 import { InteractionChannel, InteractionDirection } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
@@ -26,6 +32,7 @@ import { decryptSecret } from "../email/crypto.js";
 import {
   type Cuenta,
   enviarPlantilla,
+  enviarArchivo,
   enviarTexto,
   listarPlantillas,
   normalizarTelefono,
@@ -381,7 +388,25 @@ export async function mensajesDe(bandeja: Bandeja, telefono: string, limite = 50
     enviadoPor: m.enviadoPor?.name ?? null,
     origen: m.origen,
     ocurridoEn: m.ocurridoEn.toISOString(),
+    // Foto, audio, video o documento: se pide aparte (GET …/mensajes/:id/archivo).
+    archivo: (() => {
+      const media = mediaDe(m.tipo, m.payload);
+      return media
+        ? { mime: m.archivoMime ?? media.mime_type ?? null, nombre: media.filename ?? null, error: m.archivoError, transcripcion: m.transcripcion }
+        : null;
+    })(),
   }));
+}
+
+/** El archivo de un mensaje de esta bandeja, bajándolo de Meta si todavía no se bajó. */
+export async function archivoDeMensaje(bandeja: Bandeja, mensajeId: string) {
+  const { phoneNumberId } = exigirCuenta(bandeja);
+  const m = await prisma.whatsAppMensaje.findFirst({ where: { id: mensajeId, phoneNumberId }, select: { id: true, tipo: true, payload: true } });
+  if (!m || !mediaDe(m.tipo, m.payload)) throw notFound("ARCHIVO_NO_ENCONTRADO", "El mensaje no tiene archivo");
+  const { archivoPath, archivoMime } = await bajarArchivo(m.id).catch((err) => {
+    throw notFound("ARCHIVO_NO_DISPONIBLE", `No se pudo traer el archivo de WhatsApp: ${err instanceof Error ? err.message : err}`);
+  });
+  return { ruta: getStoredFilePath(archivoPath), mime: archivoMime, nombre: mediaDe(m.tipo, m.payload)?.filename ?? null };
 }
 
 async function ultimoEntrante(phoneNumberId: string, telefono: string): Promise<Date | null> {
@@ -533,6 +558,50 @@ export async function mandar(bandeja: Bandeja, body: MandarBody, userId: string)
       (err) => console.error("[whatsapp] no se pudo registrar el contacto en el historial:", err),
     );
   }
+  return mensaje;
+}
+
+/**
+ * Manda una foto, un audio, un video o un documento desde la bandeja: lo achica,
+ * guarda la copia y lo manda. `notaDeVoz` = grabado en Voltia PM (se convierte al
+ * formato de nota de voz de WhatsApp).
+ */
+export async function mandarArchivo(
+  bandeja: Bandeja,
+  params: { telefono: string; archivo: Archivo; caption?: string | null; notaDeVoz?: boolean },
+  userId: string,
+) {
+  const cuenta = exigirCuenta(bandeja);
+  let a = params.notaDeVoz ? await aNotaDeVoz(params.archivo) : await comprimir(params.archivo);
+  const tipo = params.notaDeVoz ? "audio" : tipoDeArchivo(a.mime);
+  // WhatsApp solo acepta audios OGG/MP3/AAC/AMR/M4A: un audio en otro formato va como nota de voz.
+  if (tipo === "audio" && !/^audio\/(ogg|mpeg|mp4|aac|amr)/.test(a.mime)) a = await aNotaDeVoz(a);
+  if (a.bytes.length > LIMITE_ENVIO[tipo]) {
+    const mb = Math.round(LIMITE_ENVIO[tipo] / 1024 / 1024);
+    throw badRequest("ARCHIVO_MUY_GRANDE", `WhatsApp acepta ${tipo === "document" ? "documentos" : tipo === "image" ? "fotos" : tipo === "video" ? "videos" : "audios"} de hasta ${mb} MB.`);
+  }
+  const relativo = path.posix.join("whatsapp", cuenta.phoneNumberId, `${randomUUID()}.${a.nombre.match(/\.([a-z0-9]{1,6})$/i)?.[1] ?? "bin"}`);
+  const absoluto = getStoredFilePath(relativo);
+  await fsp.mkdir(path.dirname(absoluto), { recursive: true });
+  await fsp.writeFile(absoluto, a.bytes);
+  const mensaje = await enviarArchivo({
+    telefono: params.telefono,
+    tipo,
+    bytes: a.bytes,
+    mime: a.mime,
+    nombre: a.nombre,
+    caption: params.caption,
+    guardado: relativo,
+    userId,
+    cuenta,
+  }).catch(async (err) => {
+    await fsp.rm(absoluto, { force: true }).catch(() => undefined);
+    throw err;
+  });
+  const cliente = await clienteDe(bandeja, params.telefono);
+  const texto = params.caption?.trim() || { image: "Foto", audio: "Audio", video: "Video", document: a.nombre }[tipo];
+  if (cliente?.leadId) await registrarContactoDelDiaLead(cliente.leadId, texto, userId).catch(() => undefined);
+  else if (cliente?.projectId) await registrarContactoDelDia(cliente.projectId, texto, userId).catch(() => undefined);
   return mensaje;
 }
 
