@@ -18,6 +18,7 @@
 // terminan en vocal y son frecuentes en Uruguay. Van sin tildes: la comparación
 // normaliza antes.
 const FEMENINOS = new Set([
+  "july", "juli",
   "beatriz", "ines", "mercedes", "isabel", "raquel", "ruth", "rut", "judith",
   "carmen", "belen", "soledad", "caridad", "milagros", "dolores", "lourdes",
   "pilar", "nair", "noemi", "rocio", "consuelo", "rosario", "amparo", "marisol",
@@ -62,10 +63,10 @@ function capitalizar(nombre: string): string {
   return nombre.charAt(0).toUpperCase() + nombre.slice(1).toLowerCase();
 }
 
-type Genero = "m" | "f" | null;
+export type Genero = "m" | "f" | null;
 
 // Género del primer nombre, o null si no hay señal confiable.
-function generoDe(primerNombre: string): Genero {
+export function generoDe(primerNombre: string): Genero {
   const n = normalizar(primerNombre);
   if (!n) return null;
 

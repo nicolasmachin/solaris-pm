@@ -32,6 +32,7 @@ import { completar, deTipo, textoComun } from "../instagram-marketing/automatiza
 import { pedirJson } from "../instagram-marketing/claude.js";
 import { createNotification } from "../notification.service.js";
 import { crearLead } from "../sales/leads.service.js";
+import { generoDe } from "../proposal/salutation.js";
 import { enviarTexto } from "./api.service.js";
 import { bandejaVentas, clienteDe } from "./bandejas.service.js";
 
@@ -167,7 +168,12 @@ async function armarRespuesta(phoneNumberId: string, telefono: string, asesor: s
   const auto = await deTipo("whatsapp");
   if (!auto) return null;
   const conv = await prisma.whatsAppConversacion.findUnique({ where: DONDE(phoneNumberId, telefono), select: { id: true, nombrePerfil: true } });
-  const instrucciones = completar(auto.flujo.replace("{DATOS}", completar(await textoComun("_datos")))).replaceAll("{ASESOR}", asesor);
+  // "asesora" o "asesor" según el nombre; si no hay señal, una forma neutra.
+  const genero = generoDe(asesor);
+  const instrucciones = completar(auto.flujo.replace("{DATOS}", completar(await textoComun("_datos"))))
+    .replaceAll("{ASESOR_CARGO}", genero === "f" ? "asesora comercial" : genero === "m" ? "asesor comercial" : "del equipo comercial")
+    .replaceAll("{ATENTO}", genero === "f" ? "atenta" : genero === "m" ? "atento" : "a las órdenes")
+    .replaceAll("{ASESOR}", asesor);
   const ahora = new Date();
   const contexto = [
     `Hoy: ${ahora.toLocaleString("es-UY", { timeZone: "America/Montevideo", weekday: "long", hour: "2-digit", minute: "2-digit" })}.`,

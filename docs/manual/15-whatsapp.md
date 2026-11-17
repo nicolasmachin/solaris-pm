@@ -435,10 +435,14 @@ asistente de Instagram (modelo `INSTAGRAM_MODELO`, función de IA
   cliente). `asistenteDe()` alimenta el aviso arriba del chat (`AvisoAsistente`).
   Administración → WhatsApp: `whatsapp_numeros.asistente` (APAGADO | PRUEBA |
   ACTIVO), solo para números de Ventas, auditado.
-- **Supuestos sin verificar**: que el asesor sea mujer («asesora comercial» está
-  en las reglas, porque la primera es July); que un mensaje que el cliente manda
-  justo mientras el asistente manda el speech se tome como respuesta (lo pasa al
-  asesor, que es lo seguro).
+- **Género del asesor**: `{ASESOR_CARGO}` y `{ATENTO}` salen de `generoDe()`
+  (`proposal/salutation.ts`, la del saludo de las cartas) con el primer nombre
+  del responsable: «asesora comercial» / «quedo atenta», «asesor comercial» /
+  «quedo atento», o, sin señal, «del equipo comercial» / «quedo a las órdenes».
+  Si un nombre sale mal, se agrega a `FEMENINOS` o `MASCULINOS` de ese archivo.
+- **Supuesto sin verificar**: que un mensaje que el cliente manda justo mientras
+  el asistente manda el speech se tome como respuesta (lo pasa al asesor, que es
+  lo seguro).
 
 ## Quién es cada chat (CRM, desde v14.9)
 
