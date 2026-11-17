@@ -1124,8 +1124,10 @@ y **Empresas**, y los leads y proyectos apuntan a ellos.
 
 ## Cómo se usa
 
-Submenú de Ventas (`Topbar.tsx` → `VentasNavMenu`): **Pipeline**, **Contactos**
-(`/ventas/contactos`), **Empresas** (`/ventas/empresas`) y **WhatsApp**. Las dos
+Menú lateral de Ventas (`components/sales/VentasLayout.tsx`, igual al
+`AdminSidebar` de Administración; envuelve las rutas `/ventas*` en `App.tsx`):
+**Pipeline**, **Contactos** (`/ventas/contactos`), **Empresas**
+(`/ventas/empresas`), **WhatsApp** e **Instagram**. Las dos
 pantallas (`pages/VentasCrm.tsx`) son un listado con buscador y una ficha en panel
 lateral (`?id=` en la URL, así se puede linkear) con los datos editables, el
 vínculo contacto ↔ empresa (cargo y principal) y los leads y proyectos.

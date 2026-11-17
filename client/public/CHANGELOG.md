@@ -10,6 +10,10 @@
 - Desde el chat de Claude se puede preguntar **a quién no le contestaste** (con lo que te mandó y desde cuándo espera, sea cliente, lead, alguien del equipo o un desconocido), **leer un chat** («¿qué me pidió fulano?», con los audios escritos), **buscar** en todas las conversaciones y **mandar un mensaje** desde tu número cuando se lo pedís.
 - En Administración → WhatsApp, cuando Meta corta el alta de un número de Voltia en el último paso, se termina desde la misma pantalla: se pega la cuenta de mensajes de Meta, se elige la bandeja y el responsable, y queda dado de alta.
 
+#### Ventas
+
+- Las secciones de Ventas (**Pipeline**, **Contactos**, **Empresas**, **WhatsApp** e **Instagram**) pasan a un **menú a la izquierda**, igual al de Administración. En el celular se abre con el botón de arriba a la izquierda.
+
 ## v14.9
 
 ### 16 de noviembre de 2026

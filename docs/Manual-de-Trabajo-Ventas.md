@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.20 · del 16/11/26
+**Voltia · Uruguay** · Versión 1.21 · del 17/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -591,9 +591,11 @@ para que no se repita.
 Todo el trabajo de Ventas se hace en **Voltia PM**, en dos lugares: en
 **Ventas** (en el menú de arriba), todo lo que pasa antes de la venta —el lead,
 las propuestas, el cierre—; y en **Proyectos**, el onboarding, una vez que la
-venta se convirtió en proyecto. Al pasar el mouse por **Ventas** se abre su
-submenú: **Pipeline** (el tablero de leads), **Contactos**, **Empresas** y
-**WhatsApp**; en el celular, cada una es una línea del menú. Acá van las
+venta se convirtió en proyecto. Dentro de **Ventas**, a la izquierda, hay un
+menú con las secciones, igual que en Administración: **Embudo** (el
+**Pipeline**, el tablero de leads), **Clientes** (**Contactos** y **Empresas**)
+y **Conversaciones** (**WhatsApp** e **Instagram**). En el celular ese menú se
+abre con el botón de las tres rayitas, arriba a la izquierda. Acá van las
 pantallas en el orden en que el asesor las usa. *Qué* se hace y *por qué* está en el capítulo 2; acá, *dónde* se
 hace y *cómo*.
 
@@ -826,8 +828,8 @@ escribe desde el celular y lo que se escribe desde Voltia PM es la misma
 conversación, y el cliente no nota la diferencia. Lo conecta Administración, con
 el asesor presente, porque hay que escanear un código desde su celular.
 
-**Dónde se entra:** en el menú de arriba, **Ventas → WhatsApp** (al pasar el
-mouse por Ventas se abre el submenú). También desde la franja **WhatsApp** que
+**Dónde se entra:** en **Ventas**, menú de la izquierda → **WhatsApp**. También
+desde la franja **WhatsApp** que
 está arriba del tablero, o el botón **Abrir conversación** del panel del lead.
 
 **Cómo se ve:** igual que WhatsApp Web. A la izquierda, los chats del número,
@@ -935,8 +937,8 @@ contacto y, si el cliente es una empresa, a la empresa. Lo mismo el proyecto. As
 la misma persona con un lead viejo, uno nuevo y un proyecto aparece una sola vez,
 con todo junto.
 
-**Dónde se entra:** **Ventas → Contactos** y **Ventas → Empresas**, en el submenú
-de Ventas. Cada pantalla tiene un buscador (por nombre, teléfono, mail, cédula o
+**Dónde se entra:** en **Ventas**, menú de la izquierda → **Contactos** o
+**Empresas**. Cada pantalla tiene un buscador (por nombre, teléfono, mail, cédula o
 empresa) y el botón **Nuevo**.
 
 **La ficha.** Al tocar un contacto o una empresa se abre su ficha: los datos,
@@ -1357,6 +1359,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.21 | 17 de noviembre de 2026 | Las secciones de Ventas (Pipeline, Contactos, Empresas, WhatsApp e Instagram) pasan a un menú a la izquierda, igual al de Administración. |
 | 1.20 | 16 de noviembre de 2026 | Se agrega el asistente del primer mensaje del WhatsApp: le manda el speech al cliente nuevo en nombre del asesor, con ritmo de persona y de día; punto verde cuando lo mandó y etiqueta roja con el motivo cuando necesita al asesor. |
 | 1.19 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |
 | 1.18 | 16 de noviembre de 2026 | El WhatsApp reconoce el chat por el contacto (y por él, su lead); los números del equipo de Voltia aparecen con nombre y rol; el número desconocido muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre leads, contactos y equipo, y se crea el contacto desde el chat. |

@@ -99,7 +99,7 @@ los demás del área no se les muestra la pestaña ni la tarjeta de la ficha:
   número* aparece solo si el usuario tiene uno; si no, entra directo al primer
   asesor (`VentasWhatsApp.tsx`, compara `asesores` con el usuario logueado).
 - Sin número propio y sin asesores con número, la pantalla dice cómo conectarlo.
-- Se entra por el submenú **Ventas → WhatsApp** (`Topbar.tsx` → `VentasNavMenu`).
+- Se entra por el menú lateral de Ventas → **WhatsApp** (`VentasLayout.tsx`).
 - Se entra desde la franja **WhatsApp** del tablero de Ventas (abajo de *Leads sin
   tomar* y de la de Instagram): en ámbar con quiénes esperan respuesta si hay
   conversaciones sin contestar. No aparece si el usuario no tiene número (salvo

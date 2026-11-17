@@ -18,6 +18,7 @@ const Sales = lazy(() => import("./pages/Sales").then((module) => ({ default: mo
 const VentasInstagram = lazy(() => import("./pages/VentasInstagram").then((module) => ({ default: module.VentasInstagram })));
 const VentasContactos = lazy(() => import("./pages/VentasCrm").then((module) => ({ default: module.VentasContactos })));
 const VentasEmpresas = lazy(() => import("./pages/VentasCrm").then((module) => ({ default: module.VentasEmpresas })));
+import { VentasLayout } from "./components/sales/VentasLayout";
 const VentasWhatsApp = lazy(() => import("./pages/VentasWhatsApp").then((module) => ({ default: module.VentasWhatsApp })));
 const Metrics = lazy(() => import("./pages/Metrics").then((module) => ({ default: module.Metrics })));
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })));
@@ -315,46 +316,49 @@ export function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/notifications" element={<Notifications />} />
 
-        <Route
-          path="/ventas"
-          element={
-            <PermissionRoute module="VENTAS" action="VIEW">
-              <Sales />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/ventas/instagram"
-          element={
-            <PermissionRoute module="VENTAS" action="VIEW">
-              <VentasInstagram />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/ventas/contactos"
-          element={
-            <PermissionRoute module="VENTAS" action="VIEW">
-              <VentasContactos />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/ventas/empresas"
-          element={
-            <PermissionRoute module="VENTAS" action="VIEW">
-              <VentasEmpresas />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/ventas/whatsapp"
-          element={
-            <PermissionRoute module="VENTAS" action="VIEW">
-              <VentasWhatsApp />
-            </PermissionRoute>
-          }
-        />
+        {/* Ventas: el menú lateral (VentasLayout) envuelve todas sus pantallas. */}
+        <Route element={<VentasLayout />}>
+          <Route
+            path="/ventas"
+            element={
+              <PermissionRoute module="VENTAS" action="VIEW">
+                <Sales />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas/instagram"
+            element={
+              <PermissionRoute module="VENTAS" action="VIEW">
+                <VentasInstagram />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas/contactos"
+            element={
+              <PermissionRoute module="VENTAS" action="VIEW">
+                <VentasContactos />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas/empresas"
+            element={
+              <PermissionRoute module="VENTAS" action="VIEW">
+                <VentasEmpresas />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas/whatsapp"
+            element={
+              <PermissionRoute module="VENTAS" action="VIEW">
+                <VentasWhatsApp />
+              </PermissionRoute>
+            }
+          />
+        </Route>
         <Route path="/sales" element={<Navigate to="/ventas" replace />} />
         <Route
           path="/comisiones"

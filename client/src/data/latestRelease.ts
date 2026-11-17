@@ -108,6 +108,10 @@ export const LATEST_RELEASE: Release = {
         "El alta de un número de Voltia que Meta corta en el último paso se termina desde Administración → WhatsApp.",
       ],
     },
+    {
+      title: "Ventas",
+      items: ["Las secciones de Ventas pasan a un menú a la izquierda, igual al de Administración."],
+    },
   ],
 };
 

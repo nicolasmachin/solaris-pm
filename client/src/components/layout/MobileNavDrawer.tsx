@@ -20,9 +20,6 @@ import {
   Bell,
   LifeBuoy,
   Megaphone,
-  MessageCircle,
-  UserRound,
-  Building2,
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -182,21 +179,9 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             </NavLink>
           </CanAccess>
           <CanAccess module="VENTAS" action="VIEW">
-            <NavLink to="/ventas" end className={linkClass}>
+            <NavLink to="/ventas" className={linkClass}>
               <TrendingUp size={18} className="shrink-0" />
-              <span>Ventas · Pipeline</span>
-            </NavLink>
-            <NavLink to="/ventas/contactos" className={linkClass}>
-              <UserRound size={18} className="shrink-0" />
-              <span>Ventas · Contactos</span>
-            </NavLink>
-            <NavLink to="/ventas/empresas" className={linkClass}>
-              <Building2 size={18} className="shrink-0" />
-              <span>Ventas · Empresas</span>
-            </NavLink>
-            <NavLink to="/ventas/whatsapp" className={linkClass}>
-              <MessageCircle size={18} className="shrink-0" />
-              <span>Ventas · WhatsApp</span>
+              <span>Ventas</span>
             </NavLink>
           </CanAccess>
           <CanAccess module="EXPERIENCIA_CLIENTES" action="VIEW">
