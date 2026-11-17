@@ -680,6 +680,33 @@ solo tiene de esas, `ver_propuesta` lo dice explícitamente y ofrece el PDF, en
 vez de responder que no hay ninguna propuesta —que es lo que parecería si solo
 mirara las nuevas.
 
+### WhatsApp: el secretario (desde v15.0)
+
+`tools/whatsapp.ts` sobre `services/whatsapp-cloud/secretario.service.ts`.
+Pedido de Nicolás del 17-nov-2026: leer su número de trabajo (uso `DIRECCION`,
+sin bandeja en Voltia PM) para ponerse al día y contestar más rápido.
+
+- **Qué números**: `numerosDe()` → los que tienen a quien pregunta de
+  responsable; el ADMIN, todos. Sin `numero`, `elegirNumero()` toma el de
+  Dirección propio, si no el primero propio. `numero` acepta el teléfono o el
+  nombre del responsable.
+- **`whatsapp_pendientes`**: chats cuyo último mensaje (sin reacciones ni
+  ediciones) es del otro y no se marcó resuelto (`estaSinContestar()`), del más
+  viejo al más nuevo, con quién es (`reconocedor()` de `bandejas.service.ts`:
+  contacto, lead, cliente, equipo o nombre de WhatsApp) y lo que mandó desde la
+  última respuesta nuestra (hasta 8 mensajes, con audios transcriptos).
+- **`whatsapp_chat`**: `buscarChat()` encuentra el teléfono por dígitos o por
+  nombre (contacto, lead, proyecto, usuario, nombre de perfil) entre los que
+  tienen conversación en ese número; `leerChat()` devuelve los últimos N.
+- **`whatsapp_buscar`**: texto en `texto` y `transcripcion` de los números que
+  puede leer, hasta 40 resultados.
+- **`whatsapp_enviar`** (no es de solo lectura): `mandar()` con la bandeja del
+  número (`bandejaDeNumero()`), como texto libre: solo con la ventana de 24 h
+  abierta. La descripción le pide al modelo confirmar destinatario y texto.
+- **Límites**: solo lo que llegó desde que el número se conectó (el historial
+  depende de que Meta lo mande); los grupos no entran; el primer mensaje de cada
+  chat que ya existía aparece como «MENSAJE NO DISPONIBLE» (error 131060).
+
 ## Enlaces de descarga
 
 Las herramientas que devuelven documentos generan una URL con un token de **15

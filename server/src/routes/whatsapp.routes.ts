@@ -19,6 +19,8 @@ import { USOS_NUMERO, bandejaExperienciaSolar } from "../services/whatsapp-cloud
 import { faltantesParaConectar, faltantesParaEnviar, whatsappConfig } from "../services/whatsapp-cloud/config.js";
 import {
   actualizarNumero,
+  altaDirecta,
+  numerosDeCuenta,
   conectarNumero,
   listarNumeros,
   sincronizarNumero,
@@ -120,6 +122,27 @@ export async function registerWhatsAppRoutes(app: FastifyInstance) {
       })
       .parse(request.body);
     const numero = await conMeta(() => conectarNumero({ ...body, userId: user.id }));
+    reply.code(201);
+    const { tokenCifrado: _t, ...rest } = numero;
+    return rest;
+  });
+
+  // Alta directa: cuando el registro integrado corta en el último paso (números de Voltia).
+  app.get("/whatsapp/numeros/directo", puede, async (request) => {
+    const { waba } = z.object({ waba: z.string().regex(/^\d{5,30}$/) }).parse(request.query);
+    return conMeta(() => numerosDeCuenta(waba));
+  });
+  app.post("/whatsapp/numeros/directo", puede, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = z
+      .object({
+        wabaId: z.string().regex(/^\d{5,30}$/),
+        phoneNumberId: z.string().regex(/^\d{5,30}$/),
+        responsableId: z.string().min(1).max(40).optional(),
+        uso: z.enum(USOS_NUMERO).optional(),
+      })
+      .parse(request.body);
+    const numero = await conMeta(() => altaDirecta({ ...body, userId: user.id }));
     reply.code(201);
     const { tokenCifrado: _t, ...rest } = numero;
     return rest;

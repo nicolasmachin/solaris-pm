@@ -1,5 +1,15 @@
 # Novedades
 
+## v15.0
+
+### 17 de noviembre de 2026
+
+#### WhatsApp
+
+- Nueva bandeja **Dirección** para un número de WhatsApp: no se ve en Voltia PM, se lee desde el chat de Claude conectado a Voltia PM.
+- Desde el chat de Claude se puede preguntar **a quién no le contestaste** (con lo que te mandó y desde cuándo espera, sea cliente, lead, alguien del equipo o un desconocido), **leer un chat** («¿qué me pidió fulano?», con los audios escritos), **buscar** en todas las conversaciones y **mandar un mensaje** desde tu número cuando se lo pedís.
+- En Administración → WhatsApp, cuando Meta corta el alta de un número de Voltia en el último paso, se termina desde la misma pantalla: se pega la cuenta de mensajes de Meta, se elige la bandeja y el responsable, y queda dado de alta.
+
 ## v14.9
 
 ### 16 de noviembre de 2026

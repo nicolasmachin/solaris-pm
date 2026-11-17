@@ -5,6 +5,7 @@
 // hay sesiones que expirar ni memoria que se acumule, y el servidor puede
 // reiniciarse sin cortarle la conexión a nadie.
 
+import { registerWhatsAppTools } from "./tools/whatsapp.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { entornoLabel, esProduccion, issuerUrl } from "./config.js";
@@ -99,6 +100,7 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerMetricasTools(server, user);
   registerPesoObrasTools(server, user);
   registerMarketingTools(server, user);
+  registerWhatsAppTools(server, user);
 
   return server;
 }

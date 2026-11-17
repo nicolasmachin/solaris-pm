@@ -11,6 +11,8 @@ import {
   getWhatsAppRegistro,
   sincronizarWhatsAppNumero,
   NOMBRE_USO,
+  altaDirectaWhatsApp,
+  getNumerosDeCuenta,
   type WhatsAppNumero,
   type WhatsAppRegistroConfig,
   type WhatsAppUso,
@@ -356,6 +358,95 @@ export function WhatsAppNumeros() {
           <Link2 size={14} /> {conectando ? "Conectando…" : "Conectar número"}
         </Button>
       </div>
+
+      <AltaDirecta usuarios={usuarios} />
+    </div>
+  );
+}
+
+/**
+ * El último paso cuando Meta corta el registro con "no es un identificador del
+ * negocio válido": pasa con todos los números de Voltia, porque Voltia es también
+ * la dueña de la app. El número igual quedó conectado en Meta (el celular dice
+ * "conectado"): acá se lo da de alta con la clave de Voltia PM.
+ */
+function AltaDirecta({ usuarios }: { usuarios: Array<{ id: string; name: string }> }) {
+  const qc = useQueryClient();
+  const [abierto, setAbierto] = useState(false);
+  const [cuenta, setCuenta] = useState("");
+  const [uso, setUso] = useState<WhatsAppUso | null>(null);
+  const [responsableId, setResponsableId] = useState("");
+  // Acepta el ID o la dirección entera de Meta (…selected_asset_id=123…).
+  const wabaId = (cuenta.match(/selected_asset_id=(\d+)/)?.[1] ?? cuenta).replace(/\D/g, "");
+  const buscar = useMutation({
+    mutationFn: () => getNumerosDeCuenta(wabaId),
+    onError: (e) => toast.error(getApiErr(e) ?? "No se pudo leer la cuenta"),
+  });
+  const alta = useMutation({
+    mutationFn: (phoneNumberId: string) => altaDirectaWhatsApp({ wabaId, phoneNumberId, uso: uso ?? undefined, responsableId: responsableId || undefined }),
+    onSuccess: (n) => {
+      toast.success(`Número ${n.telefono} dado de alta`);
+      qc.invalidateQueries({ queryKey: ["whatsapp-numeros"] });
+      buscar.reset();
+      setCuenta("");
+      setAbierto(false);
+    },
+    onError: (e) => toast.error(getApiErr(e) ?? "No se pudo dar de alta"),
+  });
+
+  if (!abierto) {
+    return (
+      <button type="button" className="text-[12px] text-[var(--color-accent)] hover:underline" onClick={() => setAbierto(true)}>
+        ¿Meta cortó al final con «no es un identificador del negocio válido»? Terminá el alta acá
+      </button>
+    );
+  }
+  return (
+    <div className="space-y-3 rounded-xl border border-[var(--color-border)] p-3 text-[13px] text-[var(--color-text-secondary)]">
+      <p className="font-medium text-[var(--color-text-primary)]">Agregar un número que ya quedó conectado en Meta</p>
+      <ol className="list-decimal space-y-1 pl-5">
+        <li>
+          En business.facebook.com/settings → <b>Cuentas → Cuentas de mensajes</b>, abrí la del número y copiá la dirección del
+          navegador.
+        </li>
+        <li>
+          En esa cuenta, <b>Asignar personas → voltia-pm → Control total</b> (es la clave con la que Voltia PM lo usa).
+        </li>
+        <li>Pegá la dirección acá, elegí la bandeja y el responsable, y buscá.</li>
+      </ol>
+      <div className="grid gap-2 md:grid-cols-[2fr_1fr_1fr_auto]">
+        <input className={INPUT} placeholder="Dirección o ID de la cuenta de mensajes" value={cuenta} onChange={(e) => setCuenta(e.target.value)} />
+        <SelectUso value={uso} onChange={setUso} />
+        <select className={INPUT} value={responsableId} onChange={(e) => setResponsableId(e.target.value)}>
+          <option value="">Responsable</option>
+          {usuarios.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
+          ))}
+        </select>
+        <Button onClick={() => buscar.mutate()} disabled={wabaId.length < 5 || buscar.isPending}>
+          {buscar.isPending ? "Buscando…" : "Buscar"}
+        </Button>
+      </div>
+      {buscar.data && buscar.data.length === 0 && <p>Esa cuenta no tiene números.</p>}
+      {buscar.data?.map((n) => (
+        <div key={n.phoneNumberId} className="flex flex-wrap items-center gap-3 rounded-lg bg-[var(--color-bg-card)] px-3 py-2">
+          <span className="font-medium text-[var(--color-text-primary)]">{n.telefono}</span>
+          <span>{n.nombre}</span>
+          <span className={n.enElCelular ? "text-[var(--color-success-text)]" : "text-[var(--color-warning-text)]"}>
+            {n.enElCelular ? "Sigue en el celular" : "No está en el celular"}
+          </span>
+          {n.yaEnVoltiaPm ? (
+            <span className="ml-auto">Ya está en Voltia PM</span>
+          ) : (
+            <Button className="ml-auto" onClick={() => alta.mutate(n.phoneNumberId)} disabled={alta.isPending || !uso || !responsableId}>
+              {alta.isPending ? "Dando de alta…" : "Dar de alta"}
+            </Button>
+          )}
+        </div>
+      ))}
+      {buscar.data && (!uso || !responsableId) && <p className="text-[12px]">Elegí la bandeja y el responsable para darlo de alta.</p>}
     </div>
   );
 }

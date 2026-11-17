@@ -88,7 +88,7 @@ type DatosAlta = {
   businessId?: string;
   etiqueta?: string;
   responsableId?: string;
-  uso?: "EXPERIENCIA_SOLAR" | "VENTAS";
+  uso?: "EXPERIENCIA_SOLAR" | "VENTAS" | "DIRECCION";
   userId: string;
 };
 
@@ -243,7 +243,7 @@ export async function actualizarNumero(
   cambios: {
     etiqueta?: string | null;
     responsableId?: string | null;
-    uso?: "EXPERIENCIA_SOLAR" | "VENTAS" | null;
+    uso?: "EXPERIENCIA_SOLAR" | "VENTAS" | "DIRECCION" | null;
     /** Asistente de Ventas (speech inicial con IA): APAGADO | PRUEBA | ACTIVO. */
     asistente?: "APAGADO" | "PRUEBA" | "ACTIVO";
   },
@@ -283,4 +283,54 @@ export async function actualizarNumero(
     });
   }
   return actualizado;
+}
+
+// ─── Alta directa (números de Voltia en el portafolio dueño de la app) ────────
+
+/**
+ * Los números de una cuenta de mensajes, vistos con el token del usuario del
+ * sistema (WHATSAPP_TOKEN). Es el último paso cuando el registro integrado corta
+ * con "no es un identificador del negocio válido" (#1690130): Meta no deja que
+ * el portafolio dueño de la app se conecte a sí mismo, pero el número igual queda
+ * conectado en coexistencia. Ver docs/manual/15-whatsapp.md.
+ */
+export async function numerosDeCuenta(wabaId: string) {
+  const token = whatsappConfig().token;
+  if (!token) throw badRequest("WHATSAPP_NO_CONFIGURADO", "Falta WHATSAPP_TOKEN en el servidor.");
+  const lista = await graph<{ data?: Array<{ id: string; display_phone_number?: string; verified_name?: string }> }>(
+    `${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
+    token,
+  ).catch((err) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw badRequest(
+      "CUENTA_NO_ACCESIBLE",
+      /not supported for this WhatsApp Business Account|Invalid parameter/i.test(msg)
+        ? "Ese es el ID de la cuenta de WhatsApp, no el de la cuenta de mensajes: buscalo en Configuración del negocio → Cuentas → Cuentas de mensajes."
+        : `Meta no deja leer esa cuenta: ${msg}. ¿Le diste acceso total a voltia-pm (Asignar personas)?`,
+    );
+  });
+  const ya = await prisma.whatsAppNumero.findMany({
+    where: { phoneNumberId: { in: (lista.data ?? []).map((n) => n.id) } },
+    select: { phoneNumberId: true },
+  });
+  const conectados = new Set(ya.map((n) => n.phoneNumberId));
+  return Promise.all(
+    (lista.data ?? []).map(async (n) => {
+      const datos = await graph<DatosNumero>(`${n.id}?fields=is_on_biz_app`, token).catch(() => ({}) as DatosNumero);
+      return {
+        phoneNumberId: n.id,
+        telefono: n.display_phone_number ?? n.id,
+        nombre: n.verified_name ?? null,
+        enElCelular: datos.is_on_biz_app === true,
+        yaEnVoltiaPm: conectados.has(n.id),
+      };
+    }),
+  );
+}
+
+/** Da de alta un número de una cuenta de mensajes con el token del usuario del sistema. */
+export async function altaDirecta(params: DatosAlta & { phoneNumberId: string }) {
+  const token = whatsappConfig().token;
+  if (!token) throw badRequest("WHATSAPP_NO_CONFIGURADO", "Falta WHATSAPP_TOKEN en el servidor.");
+  return registrarNumero(token, params);
 }

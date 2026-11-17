@@ -527,9 +527,21 @@ Lo que pasó al conectar el número de July (15-nov-2026), porque va a pasar con
   en el celular; a la API no llega el contenido y no hay forma de pedirlo. La
   bandeja lo muestra como «Mensaje no disponible acá: miralo en el celular»
   (`TIPOS.unsupported` en `BandejaWhatsApp.tsx`).
-- Para el próximo número: botón Conectar número hasta el QR (ignorar el error del
-  final) → asignar `voltia-pm` a la cuenta de mensajes → script en modo prueba →
-  `--aplicar`. Pendiente: llevar ese último paso a un botón en Administración.
+- **Para el próximo número**: botón Conectar número hasta el QR (ignorar el error
+  del final) → asignar `voltia-pm` a la cuenta de mensajes → Administración →
+  WhatsApp → «¿Meta cortó al final…? Terminá el alta acá» (`AltaDirecta` en
+  `WhatsAppNumeros.tsx`): se pega la dirección o el ID de la cuenta de mensajes,
+  `GET /whatsapp/numeros/directo?waba=` (`numerosDeCuenta()`) lista sus números
+  (si sigue en el celular, si ya está en Voltia PM) y `POST
+  /whatsapp/numeros/directo` (`altaDirecta()` → `registrarNumero()` con
+  `WHATSAPP_TOKEN`) lo da de alta con bandeja y responsable. Si se pega el ID de
+  la cuenta de WhatsApp en vez del de mensajes, lo dice. El script
+  `scripts/whatsapp-alta-directa.ts` sigue andando para el servidor.
+- **Uso `DIRECCION`** (desde v15.0): el número de trabajo de la Dirección. No
+  tiene bandeja en Voltia PM; se lee y se contesta desde el chat de Claude
+  (capítulo 13, *WhatsApp: el secretario*). Reconoce a cada uno como cliente si
+  ya lo es y si no como lead (`contactosPorTelefono()`), sin asistente ni avisos
+  automáticos.
 
 ## Archivos
 

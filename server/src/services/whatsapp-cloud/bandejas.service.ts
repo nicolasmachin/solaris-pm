@@ -41,7 +41,12 @@ import { faltantesParaEnviar, whatsappConfig } from "./config.js";
 
 const VENTANA_MS = 24 * 60 * 60 * 1000;
 
-export const USOS_NUMERO = ["EXPERIENCIA_SOLAR", "VENTAS"] as const;
+/**
+ * DIRECCION: el número de trabajo de la Dirección. No tiene bandeja en Voltia PM:
+ * se lee y se contesta desde el chat de Claude (herramientas whatsapp_* del
+ * conector, `secretario.service.ts`). Lo ve solo su responsable.
+ */
+export const USOS_NUMERO = ["EXPERIENCIA_SOLAR", "VENTAS", "DIRECCION"] as const;
 export type UsoNumero = (typeof USOS_NUMERO)[number];
 
 export type Bandeja = {
@@ -113,6 +118,22 @@ export async function bandejaVentas(asesorId: string): Promise<Bandeja> {
   return {
     area: "VENTAS",
     cuenta: { phoneNumberId: n.phoneNumberId, wabaId: n.wabaId, token: decryptSecret(n.tokenCifrado) },
+    telefono: n.telefono,
+    nombre: n.nombreVerificado,
+    responsable: n.responsable ? { id: n.responsable.id, nombre: n.responsable.name } : null,
+  };
+}
+
+/** La bandeja de un número cualquiera (por su phoneNumberId), con su uso como área. */
+export async function bandejaDeNumero(phoneNumberId: string): Promise<Bandeja> {
+  const n = await prisma.whatsAppNumero.findUnique({
+    where: { phoneNumberId },
+    include: { responsable: { select: { id: true, name: true } } },
+  });
+  if (!n) throw notFound("NUMERO_NO_ENCONTRADO", "El número no existe");
+  return {
+    area: (n.uso as UsoNumero | null) ?? "DIRECCION",
+    cuenta: n.estado === "CONECTADO" ? { phoneNumberId: n.phoneNumberId, wabaId: n.wabaId, token: decryptSecret(n.tokenCifrado) } : null,
     telefono: n.telefono,
     nombre: n.nombreVerificado,
     responsable: n.responsable ? { id: n.responsable.id, nombre: n.responsable.name } : null,
@@ -216,6 +237,9 @@ async function contactosPorTelefono(area: UsoNumero): Promise<Map<string, Omit<C
     const base = { contactoId: c.id, nombre: empresa ? `${c.nombre} · ${empresa}` : c.nombre };
     if (area === "VENTAS" && lead) mapa.set(c.telefono!, { ...base, leadId: lead.id, codigo: lead.code });
     else if (area === "EXPERIENCIA_SOLAR" && proyecto) mapa.set(c.telefono!, { ...base, projectId: proyecto.id, codigo: proyecto.code });
+    // Dirección: lo más avanzado (el cliente, si ya es; si no, el lead).
+    else if (area === "DIRECCION" && proyecto) mapa.set(c.telefono!, { ...base, projectId: proyecto.id, codigo: proyecto.code });
+    else if (area === "DIRECCION" && lead) mapa.set(c.telefono!, { ...base, leadId: lead.id, codigo: lead.code });
     else mapa.set(c.telefono!, { ...base, codigo: empresa ? "Contacto de la empresa" : "Contacto" });
   }
   return mapa;
@@ -243,7 +267,11 @@ async function usuariosPorTelefono(): Promise<Map<string, Omit<ClienteDeConversa
  */
 async function porTelefonoDe(bandeja: Bandeja) {
   const [sueltos, contactos, usuarios] = await Promise.all([
-    bandeja.area === "VENTAS" ? leadsPorTelefono() : proyectosPorTelefono(),
+    bandeja.area === "VENTAS"
+      ? leadsPorTelefono()
+      : bandeja.area === "DIRECCION"
+        ? Promise.all([leadsPorTelefono(), proyectosPorTelefono()]).then(([l, p]) => new Map([...l, ...p]))
+        : proyectosPorTelefono(),
     contactosPorTelefono(bandeja.area),
     usuariosPorTelefono(),
   ]);
@@ -524,6 +552,24 @@ export async function asistenteDe(bandeja: Bandeja, telefono: string) {
     motivo: e.asistenteMotivo,
     sombra: (e.asistenteSombra as string[] | null) ?? null,
     en: e.asistenteEn?.toISOString() ?? null,
+  };
+}
+
+/** Para reconocer muchos chats de un número: carga todo una sola vez. */
+export async function reconocedor(bandeja: Bandeja): Promise<(telefono: string) => ClienteDeConversacion | null> {
+  const [auto, estados] = await Promise.all([
+    porTelefonoDe(bandeja),
+    bandeja.cuenta
+      ? prisma.whatsAppConversacion.findMany({ where: { phoneNumberId: bandeja.cuenta.phoneNumberId }, include: INCLUDE_ASOCIADO })
+      : Promise.resolve([]),
+  ]);
+  const estadoDe = new Map(estados.map((e) => [e.telefono, e]));
+  return (telefono) => {
+    const tel = normalizarTelefono(telefono);
+    const aMano = asociadoAMano(bandeja, estadoDe.get(tel));
+    if (aMano) return aMano;
+    const a = auto.get(tel);
+    return a ? { ...a, aMano: false } : null;
   };
 }
 

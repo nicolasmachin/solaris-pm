@@ -164,12 +164,23 @@ export async function actualizarWhatsAppNumero(
   return (await apiClient.patch(`/api/whatsapp/numeros/${id}`, body)).data;
 }
 
-export type WhatsAppUso = "EXPERIENCIA_SOLAR" | "VENTAS";
+export type WhatsAppUso = "EXPERIENCIA_SOLAR" | "VENTAS" | "DIRECCION";
 
 export const NOMBRE_USO: Record<WhatsAppUso, string> = {
   EXPERIENCIA_SOLAR: "Experiencia Solar (número general)",
   VENTAS: "Ventas (número de un asesor)",
+  DIRECCION: "Dirección (se lee desde el chat de Claude)",
 };
+
+/** Un número de una cuenta de mensajes de Meta, para el alta directa. */
+export type NumeroDeCuenta = { phoneNumberId: string; telefono: string; nombre: string | null; enElCelular: boolean; yaEnVoltiaPm: boolean };
+
+export async function getNumerosDeCuenta(waba: string) {
+  return (await apiClient.get<NumeroDeCuenta[]>("/api/whatsapp/numeros/directo", { params: { waba } })).data;
+}
+export async function altaDirectaWhatsApp(body: { wabaId: string; phoneNumberId: string; uso?: WhatsAppUso; responsableId?: string }) {
+  return (await apiClient.post<{ telefono: string }>("/api/whatsapp/numeros/directo", body)).data;
+}
 
 // ─── Bandeja de Experiencia Solar ───────────────────────────────────────────
 

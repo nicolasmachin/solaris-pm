@@ -97,6 +97,21 @@ const RELEASE_14_5: Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "15.0",
+  date: "17 de noviembre de 2026",
+  sections: [
+    {
+      title: "WhatsApp",
+      items: [
+        "Nueva bandeja Dirección: el número se lee desde el chat de Claude, no desde Voltia PM.",
+        "Desde el chat de Claude: a quién no le contestaste, leer un chat con los audios escritos, buscar en todas las conversaciones y mandar un mensaje cuando se lo pedís.",
+        "El alta de un número de Voltia que Meta corta en el último paso se termina desde Administración → WhatsApp.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_14_9: Release = {
   version: "14.9",
   date: "16 de noviembre de 2026",
   sections: [
@@ -1297,6 +1312,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "14.9",
+    shortDate: "16 nov",
+    highlights: RELEASE_14_9.sections.map((sec) => sec.title),
+  },
   {
     version: "14.8",
     shortDate: "15 nov",
