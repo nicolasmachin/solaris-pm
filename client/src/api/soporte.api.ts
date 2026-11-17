@@ -103,3 +103,21 @@ export const revisarIncidencia = (id: string) =>
   apiClient.post(`/api/reportes-fv/monitor/incidencias/${id}/revisar`, {}).then((r) => r.data);
 export const descartarIncidencia = (id: string, nota: string) =>
   apiClient.post(`/api/reportes-fv/monitor/incidencias/${id}/descartar`, { nota }).then((r) => r.data);
+
+// Evolución día por día (tickets abiertos y plantas con problema por tipo).
+export interface SoporteEvolucionDia {
+  dia: string;
+  ticketsAbiertos: number;
+  ticketsNuevos: number;
+  problemas: Record<SoporteGrupo, number>;
+  problemasNuevos: number;
+}
+export interface SoporteEvolucion {
+  dias: SoporteEvolucionDia[];
+  /** Primer día con registro de cada cosa (antes, el cero no es dato). */
+  desdeTickets: string | null;
+  desdeProblemas: string | null;
+  desde: string;
+}
+export const getSoporteEvolucion = (dias: number) =>
+  apiClient.get<SoporteEvolucion>("/api/soporte/evolucion", { params: { dias } }).then((r) => r.data);

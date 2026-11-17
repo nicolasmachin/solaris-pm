@@ -108,6 +108,9 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
   // Administración la abre el admin completo y también quien solo administra el
   // catálogo de materiales (ve nada más que esa sección adentro).
   const isFullAdmin = usePermission("USUARIOS", "VIEW");
+  const canSoporte = usePermission("SOPORTE", "VIEW");
+  const canTickets = usePermission("TICKETS", "VIEW");
+  const verSoporte = canSoporte || canTickets;
   const { canAccessSection: canManageMaterialCatalog, canAccessTemplates } =
     useMaterialCatalogPermissions();
   const canSeeAdmin = isFullAdmin || canManageMaterialCatalog || canAccessTemplates;
@@ -213,11 +216,12 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               Experiencia Solar
             </NavLink>
           </CanAccess>
-          <CanAccess module="SOPORTE" action="VIEW">
+          {/* Soporte también lleva los tickets: entra quien ve uno u otro. */}
+          {verSoporte && (<>
             <NavLink to="/soporte" className={navLinkClass}>
               Soporte
             </NavLink>
-          </CanAccess>
+          </>)}
           <CanAccess module="MARKETING" action="VIEW">
             <NavLink to="/marketing" className={navLinkClass}>
               Marketing

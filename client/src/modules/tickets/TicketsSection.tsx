@@ -34,7 +34,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
-// Contenido de la tab "Tickets" de Mis tareas: lista con filtros + alta + detalle.
+// Contenido de la tab "Tickets" de Soporte: lista con filtros + alta + detalle.
 export function TicketsSection() {
   const [estado, setEstado] = useState<TicketEstado | "TODOS">("TODOS");
   const [mias, setMias] = useState(false);

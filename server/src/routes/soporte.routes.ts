@@ -7,6 +7,7 @@
 //   POST /api/soporte/casos/:id/cerrar         { estado: RESUELTO|DESCARTADO, motivo } (EDIT)
 //   POST /api/soporte/vigia                    corre el vigía ahora (EDIT)
 //   POST /api/soporte/rendimiento              corre el chequeo de bajo rendimiento ahora (EDIT)
+//   GET  /api/soporte/evolucion?dias=          tickets abiertos y plantas con problema, día por día (VIEW)
 
 import { Action, Module, SoporteCasoEstado, SoporteCasoTipo, TicketEstado } from "@prisma/client";
 import type { FastifyInstance, FastifyRequest } from "fastify";
@@ -116,7 +117,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         prisma.soporteEstadoHuawei.findMany({ include: { project: { select: selectProyecto } } }),
         prisma.soporteCaso.findMany({ where: { estado: "ABIERTO" }, include: incluirCaso, orderBy: { detectadoEn: "desc" } }),
         prisma.ticket.findMany({
-          where: { estado: { in: [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO] } },
+          where: { deletedAt: null, estado: { in: [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO] } },
           select: { id: true, titulo: true, projectId: true },
           orderBy: { createdAt: "desc" },
         }),
@@ -250,6 +251,11 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
       cacheRendimiento = null;
       return revisarRendimiento();
     });
+
+    app.get("/soporte/evolucion", { preHandler: authorize(Module.SOPORTE, Action.VIEW) }, async (request) => {
+      const { dias } = z.object({ dias: z.coerce.number().int().min(7).max(730).default(90) }).parse(request.query);
+      return evolucion(dias);
+    });
   });
 }
 
@@ -379,4 +385,108 @@ function armarProblemas(
     if (i.projectId) vistos.set(`${i.projectId}|${familia(grupo)}`, p);
   }
   return out;
+}
+
+// ─── Evolución: tickets abiertos y problemas activos, día por día ────────────
+// Se reconstruye con las fechas de apertura y cierre (no hay foto diaria
+// guardada): un ticket está abierto al final del día d si se creó hasta d y no
+// se resolvió ni cerró hasta d. Los problemas juntan casos de Soporte e
+// incidencias del monitoreo con el mismo criterio que la mesa: una planta con
+// el mismo tipo de problema visto por los dos cuenta una vez. Los descartados
+// no cuentan (no eran problema).
+
+const TZ = "America/Montevideo";
+const diaLocal = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
+/** Columnas @db.Date: vienen a medianoche UTC. */
+const diaFecha = (d: Date) => d.toISOString().slice(0, 10);
+
+const GRUPOS: Grupo[] = ["FALLA", "NO_GENERA", "NO_COMUNICA", "GENERA_MENOS", "MEDIDOR", "NO_EXPORTA", "SIN_DATOS"];
+
+const TICKET_ABIERTO: TicketEstado[] = [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO];
+
+async function evolucion(cantDias: number) {
+  const hoy = diaLocal(new Date());
+  const dias: string[] = [];
+  const cursor = new Date(`${hoy}T12:00:00Z`);
+  cursor.setUTCDate(cursor.getUTCDate() - (cantDias - 1));
+  for (let i = 0; i < cantDias; i++) {
+    dias.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  const primero = dias[0];
+
+  const [tickets, casos, incidencias] = await Promise.all([
+    prisma.ticket.findMany({
+      where: { deletedAt: null },
+      select: { estado: true, createdAt: true, resueltoEn: true, cerradoEn: true },
+    }),
+    prisma.soporteCaso.findMany({
+      where: { estado: { not: SoporteCasoEstado.DESCARTADO } },
+      select: { projectId: true, tipo: true, detectadoEn: true, resueltoEn: true },
+    }),
+    prisma.fvIncidencia.findMany({
+      where: { estado: { not: "DESCARTADA" } },
+      select: {
+        projectId: true,
+        growattPlantId: true,
+        huaweiPlantId: true,
+        diagnostico: true,
+        primeraDeteccionEn: true,
+        resueltaEn: true,
+      },
+    }),
+  ]);
+
+  // Intervalos [desde, hasta) en días locales; hasta = null si sigue abierto.
+  type Intervalo = { desde: string; hasta: string | null };
+  const ticketsI: Intervalo[] = tickets.map((t) => {
+    // Uno resuelto que volvió a "en progreso" conserva su resueltoEn: si hoy
+    // está abierto, cuenta como abierto desde que se creó.
+    if (TICKET_ABIERTO.includes(t.estado)) return { desde: diaLocal(t.createdAt), hasta: null };
+    const cierres = [t.resueltoEn, t.cerradoEn].filter((d): d is Date => d != null);
+    const cierre = cierres.length ? new Date(Math.min(...cierres.map((d) => d.getTime()))) : null;
+    return { desde: diaLocal(t.createdAt), hasta: cierre ? diaLocal(cierre) : null };
+  });
+  const problemasI: Array<Intervalo & { clave: string; grupo: Grupo }> = [
+    ...casos.map((c) => ({
+      clave: c.projectId,
+      grupo: GRUPO_CASO[c.tipo],
+      desde: diaLocal(c.detectadoEn),
+      hasta: c.resueltoEn ? diaLocal(c.resueltoEn) : null,
+    })),
+    ...incidencias.flatMap((i) => {
+      const grupo = GRUPO_INCIDENCIA[i.diagnostico];
+      if (!grupo) return [];
+      return [
+        {
+          clave: i.projectId ?? `planta-${i.growattPlantId ?? i.huaweiPlantId}`,
+          grupo,
+          desde: diaFecha(i.primeraDeteccionEn),
+          hasta: i.resueltaEn ? diaFecha(i.resueltaEn) : null,
+        },
+      ];
+    }),
+  ];
+  const activo = (x: Intervalo, d: string) => x.desde <= d && (x.hasta == null || x.hasta > d);
+
+  const serie = dias.map((d) => {
+    const porGrupo = Object.fromEntries(GRUPOS.map((g) => [g, new Set<string>()])) as Record<Grupo, Set<string>>;
+    for (const p of problemasI) if (activo(p, d)) porGrupo[p.grupo].add(p.clave);
+    return {
+      dia: d,
+      ticketsAbiertos: ticketsI.filter((t) => activo(t, d)).length,
+      ticketsNuevos: ticketsI.filter((t) => t.desde === d).length,
+      problemas: Object.fromEntries(GRUPOS.map((g) => [g, porGrupo[g].size])) as Record<Grupo, number>,
+      problemasNuevos: problemasI.filter((p) => p.desde === d).length,
+    };
+  });
+
+  // Desde cuándo hay registro de cada cosa (antes, el cero no es dato).
+  const minimo = (xs: string[]) => (xs.length ? xs.reduce((a, b) => (a < b ? a : b)) : null);
+  return {
+    dias: serie,
+    desdeTickets: minimo(ticketsI.map((t) => t.desde)),
+    desdeProblemas: minimo(problemasI.map((p) => p.desde)),
+    desde: primero,
+  };
 }

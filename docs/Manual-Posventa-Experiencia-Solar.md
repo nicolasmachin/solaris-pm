@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.49 · del 16/11/26
+**Voltia · Uruguay** · Versión 1.50 · del 17/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -2108,7 +2108,7 @@ partes:
 - Que **se registra el caso y se le da seguimiento**, y cuándo va a tener novedades.
 - Cómo **abrir un reclamo desde el portal de Voltia**, para la próxima.
 
-**Política interna:** es raro que lo reporte el cliente primero: con falla, el inversor sigue conectado y la reporta, así que **Voltia debería enterarse antes y contactarlo**. Para eso está la **mesa de Soporte** de Voltia PM (menú **Soporte**): cada media hora con sol revisa todas las plantas y, si una lleva una hora sin generar o sin comunicar mientras las demás sí generan, abre un caso que explica qué pasa ("el inversor no ve la red: casi siempre es la llave", "dejó de mandar datos a las 16:23"). Desde el caso, **Avisar al cliente** le manda un mensaje listo para revisar, que le llega a su portal y al celular; nunca le escribe el sistema solo. Si llama él primero, algo falló en el monitoreo. Se registra como caso técnico. Si el cliente no abre el ticket, lo abre Experiencia Solar, pero la meta es que lo haga solo.
+**Política interna:** es raro que lo reporte el cliente primero: con falla, el inversor sigue conectado y la reporta, así que **Voltia debería enterarse antes y contactarlo**. Para eso está la **mesa de Soporte** de Voltia PM (menú **Soporte**): cada media hora con sol revisa todas las plantas y, si una lleva una hora sin generar o sin comunicar mientras las demás sí generan, abre un caso que explica qué pasa ("el inversor no ve la red: casi siempre es la llave", "dejó de mandar datos a las 16:23"). Desde el caso, **Avisar al cliente** le manda un mensaje listo para revisar, que le llega a su portal y al celular; nunca le escribe el sistema solo. Si llama él primero, algo falló en el monitoreo. Se registra como caso técnico. Si el cliente no abre el ticket, lo abre Experiencia Solar, pero la meta es que lo haga solo. Los tickets se ven en Voltia PM en **Soporte → Tickets**, y en **Soporte → Evolución** hay dos gráficas que muestran, día por día, cuántos tickets había abiertos y cuántas plantas tenían un problema de cada tipo: sirven para ver si la cartera va mejorando o empeorando.
 
 **Cuándo escalar:** a Operaciones **[A CONFIRMAR]**
 
@@ -2192,6 +2192,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.50 | 17 de noviembre de 2026 | Los tickets pasan de Mis tareas a Soporte → Tickets. En Soporte → Evolución se ven, día por día, los tickets abiertos y las plantas con problema por tipo. |
 | 1.49 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |
 | 1.48 | 16 de noviembre de 2026 | En el WhatsApp: el chat se reconoce por el contacto (la persona con su teléfono) y, por él, su cliente; los números del equipo de Voltia aparecen con nombre y rol y no cuentan como sin contestar; el número que no es de nadie muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre clientes, contactos y equipo, y se puede crear el contacto desde el chat. |
 | 1.47 | 15 de noviembre de 2026 | Se puede agregar otro acceso al portal para otra persona de la familia o de la empresa; el cliente que no puede entrar pide ayuda desde la pantalla de ingreso y le llega a Experiencia Solar como pendiente con plazo de un día hábil. |

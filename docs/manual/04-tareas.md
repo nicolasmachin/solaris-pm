@@ -326,6 +326,17 @@ Diferencias que importan frente a una tarea:
 **Estados**: `ABIERTO` → `DERIVADO` → `EN_PROGRESO` → `RESUELTO` → `CERRADO`.
 **Prioridades**: `BAJA`, `MEDIA`, `ALTA`.
 
+**Dónde se ven**: en **Soporte → Tickets** (`/soporte/tickets`,
+`modules/tickets/TicketsSection.tsx`). Hasta el 17-nov-2026 eran una pestaña de
+Mis tareas; `/mis-tareas/tickets` redirige a la ruta nueva, y la notificación
+`ticket_actualizado` lleva ahí. El menú Soporte lo ve quien tiene `TICKETS:VIEW`
+aunque no tenga `SOPORTE:VIEW` (ver [19 · Soporte](19-soporte.md)). La
+evolución de los tickets abiertos día por día está en Soporte → Evolución.
+
+**Pasar a "en progreso" no limpia `resueltoEn`**: un ticket resuelto que se
+retoma queda EN_PROGRESO con la fecha de resuelto vieja. Quien calcule "desde
+cuándo está abierto" tiene que mirar el estado, no solo las fechas.
+
 ### Endpoints
 
 Todos bajo `/api/tickets`, con permisos del módulo `TICKETS`:

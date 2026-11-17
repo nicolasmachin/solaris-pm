@@ -18,11 +18,22 @@ nadie: lo detectado queda en la cola.
 
 ## Cómo se usa
 
-Menú **Soporte** (`/soporte`, `pages/Soporte.tsx`):
+Menú **Soporte** (`/soporte`, layout `pages/SoporteLayout.tsx`) con tres
+pestañas por URL:
+
+- **Mesa** (`/soporte`, `pages/Soporte.tsx`): lo que se describe en esta
+  sección.
+- **Tickets** (`/soporte/tickets`, `modules/tickets/TicketsSection.tsx`): la
+  lista de tickets con sus filtros, el alta y el detalle. Vivía en Mis tareas
+  hasta el 17-nov-2026; `/mis-tareas/tickets` redirige acá. Ver capítulo 04.
+- **Evolución** (`/soporte/evolucion`, `pages/SoporteEvolucion.tsx`): las dos
+  gráficas de cómo vienen los tickets y los problemas (ver "La evolución").
+
+En la Mesa:
 
 - Arriba, en una sola línea: cuántas plantas tienen problema, cuántas están en
   línea (de noche dice "sin sol"), cuándo fue la última lectura, los reclamos
-  abiertos (lleva a Mis tareas → Tickets) y el historial del monitoreo
+  abiertos (lleva a Soporte → Tickets) y el historial del monitoreo
   (Experiencia Solar → Monitoreo), más **Revisar ahora** y **Revisar
   rendimiento**.
 - **Problemas**: **todo lo que está abierto, de las dos fuentes juntas** —los
@@ -241,6 +252,42 @@ inversor no ve la red de UTE" y no "código 302".
 incompletos. Caso Irigaray (22 al 27-oct-2026): parecía rendir 8 % de lo normal
 y en realidad era el relé en falla (código 405) más el datalogger cortado.
 
+### La evolución (pestaña Evolución)
+
+`GET /api/soporte/evolucion?dias=` (`soporte.routes.ts` → `evolucion()`),
+entre 7 y 730 días, por defecto 90; la pantalla ofrece 30, 90, 180 y 365.
+Devuelve, para cada día local de Montevideo:
+
+- **Tickets abiertos al final del día**: creados hasta ese día y sin resolver ni
+  cerrar hasta ese día (el cierre es el primero entre `resueltoEn` y
+  `cerradoEn`). Los borrados (`deletedAt`) no cuentan. **Un ticket que hoy está
+  ABIERTO, DERIVADO o EN_PROGRESO cuenta como abierto desde que se creó**,
+  aunque tenga `resueltoEn`: pasar de RESUELTO a "en progreso" no borra esa
+  fecha (`marcarEnProgreso()` no la toca), y sin esta regla un ticket reabierto
+  desaparecía de la gráfica. El costo es que el hueco en que estuvo resuelto se
+  ve como abierto.
+- **Plantas con problema, por tipo**: los casos de Soporte (`detectadoEn` →
+  `resueltoEn`) y las incidencias del monitoreo diario (`primeraDeteccionEn` →
+  `resueltaEn`) mapeados a los mismos siete tipos de la mesa (`GRUPO_CASO`,
+  `GRUPO_INCIDENCIA`). Se cuenta **planta × tipo** (por `projectId`, o el id de
+  la planta si la incidencia no tiene proyecto): la misma planta con el mismo
+  tipo visto por las dos fuentes cuenta una vez. **A diferencia de la mesa no se
+  juntan "falla", "no genera" y "no comunica"**: una planta que tuvo falla y
+  además dejó de comunicar el mismo día suma en las dos franjas. Los descartados
+  (caso DESCARTADO, incidencia DESCARTADA) no cuentan en ningún día.
+
+**No hay foto diaria guardada**: todo se reconstruye con las fechas de apertura
+y cierre. Por eso, antes del primer registro (tickets desde jul-2026, monitoreo
+desde ago-2026, casos de Soporte desde el 29-oct-2026) el cero es falta de
+dato, y la pantalla lo avisa con `desdeTickets` / `desdeProblemas`. También
+pasa que un problema que se abrió y cerró dentro del mismo día no se ve (al
+final del día ya no estaba abierto).
+
+La gráfica de problemas es de áreas apiladas en escalón, con un color fijo por
+tipo (paleta categórica validada para daltonismo, un tono para modo claro y otro
+para oscuro) y la leyenda con el valor de hoy de cada tipo. Muestra solo los
+tipos que aparecieron en el rango elegido.
+
 ### Avisar al cliente
 
 `casos.service.ts` → `mensajeSugerido()` (según el tipo y si es la llave) y
@@ -252,9 +299,17 @@ avisarle por WhatsApp.
 
 ## Permisos
 
+- **El menú Soporte lo ve quien tiene `SOPORTE:VIEW` o `TICKETS:VIEW`**
+  (`SoporteLayout`). Las pestañas Mesa y Evolución piden `SOPORTE:VIEW`;
+  Tickets, `TICKETS:VIEW`. Quien solo tiene TICKETS entra directo a Tickets
+  (`SoporteIndex` redirige). Es así porque los tickets los ven casi todos los
+  roles y la mesa solo unos pocos.
+- `GET /api/soporte/evolucion`: `SOPORTE:VIEW`.
 - `SOPORTE:VIEW`: ver la mesa y recibir las alertas. `SOPORTE:EDIT`: avisar al
-  cliente, cerrar casos y correr las revisiones a mano. Hoy solo ADMIN
-  (`prisma/scripts/seed-soporte-permissions.ts`).
+  cliente, cerrar casos y correr las revisiones a mano. El script
+  `prisma/scripts/seed-soporte-permissions.ts` se lo da a ADMIN; en producción
+  (verificado el 17-nov-2026) también tienen VIEW y EDIT EXPERIENCIA_SOLAR y
+  COMPRAS, y VIEW ASESOR_IA.
 - `/client/avisos-planta`: `PORTAL_CLIENTE:VIEW` y proyectos del cliente.
 
 ## Reglas y decisiones

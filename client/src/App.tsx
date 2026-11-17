@@ -103,6 +103,9 @@ const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) =
 const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
 const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
 const Soporte = lazy(() => import("./pages/Soporte").then((module) => ({ default: module.Soporte })));
+const SoporteLayout = lazy(() => import("./pages/SoporteLayout").then((module) => ({ default: module.SoporteLayout })));
+const SoporteIndex = lazy(() => import("./pages/SoporteLayout").then((module) => ({ default: module.SoporteIndex })));
+const SoporteEvolucion = lazy(() => import("./pages/SoporteEvolucion").then((module) => ({ default: module.SoporteEvolucion })));
 const Marketing = lazy(() => import("./pages/Marketing").then((module) => ({ default: module.Marketing })));
 const PortalDocumentos = lazy(() => import("./pages/PortalDocumentos").then((module) => ({ default: module.PortalDocumentos })));
 const PortalInicio = lazy(() => import("./pages/PortalInicio").then((module) => ({ default: module.PortalInicio })));
@@ -291,7 +294,7 @@ export function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
-        {/* Mis tareas: layout con tabs por URL (Tareas / Pendientes / Tickets). */}
+        {/* Mis tareas: layout con tabs por URL (Tareas / Pendientes). */}
         <Route path="/mis-tareas" element={<MisTareasLayout />}>
           <Route index element={<MisTareas />} />
           <Route
@@ -302,14 +305,8 @@ export function App() {
               </PermissionRoute>
             }
           />
-          <Route
-            path="tickets"
-            element={
-              <PermissionRoute module="TICKETS" action="VIEW">
-                <TicketsSection />
-              </PermissionRoute>
-            }
-          />
+          {/* Tickets se mudó a una tab dentro de Soporte. */}
+          <Route path="tickets" element={<Navigate to="/soporte/tickets" replace />} />
         </Route>
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
@@ -566,14 +563,34 @@ export function App() {
         />
         {/* Pendientes se mudó a una tab dentro de Mis tareas. */}
         <Route path="/pendientes" element={<Navigate to="/mis-tareas/pendientes" replace />} />
-        <Route
-          path="/soporte"
-          element={
-            <PermissionRoute module="SOPORTE" action="VIEW">
-              <Soporte />
-            </PermissionRoute>
-          }
-        />
+        {/* Soporte: layout con tabs (Mesa / Tickets / Evolución). Entra quien ve
+            la mesa o los tickets; cada tab pide su permiso. */}
+        <Route path="/soporte" element={<SoporteLayout />}>
+          <Route
+            index
+            element={
+              <SoporteIndex>
+                <Soporte />
+              </SoporteIndex>
+            }
+          />
+          <Route
+            path="tickets"
+            element={
+              <PermissionRoute module="TICKETS" action="VIEW">
+                <TicketsSection />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="evolucion"
+            element={
+              <PermissionRoute module="SOPORTE" action="VIEW">
+                <SoporteEvolucion />
+              </PermissionRoute>
+            }
+          />
+        </Route>
         <Route
           path="/marketing"
           element={

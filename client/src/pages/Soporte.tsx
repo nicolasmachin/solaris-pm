@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Eye,
   Gauge,
-  LifeBuoy,
   MessageSquare,
   Moon,
   PlugZap,
@@ -120,11 +119,8 @@ export function Soporte() {
   const enlace = "text-[var(--color-accent)] hover:underline";
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-3 px-4 py-4">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 className="flex items-center gap-2 font-display text-xl font-bold text-[var(--color-text-primary)]">
-          <LifeBuoy className="h-5 w-5 text-[var(--color-accent)]" /> Soporte
-        </h1>
         <p className="text-xs text-[var(--color-text-muted)]">
           <span className={conProblema ? "font-semibold text-red-400" : "text-emerald-400"}>
             {conProblema ? `${conProblema} ${conProblema === 1 ? "planta" : "plantas"} con problema` : "Todo en orden"}
@@ -136,7 +132,7 @@ export function Soporte() {
           {hace(data.ultimaLectura)}
           {!data.vigiaAutomatico && " (revisión automática apagada en este entorno)"}
           {" · "}
-          <Link to="/mis-tareas/tickets" className={enlace}>
+          <Link to="/soporte/tickets" className={enlace}>
             {data.reclamosAbiertos} reclamos abiertos
           </Link>
           {" · "}

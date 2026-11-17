@@ -10,6 +10,16 @@
 - Desde el chat de Claude se puede preguntar **a quién no le contestaste** (con lo que te mandó y desde cuándo espera, sea cliente, lead, alguien del equipo o un desconocido), **leer un chat** («¿qué me pidió fulano?», con los audios escritos), **buscar** en todas las conversaciones y **mandar un mensaje** desde tu número cuando se lo pedís.
 - En Administración → WhatsApp, cuando Meta corta el alta de un número de Voltia en el último paso, se termina desde la misma pantalla: se pega la cuenta de mensajes de Meta, se elige la bandeja y el responsable, y queda dado de alta.
 
+#### Soporte
+
+- **Soporte** tiene tres pestañas: **Mesa** (la de siempre), **Tickets** y **Evolución**.
+- Los **tickets** se mudaron de **Mis tareas** a **Soporte → Tickets**. Los enlaces viejos y los avisos de la campanita llevan a la pestaña nueva. Quien antes veía los tickets en Mis tareas ahora ve **Soporte** en el menú, aunque no vea la mesa.
+- Nueva pestaña **Evolución** con dos gráficas día por día: **cuántos tickets había abiertos** y **cuántas plantas tenían un problema**, separadas por tipo (falla del inversor, no genera, no comunica, genera menos, medidor mal conectado, no exporta, sin datos de la plataforma). Se puede mirar el último mes, 3 meses, 6 meses o el año.
+
+#### Arreglos
+
+- En la mesa de Soporte, «reclamos abiertos» contaba también los tickets borrados.
+
 #### Ventas
 
 - Las secciones de Ventas (**Pipeline**, **Contactos**, **Empresas**, **WhatsApp** e **Instagram**) pasan a un **menú a la izquierda**, igual al de Administración. En el celular se abre con el botón de arriba a la izquierda.

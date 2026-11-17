@@ -987,7 +987,7 @@ historial de la ficha. Ver "historia clínica" arriba.
 - **Un reclamo abierto desde el portal avisa en el momento.** Desde el
   17-oct-2026 `crearTicket()` con `origenCliente` manda una notificación in-app
   (tipo `ticket_actualizado`, "Reclamo nuevo de …") a cada usuario del rol
-  EXPERIENCIA_SOLAR, con enlace a Mis tareas → Tickets. Antes no avisaba a nadie y
+  EXPERIENCIA_SOLAR, con enlace a Soporte → Tickets (antes del 17-nov-2026, Mis tareas → Tickets). Antes no avisaba a nadie y
   se enteraban recién en el resumen del día siguiente.
 - **El correo enviado al cliente no cuenta como contacto.** Los envíos quedan en
   `EmailLog` pero no crean `ClientInteraction`, así que no mueven "Último

@@ -143,7 +143,7 @@ async function avisarReclamoNuevo(ticket: TicketWithComments) {
         type: NotificationType.ticket_actualizado,
         title: `Reclamo nuevo de ${project?.clientName ?? "un cliente"}`,
         message: `"${ticket.titulo}". Se responde el mismo día hábil.`,
-        link: "/mis-tareas/tickets",
+        link: "/soporte/tickets",
       });
     }
   } catch (err) {

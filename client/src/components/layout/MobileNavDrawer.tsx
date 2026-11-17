@@ -42,6 +42,9 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   // Ver Topbar: además del admin completo, entra quien administra el catálogo
   // de materiales.
   const isFullAdmin = usePermission("USUARIOS", "VIEW");
+  const canSoporte = usePermission("SOPORTE", "VIEW");
+  const canTickets = usePermission("TICKETS", "VIEW");
+  const verSoporte = canSoporte || canTickets;
   const { canAccessSection: canManageMaterialCatalog, canAccessTemplates } =
     useMaterialCatalogPermissions();
   const canSeeAdmin = isFullAdmin || canManageMaterialCatalog || canAccessTemplates;
@@ -190,12 +193,13 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
               <span>Experiencia Solar</span>
             </NavLink>
           </CanAccess>
-          <CanAccess module="SOPORTE" action="VIEW">
+          {/* Soporte también lleva los tickets: entra quien ve uno u otro. */}
+          {verSoporte && (<>
             <NavLink to="/soporte" className={linkClass}>
               <LifeBuoy size={18} className="shrink-0" />
               <span>Soporte</span>
             </NavLink>
-          </CanAccess>
+          </>)}
           <CanAccess module="MARKETING" action="VIEW">
             <NavLink to="/marketing" className={linkClass}>
               <Megaphone size={18} className="shrink-0" />

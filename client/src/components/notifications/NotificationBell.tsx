@@ -126,7 +126,7 @@ export function NotificationBell() {
     } else if (type === "traspaso_por_confirmar") {
       navigate("/mis-tareas/pendientes");
     } else if (type === "ticket_actualizado") {
-      navigate("/mis-tareas/tickets");
+      navigate("/soporte/tickets");
     } else if (projectId) {
       navigate(`/projects/${projectId}`);
     }

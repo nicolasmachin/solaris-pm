@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.13 · del 15/11/26
+**Voltia · Uruguay** · Versión 1.14 · del 17/11/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -199,7 +199,7 @@ Si todo sigue el procedimiento, el gerente de Operaciones no tiene que inventar 
 
 - **La cuadrilla propia:** un capataz y su equipo de operarios. Si el trabajo lo pide, el gerente de Operaciones puede sumar gente.
 - **Las cuadrillas tercerizadas:** empresas instaladoras que trabajan para Voltia, cada una en su zona.
-- **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso. Muchas visitas de soporte van a nacer de la **mesa de Soporte** de Voltia PM, que detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y dice qué vio el inversor (sin red, sin tensión de paneles, el código de falla). Antes de salir conviene leer el caso: a veces es la llave y la sube el cliente. Mientras una planta tiene obra agendada en el calendario (la suya o una ampliación), la mesa no la marca como problema: por eso **la obra tiene que estar agendada**, también las ampliaciones.
+- **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso. Muchas visitas de soporte van a nacer de la **mesa de Soporte** de Voltia PM, que detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y dice qué vio el inversor (sin red, sin tensión de paneles, el código de falla). Antes de salir conviene leer el caso: a veces es la llave y la sube el cliente. Los tickets también están en Voltia PM, en **Soporte → Tickets**. Mientras una planta tiene obra agendada en el calendario (la suya o una ampliación), la mesa no la marca como problema: por eso **la obra tiene que estar agendada**, también las ampliaciones.
 
 ### Cuadrilla propia o tercerizada
 
@@ -1117,6 +1117,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.14 | 17 de noviembre de 2026 | Los tickets se ven en Voltia PM en Soporte → Tickets (antes estaban en Mis tareas). |
 | 1.13 | 15 de noviembre de 2026 | En el calendario se puede suspender una obra confirmada sin ponerle fecha nueva: pide el motivo, le avisa a Experiencia Solar y el cliente queda esperando la fecha nueva. |
 | 1.12 | 12 de noviembre de 2026 | Se agrega el registro de problemas técnicos resueltos: Claude se fija ahí antes de diagnosticar y anota solo cada problema que se resuelve en la conversación. |
 | 1.11 | 28 de octubre de 2026 | Las visitas de soporte pueden nacer de la mesa de Soporte de Voltia PM, que detecta en el día las plantas con problemas y dice qué vio el inversor. |
