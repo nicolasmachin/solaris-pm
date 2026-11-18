@@ -24,6 +24,9 @@ export interface SoporteCaso {
   clienteAvisadoEn: string | null;
   clienteAvisadoPor: string | null;
   mensajeCliente: string | null;
+  analisisIa: string | null;
+  analisisIaEstado: "ANALIZANDO" | "LISTO" | "ERROR" | null;
+  analisisIaEn: string | null;
 }
 
 export interface SoportePlanta {
@@ -80,6 +83,8 @@ export interface SoporteTablero {
   casos: SoporteCaso[];
   reclamosAbiertos: number;
   incidenciasMonitoreo: number;
+  /** Casos que se cerraron solos (la planta volvió) y nadie marcó como vistos. Uno por planta. */
+  arregladas: Array<SoporteCaso & { veces: number }>;
 }
 
 export const getSoporteTablero = () => apiClient.get<SoporteTablero>("/api/soporte/tablero").then((r) => r.data);
@@ -91,6 +96,10 @@ export const avisarClienteSoporte = (id: string, mensaje: string) =>
   apiClient.post<{ avisados: number }>(`/api/soporte/casos/${id}/avisar-cliente`, { mensaje }).then((r) => r.data);
 export const cerrarCasoSoporte = (id: string, estado: "RESUELTO" | "DESCARTADO", motivo: string) =>
   apiClient.post(`/api/soporte/casos/${id}/cerrar`, { estado, motivo }).then((r) => r.data);
+export const marcarVistoSoporte = (id: string) =>
+  apiClient.post<{ vistos: number }>(`/api/soporte/casos/${id}/visto`, {}).then((r) => r.data);
+export const analizarCasoSoporte = (id: string) =>
+  apiClient.post<{ ok: boolean }>(`/api/soporte/casos/${id}/analizar`, {}).then((r) => r.data);
 export const correrVigia = () =>
   apiClient
     .post<{ plantas: number; casosNuevos: number; casosCerrados: number }>("/api/soporte/vigia")

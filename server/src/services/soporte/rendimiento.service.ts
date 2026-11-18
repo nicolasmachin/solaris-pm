@@ -25,6 +25,7 @@ import { prisma } from "../../lib/prisma.js";
 import { abrirOActualizar, cerrarAutomatico } from "./casos.service.js";
 import { kwpEfectivo } from "./kwp.js";
 import { pausasDePlantas } from "./pausas.js";
+import { analizarSiCorresponde } from "./analisisIa.js";
 import { investigarDia } from "./investigar.js";
 
 const UMBRAL_BAJO = 0.6;
@@ -228,6 +229,8 @@ export async function revisarRendimiento(): Promise<{ abiertos: number; cerrados
     await prisma.soporteCaso.update({ where: { id: casoId }, data: { ultimoDiaRevisado: new Date(`${ultimo.dia}T00:00:00Z`) } });
     // Ir a mirar el inversor ese día.
     await investigarDia(casoId, projectId, ultimo.dia);
+    // Si al mirar el inversor resultó una falla, que la analice la IA.
+    await analizarSiCorresponde(casoId);
   }
   return { abiertos, cerrados };
 }

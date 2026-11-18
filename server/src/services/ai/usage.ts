@@ -35,6 +35,7 @@ export const AI_FEATURES = {
   conciliacion_banco: "Interpretación de movimientos del banco",
   instagram_privados: "Instagram: contestador de privados",
   instagram_comentarios: "Instagram: comentarios y lead magnets",
+  soporte_analisis: "Soporte: análisis de fallas de plantas",
 } as const;
 
 export type AIFeature = keyof typeof AI_FEATURES;

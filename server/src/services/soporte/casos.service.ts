@@ -50,10 +50,27 @@ export async function abrirOActualizar(c: NuevoCaso): Promise<{ id: string; nuev
     where: { projectId: c.projectId, estado: SoporteCasoEstado.ABIERTO, tipo: { in: grupo(c.tipo) } },
   });
   if (abierto) {
-    // Un caso que se repite conserva su texto (con las fechas en que pasó):
-    // solo se marca que se volvió a ver.
+    // Un caso que se repite conserva su texto (con las fechas en que pasó)
+    // mientras le pase lo mismo. Si cambia lo que le pasa (falla → no
+    // comunica), cambia de tipo y de texto y sigue marcado: si no, la mesa lo
+    // mostraba como falla con la planta sin comunicar (Brondo, 17-nov-2026).
     if (abierto.recurrente) {
-      await prisma.soporteCaso.update({ where: { id: abierto.id }, data: { ultimaVezEn: new Date() } });
+      if (abierto.tipo === c.tipo) {
+        await prisma.soporteCaso.update({ where: { id: abierto.id }, data: { ultimaVezEn: new Date() } });
+        return { id: abierto.id, nuevo: false };
+      }
+      const antes = abierto.titulo.replace(/^Se repite:\s*/, "");
+      await prisma.soporteCaso.update({
+        where: { id: abierto.id },
+        data: {
+          tipo: c.tipo,
+          titulo: `Se repite: ${c.titulo}`,
+          detalle: `${c.detalle} Antes figuraba como "${antes}", que se venía repitiendo.`,
+          codigoFalla: c.codigoFalla ?? null,
+          llaveDelCliente: c.llaveDelCliente ?? false,
+          ultimaVezEn: new Date(),
+        },
+      });
       return { id: abierto.id, nuevo: false };
     }
     await prisma.soporteCaso.update({
@@ -96,12 +113,14 @@ export async function abrirOActualizar(c: NuevoCaso): Promise<{ id: string; nuev
 }
 
 /**
- * Cierra solos los casos abiertos de esos tipos (la planta volvió). Los que se
- * repiten no: vuelven mañana, los cierra una persona.
+ * Cierra solos los casos abiertos de esos tipos (la planta volvió), también los
+ * que se repiten. Quedan sin `vistoEn`: la mesa los muestra en "Se arreglaron
+ * solas" hasta que alguien los marca como vistos. Si vuelve a caer, se abre un
+ * caso nuevo y `marcarSiSeRepite` lo marca otra vez.
  */
 export async function cerrarAutomatico(projectId: string, tipos: SoporteCasoTipo[], motivo: string) {
   const r = await prisma.soporteCaso.updateMany({
-    where: { projectId, estado: SoporteCasoEstado.ABIERTO, tipo: { in: tipos }, recurrente: false },
+    where: { projectId, estado: SoporteCasoEstado.ABIERTO, tipo: { in: tipos } },
     data: { estado: SoporteCasoEstado.RESUELTO, resueltoEn: new Date(), motivoCierre: motivo },
   });
   return r.count;
@@ -113,8 +132,30 @@ export async function cerrarManual(id: string, userId: string, estado: "RESUELTO
   if (caso.estado !== SoporteCasoEstado.ABIERTO) throw badRequest("CASO_CERRADO", "El caso ya está cerrado");
   return prisma.soporteCaso.update({
     where: { id },
-    data: { estado, resueltoEn: new Date(), resueltoPorId: userId, motivoCierre: motivo.trim() || null },
+    data: {
+      estado,
+      resueltoEn: new Date(),
+      resueltoPorId: userId,
+      motivoCierre: motivo.trim() || null,
+      // Lo cerró una persona: ya lo vio.
+      vistoEn: new Date(),
+      vistoPorId: userId,
+    },
   });
+}
+
+/**
+ * "Visto" en "Se arreglaron solas": marca todos los cerrados solos y sin ver
+ * de la planta (si se cayó y volvió dos veces, con uno alcanza).
+ */
+export async function marcarVisto(id: string, userId: string) {
+  const caso = await prisma.soporteCaso.findUnique({ where: { id }, select: { projectId: true } });
+  if (!caso) throw notFound("CASO_NO_ENCONTRADO", "El caso no existe");
+  const r = await prisma.soporteCaso.updateMany({
+    where: { projectId: caso.projectId, estado: SoporteCasoEstado.RESUELTO, resueltoPorId: null, vistoEn: null },
+    data: { vistoEn: new Date(), vistoPorId: userId },
+  });
+  return { vistos: r.count };
 }
 
 /** El mensaje que se le propone al cliente. Se puede editar antes de mandarlo. */
@@ -173,7 +214,7 @@ const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
  *  - casos de caída de la misma planta en los últimos 7 días, y
  *  - si hay código y credenciales de la web de Growatt, las alarmas del
  *    inversor del último mes (una consulta, solo de esta planta).
- * Si se repite, el caso queda marcado y no se cierra solo.
+ * Si se repite, el caso queda marcado (el título dice "Se repite").
  */
 export async function marcarSiSeRepite(
   casoId: string,
@@ -223,7 +264,7 @@ export async function marcarSiSeRepite(
     data: {
       recurrente: true,
       titulo: `Se repite: ${caso.titulo}`,
-      detalle: `${notas.join(" ")} ${caso.detalle} Como se repite, el caso no se cierra solo cuando vuelve a generar.`,
+      detalle: `${notas.join(" ")} ${caso.detalle} Si vuelve a generar se cierra solo, pero queda en "Se arreglaron solas" para que alguien lo mire.`,
     },
   });
   return true;

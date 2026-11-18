@@ -16,7 +16,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
-import { avisarCliente, cerrarManual, mensajeSugerido } from "../services/soporte/casos.service.js";
+import { avisarCliente, cerrarManual, marcarVisto, mensajeSugerido } from "../services/soporte/casos.service.js";
 import { rendimientoReciente, revisarRendimiento, type RendimientoPlanta } from "../services/soporte/rendimiento.service.js";
 import { vigiaHabilitado } from "../services/soporte/soporte.job.js";
 import { medianaCartera, rendimiento, SOL_MIN } from "../services/soporte/vigia.js";
@@ -25,6 +25,7 @@ import { pausasDePlantas } from "../services/soporte/pausas.js";
 import { describirCodigo } from "../services/soporte/codigos.js";
 import { kwpEfectivo } from "../services/soporte/kwp.js";
 import { correrVigia } from "../services/soporte/vigia.service.js";
+import { analisisHabilitado, pedirAnalisis } from "../services/soporte/analisisIa.js";
 import { badRequest, notFound } from "../utils/errors.js";
 
 const idParam = z.object({ id: z.string().min(1) });
@@ -77,6 +78,9 @@ const serializarCaso = (c: {
   motivoCierre: string | null;
   clienteAvisadoEn: Date | null;
   mensajeCliente: string | null;
+  analisisIa: string | null;
+  analisisIaEstado: string | null;
+  analisisIaEn: Date | null;
   project: { clientName: string; code: string; clients: { userId: string }[] };
   resueltoPor: { name: string } | null;
   clienteAvisadoPor: { name: string } | null;
@@ -99,6 +103,9 @@ const serializarCaso = (c: {
   clienteAvisadoEn: c.clienteAvisadoEn?.toISOString() ?? null,
   clienteAvisadoPor: c.clienteAvisadoPor?.name ?? null,
   mensajeCliente: c.mensajeCliente,
+  analisisIa: c.analisisIa,
+  analisisIaEstado: c.analisisIaEstado,
+  analisisIaEn: c.analisisIaEn?.toISOString() ?? null,
 });
 
 const incluirCaso = {
@@ -112,10 +119,15 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
     app.addHook("preHandler", authenticate);
 
     app.get("/soporte/tablero", { preHandler: authorize(Module.SOPORTE, Action.VIEW) }, async () => {
-      const [estados, estadosHuawei, casos, reclamos, incidencias, dias] = await Promise.all([
+      const [estados, estadosHuawei, casos, cerradosSolos, reclamos, incidencias, dias] = await Promise.all([
         prisma.soporteEstadoPlanta.findMany({ include: { project: { select: selectProyecto } } }),
         prisma.soporteEstadoHuawei.findMany({ include: { project: { select: selectProyecto } } }),
         prisma.soporteCaso.findMany({ where: { estado: "ABIERTO" }, include: incluirCaso, orderBy: { detectadoEn: "desc" } }),
+        prisma.soporteCaso.findMany({
+          where: { estado: "RESUELTO", resueltoPorId: null, vistoEn: null },
+          include: incluirCaso,
+          orderBy: { resueltoEn: "desc" },
+        }),
         prisma.ticket.findMany({
           where: { deletedAt: null, estado: { in: [TicketEstado.ABIERTO, TicketEstado.DERIVADO, TicketEstado.EN_PROGRESO] } },
           select: { id: true, titulo: true, projectId: true },
@@ -210,6 +222,7 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         // nublado): "desconectada" no quiere decir nada, Growatt las da así.
         haySol: mediana != null && mediana >= SOL_MIN,
         problemas,
+        arregladas: armarArregladas(cerradosSolos.map(serializarCaso), casos),
       };
     });
 
@@ -243,6 +256,20 @@ export async function registerSoporteRoutes(app: FastifyInstance) {
         .object({ estado: z.enum(["RESUELTO", "DESCARTADO"]), motivo: z.string().max(1000).default("") })
         .parse(request.body);
       await cerrarManual(id, userId(request), body.estado, body.motivo);
+      return { ok: true };
+    });
+
+    app.post("/soporte/casos/:id/visto", { preHandler: authorize(Module.SOPORTE, Action.EDIT) }, async (request) => {
+      const { id } = idParam.parse(request.params);
+      return marcarVisto(id, userId(request));
+    });
+
+    app.post("/soporte/casos/:id/analizar", { preHandler: authorize(Module.SOPORTE, Action.EDIT) }, async (request) => {
+      const { id } = idParam.parse(request.params);
+      if (!analisisHabilitado()) throw badRequest("SOPORTE_IA_OFF", "El análisis con IA no está configurado");
+      const caso = await prisma.soporteCaso.findUnique({ where: { id }, select: { id: true } });
+      if (!caso) throw notFound("CASO_NO_ENCONTRADO", "El caso no existe");
+      await pedirAnalisis(id);
       return { ok: true };
     });
 
@@ -385,6 +412,23 @@ function armarProblemas(
     if (i.projectId) vistos.set(`${i.projectId}|${familia(grupo)}`, p);
   }
   return out;
+}
+
+/**
+ * "Se arreglaron solas": casos que se cerraron solos (la planta volvió) y nadie
+ * marcó como vistos. Uno por planta, el último, con cuántas veces volvió. Si la
+ * planta ya tiene otro caso abierto, no se arregló: no se muestra.
+ */
+function armarArregladas(cerrados: ReturnType<typeof serializarCaso>[], abiertos: Array<{ projectId: string }>) {
+  const conCaso = new Set(abiertos.map((c) => c.projectId));
+  const porPlanta = new Map<string, { caso: ReturnType<typeof serializarCaso>; veces: number }>();
+  for (const c of cerrados) {
+    if (conCaso.has(c.projectId)) continue;
+    const ya = porPlanta.get(c.projectId);
+    if (ya) ya.veces++;
+    else porPlanta.set(c.projectId, { caso: c, veces: 1 });
+  }
+  return [...porPlanta.values()].map(({ caso, veces }) => ({ ...caso, veces }));
 }
 
 // ─── Evolución: tickets abiertos y problemas activos, día por día ────────────

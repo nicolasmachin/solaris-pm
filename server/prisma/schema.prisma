@@ -623,6 +623,7 @@ model User {
   pushSuscripciones              PushSuscripcion[]
   soporteCasosResueltos          SoporteCaso[]                  @relation("SoporteCasoResueltoPor")
   soporteCasosAvisados           SoporteCaso[]                  @relation("SoporteCasoAvisadoPor")
+  soporteCasosVistos             SoporteCaso[]                  @relation("SoporteCasoVistoPor")
   comments                       Comment[]
   settings                       Setting[]                      @relation("SettingUser")
   settingsUpdated                Setting[]                      @relation("SettingUpdatedBy")
@@ -6575,8 +6576,9 @@ model SoporteCaso {
   /// llave de microgeneración, que la puede subir el cliente.
   llaveDelCliente   Boolean           @default(false)
   /// La misma falla se repite (alarmas del inversor del último mes, o casos
-  /// de los últimos 7 días): no se cierra solo cuando vuelve a generar, porque
-  /// vuelve mañana. Caso Martín González: aislación baja (203) todas las mañanas.
+  /// de los últimos 7 días). Caso Martín González: aislación baja (203) todas
+  /// las mañanas. Si es de planta caída, igual se cierra solo al volver a
+  /// generar (queda en "Se arreglaron solas"); "genera menos" no.
   recurrente        Boolean           @default(false)
   /// "Genera menos": último día que ya se fue a mirar (no se investiga dos veces).
   ultimoDiaRevisado DateTime?         @db.Date
@@ -6588,6 +6590,21 @@ model SoporteCaso {
   resueltoPor   User?     @relation("SoporteCasoResueltoPor", fields: [resueltoPorId], references: [id], onDelete: SetNull)
   /// "Volvió a generar" (automático) o lo que escribió quien lo cerró.
   motivoCierre  String?
+  /// Cerrado solo (la planta volvió): la mesa lo muestra en "Se arreglaron
+  /// solas" hasta que alguien lo marca como visto.
+  vistoEn       DateTime? @db.Timestamptz(6)
+  vistoPorId    String?
+  vistoPor      User?     @relation("SoporteCasoVistoPor", fields: [vistoPorId], references: [id], onDelete: SetNull)
+
+  /// Análisis con IA (markdown): mira la planta con las herramientas del
+  /// conector (generación, curva, alarmas, historial cada 5 min) y deja qué
+  /// pasa, la causa probable y qué hacer. Se pide solo al abrir una falla o un
+  /// "no genera", y de nuevo si cambia el tipo (`analisisIaTipo`).
+  analisisIa       String?
+  /// ANALIZANDO | LISTO | ERROR
+  analisisIaEstado String?
+  analisisIaEn     DateTime?        @db.Timestamptz(6)
+  analisisIaTipo   SoporteCasoTipo?
 
   clienteAvisadoEn    DateTime? @db.Timestamptz(6)
   clienteAvisadoPorId String?

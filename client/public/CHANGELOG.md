@@ -15,10 +15,14 @@
 - **Soporte** tiene tres pestañas: **Mesa** (la de siempre), **Tickets** y **Evolución**.
 - Los **tickets** se mudaron de **Mis tareas** a **Soporte → Tickets**. Los enlaces viejos y los avisos de la campanita llevan a la pestaña nueva. Quien antes veía los tickets en Mis tareas ahora ve **Soporte** en el menú, aunque no vea la mesa.
 - Nueva pestaña **Evolución** con dos gráficas día por día: **cuántos tickets había abiertos** y **cuántas plantas tenían un problema**, separadas por tipo (falla del inversor, no genera, no comunica, genera menos, medidor mal conectado, no exporta, sin datos de la plataforma). Se puede mirar el último mes, 3 meses, 6 meses o el año.
+- Nueva columna **Se arreglaron solas** en la Mesa: las plantas que tuvieron un problema y volvieron a andar sin que nadie hiciera nada, con cuánto duró y cuántas veces pasó. Con **Visto** salen de ahí.
+- Las **fallas del inversor** y las plantas que **no generan** llegan a la Mesa **ya analizadas con IA**: al detectarlas, se miran solos los días anteriores, las alarmas, el historial del inversor si hace falta y los casos parecidos de otras obras, y el detalle de la alerta muestra **qué pasa, la causa probable, qué hacer y cuánta energía se perdió**. Con **Analizar** (o **Analizar de nuevo**) se pide para cualquier alerta.
+- Un problema que se repite ahora **cambia de tipo** si cambia lo que le pasa a la planta (por ejemplo, de falla del inversor a «no comunica»), y **se cierra solo** cuando la planta vuelve a generar; queda en «Se arreglaron solas» para que alguien lo mire.
 
 #### Arreglos
 
 - En la mesa de Soporte, «reclamos abiertos» contaba también los tickets borrados.
+- En la mesa de Soporte, algunas plantas que no comunicaban figuraban como **falla del inversor** porque antes habían tenido una falla que se repetía.
 
 #### Ventas
 

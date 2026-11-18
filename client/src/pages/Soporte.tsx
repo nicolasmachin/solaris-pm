@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,6 +14,7 @@ import {
   PlugZap,
   RefreshCw,
   Send,
+  Sparkles,
   SunDim,
   TrendingDown,
   Wifi,
@@ -23,6 +26,7 @@ import {
 import toast from "react-hot-toast";
 
 import {
+  analizarCasoSoporte,
   avisarClienteSoporte,
   cerrarCasoSoporte,
   correrRendimiento,
@@ -31,6 +35,7 @@ import {
   getSoporteCasos,
   getSoporteTablero,
   descartarIncidencia,
+  marcarVistoSoporte,
   revisarIncidencia,
   type SoporteCaso,
   type SoporteCasoTipo,
@@ -164,13 +169,20 @@ export function Soporte() {
       </div>
 
       <section className="space-y-3">
-        {data.problemas.length === 0 ? (
+        {data.problemas.length === 0 && (
           <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-muted)]">
             <CheckCircle2 className="mr-1.5 inline h-4 w-4 text-emerald-400" />
             No hay problemas abiertos: todas las plantas que se pueden ver están andando.
           </p>
-        ) : (
-          <Problemas problemas={data.problemas} casos={data.casos} puedeEditar={puedeEditar} onCambio={invalidar} />
+        )}
+        {(data.problemas.length > 0 || data.arregladas.length > 0) && (
+          <Problemas
+            problemas={data.problemas}
+            casos={data.casos}
+            arregladas={data.arregladas}
+            puedeEditar={puedeEditar}
+            onCambio={invalidar}
+          />
         )}
         {verCerrados &&
           (cerradosQ.isLoading ? (
@@ -516,11 +528,13 @@ const ddmm = (desde: string) => `${desde.slice(8, 10)}/${desde.slice(5, 7)}`;
 function Problemas({
   problemas,
   casos,
+  arregladas,
   puedeEditar,
   onCambio,
 }: {
   problemas: SoporteProblema[];
   casos: SoporteCaso[];
+  arregladas: Array<SoporteCaso & { veces: number }>;
   puedeEditar: boolean;
   onCambio: () => void;
 }) {
@@ -555,6 +569,7 @@ function Problemas({
             </div>
           );
         })}
+        {arregladas.length > 0 && <Arregladas casos={arregladas} puedeEditar={puedeEditar} onCambio={onCambio} />}
       </div>
       {elegido && (
         <DetalleProblema
@@ -566,6 +581,75 @@ function Problemas({
         />
       )}
     </>
+  );
+}
+
+/** Cuánto estuvo caída: de "detectado" a "cerrado". */
+function duracion(desde: string, hasta: string): string {
+  const min = Math.max(0, Math.round((new Date(hasta).getTime() - new Date(desde).getTime()) / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.round(min / 60);
+  return h < 48 ? `${h} h` : `${Math.round(h / 24)} días`;
+}
+
+/**
+ * Plantas que volvieron solas: el caso se cerró sin que nadie hiciera nada.
+ * Quedan acá hasta que alguien las marca como vistas, para que una caída que
+ * va y viene no pase sin que nadie se entere.
+ */
+function Arregladas({
+  casos,
+  puedeEditar,
+  onCambio,
+}: {
+  casos: Array<SoporteCaso & { veces: number }>;
+  puedeEditar: boolean;
+  onCambio: () => void;
+}) {
+  const visto = useMutation({
+    mutationFn: marcarVistoSoporte,
+    onSuccess: () => onCambio(),
+    onError: (e) => toast.error(errorDe(e) ?? "No se pudo marcar como visto"),
+  });
+  return (
+    <div className="rounded-xl border border-emerald-500/40 bg-[var(--color-bg-card)] p-2">
+      <div
+        className="flex items-center gap-2 px-1 pb-2"
+        title="Se cayeron y volvieron a andar solas, sin que nadie hiciera nada. Marcarlas como vistas para que salgan de acá."
+      >
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+        <span className="font-display text-xl font-bold leading-none text-emerald-400">{casos.length}</span>
+        <span className="truncate text-sm font-semibold text-[var(--color-text-primary)]">Se arreglaron solas</span>
+      </div>
+      <div className="space-y-1.5">
+        {casos.map((c) => (
+          <div key={c.id} className="rounded-lg bg-[var(--color-bg-app)] px-2.5 py-2" title={`${c.titulo}. ${c.detalle}`}>
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/clientes/${c.projectId}`}
+                className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]"
+              >
+                {c.cliente}
+              </Link>
+              {puedeEditar && (
+                <button
+                  type="button"
+                  onClick={() => visto.mutate(c.id)}
+                  disabled={visto.isPending}
+                  className="inline-flex shrink-0 items-center gap-1 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
+                >
+                  <Eye className="h-3 w-3" /> Visto
+                </button>
+              )}
+            </div>
+            <p className="mt-0.5 truncate text-[11px] text-[var(--color-text-muted)]">
+              {TIPO[c.tipo].texto} {duracion(c.detectadoEn, c.resueltoEn!)} · volvió {fechaHora(c.resueltoEn!)}
+              {c.veces > 1 && ` · ${c.veces} veces`}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -677,6 +761,7 @@ function DetalleProblema({
         {p.titulo && <p className="mt-3 text-sm font-semibold text-[var(--color-text-primary)]">{p.titulo}</p>}
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{p.detalle}</p>
         <p className="mt-2 text-xs text-[var(--color-text-muted)]">{G.queEs}</p>
+        {caso && <AnalisisIa c={caso} puedeEditar={puedeEditar} onCambio={onCambio} />}
         <Reclamo p={p} onCambio={onCambio} />
         {caso ? (
           <AccionesCaso c={caso} puedeEditar={puedeEditar} onCambio={listo} />
@@ -684,6 +769,61 @@ function DetalleProblema({
           <AccionesIncidencia p={p} puedeEditar={puedeEditar} onCambio={listo} />
         )}
       </div>
+    </div>
+  );
+}
+
+/** Lo que vio la IA al mirar la planta (se pide solo con las fallas y los "no genera"). */
+function AnalisisIa({ c, puedeEditar, onCambio }: { c: SoporteCaso; puedeEditar: boolean; onCambio: () => void }) {
+  const analizando = c.analisisIaEstado === "ANALIZANDO";
+  // Mientras analiza, refrescar cada 10 s para que aparezca sin tocar nada.
+  useEffect(() => {
+    if (!analizando) return;
+    const t = setInterval(onCambio, 10_000);
+    return () => clearInterval(t);
+  }, [analizando, onCambio]);
+  const pedir = useMutation({
+    mutationFn: () => analizarCasoSoporte(c.id),
+    onSuccess: () => {
+      toast.success("Analizando la planta…");
+      onCambio();
+    },
+    onError: (e) => toast.error(errorDe(e) ?? "No se pudo pedir el análisis"),
+  });
+  if (!c.analisisIa && !c.analisisIaEstado && !puedeEditar) return null;
+  return (
+    <div className="mt-3 rounded-lg border border-violet-500/30 bg-violet-500/5 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-400">
+          <Sparkles className="h-3.5 w-3.5" /> Análisis con IA
+          {c.analisisIaEn && !analizando && (
+            <span className="font-normal text-[var(--color-text-muted)]">· {fechaHora(c.analisisIaEn)}</span>
+          )}
+        </p>
+        {puedeEditar && !analizando && (
+          <button
+            type="button"
+            onClick={() => pedir.mutate()}
+            disabled={pedir.isPending}
+            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] disabled:opacity-60"
+          >
+            {c.analisisIa ? "Analizar de nuevo" : "Analizar"}
+          </button>
+        )}
+      </div>
+      {analizando ? (
+        <p className="mt-2 inline-flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Mirando la planta: generación, alarmas y, si hace falta, el historial del inversor…
+        </p>
+      ) : c.analisisIa ? (
+        <div className="asistente-md mt-2 text-sm leading-relaxed text-[var(--color-text-primary)]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{c.analisisIa}</ReactMarkdown>
+        </div>
+      ) : c.analisisIaEstado === "ERROR" ? (
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">No se pudo analizar. Se puede volver a pedir.</p>
+      ) : (
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Todavía no se analizó.</p>
+      )}
     </div>
   );
 }

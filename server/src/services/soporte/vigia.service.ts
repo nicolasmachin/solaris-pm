@@ -14,6 +14,7 @@ import { huaweiConfigurado, kpiTiempoReal } from "../reportesFv/huawei/client.js
 import { evaluarHuawei } from "./vigia-huawei.js";
 import { pausasDePlantas } from "./pausas.js";
 import { kwpEfectivo } from "./kwp.js";
+import { analizarSiCorresponde } from "./analisisIa.js";
 import { abrirOActualizar, cerrarAutomatico, marcarSiSeRepite, TIPOS_CAIDA, type NuevoCaso } from "./casos.service.js";
 import { diagnosticarInversor, type Diagnostico } from "./diagnostico.js";
 import { evaluarLectura, medianaCartera, SOL_MIN, type LecturaPlanta } from "./vigia.js";
@@ -231,6 +232,8 @@ async function vuelta(ahora: Date): Promise<ResultadoVigia> {
         await marcarSiSeRepite(r.id, projectId, v.plantId, caso.codigoFalla ?? null);
       }
     }
+    // Que llegue a la mesa ya mirado (no espera: va a una cola).
+    await analizarSiCorresponde(r.id);
   }
 
   return { plantas: filas.length, plantasHuawei: 0, mediana, casosNuevos, casosCerrados, consultasInversor };
@@ -353,6 +356,7 @@ export async function vueltaHuawei(mediana: number | null, ahora: Date) {
             };
     const r = await abrirOActualizar(caso);
     if (r.nuevo) casosNuevos++;
+    await analizarSiCorresponde(r.id);
   }
   return { plantas: vinculadas.length, casosNuevos, casosCerrados };
 }

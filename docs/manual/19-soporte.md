@@ -54,6 +54,13 @@ En la Mesa:
     **Descartar**;
   - incidencias del monitoreo diario: **Ya la vi**, **Descartar** (con el
     motivo) y **Ver en Monitoreo**.
+- En el detalle de los casos de la revisión automática, el recuadro violeta
+  **Análisis con IA**: qué pasa, causa probable, qué hacer y energía perdida.
+  Las fallas y los "no genera" lo traen solo; **Analizar** / **Analizar de
+  nuevo** lo pide a mano para cualquier caso (ver "El análisis con IA").
+- **Se arreglaron solas**: la última columna, en verde. Las plantas cuyo caso
+  se cerró solo porque volvieron a andar, con cuánto duró, cuándo volvió y
+  cuántas veces; **Visto** las saca. Ver el paso 7 de "La revisión automática".
 - **Ver casos cerrados** muestra los últimos 50 casos de Soporte cerrados.
 - **Plantas ahora**: todas las plantas vinculadas con su lectura (ver abajo).
   De noche el estado dice "Sin sol" en vez de "Desconectada": Growatt da a casi
@@ -86,7 +93,9 @@ En el código se llama vigía; en la pantalla y en los manuales del equipo es
    sol** (`desconectadaConSol`). A las 2 (una hora) hay alerta, y solo si esa
    lectura tiene sol (el contador se conserva de noche). Si genera, se
    ponen en cero y **se cierran solos** los casos de planta caída ("Volvió a
-   generar a las…").
+   generar a las…"), **también los recurrentes** (`cerrarAutomatico()`): quedan
+   en la columna "Se arreglaron solas" hasta que alguien los marca como vistos
+   (ver el paso 7).
 4. **Antes de abrir el caso se confirma con el inversor**: `ultimoDatoInversor()`
    (`growatt/client.ts`, `tlx_last_data` para MIN y `max_last_data` para MAX, una
    llamada por equipo, solo de las plantas sospechosas). Hace falta porque
@@ -105,7 +114,13 @@ En el código se llama vigía; en la pantalla y en los manuales del equipo es
 
    Con varios inversores manda el peor (`elegirPeor()`).
 5. **Un caso de "planta caída" por proyecto** (`TIPOS_CAIDA`: no genera, no
-   comunica, falla): si cambia el diagnóstico se actualiza el mismo caso. Con un
+   comunica, falla): si cambia el diagnóstico se actualiza el mismo caso
+   (`abrirOActualizar()`). **Eso vale también para el recurrente**: conserva la
+   marca, pero cambia el tipo, el código y el texto ("Se repite: Dejó de mandar
+   datos", y el detalle dice qué figuraba antes). Hasta el 17-nov-2026 el
+   recurrente solo actualizaba la hora y se quedaba con el tipo viejo: Antonella
+   Brondo, que no comunicaba desde el 14-nov, seguía en "falla del inversor" por
+   una falla repetida de días antes, y lo mismo otras cuatro plantas. Con un
    caso abierto revisado hace menos de una hora no se vuelve a consultar al
    inversor.
 6. Al **abrir** un caso (no al actualizarlo) se avisa a los usuarios con
@@ -118,12 +133,25 @@ En el código se llama vigía; en la pantalla y en los manuales del equipo es
    **las alarmas del inversor del último mes** (`alarmasPlanta()` de la web de
    Growatt, una consulta). Si la falla apareció 3 días o más, el caso queda
    `recurrente`: el título dice "Se repite: …", el detalle lista las fechas y la
-   hora típica, y **no se cierra solo** cuando la planta vuelve a generar (vuelve
-   mañana): lo cierra una persona. Hace falta por las fallas que vienen y van:
+   hora típica. Hace falta por las fallas que vienen y van:
    Martín González tuvo aislación baja (203) 16 días entre el 28-sep y el 28-oct,
    siempre a la mañana (en falla de ~6 a ~13 h y generando fuerte a la tarde),
    así que el total del día no bajaba del 60 % y "genera menos" no lo marcaba;
    sin esto, la revisión le habría abierto y cerrado un caso cada día.
+
+   **Cuando la planta vuelve a generar, el recurrente se cierra solo igual**
+   (desde el 17-nov-2026; antes lo tenía que cerrar una persona y quedaban en
+   la mesa plantas que andaban bien). Como "vuelve mañana", no desaparece:
+   todo caso cerrado por el sistema (`estado RESUELTO`, `resueltoPorId` vacío)
+   y sin `vistoEn` aparece en la columna **Se arreglaron solas**
+   (`armarArregladas()` en `soporte.routes.ts`): una tarjeta por planta con el
+   último caso, cuánto duró, cuándo volvió y cuántas veces se cerró sola sin
+   verse. Si la planta tiene un caso abierto, no aparece ahí (ya está en su
+   columna). **Visto** (`POST /api/soporte/casos/:id/visto` → `marcarVisto()`)
+   marca todos los cerrados solos de esa planta y la tarjeta se va. Cerrar o
+   descartar a mano (`cerrarManual()`) deja el caso visto. La migración
+   `soporte_casos_visto` dio por vistos todos los casos que ya estaban
+   cerrados, para que la columna arranque vacía.
 
 Además guarda por planta (`SoporteEstadoPlanta`) la última lectura, la energía
 total del primer sondeo del día (para "Hoy") y un `factorNormal` (cuánto rinde
@@ -215,7 +243,9 @@ hora.
   la web de Growatt, solo para esa planta.
   - Si el inversor estuvo en falla, el caso pasa a "falla del inversor" con el
     código explicado; si el código vino más de un día, "Se repite: …" y no se
-    cierra solo. Martín González (23-oct): "Se repite: Aislamiento bajo de los
+    cierra con los 3 días buenos (lo cierra una persona). Si después la planta
+    se cae del todo y vuelve, ese caso de falla se cierra solo como cualquier
+    caída y pasa a "Se arreglaron solas". Martín González (23-oct): "Se repite: Aislamiento bajo de los
     paneles", en falla de 05:51 a 15:47, aislamiento hasta 43 kΩ, 10 días en dos
     semanas.
   - Si no hay falla pero sí otra cosa (cortes de comunicación, recorte,
@@ -288,6 +318,42 @@ tipo (paleta categórica validada para daltonismo, un tono para modo claro y otr
 para oscuro) y la leyenda con el valor de hoy de cada tipo. Muestra solo los
 tipos que aparecieron en el rango elegido.
 
+### El análisis con IA
+
+`services/soporte/analisisIa.ts`. La revisión automática dice **qué pasa ahora**
+(el último dato del inversor); el análisis hace lo que haría un técnico
+después: mira los días anteriores, las alarmas de meses, el historial cada 5
+minutos si hace falta y si ya pasó en otra obra, y deja escrito el diagnóstico
+en el caso (`analisisIa`, Markdown).
+
+- **Cuándo se pide solo**: `analizarSiCorresponde()`, llamado por el vigía
+  (Growatt y Huawei) después de abrir o actualizar un caso, y por "genera menos"
+  cuando el día rojo resulta una falla. Solo si el caso está abierto, es
+  `FALLA_INVERSOR` o `SIN_GENERACION` y **todavía no se analizó con ese tipo**
+  (`analisisIaTipo`). Si el caso cambia de tipo (de "no genera" a falla), se
+  analiza de nuevo. "No comunica" no se analiza solo: sin datos no hay qué
+  mirar.
+- **A mano**: `POST /api/soporte/casos/:id/analizar`, cualquier tipo.
+- **Cómo**: Claude (`SOPORTE_IA_MODEL`, por defecto `claude-sonnet-5-5`) con
+  las **mismas herramientas de lectura del conector** (`abrirHerramientas()` del
+  asistente), limitadas a las de plantas: `buscar_casos_tecnicos`,
+  `generacion_planta`, `alarmas_planta`, `historial_inversor` (sin Excel, hasta
+  14 días), `curva_horaria`, `estado_en_vivo`, `ficha_generador`. Él decide si
+  vale la pena bajar el historial. Las herramientas actúan en nombre del usuario
+  de `SOPORTE_IA_USUARIO` (email) o, si no está, el primer ADMIN; solo leen.
+- **Recursos**: una cola en memoria, **de a un caso por vez**, tope de 10
+  vueltas y de 5 minutos (la última vuelta va sin herramientas para que cierre
+  con lo que tiene). No frena al vigía: el caso queda `ANALIZANDO` y la pantalla
+  se refresca cada 10 segundos hasta que aparece.
+- **Costo**: cada llamada queda en `ai_usage` con la feature
+  `soporte_analisis`, el proyecto y el caso. En la prueba del 17-nov-2026 un
+  análisis costó unos 3 centavos de dólar.
+- **Estados** (`analisisIaEstado`): `ANALIZANDO`, `LISTO`, `ERROR`. El tipo se
+  anota **al pedirlo**, no al terminar: un análisis que falla no se vuelve a
+  pedir solo cada media hora (se pide a mano).
+- **Apagado**: sin `ANTHROPIC_API_KEY` o con `SOPORTE_IA=0` no se pide nada y
+  el botón responde `SOPORTE_IA_OFF`.
+
 ### Avisar al cliente
 
 `casos.service.ts` → `mensajeSugerido()` (según el tipo y si es la llave) y
@@ -305,8 +371,11 @@ avisarle por WhatsApp.
   (`SoporteIndex` redirige). Es así porque los tickets los ven casi todos los
   roles y la mesa solo unos pocos.
 - `GET /api/soporte/evolucion`: `SOPORTE:VIEW`.
+- `POST /api/soporte/casos/:id/analizar` (pedir el análisis con IA):
+  `SOPORTE:EDIT`. El análisis se ve con `SOPORTE:VIEW`.
 - `SOPORTE:VIEW`: ver la mesa y recibir las alertas. `SOPORTE:EDIT`: avisar al
-  cliente, cerrar casos y correr las revisiones a mano. El script
+  cliente, cerrar casos, marcar como visto lo que se arregló solo y correr las
+  revisiones a mano. El script
   `prisma/scripts/seed-soporte-permissions.ts` se lo da a ADMIN; en producción
   (verificado el 17-nov-2026) también tienen VIEW y EDIT EXPERIENCIA_SOLAR y
   COMPRAS, y VIEW ASESOR_IA.
@@ -314,8 +383,9 @@ avisarle por WhatsApp.
 
 ## Reglas y decisiones
 
-- **No consume recursos aparte**: no hay agentes ni procesos nuevos ni IA. Es
-  un `cron` dentro del mismo proceso del server, que hace 2 consultas a
+- **No consume recursos aparte**: no hay agentes ni procesos nuevos. La
+  revisión en sí no usa IA (el análisis con IA es aparte, de a uno y con
+  topes; ver "El análisis con IA"). Es un `cron` dentro del mismo proceso del server, que hace 2 consultas a
   Growatt por vuelta más una por inversor sospechoso, y termina. Nunca corren
   dos vueltas a la vez (`corriendo`), cada consulta tiene 30 s de límite y 5
   reintentos, y la vuelta entera tiene un tope de 10 minutos
@@ -333,6 +403,11 @@ avisarle por WhatsApp.
 
 ## Casos borde
 
+- **Si el server se reinicia con análisis en la cola**, esos casos quedan en
+  `ANALIZANDO` para siempre (la cola es en memoria y el tipo ya quedó anotado,
+  así que no se vuelven a pedir solos). La pantalla muestra "Mirando la
+  planta…" sin botón; hoy se destraba poniendo `analisisIaEstado` en `ERROR`
+  o `NULL` en la base. Pasa con cada deploy que caiga en medio de un análisis.
 - Una falla intermitente que dura **menos de una hora** con sol no abre caso
   (hacen falta dos lecturas seguidas). Para esas, la fuente es el registro de
   alarmas del inversor, que hoy solo se mira al abrir un caso. Si hiciera falta,
