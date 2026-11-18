@@ -44,6 +44,8 @@ import {
 } from "../components/ute/UteProcessDetail";
 import { ComentariosYArchivos } from "../components/area/ComentariosYArchivos";
 import { UteKanbanBoard } from "../components/ute/UteKanbanBoard";
+import { UteComercialSection } from "../components/ute/UteComercialSection";
+import { COMERCIAL_COLOR, ESTADOS_COMERCIAL_ABIERTOS, getTramitesComerciales } from "../api/uteComercial.api";
 
 const FILTER_STORAGE_KEY = "ute-filters";
 const VIEW_STORAGE_KEY = "ute-view-mode";
@@ -152,6 +154,20 @@ export function TramitesUte() {
     searchParams.get("id") ?? searchParams.get("highlight"),
   );
   const [newModalOpen, setNewModalOpen] = useState(false);
+  // Dos secciones: la habilitación del generador y lo que se le pide a UTE
+  // Comercial (aumentos, suministros nuevos…). Va en la URL para poder linkear.
+  const seccion = searchParams.get("seccion") === "comercial" ? "comercial" : "habilitacion";
+  function setSeccion(s: "habilitacion" | "comercial") {
+    const next = new URLSearchParams(searchParams);
+    if (s === "comercial") next.set("seccion", "comercial");
+    else next.delete("seccion");
+    setSearchParams(next, { replace: true });
+  }
+  const { data: comerciales = [] } = useQuery({
+    queryKey: ["ute-comerciales"],
+    queryFn: () => getTramitesComerciales(),
+  });
+  const comercialesAbiertos = comerciales.filter((t) => ESTADOS_COMERCIAL_ABIERTOS.includes(t.estado)).length;
 
   useEffect(() => saveFilters(filters), [filters]);
   useEffect(() => {
@@ -218,9 +234,12 @@ export function TramitesUte() {
             Trámites UTE
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {activeCount} trámites activos · {finalizedCount} finalizados
+            {seccion === "comercial"
+              ? `${comercialesAbiertos} trámite${comercialesAbiertos === 1 ? "" : "s"} comercial${comercialesAbiertos === 1 ? "" : "es"} abierto${comercialesAbiertos === 1 ? "" : "s"}`
+              : `${activeCount} trámites activos · ${finalizedCount} finalizados`}
           </p>
         </div>
+        {seccion === "habilitacion" && (
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5">
             <button
@@ -255,7 +274,48 @@ export function TramitesUte() {
             Nuevo trámite
           </Button>
         </div>
+        )}
       </div>
+
+      {/* Secciones */}
+      <div className="mb-4 flex gap-1 border-b border-[var(--color-border)]">
+        <button
+          type="button"
+          onClick={() => setSeccion("habilitacion")}
+          className={`-mb-px border-b-2 px-4 py-2 text-sm transition-colors ${
+            seccion === "habilitacion"
+              ? "border-[var(--color-accent)] font-semibold text-[var(--color-text-primary)]"
+              : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          }`}
+        >
+          Habilitación
+        </button>
+        <button
+          type="button"
+          onClick={() => setSeccion("comercial")}
+          className={`-mb-px inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm transition-colors ${
+            seccion === "comercial"
+              ? "font-semibold text-[var(--color-text-primary)]"
+              : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          }`}
+          style={seccion === "comercial" ? { borderColor: COMERCIAL_COLOR } : undefined}
+        >
+          Comercial
+          {comercialesAbiertos > 0 && (
+            <span
+              className="rounded-full px-1.5 text-[10px] font-bold"
+              style={{ background: `${COMERCIAL_COLOR}33`, color: COMERCIAL_COLOR }}
+            >
+              {comercialesAbiertos}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {seccion === "comercial" ? (
+        <UteComercialSection />
+      ) : (
+      <>
 
       {/* Filtros */}
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
@@ -355,6 +415,8 @@ export function TramitesUte() {
         <UteTable processes={processes} onRowClick={(id) => setSelectedId(id)} />
       ) : (
         <UteKanbanBoard processes={processes} onCardClick={(id) => setSelectedId(id)} />
+      )}
+      </>
       )}
 
       {/* Drawer detalle */}

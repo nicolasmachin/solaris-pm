@@ -20,6 +20,7 @@ import { deleteStoredFile, saveBufferAsAttachment } from "../services/file-stora
 import { sendTemplatedEmail } from "../services/email/send.service.js";
 import { SUMINISTRO_INDIVIDUAL_KEY } from "../services/email/seed-templates.js";
 import { uteConfigKey } from "../services/suministros.service.js";
+import { registrarTramiteEnviado } from "../services/ute-comercial.service.js";
 import type { EmailTemplateContext } from "../services/email/context.service.js";
 import { datosFormularioDesdeContexto } from "../services/ute-suministro/mapping.js";
 import {
@@ -157,7 +158,15 @@ export async function registerUteSuministroRoutes(app: FastifyInstance) {
         where: uteConfigKey(projectId),
         select: { aumentoPotenciaSentAt: true, potSolicitada: true, potContratada: true },
       });
+      // Los trámites con UTE Comercial del proyecto (un proyecto puede tener
+      // varios), para que el botón muestre en qué está cada uno.
+      const tramites = await prisma.uteTramiteComercial.findMany({
+        where: { projectId, deletedAt: null },
+        select: { id: true, tipo: true, detalle: true, estado: true, solicitadoEl: true },
+        orderBy: { createdAt: "asc" },
+      });
       return {
+        tramites,
         solicitadoEl: config?.aumentoPotenciaSentAt ?? null,
         potenciaSolicitada: config?.potSolicitada ?? "",
         potenciaContratada: config?.potContratada ?? "",
@@ -226,16 +235,37 @@ export async function registerUteSuministroRoutes(app: FastifyInstance) {
         attachments: [{ filename, content: buffer, contentType: XLSX_MIME }],
       });
 
-      // Copia de lo que se mandó, en los documentos del proyecto. Una sola
-      // versión vigente: al reenviar se reemplaza. Si falla, no se cae el
+      // El trámite queda en la sección Comercial de Trámites UTE. Si ya había
+      // uno abierto del mismo tipo, es un reenvío y se actualiza ese. Si falla,
+      // no se cae el envío — el mail ya salió.
+      let tramiteId: string | null = null;
+      try {
+        const { tramite } = await registrarTramiteEnviado({
+          projectId,
+          tramiteFormulario: context.tecnica.tramite,
+          potenciaContratada: context.tecnica.potenciaContratada,
+          potenciaSolicitada: context.tecnica.potenciaSolicitada,
+          emailLogId: resultado.id,
+          userId: user.id,
+        });
+        tramiteId = tramite.id;
+      } catch (err) {
+        request.log.warn({ err }, "No se pudo registrar el trámite comercial enviado");
+      }
+
+      // Copia de lo que se mandó, en los documentos del proyecto. Una versión
+      // vigente por trámite: al reenviar el mismo trámite se reemplaza la suya,
+      // y las de otros trámites del proyecto quedan. Si falla, no se cae el
       // envío — el mail ya salió.
       try {
-        const previos = await prisma.fileAttachment.findMany({
-          where: { projectId, toolSource: TOOL_SOURCE, deletedAt: null },
-          select: { id: true, url: true },
-        });
+        const previos = tramiteId
+          ? await prisma.fileAttachment.findMany({
+              where: { projectId, toolSource: TOOL_SOURCE, toolEntityId: tramiteId, deletedAt: null },
+              select: { id: true, url: true },
+            })
+          : [];
         const stored = await saveBufferAsAttachment(buffer, filename, XLSX_MIME, projectId);
-        await prisma.fileAttachment.create({
+        const adjunto = await prisma.fileAttachment.create({
           data: {
             projectId,
             filename: stored.filename,
@@ -245,10 +275,16 @@ export async function registerUteSuministroRoutes(app: FastifyInstance) {
             url: stored.url,
             tipo: FileAttachmentTipo.OTRO,
             toolSource: TOOL_SOURCE,
-            toolEntityId: resultado.id,
+            toolEntityId: tramiteId ?? resultado.id,
             uploadedById: user.id,
           },
         });
+        if (tramiteId) {
+          await prisma.uteTramiteComercial.update({
+            where: { id: tramiteId },
+            data: { fileAttachmentId: adjunto.id },
+          });
+        }
         if (previos.length > 0) {
           await prisma.fileAttachment.updateMany({
             where: { id: { in: previos.map((p) => p.id) } },
@@ -269,10 +305,10 @@ export async function registerUteSuministroRoutes(app: FastifyInstance) {
         description: esAumento
           ? `Solicitó a UTE aumento de potencia a ${context.tecnica.potenciaSolicitada || "(sin especificar)"} kW`
           : "Envió a UTE una solicitud de suministro individual",
-        metadata: { kind: "ute_suministro_individual", emailLogId: resultado.id, filename },
+        metadata: { kind: "ute_suministro_individual", emailLogId: resultado.id, filename, tramiteId },
       });
 
-      return { ok: true, emailLogId: resultado.id, filename };
+      return { ok: true, emailLogId: resultado.id, filename, tramiteId };
     },
   );
 }

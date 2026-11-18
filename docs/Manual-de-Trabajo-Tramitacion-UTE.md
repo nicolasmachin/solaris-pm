@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.7 · del 12/10/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.8 · del 18/11/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -99,14 +99,53 @@ Mientras tanto el hito **Caso abierto en UTE** no se marca: se marca cuando UTE
 abre el caso, por la potencia que sea.
 
 La **potencia contratada** es otra cosa: si no alcanza, se pide el aumento de
-potencia del suministro, que es un trámite aparte.
+potencia del suministro, que es un trámite aparte (ver el capítulo siguiente).
 
-## 6 · Cuando falta documentación
+## 6 · Los trámites con UTE Comercial
+
+Además de la habilitación del generador, a veces hay que pedirle algo a **UTE
+Comercial**, que es la parte de UTE que maneja los contratos de luz de los
+clientes: un **aumento de potencia** (el contrato de la casa no alcanza para lo
+que se va a instalar), un **servicio nuevo**, una **reducción**, una
+**rehabilitación**, una **instalación de enlace** o un **provisorio** (general o
+de obra). No todos los proyectos necesitan uno; algunos necesitan más de uno.
+
+Esos pedidos se siguen en Voltia PM, en **Trámites UTE → Comercial**, la
+sección en violeta al lado de **Habilitación**. Cada uno tiene su estado:
+
+- **A pedir**: se sabe que hace falta, todavía no se mandó.
+- **Pedido**: se mandó y se espera respuesta.
+- **Observado**: UTE pidió algo o lo devolvió.
+- **Resuelto**: UTE lo hizo.
+- **Cancelado**: al final no hizo falta.
+
+**Cómo entra un trámite a la lista:**
+
+- Si se manda el **formulario de UTE desde Voltia PM** (en el proyecto, subetapa
+  **Consulta inicial UTE** de Onboarding, botón **Solicitar aumento de potencia
+  u otro trámite comercial**), aparece solo, como pedido y con la potencia que se
+  pidió. Si después se vuelve a mandar el mismo trámite, por ejemplo porque UTE
+  lo observó, se actualiza el que ya estaba: no se duplica.
+- Si se pidió **por otro lado** (en la oficina, por teléfono, por un mail
+  propio), se carga a mano con **Nuevo trámite comercial**: proyecto, tipo,
+  estado, fecha de pedido, número de caso y notas. Para un trámite de tipo
+  **Otro** hay que escribir qué es.
+
+**Cómo se sigue.** Al hacer clic en un trámite se abre para cambiarle el estado,
+cargar el número de caso o anotar lo que dijo UTE. La lista muestra **cuántos
+días lleva** cada uno desde que se pidió. Por defecto se ven solo los que
+siguen abiertos; los resueltos y cancelados se ven eligiéndolos en el filtro
+**Estado**. Al marcarlo resuelto, si no se cargó la fecha, queda la del día.
+
+En la ficha del proyecto, la subetapa **Consulta inicial UTE** muestra los
+trámites comerciales que tiene ese proyecto y en qué estado está cada uno.
+
+## 7 · Cuando falta documentación
 
 Si Tramitación descubre que faltó una firma o un documento de la obra, **se lo
 reclama al Gerente de Operaciones**. Nunca directo al capataz.
 
-## 7 · Cuando habilita
+## 8 · Cuando habilita
 
 Al cerrar el trámite, **el sistema le avisa solo a Experiencia Solar** y arranca
 un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
@@ -128,7 +167,7 @@ Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos camino
 > quedó marcado como finalizado desde el selector, sin una sola fecha, y el
 > sistema le avisó que encendiera una planta que no existía.
 
-## 8 · A quién le pregunta qué
+## 9 · A quién le pregunta qué
 
 | Necesita saber… | Le pregunta a… |
 |---|---|
@@ -137,11 +176,11 @@ Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos camino
 | Que se corrija algo de la instalación | **Gerente de Operaciones** |
 | Documentación de obra que falta | **Gerente de Operaciones** |
 
-## 9 · Lineamientos
+## 10 · Lineamientos
 
 *Por escribir.*
 
-## 10 · Las herramientas y cómo se usan
+## 11 · Las herramientas y cómo se usan
 
 **Comentarios y archivos del trámite.** En Trámites UTE, al abrir un trámite,
 abajo del detalle está el bloque **Comentarios y archivos**. Ahí se anota lo
@@ -162,6 +201,7 @@ se reescribe: lo que tiene que quedar con fecha y autor va como comentario.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.8 | 18 de noviembre de 2026 | Se agrega el capítulo de los trámites con UTE Comercial (aumentos de potencia, servicios nuevos, provisorios): qué son, sus estados y cómo se siguen en la sección Comercial de Trámites UTE. |
 | 0.7 | 12 de octubre de 2026 | En el detalle de cada trámite se agrega el bloque Comentarios y archivos: Tramitación comenta y sube los papeles desde el trámite, sin ir a la pantalla del proyecto, y todo aparece en la ficha del cliente. |
 | 0.6 | 11 de octubre de 2026 | La consulta inicial la presenta el asesor apenas se cobra la seña, y el seguimiento lo hace Tramitación UTE desde ahí. |
 | 0.5 | 7 de octubre de 2026 | Se agrega qué pasa cuando UTE contesta la consulta con menos potencia que la pedida: lo contesta Ingeniería con el informe de justificación de potencia, y el caso abierto se marca cuando UTE lo abre. |

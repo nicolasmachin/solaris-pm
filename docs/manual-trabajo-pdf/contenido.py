@@ -54,7 +54,7 @@ CONFIG = {
                     "corto": "Instalador", "canvas": "Manual del Instalador Tercerizado"},
     "reglamento": {"fuente": "Reglamento-Interno-Operaciones.md",
                    "pie": "Reglamento interno de Operaciones · Voltia",
-                   "titulo": "Reglamento interno", "subtitulo": "Área Operaciones · Borrador en revisión",
+                   "titulo": "Reglamento interno", "subtitulo": "Área Operaciones",
                    "corto": "Reglamento", "canvas": "Reglamento interno del Área Operaciones"},
     "finanzas": {"fuente": "Manual-de-Trabajo-Finanzas.md",
                  "pie": "Manual de Administración y Finanzas · Voltia",
@@ -151,6 +151,20 @@ if MANUAL in ("ventas", "reglamento", "finanzas"):
 
 # El reglamento se cita por secciones ("sección 19"): sus hojas dicen lo mismo.
 ROTULO_CAPITULO = "SECCIÓN" if MANUAL == "reglamento" else "CAPÍTULO"
+
+# El reglamento sale compacto para imprimir (secciones seguidas, letra al 90 %,
+# sin fotos interiores ni cierre). COMPACTO=0 lo arma como los manuales.
+COMPACTO = MANUAL == "reglamento" and os.environ.get("COMPACTO", "1") != "0"
+
+
+# IMPRESION=1: la versión para imprimir de cualquier manual: letra al 90 % y sin
+# el registro de cambios (los capítulos siguen en hojas separadas).
+IMPRESION = os.environ.get("IMPRESION") == "1"
+
+
+def achicar(html):
+    return f'<div style="zoom: .9">{html}</div>' if (COMPACTO or IMPRESION) else html
+
 
 # Los capítulos de "Cuando algo sale mal", cuyos casos van en tarjetas.
 CAPITULOS_CASOS = {"operaciones": (8, 16, 20), "ventas": (6,), "tercerizado": (14,), "finanzas": (6,)}.get(MANUAL, ())
@@ -3044,6 +3058,16 @@ def partir_registro(crudos):
 
 
 def html_de(tipo, c):
+    if tipo == "seccion":
+        # El reglamento compacto: las secciones van seguidas, con un título
+        # chico en lugar de la apertura de hoja entera.
+        num, titulo = c
+        return (f'  <div style="margin-top: 26px; display: flex; align-items: baseline; gap: 12px; '
+                f'padding-bottom: 6px; border-bottom: 2px solid {AZUL}">'
+                f'<span style="font-family: {SANS}; font-size: 30px; font-weight: 700; color: {AZUL}; '
+                f'line-height: 1">{num}</span>'
+                f'<span style="font-family: {SANS}; font-size: 24px; font-weight: 700; color: {NEGRO}; '
+                f'line-height: 1.15">{en_linea(titulo)}</span></div>\n')
     if tipo == "version":
         return version_registro(c)
     if tipo == "h4":
@@ -3411,10 +3435,10 @@ def construir():
     por_num = {c["num"]: c for c in capitulos if c["num"] is not None}
     anexos = [c for c in capitulos if c["num"] is None]
 
-    def capitulo(cap, base, cabezas=None):
+    def capitulo(cap, base, cabezas=None, armados=None):
         clave = ("s" if cap.get("suelta") else "a") if cap["num"] is None else str(cap["num"])
         clave += re.sub(r"[^a-z]", "", cap["titulo"].lower())[:8]
-        crudos = bloques_de(cap["lineas"])
+        crudos = armados if armados is not None else bloques_de(cap["lineas"])
         # El reglamento no tiene capítulo 0: la presentación va al principio del 1.
         if cap["num"] == (1 if MANUAL == "reglamento" else 0) and len(parrafos) > 1:
             crudos = [("cita", [" ".join(" ".join(parrafos[1:]).split("\n"))])] + crudos
@@ -3431,7 +3455,7 @@ def construir():
             if cap.get("suelta"):
                 crudos = [(t, c) for t, c in crudos if not (t == "cita" and re.match(r"### \d+\. ", c[0]))]
             crudos = foto_primero(visualizar_operaciones(cuadros_ventas(partir_registro(crudos)), cap["num"]))
-        elif MANUAL == "reglamento":
+        elif MANUAL == "reglamento" and armados is None:
             crudos = partir_registro(crudos)
         else:
             crudos = juntar_operaciones(crudos)
@@ -3442,7 +3466,7 @@ def construir():
         items = []
         for k, (t, c) in enumerate(crudos):
             bid = f"{clave}_{k}"
-            BLOQUES[bid] = html_de(t, c)
+            BLOQUES[bid] = achicar(html_de(t, c))
             items.append((bid, t, c))
 
         def alto(bid, html):
@@ -3464,6 +3488,8 @@ def construir():
                 sid = items[k + 1][0]
                 return alto(sid, BLOQUES[sid])
             rotulo = t == "p" and re.fullmatch(r"\*\*[^*]{1,60}\*\*", c.strip()) is not None
+            if t == "seccion":
+                rotulo = True
             sid, st, sc = items[k + 1]
             # Un cuadro de Ventas viaja con el bloque que lo presenta.
             if st.startswith("vv_") and st != "vv_paso" and not t.startswith("vv_") and t not in ("h3", "h4"):
@@ -3518,7 +3544,7 @@ def construir():
                         continue
                     if not tomo:
                         tomo.append(resto.pop(0))
-                    actual.append(html_de("tabla", (cab, [filas[j] for j in tomo])))
+                    actual.append(achicar(html_de("tabla", (cab, [filas[j] for j in tomo]))))
                     usado += 16 + med["cab"] + sum(med["filas"][j] for j in tomo)
                     if resto:
                         hojas.append(actual)
@@ -3545,6 +3571,29 @@ def construir():
         for k in nums:
             capitulo(por_num[k], f"Cap{k}")
 
+    if MANUAL == "reglamento" and COMPACTO:
+        # Para imprimir: las secciones numeradas van seguidas, sin fotos
+        # interiores; el formulario y los anexos, cada uno en su hoja.
+        armados = []
+        for c in capitulos:
+            if c["num"] is None:
+                continue
+            armados.append(("seccion", (c["num"], c["titulo"])))
+            if c["num"] == 1 and len(parrafos) > 1:
+                armados.append(("cita", [" ".join(" ".join(parrafos[1:]).split("\n"))]))
+            armados += [b for b in bloques_de(c["lineas"]) if b[0] != "captura"]
+        co = continua(None, CONFIG["titulo"], "")
+        capitulo({"num": None, "titulo": CONFIG["titulo"], "lineas": []}, "Texto", cabezas=(co, co), armados=armados)
+        for c in capitulos:
+            if c["num"] is not None:
+                continue
+            if c.get("suelta"):
+                base = re.sub(r"[^A-Za-z]", "", c["titulo"].title())[:24]
+                capitulo(c, base, cabezas=(apertura(None, c["titulo"], " "), continua(None, c["titulo"], "")))
+            else:
+                capitulo(c, "Anexo" + re.sub(r"[^A-Za-z]", "", c["titulo"].title())[:24])
+        return P
+
     if not PARTES:
         # Sin partes (Ventas): los capítulos y las secciones sueltas, en el
         # orden del .md. Una sección de reglas va en hoja oscura, y lo que trae
@@ -3567,6 +3616,8 @@ def construir():
                 else:
                     capitulo(c, base, cabezas=(apertura(None, c["titulo"], " "), continua(None, c["titulo"], "")))
 
+    if IMPRESION:
+        anexos = [a for a in anexos if not a["titulo"].startswith("Registro de cambios")]
     for a in anexos:
         base = "Anexo" + re.sub(r"[^A-Za-z]", "", a["titulo"].title())[:24]
         if a["titulo"].startswith("Las reglas"):

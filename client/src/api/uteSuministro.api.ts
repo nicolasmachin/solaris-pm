@@ -1,3 +1,4 @@
+import type { UteComercialEstado, UteComercialTipo } from "./uteComercial.api";
 import { apiClient } from "./axios";
 import type { EmailTemplateContext } from "./email.api";
 
@@ -120,6 +121,14 @@ export interface EstadoSuministro {
   solicitadoEl: string | null;
   potenciaSolicitada: string;
   potenciaContratada: string;
+  /** Trámites con UTE Comercial del proyecto (todos, abiertos y cerrados). */
+  tramites: Array<{
+    id: string;
+    tipo: UteComercialTipo;
+    detalle: string | null;
+    estado: UteComercialEstado;
+    solicitadoEl: string | null;
+  }>;
 }
 
 export async function getEstadoSuministro(projectId: string): Promise<EstadoSuministro> {

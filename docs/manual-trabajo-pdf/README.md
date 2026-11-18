@@ -166,6 +166,10 @@ Ventas; las aperturas dicen "Sección" porque el texto se cita por secciones. Co
 no tiene capítulo 0, la presentación va al principio de la sección 1. Se arma con
 `MANUAL=reglamento bash docs/manual-trabajo-pdf/armar.sh <carpeta>`.
 
+Por defecto sale **compacto, para imprimir**: las secciones van seguidas con un título
+chico, la letra al 90 % y sin fotos interiores ni cierre (`COMPACTO` en `contenido.py`).
+Con `COMPACTO=0` sale con el diseño de los manuales, una sección por hoja.
+
 Todavía no tiene canvas publicado (37 hojas al 6-nov-2026), así que sus imágenes
 son las direcciones del PGT, que `assets-locales.json` resuelve para medir y sacar
 el PDF con `pdf.mjs`. Al publicarlo hay que subirlas a su canvas y pasarle su
@@ -174,3 +178,11 @@ el PDF con `pdf.mjs`. Al publicarlo hay que subirlas a su canvas y pasarle su
 Las fotos son del equipo trabajando (`capturas-reglamento.json`). A propósito no se usan
 las que muestran algo que el mismo reglamento prohíbe, como un tablero abierto con objetos
 adentro o un cabo de vida sin enganchar a la vista.
+
+## Versión para imprimir (`IMPRESION=1`)
+
+Cualquier manual sale en versión para imprimir con `IMPRESION=1`: la letra y los
+bloques al 90 % y sin el anexo del registro de cambios; los capítulos siguen en
+hojas separadas y las portadillas quedan. Esa versión va a Drive, no a
+Documentación: en Voltia PM se publica la normal. El de Operaciones bajó de 98 a 79
+hojas (16-nov-2026).

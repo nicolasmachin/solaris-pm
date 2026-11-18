@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { ArrowLeft, FileSpreadsheet, Send, Sparkles, Upload } from "lucide-react";
 
@@ -159,6 +159,7 @@ function fusionar(
 export default function SuministroIndividualUte() {
   const { projectId = "" } = useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
 
   const { data: project } = useQuery({
@@ -380,6 +381,9 @@ export default function SuministroIndividualUte() {
         context: ctx,
       });
       borrarBorrador(projectId);
+      // El envío deja registrado el trámite en Trámites UTE → Comercial.
+      qc.invalidateQueries({ queryKey: ["suministro-individual-estado", projectId] });
+      qc.invalidateQueries({ queryKey: ["ute-comerciales"] });
       toast.success(
         ctx.tecnica.esAumento ? "Solicitud de aumento enviada a UTE" : "Solicitud enviada a UTE",
       );

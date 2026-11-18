@@ -54,10 +54,11 @@
       "GERENTE_FINANZAS"
     ],
     "requiereLectura": false,
-    "version": "1.8",
+    "version": "1.13",
     "notas": {
       "1.0": "Primera versión completa del manual: se recorrieron y se cerraron todos los capítulos de las tres partes (Operaciones, Obra y Logística). Lo que todavía depende de algo pendiente queda marcado en el texto como «en definición» o «a completar». En la pantalla del proyecto se agrega la pestaña Contacto con el cliente, y los comentarios muestran de qué área vienen.",
-      "1.8": "Se agrega que agendar la obra y cerrar la etapa de Ejecución de Obra le avisan a Finanzas cuándo cobrar: la cuota del 50 % queda lista 10 días antes del primer día de obra, y la del 30 % al cerrar la etapa."
+      "1.8": "Se agrega que agendar la obra y cerrar la etapa de Ejecución de Obra le avisan a Finanzas cuándo cobrar: la cuota del 50 % queda lista 10 días antes del primer día de obra, y la del 30 % al cerrar la etapa.",
+      "1.13": "En el calendario se puede suspender una obra confirmada sin ponerle fecha nueva: pide el motivo, le avisa a Experiencia Solar y el cliente queda esperando la fecha nueva."
     }
   },
   {

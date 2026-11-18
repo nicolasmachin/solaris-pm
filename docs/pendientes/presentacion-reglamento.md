@@ -57,7 +57,7 @@ sobre una persona; lo individual se habla aparte.
   empresa, 17 el BPS), matrimonio 3 días, duelo 3 días hábiles, estudio de 6 a
   12 días, donación de sangre.
 - **Sábados medio día (consulta):** relevar quién está interesado en pasar a 44
-  horas con medio día los sábados, con un aumento algo mejor que proporcional.
+  horas con medio día los sábados, con un aumento de sueldo proporcional.
   Dejar claro que es una consulta y que el acuerdo formal viene después, con
   FEFA.
 - **Autorización de imagen:** anexo aparte y optativo, no atado a la firma del

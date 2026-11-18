@@ -164,6 +164,7 @@ enum AuditEntityType {
   instagram_conversacion
   marketing_automatizacion
   caso_tecnico
+  ute_tramite_comercial
 }
 
 enum AuditAction {
@@ -794,6 +795,7 @@ model Project {
   stockMovements                  StockMovement[]
   installationSchedule            InstallationSchedule?
   uteProcesses                    UteProcess[]
+  uteTramitesComerciales          UteTramiteComercial[]
   avisosEnvios                    AvisoEnvio[]                   @relation("AvisoEnvioProject")
   whatsappConversaciones          WhatsAppConversacion[]         @relation("WhatsAppConversacionProject")
   clients                         ProjectClient[]
@@ -2619,6 +2621,71 @@ model UteProcess {
   @@index([currentStatus])
   @@index([deletedAt])
   @@map("ute_processes")
+}
+
+// ─── Trámites con UTE Comercial ──────────────────────────────────────────────
+// Lo que se le pide a UTE Comercial y no es la habilitación del generador:
+// aumentos de potencia, suministros nuevos, reducciones, provisorios… Los tipos
+// son los que admite el formulario oficial "Solicitud de suministro" de UTE
+// (`ute-suministro/cells.ts` → OPCIONES.tramite), más OTRO para lo que cada
+// tanto aparece fuera del formulario.
+//
+// Van aparte de `UteProcess` a propósito: no son una etapa de la habilitación,
+// conviven con ella (una obra puede estar en "Solicitud" y tener un aumento
+// pendiente) y no todos los proyectos tienen uno. Un proyecto puede tener
+// varios. Al mandar el formulario desde Voltia PM se crea solo.
+enum UteTramiteComercialTipo {
+  NUEVO_SERVICIO
+  AUMENTO
+  REDUCCION
+  REHABILITACION
+  INSTALACION_ENLACE
+  PROVISORIO_GENERAL
+  PROVISORIO_OBRA
+  OTRO
+}
+
+enum UteTramiteComercialEstado {
+  A_PEDIR
+  PEDIDO
+  OBSERVADO
+  RESUELTO
+  CANCELADO
+}
+
+model UteTramiteComercial {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Suministro (cuenta UTE) al que corresponde; 1 = el principal.
+  suministro Int @default(1)
+
+  tipo    UteTramiteComercialTipo
+  // Qué se pide, en pocas palabras: "de 3,7 a 9,2 kW", o qué es cuando el tipo
+  // es OTRO.
+  detalle String?
+  estado  UteTramiteComercialEstado @default(PEDIDO)
+
+  caseNumber  String?
+  notes       String?
+  solicitadoEl DateTime? @db.Date
+  resueltoEl   DateTime? @db.Date
+
+  // Si nació del envío del formulario desde Voltia PM: el mail y la copia del
+  // Excel que se mandó.
+  emailLogId       String?
+  fileAttachmentId String?
+
+  createdById String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([estado])
+  @@index([deletedAt])
+  @@map("ute_tramites_comerciales")
 }
 
 // ─── Experiencia de Clientes ─────────────────────────────────────────────────

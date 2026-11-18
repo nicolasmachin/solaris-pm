@@ -97,6 +97,22 @@ const RELEASE_14_5: Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "15.1",
+  date: "18 de noviembre de 2026",
+  sections: [
+    {
+      title: "Trámites UTE — Comercial",
+      items: [
+        "Trámites UTE tiene dos secciones: Habilitación (la de siempre) y Comercial, en violeta.",
+        "En Comercial se siguen los aumentos de potencia, suministros nuevos, reducciones, provisorios y todo lo que se le pide a UTE Comercial. Un proyecto puede tener varios.",
+        "Los que se mandan con el formulario de UTE desde Onboarding aparecen solos; los pedidos por otro lado se cargan con «Nuevo trámite comercial».",
+        "Cada trámite tiene estado (a pedir, pedido, observado, resuelto, cancelado), número de caso, notas y cuántos días lleva con UTE.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_15_0: Release = {
   version: "15.0",
   date: "17 de noviembre de 2026",
   sections: [
@@ -111,6 +127,13 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Ventas",
       items: ["Las secciones de Ventas pasan a un menú a la izquierda, igual al de Administración."],
+    },
+    {
+      title: "Soporte",
+      items: [
+        "Soporte tiene tres pestañas: Mesa, Tickets (se mudaron de Mis tareas) y Evolución.",
+        "Nueva columna «Se arreglaron solas» y fallas del inversor que llegan ya analizadas con IA.",
+      ],
     },
   ],
 };
@@ -1316,6 +1339,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "15.0",
+    shortDate: "17 nov",
+    highlights: RELEASE_15_0.sections.map((sec) => sec.title),
+  },
   {
     version: "14.9",
     shortDate: "16 nov",

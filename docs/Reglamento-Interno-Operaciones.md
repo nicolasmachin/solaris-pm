@@ -1,6 +1,6 @@
 # Reglamento interno — Área Operaciones
 
-**Voltia · Uruguay** · Versión 3.1 · del 06/11/26 · *borrador en revisión* · Ref: REG-OP-01
+**Voltia · Uruguay** · Versión 3.1 · del 16/11/26 · Ref: REG-OP-01
 
 > **Qué es.** Las reglas obligatorias de la actividad de Operaciones:
 >
@@ -199,10 +199,6 @@ Voltia, que es el punto de encuentro, y el traslado a la obra y la vuelta al
 depósito son tiempo de trabajo. En las obras del interior, la jornada empieza en
 la obra.
 
-> *A confirmar con FEFA:* si en una obra del interior, por ejemplo en Maldonado,
-> el viaje es tiempo de trabajo, y si Voltia tiene que llevar al equipo o se puede
-> presentar allá.
-
 ### 4.2 Registro de entrada y salida
 
 Es obligatorio marcar la entrada y la salida. Se puede marcar de dos formas:
@@ -286,9 +282,6 @@ pidió nadie, así que **no es hora extra y no se paga**. Quien quiere que se le
 pague tiene que pedirla antes, por escrito, al capataz o al gerente de
 Operaciones.
 
-> *A confirmar con FEFA:* qué pasa si alguien reclama después una hora que se
-> quedó por su cuenta.
-
 ### 6.3 Registro
 
 Cada hora extra queda registrada por escrito con la obra, la fecha, quiénes, la
@@ -304,7 +297,8 @@ que corresponda, siempre que no pague menos de lo que marca la ley.
 
 ### 6.5 Sábados
 
-> *Por definir:* cuándo se trabaja el sábado y en qué condiciones.
+Hoy no se trabaja los sábados. Cualquier cambio se acuerda por escrito con cada
+trabajador.
 
 ---
 
@@ -329,7 +323,7 @@ del Estado.
 | Licencia anual | 20 días por año, más días por antigüedad desde el quinto año. Por ley se cuentan los sábados; los domingos y los feriados, no. Se toma de corrido. |
 | Salario vacacional | Lo mismo que se cobra en mano por los días de licencia. Se paga antes de empezar la licencia. |
 | Aguinaldo | La doceava parte de lo cobrado en el año. Se paga en dos cuotas, en junio y en diciembre. |
-| Enfermedad | Se avisa a la empresa que se está certificado; el certificado lo carga el médico en el BPS. El BPS paga desde el cuarto día de certificación (desde el primero, si hay internación). |
+| Enfermedad | Se avisa a la empresa que se está certificado; el certificado lo carga el médico en el BPS. El BPS paga desde el cuarto día de certificación (si hay internación, desde el primero). Los tres primeros días los paga Voltia, con las condiciones de la sección 8.8. |
 | Accidente de trabajo | Lo cubre el BSE. Voltia lo tiene que denunciar en plazo: por eso hay que avisar el mismo día. |
 | Elementos de seguridad | La empresa los tiene que dar gratis y el trabajador los tiene que usar: casco, arnés, calzado, guantes. |
 | Licencias especiales | Pagas: estudio, paternidad, duelo, matrimonio y donación de sangre. |
@@ -341,18 +335,12 @@ Voltia está en el Grupo 9, Subgrupo 1, de los Consejos de Salarios: le rige el
 convenio de la industria de la construcción, que en varios puntos da más que la
 ley.
 
-> *A confirmar con FEFA:* qué rubros del convenio corresponden a Voltia (jornal,
-> presentismo, alimentación, transporte, desgaste de ropa y herramientas).
-
 ---
 
 ## 8 · Lo que Voltia da por encima de la ley
 
 Los puntos de esta sección son decisiones de la empresa y no derechos de los
 trabajadores. Su continuidad depende del buen funcionamiento del equipo.
-
-> *A confirmar con FEFA:* si un beneficio que se repite todos los años puede pasar
-> a ser un derecho del trabajador.
 
 ### 8.1 Licencia coordinada
 
@@ -397,9 +385,6 @@ trabajadas por este motivo no se descuentan del sueldo: se recuperan otro día o
 mediante horas extra, en la forma que se coordine con el capataz o el gerente de
 Operaciones, y lo acordado queda registrado por escrito.
 
-> *A confirmar con FEFA:* si las horas que se recuperan quedándose más tiempo otro
-> día llevan recargo.
-
 ### 8.6 Alojamiento en las obras del interior
 
 Siempre que sea posible, se opta por una casa con cocina, para que cada trabajador
@@ -413,18 +398,22 @@ persona**, incluidos los días de ida y de vuelta, en compensación por las hora
 viaje, que no se pagan. Este punto constituye un acuerdo entre las partes y no un
 beneficio.
 
-> *A confirmar con FEFA:* si el cambio de horas de viaje por viático es válido y si
-> conviene dejarlo firmado.
+### 8.8 Primeros días de enfermedad
 
-### 8.8 Cómo se cambian estos beneficios
+Los tres primeros días de certificación no los paga el BPS. Voltia los paga,
+siempre que se cumplan estas cuatro condiciones:
 
-Lo de esta sección es una decisión de Voltia y no forma parte del contrato de
-trabajo. Voltia puede sumar beneficios en cualquier momento. Para reducirlos o
-quitarlos, avisa por escrito con 60 días de anticipación, y el cambio rige recién
-desde el 1 de enero del año siguiente.
+- el trabajador avisa que está certificado antes de su horario de entrada;
+- es una de sus dos primeras certificaciones del año;
+- no tuvo faltas sin aviso en los últimos tres meses;
+- no tuvo ninguna sanción en los últimos tres meses.
 
-> *A confirmar con FEFA:* si esta cláusula alcanza para poder reducir o quitar un
-> beneficio.
+### 8.9 Beneficios a prueba
+
+Todo lo de esta sección es a prueba: Voltia lo va a ir evaluando. Puede sumar
+beneficios en cualquier momento, y cambiarlos o quitarlos avisando por escrito con
+un mes de anticipación. No se quita lo que exigen la ley o el convenio de la
+construcción.
 
 ---
 
@@ -432,11 +421,10 @@ desde el 1 de enero del año siguiente.
 
 ### 9.1 Licencia
 
-Cada trabajador propone su licencia con anticipación y la coordina con el gerente
-de Operaciones. Luego la solicita en Voltia PM, desde Mi legajo, y administración
+Cada trabajador propone su licencia con al menos 15 días de anticipación y la
+coordina con el gerente de Operaciones. Luego la solicita en Voltia PM, desde Mi legajo, y administración
 la aprueba o la rechaza indicando el motivo.
 
-> *A definir:* la anticipación. La propuesta es de 15 días.
 
 ### 9.2 Permisos y faltas
 
@@ -666,9 +654,6 @@ es responsabilidad de la cuadrilla.
 - Quien tiene síntomas que pongan en riesgo su seguridad o la de otros no va a
   la obra, y avisa.
 
-> *A confirmar con el prevencionista:* el control de aptitud para trabajo en altura,
-> para todos los que suben a techos.
-
 ### 12.7 Asesor en seguridad
 
 Voltia cuenta con un asesor en seguridad e higiene registrado en el Ministerio de
@@ -819,8 +804,6 @@ Durante 6 meses después de terminado el vínculo, por cualquier causa, el
 ex-trabajador no contacta, no le ofrece servicios ni desvía a los clientes,
 interesados y referidos de Voltia que conoció por su trabajo, en instalación,
 mantenimiento o reparación de sistemas fotovoltaicos.
-
-> *A confirmar con FEFA:* si esta cláusula se puede sostener sin una compensación.
 
 ### 17.4 Trabajos por fuera
 
@@ -1100,9 +1083,6 @@ colectivo puede mejorar lo que dicen.
   para cobrarla en vez de tomarla. La única excepción es cuando la persona deja
   la empresa: ahí se le paga la licencia que le corresponde, sin descuentos.
 
-> *A confirmar con FEFA:* si hay un convenio colectivo que le permita a Voltia
-> partir la licencia en dos.
-
 ### Ley 16.101 — Salario vacacional
 
 Es una suma extra para disfrutar la licencia. Equivale a **lo mismo que se cobra
@@ -1290,6 +1270,6 @@ reglamentación técnica.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 3.1 | 6 de noviembre de 2026 | Se agregan tres secciones: lo que marca la ley, lo que Voltia da por encima de la ley (licencia coordinada, seis días libres pagos, ropa de trabajo, flexibilidad, alojamiento y viáticos) y lo que espera de cada uno (licencia, avisos, reclamos y grupo de WhatsApp). Por eso, las secciones que eran de la 7 a la 20 pasan a ser de la 10 a la 23. Las horas extra necesitan el acuerdo del trabajador, y en el interior las horas de viaje se cambian por un viático. Se agregan al marco normativo las leyes de licencia, salario vacacional, horas extra, aguinaldo, feriados y licencias especiales, y un anexo con lo que dice cada ley en pocas palabras, verificado en las normas y en las páginas oficiales. Los plazos para denunciar un accidente al BSE son distintos en Montevideo y en el resto del país. En la finalidad, se suma que todos tengan las reglas claras. Lo que se puede prever se pide, no se avisa. La autorización de imagen pasa a un anexo aparte y optativo. Quedan marcados los puntos a confirmar con FEFA y con el prevencionista, y lo que falta definir: los sábados, entre otros. |
+| 3.1 | 6 de noviembre de 2026 | Se agregan tres secciones: lo que marca la ley, lo que Voltia da por encima de la ley (licencia coordinada, seis días libres pagos, ropa de trabajo, flexibilidad, alojamiento y viáticos) y lo que espera de cada uno (licencia, avisos, reclamos y grupo de WhatsApp). Por eso, las secciones que eran de la 7 a la 20 pasan a ser de la 10 a la 23. Las horas extra necesitan el acuerdo del trabajador, y en el interior las horas de viaje se cambian por un viático. Se agregan al marco normativo las leyes de licencia, salario vacacional, horas extra, aguinaldo, feriados y licencias especiales, y un anexo con lo que dice cada ley en pocas palabras, verificado en las normas y en las páginas oficiales. Los plazos para denunciar un accidente al BSE son distintos en Montevideo y en el resto del país. En la finalidad, se suma que todos tengan las reglas claras. Lo que se puede prever se pide, no se avisa. La autorización de imagen pasa a un anexo aparte y optativo. |
 | 3.0 | 11 de octubre de 2026 | Se pasa el reglamento a la serie de manuales de Voltia y se alinea con lo que se definió para Operaciones. En obra, el criterio del instalador le gana al del proyectista y se anota el cambio, en vez de pedir una orden de cambio firmada. Los instaladores tercerizados son cuadrillas fijas, en sus obras el instalador es el capataz, y presentan la documentación todos los meses. La sanción por trabajar sin protección alcanza a la cadena; si el capataz lo encuentra, lo corrige en el momento. Las horas extra las aprueba la Dirección o, si no está, el gerente de Operaciones. Los roles son los de hoy (gerente de Operaciones, capataz, operarios). Se sacan los formularios en papel (parte diario, checklist por etapa, charla de inicio, orden de cambio): lo de la obra se registra en Voltia PM. Se suman los sobrantes al terminar la obra, el tope de gastos del gerente de Operaciones y el informe a la Inspección del Trabajo por un accidente grave. |
 | 2.0 | Sin fecha registrada | Versión anterior en Word, sin terminar de revisar. No hay registro de sus cambios. |

@@ -45,6 +45,7 @@ import { registerEncuestasRoutes } from "./encuestas.routes.js";
 import { registerTraspasosRoutes } from "./traspasos.routes.js";
 import { registerUnifilarRoutes } from "./unifilar.routes.js";
 import { registerUteSuministroRoutes } from "./ute-suministro.routes.js";
+import { registerUteComercialRoutes } from "./ute-comercial.routes.js";
 import { registerVisitasRoutes } from "./visitas.routes.js";
 import { registerWhatsAppRoutes } from "./whatsapp.routes.js";
 import { registerWhatsAppBandejasRoutes } from "./whatsapp-bandejas.routes.js";
@@ -113,6 +114,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerReportesFvRoutes, { prefix: "/api" });
   await app.register(registerVideosRoutes, { prefix: "/api" });
   await app.register(registerUteSuministroRoutes, { prefix: "/api" });
+  await app.register(registerUteComercialRoutes, { prefix: "/api" });
   await app.register(registerCapacitacionRoutes, { prefix: "/api" });
   await app.register(registerDocumentacionRoutes, { prefix: "/api" });
   await app.register(registerAsistenteRoutes, { prefix: "/api" });

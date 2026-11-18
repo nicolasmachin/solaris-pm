@@ -50,7 +50,7 @@ const tarjetas = (items, cols = 2, tam = 21) => `
 
 const hoja = (cuerpo, n, { fondo = "#fff", oscuro = false } = {}) => `
   <section style="width:${W}px; height:${H}px; position:relative; overflow:hidden; background:${fondo}; box-sizing:border-box; padding:60px 72px; display:flex; flex-direction:column">
-    ${cuerpo}${cuerpo.includes("data-cuerpo") ? "</div>" : ""}${n ? pie(n, oscuro) : ""}</section>`;
+    ${cuerpo}${cuerpo.includes("data-cuerpo") ? "</div>" : ""}${n ? pie("§N§", oscuro) : ""}</section>`;
 
 const S = [];
 
@@ -64,7 +64,7 @@ S.push(`<section style="width:${W}px; height:${H}px; position:relative; overflow
     <h1 style="margin:12px 0 0; font-family:${SANS}; font-size:66px; font-weight:700; letter-spacing:-2px; line-height:1; color:${NEGRO}">Reglamento interno</h1>
     <p style="margin:22px 0 0; font-family:${SERIF}; font-size:23px; line-height:1.45; color:${TEXTO}">Las reglas claras, para todos y por escrito.</p>
     <div style="flex:1"></div>
-    <div style="font-family:${SANS}; font-size:15px; color:${GRIS}">Versión para conversar · noviembre de 2026</div>
+    <div style="font-family:${SANS}; font-size:15px; color:${GRIS}">Versión 3.1 · noviembre de 2026</div>
   </div></section>`);
 
 // 2 · Para qué
@@ -83,14 +83,13 @@ S.push(hoja(`${encabezado("LO QUE MARCA LA LEY", "Feriados: hay dos clases")}
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:34px">
     <div style="background:${AZUL}; border-radius:16px; padding:30px 32px; color:#fff">
       <div style="font-family:${SANS}; font-size:15px; font-weight:600; letter-spacing:2px; color:#c9d2f5">FERIADOS PAGOS · 7</div>
-      <div style="margin-top:12px; font-family:${SANS}; font-size:30px; font-weight:700; line-height:1.25">1&nbsp;de&nbsp;enero · 1&nbsp;de&nbsp;mayo · 18&nbsp;de&nbsp;julio · 25&nbsp;de&nbsp;agosto · 25&nbsp;de&nbsp;diciembre</div>
-      <div style="margin-top:10px; font-family:${SANS}; font-size:24px; font-weight:600; color:#dde3f8">+ por ser de la construcción: 2&nbsp;de&nbsp;noviembre y tercer lunes de octubre</div>
-      <div style="margin-top:22px; font-family:${SERIF}; font-size:22px; color:#fff">Si se trabajan, se pagan <b>doble</b>.</div>
+      <ul style="margin:12px 0 0; padding-left:24px; font-family:${SANS}; font-size:24px; font-weight:700; line-height:1.25; color:#fff"><li style="margin:0 0 4px">1 de enero</li><li style="margin:0 0 4px">1 de mayo</li><li style="margin:0 0 4px">18 de julio</li><li style="margin:0 0 4px">25 de agosto</li><li style="margin:0 0 4px">25 de diciembre</li><li style="margin:0 0 4px">2 de noviembre <span style="font-weight:500; color:#dde3f8">(construcción)</span></li><li style="margin:0 0 4px">Tercer lunes de octubre <span style="font-weight:500; color:#dde3f8">(construcción)</span></li></ul>
+      <div style="margin-top:14px; font-family:${SERIF}; font-size:22px; color:#fff">Si se trabajan, se pagan <b>doble</b>.</div>
     </div>
     <div style="background:${FONDO}; border-radius:16px; padding:30px 32px">
       <div style="font-family:${SANS}; font-size:15px; font-weight:600; letter-spacing:2px; color:${AZUL}">FERIADOS COMUNES</div>
-      <div style="margin-top:12px; font-family:${SANS}; font-size:30px; font-weight:700; line-height:1.25; color:${NEGRO}">6&nbsp;de&nbsp;enero · Carnaval · Turismo · 19&nbsp;de&nbsp;abril · 18&nbsp;de&nbsp;mayo · 19&nbsp;de&nbsp;junio · 12&nbsp;de&nbsp;octubre</div>
-      <div style="margin-top:22px; font-family:${SERIF}; font-size:22px; color:${TEXTO}">Se trabajan y se pagan <b>normal</b>.</div>
+      <ul style="margin:12px 0 0; padding-left:24px; font-family:${SANS}; font-size:24px; font-weight:700; line-height:1.25; color:${NEGRO}"><li style="margin:0 0 4px">6 de enero</li><li style="margin:0 0 4px">Carnaval</li><li style="margin:0 0 4px">Semana de Turismo</li><li style="margin:0 0 4px">19 de abril</li><li style="margin:0 0 4px">18 de mayo</li><li style="margin:0 0 4px">19 de junio</li><li style="margin:0 0 4px">12 de octubre</li></ul>
+      <div style="margin-top:14px; font-family:${SERIF}; font-size:22px; color:${TEXTO}">Se trabajan y se pagan <b>normal</b>.</div>
     </div>
   </div>
   <p style="margin:26px 0 0; font-family:${SERIF}; font-size:21px; color:${TEXTO}">El 2 de noviembre de este año se les paga doble a quienes trabajaron.</p>`, 3));
@@ -107,7 +106,7 @@ S.push(hoja(`${encabezado("LO QUE MARCA LA LEY", "Horas extra, licencia y aguina
 // 5 · Ley: salud y licencias especiales
 S.push(hoja(`${encabezado("LO QUE MARCA LA LEY", "Salud, accidentes y licencias especiales")}
   ${tarjetas([
-    ["Enfermedad", "Se avisa que se está certificado: el certificado lo carga el médico en el BPS. El BPS paga desde el cuarto día."],
+    ["Enfermedad", "Se avisa que se está certificado: lo carga el médico en el BPS. El BPS paga desde el cuarto día; los tres primeros los paga Voltia, con condiciones."],
     ["Accidente de trabajo", "Lo cubre el BSE. Se avisa el mismo día: Voltia lo tiene que denunciar en plazo."],
     ["Estudios médicos", "Por el convenio de la construcción: 3 días por año, más uno para el examen de próstata, avisando con 48 horas."],
     ["Licencias especiales", "Pagas: paternidad (20 días), matrimonio (3), duelo (3 hábiles), estudio y donación de sangre."],
@@ -128,7 +127,24 @@ S.push(hoja(`${encabezado("LO QUE VOLTIA DA POR ENCIMA DE LA LEY", "Más descans
       ["Trámites sin descuento", "Si se pide con tiempo, las horas se recuperan."],
     ], 2, 19).replace("margin-top:34px", "margin-top:0")}</div>
   </div>
-  <p style="margin:22px 0 0; font-family:${SERIF}; font-size:19px; color:${TEXTO}">En el interior: viático de $ 1.100 por día y casas con cocina siempre que se pueda.</p>`, 6));
+  <p style="margin:22px 0 0; font-family:${SERIF}; font-size:19px; color:${TEXTO}">En el interior: viático de $ 1.100 por día y casas con cocina siempre que se pueda.<br>
+  <b style="color:${AZUL}">Todos los beneficios son a prueba: Voltia da más si el equipo también da.</b> Se pueden cambiar con un mes de aviso.</p>`, 6));
+
+// 6b · Primeros días de enfermedad
+S.push(hoja(`${encabezado("VOLTIA DA MÁS, SI EL EQUIPO TAMBIÉN DA", "Los primeros días de enfermedad")}
+  <div style="display:flex; gap:32px; margin-top:30px; align-items:stretch">
+    <div style="width:360px; flex-shrink:0; background:${AZUL}; border-radius:16px; padding:30px; color:#fff; display:flex; flex-direction:column; justify-content:center">
+      <div style="font-family:${SANS}; font-size:84px; font-weight:700; line-height:1">3 días</div>
+      <div style="margin-top:8px; font-family:${SANS}; font-size:24px; font-weight:600">los primeros de cada certificación</div>
+      <div style="margin-top:12px; font-family:${SERIF}; font-size:18px; color:#dde3f8">No los paga el BPS. Los paga Voltia, si se cumplen las condiciones.</div>
+    </div>
+    <div style="flex:1">${tarjetas([
+      ["Se avisa antes de entrar", "Que se está certificado, antes del horario de entrada."],
+      ["Hasta 2 certificaciones por año", "Las dos primeras del año."],
+      ["Sin faltas sin aviso", "En los últimos tres meses."],
+      ["Sin sanciones", "En los últimos tres meses."],
+    ], 2, 19).replace("margin-top:34px", "margin-top:0")}</div>
+  </div>`, 7));
 
 // 7 · Marcas
 S.push(hoja(`${encabezado("NUEVO", "Se marca la entrada y la salida")}
@@ -142,7 +158,7 @@ S.push(hoja(`${encabezado("NUEVO", "Se marca la entrada y la salida")}
       <div style="font-family:${SANS}; font-size:15px; font-weight:600; letter-spacing:2px; color:${AZUL}">LA UBICACIÓN</div>
       <p style="margin:12px 0 0; font-family:${SERIF}; font-size:22px; line-height:1.45; color:${TEXTO}">La aplicación toma la ubicación solo al marcar y durante la jornada. Nunca fuera de hora, y solo para el horario.</p>
     </div>
-  </div>`, 7));
+  </div>`, 8));
 
 // 8 · Permisos
 S.push(hoja(`${encabezado("NUEVO", "Lo que se puede prever, se pide")}
@@ -155,7 +171,7 @@ S.push(hoja(`${encabezado("NUEVO", "Lo que se puede prever, se pide")}
         <div style="margin-top:10px; font-family:${SANS}; font-size:26px; font-weight:700; line-height:1.2; color:${c}">${t}</div>
         <div style="margin-top:12px; font-family:${SERIF}; font-size:19px; line-height:1.45; color:${f === AZUL ? "#e6eaf9" : TEXTO}">${d}</div></div>`).join("")}
   </div>
-  <p style="margin:26px 0 0; font-family:${SERIF}; font-size:20px; color:${TEXTO}">"Capaz que no voy" no es un aviso. Quien tiene permiso para llegar tarde va directo a la obra; Voltia le reintegra el boleto.</p>`, 8));
+  <p style="margin:26px 0 0; font-family:${SERIF}; font-size:20px; color:${TEXTO}">"Capaz que no voy" no es un aviso. Quien tiene permiso para llegar tarde va directo a la obra; Voltia le reintegra el boleto.</p>`, 9));
 
 // 9 · Jornada y obra
 S.push(hoja(`${encabezado("EL DÍA A DÍA", "Jornada, lluvia y horas extra")}
@@ -164,7 +180,7 @@ S.push(hoja(`${encabezado("EL DÍA A DÍA", "Jornada, lluvia y horas extra")}
     ["Si llueve, el día no se pierde", "Se vuelve al depósito y se trabaja ahí. Es un día normal."],
     ["Horas extra que se pagan", "Las que pide el trabajo, o las que el capataz aprueba para terminar la obra."],
     ["Quedarse por cuenta propia", "Está bien visto, pero no es hora extra. Si se quiere cobrar, se pide antes por escrito."],
-  ], 2)}`, 9));
+  ], 2)}`, 10));
 
 // 10 · Conducta
 S.push(hoja(`${encabezado("LO QUE VOLTIA ESPERA", "Conducta y trato")}
@@ -172,23 +188,23 @@ S.push(hoja(`${encabezado("LO QUE VOLTIA ESPERA", "Conducta y trato")}
     <div style="flex:1">${tarjetas([
       ["Los reclamos, a quien corresponde", "Al gerente de Operaciones o a la Dirección, en privado. No en el grupo ni de pasillo."],
       ["Los grupos de WhatsApp, para coordinar", "No para quejas ni para hablar de los compañeros."],
-      ["En redes, con respeto", "Se puede opinar y criticar. Insultos, amenazas o acusaciones, no."],
+      ["Respetar la cadena de mando", "Primero se habla con el capataz y con el gerente de Operaciones. A la Dirección se llega solo si ahí no se resolvió."],
       ["Ni una colilla", "No se fuma en la propiedad del cliente: solo afuera."],
     ], 2, 19).replace("margin-top:34px", "margin-top:0")}</div>
-  </div>`, 10));
+  </div>`, 11));
 
 // 11 · Seguridad (oscura)
 S.push(hoja(`<div style="font-family:${SANS}; font-size:15px; font-weight:600; letter-spacing:3px; color:#8f9ad4">SEGURIDAD</div>
   <h1 style="margin:8px 0 0; font-family:${SANS}; font-size:60px; font-weight:700; letter-spacing:-1.5px; color:#fff">Si no es seguro, no se empieza</h1>
   <div style="margin-top:34px; border-top:1px solid #2a2f45">
-    ${["El equipo de protección no sirve en la obra: tiene que estar puesto.",
+    ${["Tener el equipo de protección en la obra no alcanza: hay que tenerlo puesto.",
        "Desde 2 metros: arnés, cabo de vida y anclaje. Nadie trabaja solo en altura.",
        "Cualquiera puede y debe parar una tarea si ve un riesgo grave.",
        "Si el gerente encuentra a alguien sin protección, se sanciona también al capataz."]
       .map((t, i) => `<div style="display:flex; gap:20px; align-items:baseline; padding:18px 0; border-bottom:1px solid #2a2f45">
         <span style="font-family:${SANS}; font-size:20px; font-weight:700; color:#7f8fd8; width:30px">0${i + 1}</span>
         <span style="font-family:${SANS}; font-size:28px; font-weight:600; color:#fff; line-height:1.25">${t}</span></div>`).join("")}
-  </div>`, 11, { fondo: NEGRO, oscuro: true }));
+  </div>`, 12, { fondo: NEGRO, oscuro: true }));
 
 // 12 · Sanciones
 S.push(hoja(`${encabezado("SANCIONES", "Faltas por puntos, en 12 meses")}
@@ -205,38 +221,64 @@ S.push(hoja(`${encabezado("SANCIONES", "Faltas por puntos, en 12 meses")}
           ${num(p, i === 5 ? ROJO : AZUL)}<span style="font-family:${SANS}; font-size:23px; font-weight:600; color:${NEGRO}">${s}</span></div>`).join("")}
     </div>
   </div>
-  <p style="margin:20px 0 0; font-family:${SERIF}; font-size:19px; color:${TEXTO}">Antes de cada sanción escrita hay derecho a descargo. Nada es automático: decide la Gerencia.</p>`, 12));
+  <p style="margin:20px 0 0; font-family:${SERIF}; font-size:19px; color:${TEXTO}">Antes de cada sanción escrita hay derecho a descargo. Nada es automático: decide la Gerencia.</p>`, 13));
+
+// Qué falta es cada cosa (la lista de la sección 22.1 del reglamento)
+S.push(hoja(`${encabezado("SANCIONES", "Qué falta es cada cosa")}
+  <div style="display:flex; gap:22px; margin-top:24px">
+    <div style="flex:.8; background:${FONDO}; border-radius:16px; padding:20px 24px">
+      <div style="font-family:${SANS}; font-size:15px; font-weight:600; letter-spacing:2px; color:${AZUL}">FALTAS LEVES</div>
+      <div style="margin-top:4px; font-family:${SANS}; font-size:24px; font-weight:700; color:${NEGRO}">1 punto</div>
+      <ul style="margin:14px 0 0; padding-left:20px; font-family:${SERIF}; font-size:16px; line-height:1.3; color:${TEXTO}"><li style="margin:0 0 4px">Llegar tarde sin justificación.</li><li style="margin:0 0 4px">No marcar la entrada o la salida, o no completar los registros en Voltia PM.</li><li style="margin:0 0 4px">Ausentarse por algo previsible sin haber pedido permiso.</li><li style="margin:0 0 4px">Usar mal el celular en la obra.</li><li style="margin:0 0 4px">Desorden o falta de limpieza en la obra, incluido dejar colillas.</li><li style="margin:0 0 4px">No avisar a tiempo una incidencia menor.</li><li style="margin:0 0 4px">Incumplir el reglamento sin comprometer la seguridad.</li></ul></div>
+    <div style="flex:1.25; background:${FONDO}; border-radius:16px; padding:20px 24px">
+      <div style="font-family:${SANS}; font-size:15px; font-weight:600; letter-spacing:2px; color:${AZUL}">FALTAS GRAVES</div>
+      <div style="margin-top:4px; font-family:${SANS}; font-size:24px; font-weight:700; color:${NEGRO}">2 puntos</div>
+      <ul style="margin:14px 0 0; padding-left:20px; font-family:${SERIF}; font-size:16px; line-height:1.3; color:${TEXTO}"><li style="margin:0 0 4px">Trabajar sin el equipo de protección, o que el capataz lo tolere.</li><li style="margin:0 0 4px">Trabajar en altura sin las medidas de seguridad.</li><li style="margin:0 0 4px">Intervenir una instalación eléctrica sin autorización ni procedimiento.</li><li style="margin:0 0 4px">Faltar sin aviso.</li><li style="margin:0 0 4px">Eludir, manipular o falsear las marcas de entrada o salida.</li><li style="margin:0 0 4px">Ocultar, demorar o falsear el reporte de un incidente.</li><li style="margin:0 0 4px">Insubordinación reiterada o conducta agresiva.</li><li style="margin:0 0 4px">Dañar bienes de Voltia, del cliente o de terceros por negligencia grave.</li><li style="margin:0 0 4px">Conducir un vehículo de Voltia sin estar designado o con la libreta vencida.</li><li style="margin:0 0 4px">Presentarse bajo los efectos del alcohol o de drogas, la primera vez.</li><li style="margin:0 0 4px">Trabajar por fuera con un cliente, interesado o referido de Voltia que conoció por su trabajo.</li></ul></div>
+  </div>`, 1));
+
+S.push(hoja(`${encabezado("SANCIONES", "Faltas gravísimas")}
+  <div style="display:flex; gap:28px; margin-top:24px; align-items:stretch">
+    <div style="flex:1.4; background:${ROJO_F}; border-radius:16px; padding:26px 30px">
+      <div style="font-family:${SANS}; font-size:15px; font-weight:600; letter-spacing:2px; color:${ROJO}">NO SUMAN PUNTOS: PERMITEN EL DESPIDO DIRECTO</div>
+      <ul style="margin:16px 0 0; padding-left:22px; font-family:${SERIF}; font-size:21px; line-height:1.4; color:${TEXTO}"><li style="margin:0 0 7px">Presentarse bajo los efectos del alcohol o de drogas de forma reiterada, o cuando provocó un riesgo grave o un daño.</li><li style="margin:0 0 7px">Robar o dañar a propósito bienes de Voltia, del cliente o de terceros.</li><li style="margin:0 0 7px">Agredir físicamente, amenazar gravemente o portar armas.</li><li style="margin:0 0 7px">Acoso sexual, moral o discriminatorio.</li><li style="margin:0 0 7px">Violar gravemente la confidencialidad o la no captación.</li></ul></div>
+    <div style="flex:1; background:${FONDO}; border-radius:16px; padding:26px 30px; display:flex; flex-direction:column; justify-content:center">
+      <div style="font-family:${SANS}; font-size:24px; font-weight:700; color:${NEGRO}">La lista no es cerrada</div>
+      <p style="margin:10px 0 0; font-family:${SERIF}; font-size:20px; line-height:1.45; color:${TEXTO}">Lo que no figure se evalúa según su gravedad, siempre con derecho a descargo. La lista se actualiza con el tiempo.</p></div>
+  </div>`, 1));
 
 // 13 · Sábados (consulta)
 S.push(hoja(`${encabezado("UNA CONSULTA", "¿Medio día los sábados?")}
   <div style="display:flex; gap:40px; margin-top:34px; align-items:center">
     <div style="flex:1">
-      <p style="margin:0; font-family:${SERIF}; font-size:26px; line-height:1.5; color:${TEXTO}">Queremos saber quién estaría interesado en pasar de 40 a 44 horas por semana, trabajando medio día los sábados, <b>con un aumento de sueldo un poco mejor que proporcional</b>.</p>
+      <p style="margin:0; font-family:${SERIF}; font-size:26px; line-height:1.5; color:${TEXTO}">Queremos saber quién estaría interesado en pasar de 40 a 44 horas por semana, trabajando medio día los sábados, <b>con un aumento de sueldo proporcional</b>.</p>
       <p style="margin:24px 0 0; font-family:${SERIF}; font-size:22px; line-height:1.5; color:${GRIS}">Es solo una consulta. Si sale, el acuerdo se arma después, por escrito y con la contadora.</p>
     </div>
     <div style="width:300px; height:300px; border-radius:50%; background:${FONDO}; display:flex; flex-direction:column; align-items:center; justify-content:center">
       <div style="font-family:${SANS}; font-size:96px; font-weight:700; color:${AZUL}; line-height:1">44</div>
       <div style="font-family:${SANS}; font-size:22px; font-weight:600; color:${NEGRO}">horas por semana</div>
     </div>
-  </div>`, 13));
+  </div>`, 14));
 
 // 14 · Próximos pasos
 S.push(hoja(`${encabezado("CÓMO SIGUE", "Próximos pasos")}
   ${tarjetas([
-    ["Cada uno se lleva el reglamento", "Para leerlo con tiempo y traer las dudas."],
-    ["Lo terminamos de confirmar con la contadora", "Algunos puntos se pueden ajustar."],
-    ["La semana que viene se firma", "Cada uno firma que lo recibió, lo leyó y lo acepta."],
+    ["Cada uno recibe su copia", "Para tenerla y consultarla cuando haga falta."],
+    ["Se firma hoy", "Cada uno firma que lo recibió, lo leyó y lo acepta."],
+    ["Las dudas, al gerente de Operaciones", "Si algo cambia, se avisa por escrito con tiempo."],
     ["Autorización de imagen, aparte", "Para las fotos en redes: es optativa y no firmarla no tiene ninguna consecuencia."],
-  ], 2)}`, 14));
+  ], 2)}`, 15));
 
 // 15 · Cierre
 S.push(`<section style="width:${W}px; height:${H}px; position:relative; overflow:hidden; display:flex; background:#fff">
   <div style="flex:1; padding:80px 72px; display:flex; flex-direction:column; justify-content:center">
     <h1 style="margin:0; font-family:${SANS}; font-size:84px; font-weight:700; letter-spacing:-2px; color:${NEGRO}">¿Preguntas?</h1>
-    <p style="margin:20px 0 0; font-family:${SERIF}; font-size:24px; color:${TEXTO}">Lo que no quede claro hoy, se lo plantean al gerente de Operaciones.</p>
+    <p style="margin:20px 0 0; font-family:${SERIF}; font-size:24px; color:${TEXTO}">Lo que no quede claro hoy, se lo plantean al gerente de Operaciones, y él lo lleva a la Dirección.</p>
     <img src="${IMG("logo-completo.png")}" style="height:46px; align-self:flex-start; margin-top:60px">
   </div>
   <div style="width:560px; height:100%; background:url('${IMG("reglamento-cierre.jpg")}') center/cover"></div></section>`);
+
+// El número de cada diapositiva sale de su lugar en la lista.
+S.forEach((s, i) => { S[i] = s.replace("§N§", String(i + 1)); });
 
 const html = `<!doctype html><html><head><meta charset="utf-8">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">

@@ -1,5 +1,19 @@
 # Novedades
 
+## v15.1
+
+### 18 de noviembre de 2026
+
+#### Trámites UTE — Comercial
+
+- **Trámites UTE** tiene dos secciones: **Habilitación** (la de siempre) y **Comercial**, en violeta, con la cantidad de trámites abiertos al lado.
+- En **Comercial** se siguen los trámites que se le piden a UTE Comercial y no son la habilitación: **aumento de potencia**, **nuevo servicio**, **reducción**, **rehabilitación**, **instalación de enlace**, **provisorio general**, **provisorio de obra** u **otro**. No todos los proyectos tienen uno, y un proyecto puede tener varios.
+- Los que se mandan con el **formulario de UTE desde Onboarding** aparecen solos, con la potencia pedida. Si se vuelve a mandar el mismo trámite (porque UTE lo observó, por ejemplo), se actualiza el que ya estaba en vez de abrir otro.
+- Los que se pidieron por otro lado se cargan con **Nuevo trámite comercial**.
+- Cada trámite tiene **estado** (a pedir, pedido, observado, resuelto o cancelado), fecha de pedido y de resolución, **número de caso**, notas y **cuántos días lleva** con UTE. Por defecto se ven solo los abiertos.
+- Los aumentos de potencia que ya se habían mandado desde Voltia PM quedan cargados en la sección.
+- En la subetapa **Consulta inicial UTE** de Onboarding se ven los trámites comerciales del proyecto con su estado, y el botón deja pedir otro.
+
 ## v15.0
 
 ### 17 de noviembre de 2026

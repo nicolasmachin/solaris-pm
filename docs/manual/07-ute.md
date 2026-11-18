@@ -1,7 +1,8 @@
 # 07 · Habilitación UTE
 
 > **Capítulo parcial.** Están documentadas la **solicitud de suministro individual
-> / aumento de potencia contratada** y los **proyectos con varios suministros**
+> / aumento de potencia contratada**, los **trámites con UTE Comercial** y los
+> **proyectos con varios suministros**
 > (consulta, papeles y trámites por suministro). El resto del módulo (proceso de
 > habilitación, subetapas dinámicas, formularios PDF, documentos firmados)
 > sigue pendiente de escribir: la funcionalidad existe y está en producción,
@@ -45,7 +46,7 @@ trámite y el asunto del correo, no el resto.
 
 1. En la ficha del proyecto, abrir la subetapa **"Consulta inicial UTE"** de
    Onboarding. Debajo del botón de consulta aparece **"Solicitar aumento de
-   potencia"**.
+   potencia u otro trámite comercial"**.
 2. La pantalla llega con todo precargado desde el proyecto: dirección, datos del
    cliente, cuenta, tarifa, tensión y fases. **Todos los campos son editables**,
    salvo los datos de la firma instaladora y del técnico instalador, que son
@@ -61,8 +62,10 @@ trámite y el asunto del correo, no el resto.
 6. **"Enviar a UTE"** manda el correo desde la casilla del propio usuario, con
    el formulario adjunto.
 
-Después de enviar, el botón de la subetapa pasa a decir cuándo se pidió el
-aumento y por cuánto.
+Después de enviar, el trámite queda registrado en **Trámites UTE → Comercial**
+(ver la sección siguiente) y la subetapa lista los trámites comerciales del
+proyecto con su estado; el botón pasa a decir **"Pedir otro trámite a UTE
+Comercial"**.
 
 **El formulario se autoguarda mientras se completa.** Si se cierra la ventana,
 al volver aparece un aviso con lo recuperado y un enlace para descartarlo y
@@ -91,14 +94,18 @@ desde el contexto del mail en `ute-suministro/mapping.ts`.
 
 | Endpoint | Qué hace |
 |---|---|
-| `GET .../suministro-individual/estado` | Si ya se pidió, cuándo y por cuánto |
+| `GET .../suministro-individual/estado` | Si ya se pidió el aumento, cuándo y por cuánto, y los trámites comerciales del proyecto (`tramites`) |
 | `POST .../suministro-individual/preview.xlsx` | Devuelve el formulario completo para revisarlo |
 | `POST .../suministro-individual/enviar` | Completa, adjunta, envía y registra |
 
 **Al enviar** se guarda la potencia en `UteDocumentConfig.potSolicitada`, la
-fecha en `aumentoPotenciaSentAt`, una copia del archivo en los documentos del
-proyecto (`FileAttachment` con `toolSource: "ute-suministro-individual"`) y una
-entrada de auditoría.
+fecha en `aumentoPotenciaSentAt`, se registra el trámite comercial
+(`ute-comercial.service.ts` → `registrarTramiteEnviado()`), una copia del
+archivo en los documentos del proyecto (`FileAttachment` con `toolSource:
+"ute-suministro-individual"` y `toolEntityId` = id del trámite comercial) y una
+entrada de auditoría. Si falla el registro del trámite, el envío no se cae (el
+mail ya salió): queda un warning en el log y la copia del Excel se ata al id
+del mail, como antes.
 
 ## Permisos
 
@@ -168,8 +175,101 @@ los clientes del portal.
   valor del proyecto y conserva lo escrito en el resto. Si cambia la forma del
   borrador (`BORRADOR_VERSION`), se descarta entero en vez de recuperarse a
   medias.
-- **Enviar dos veces no está bloqueado**: se puede corregir y reenviar. Solo
-  queda la última copia del formulario en los documentos del proyecto.
+- **Enviar dos veces no está bloqueado**: se puede corregir y reenviar. Queda
+  **una copia del formulario por trámite comercial**: reenviar el mismo trámite
+  reemplaza la suya; mandar un trámite de otro tipo (un aumento y después un
+  provisorio) deja las dos.
+- **`aumentoPotenciaSentAt` se sigue llenando con cualquier trámite**, no solo
+  con aumentos (el nombre es histórico). Lo que distingue el tipo es el
+  trámite comercial.
+
+---
+
+# Trámites con UTE Comercial
+
+## Para qué existe
+
+Además de la habilitación del generador, a veces hay que pedirle algo a **UTE
+Comercial**: un aumento de potencia, un suministro nuevo, un provisorio de obra.
+No todos los proyectos lo necesitan, pero cuando hay uno se perdía de vista
+porque no tenía dónde seguirse. La sección **Comercial** de Trámites UTE junta
+todos esos pedidos, con su estado y cuánto llevan.
+
+## Cómo se usa
+
+- **Trámites UTE** tiene dos secciones arriba: **Habilitación** (el tablero de
+  siempre) y **Comercial**, en violeta (`#a78bfa`), con la cantidad de abiertos.
+  La sección va en la URL (`/tramites-ute?seccion=comercial`) para poder
+  linkearla.
+- La tabla muestra cliente (con el suministro si no es el 1), tipo, detalle,
+  estado, fecha de pedido, de resolución, días, número de caso y notas. Por
+  defecto se ven solo los abiertos (a pedir, pedido, observado); los resueltos
+  y cancelados se ven eligiéndolos en el filtro Estado. Hay buscador por
+  cliente o código.
+- Clic en una fila abre el trámite para editarlo o borrarlo.
+- **Nuevo trámite comercial** carga uno pedido por fuera de Voltia PM (por
+  teléfono, en la oficina de UTE, por mail propio). El modal ofrece el enlace al
+  formulario de UTE por si todavía no se pidió.
+- Los que se mandan con el formulario desde Onboarding (sección anterior)
+  aparecen solos; se marcan con un ícono de planilla.
+- En la subetapa **Consulta inicial UTE** se listan los trámites del proyecto
+  con su estado; clic lleva a la sección Comercial.
+
+## Cómo funciona
+
+- Modelo `UteTramiteComercial` (tabla `ute_tramites_comerciales`): proyecto,
+  `suministro` (número, default 1), `tipo`, `detalle`, `estado`, `caseNumber`,
+  `notes`, `solicitadoEl` y `resueltoEl` (solo día, `@db.Date`), `emailLogId` y
+  `fileAttachmentId` si vino del formulario, soft delete con `deletedAt`.
+- **Tipos** (`UteTramiteComercialTipo`): los siete del campo "Trámite" del
+  formulario de UTE (nuevo servicio, aumento, reducción, rehabilitación,
+  instalación de enlace, provisorio general, provisorio de obra) más `OTRO`, que
+  exige `detalle`.
+- **Estados** (`UteTramiteComercialEstado`): `A_PEDIR`, `PEDIDO`, `OBSERVADO`,
+  `RESUELTO`, `CANCELADO`.
+- **Va aparte de `UteProcess`** porque convive con la habilitación: un proyecto
+  tiene una habilitación por suministro y cero o más trámites comerciales,
+  que pueden estar abiertos al mismo tiempo.
+- **Alta automática** (`ute-comercial.service.ts` → `registrarTramiteEnviado()`):
+  traduce el texto del formulario al tipo (`TIPO_DESDE_FORMULARIO`; un texto
+  desconocido entra como `OTRO` con el texto tal cual) y arma el detalle con las
+  potencias ("de 7 kW a 11,5 kW"). Si ya hay uno **abierto del mismo tipo y
+  suministro**, lo actualiza (vuelve a `PEDIDO`, cambia el mail y el detalle,
+  conserva la fecha del primer pedido) en vez de abrir otro.
+- **Endpoints** en `routes/ute-comercial.routes.ts`: `GET`, `POST`,
+  `PATCH /:id` y `DELETE /:id` sobre `/api/ute-tramites-comerciales` (el GET
+  acepta `?projectId=`). La respuesta suma `dias`: del pedido a la resolución,
+  o a hoy si sigue abierto; sin fecha de pedido, `null`.
+- **Las fechas siguen al estado** si no se cargan a mano: crear o pasar a un
+  estado que no sea "a pedir" sin fecha de pedido la pone en hoy; pasar a
+  resuelto pone la de resolución en hoy; reabrir un resuelto la borra. "Hoy" es
+  el día de Uruguay (`hoyComoDia()`).
+- Auditoría con el tipo `ute_tramite_comercial`: alta, cada cambio de campo
+  (fechas en dd/mm/aaaa) y borrado.
+- Al implementarse, una migración (`ute_tramites_comerciales_backfill`) pasó
+  como **aumentos pedidos** los proyectos que ya tenían
+  `aumentoPotenciaSentAt`, con la potencia solicitada en el detalle. Se asumió
+  que todos eran aumentos porque los asuntos de los mails enviados lo eran.
+
+## Permisos
+
+Módulo **Trámites UTE**: ver para la lista, crear para el alta manual, editar
+para cambiar, borrar para borrar. El alta automática no pasa por estos
+permisos: la hace el envío del formulario, que pide Onboarding *o* Trámites UTE
+editar (sección anterior). Un asesor (`ASESOR_COMERCIAL`, que solo ve Trámites
+UTE) puede originar un trámite con el formulario y verlo en la sección, pero no
+cambiarle el estado.
+
+## Casos borde
+
+- **El formulario siempre registra el suministro 1.** El envío no sabe a qué
+  suministro corresponde (igual que `aumentoPotenciaSentAt`, que vive en la
+  configuración del suministro 1). En proyectos con varios suministros hay que
+  corregir el número a mano en el trámite.
+- **Si se cambia el tipo de un trámite a mano**, el próximo envío del formulario
+  busca uno abierto del tipo nuevo: el viejo no se reutiliza.
+- **Borrar un trámite no borra la copia del formulario** de los documentos del
+  proyecto.
 
 ---
 
