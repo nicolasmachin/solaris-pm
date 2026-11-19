@@ -73,6 +73,7 @@ import {
   clearPermissionCache,
   hasPermission,
 } from "../middleware/authorize.middleware.js";
+import { guardarUbicacionLead, guardarUbicacionProyecto, parsearCoordenadas } from "../services/ubicacion.service.js";
 import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { clearUmbralNotaBajaCache } from "../services/encuestas/encuestas.service.js";
@@ -7664,6 +7665,46 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   // DELETE /api/leads/:id (soft delete)
+  // Ubicación GPS del domicilio (Maps / Waze). `texto` acepta coordenadas o un
+  // link de Google Maps; `null` la borra. Si el lead ya es proyecto, se copia.
+  const ubicacionSchema = z.object({
+    texto: z.string().max(2000).nullable().optional(),
+    lat: z.number().optional(),
+    lng: z.number().optional(),
+    origen: z.enum(["MANUAL", "TELEGRAM"]).optional(),
+  });
+  function coordsDelBody(body: z.infer<typeof ubicacionSchema>) {
+    if (body.texto === null) return null;
+    const c = body.lat != null && body.lng != null ? parsearCoordenadas(`${body.lat},${body.lng}`) : parsearCoordenadas(body.texto);
+    if (!c) {
+      throw badRequest(
+        "UBICACION_INVALIDA",
+        "No se encontraron coordenadas. Pegá las coordenadas (-34.9, -56.1) o el link largo de Google Maps; los links cortos no las traen.",
+      );
+    }
+    return c;
+  }
+
+  app.put("/leads/:id/ubicacion", { preHandler: authorize(Module.VENTAS, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = ubicacionSchema.parse(request.body ?? {});
+    const coords = coordsDelBody(body);
+    const r = await guardarUbicacionLead(id, { coords, origen: body.origen ?? "MANUAL", userId: user.id });
+    if (!r) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
+    return { success: true, ubicacion: coords, ...r };
+  });
+
+  app.put("/projects/:id/ubicacion", { preHandler: authorizeProjectEditAnyPipeline(Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = ubicacionSchema.parse(request.body ?? {});
+    const coords = coordsDelBody(body);
+    const r = await guardarUbicacionProyecto(id, { coords, origen: body.origen ?? "MANUAL", userId: user.id });
+    if (!r) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+    return { success: true, ubicacion: coords };
+  });
+
   app.delete("/leads/:id", { preHandler: authorize(Module.VENTAS, Action.DELETE) }, async (request) => {
     const user = ensureUser(request);
     const { id } = request.params as { id: string };

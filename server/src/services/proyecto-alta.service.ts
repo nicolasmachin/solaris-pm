@@ -184,6 +184,11 @@ export async function convertirLeadAProyecto(params: {
       locationCity,
       locationProvince,
       clientAddress,
+      // La ubicación GPS del lead pasa tal cual (mismo domicilio).
+      ubicacionLat: lead.ubicacionLat,
+      ubicacionLng: lead.ubicacionLng,
+      ubicacionEn: lead.ubicacionEn,
+      ubicacionOrigen: lead.ubicacionOrigen,
       status: ProjectStatus.ACTIVE,
       startDate,
       // Fecha de venta = momento en que se cerró el lead como ganado (Tanda 3).

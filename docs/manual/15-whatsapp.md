@@ -155,6 +155,9 @@ prefijo `/api` y sin login:
   `whatsapp_estados` es único por (mensaje, estado); un duplicado se ignora.
 - Al mensaje se le deja el **estado más avanzado** (sent < delivered < read <
   failed): "leído" a veces llega antes que "entregado".
+- Si el cliente manda su **ubicación** (mensaje `location`, entrante y no del
+  historial), `guardarUbicacionDelCliente()` la guarda en el lead o en el
+  proyecto del chat (cap. 02, *Ubicación GPS del lead y del proyecto*).
 
 **Conexión de números** (`numeros.service.ts`, registro integrado de Meta):
 

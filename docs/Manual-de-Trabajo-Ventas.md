@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.24 · del 19/11/26
+**Voltia · Uruguay** · Versión 1.25 · del 19/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -253,6 +253,8 @@ El asesor sigue desde esa versión.
 Ese mismo día, el cliente recibe en PDF el **resumen de la visita**: los datos generales, el contexto (la propuesta que tenía y quién se la armó), los objetivos, el relevamiento técnico del techo y de la instalación eléctrica, un resumen ejecutivo, los pendientes y todas las fotos. Le sirve a Ingeniería para el proyecto y al cliente le muestra profesionalismo.
 
 Se arma con el **bot de minutas de Telegram**: quien visita le habla (audios, textos, fotos y videos) y el bot arma el resumen con el formato de Voltia. Con el comando **/ok** lo sube al lead en Voltia PM: el PDF a los adjuntos y las fotos y los videos a la galería de la visita. Telegram no deja pasar videos de más de 20 MB; los más pesados se suben a mano.
+
+Estando en la casa, conviene mandarle al bot la **ubicación del cliente** (en Telegram, el clip 📎 → *Ubicación*). No va al resumen: con el **/ok** queda cargada en el lead, y después en el proyecto, para que quien vaya a la obra la abra directo en el mapa.
 
 ### El seguimiento
 
@@ -765,6 +767,16 @@ venta y crear el proyecto»).
 
 - **Presentación de Experiencia Solar:** solo en los ganados (ver «La
   presentación de Experiencia Solar», al final de este capítulo).
+- **La ubicación GPS:** arriba de los datos. Si el lead la tiene, dos botones,
+  **Google Maps** y **Waze**, que abren el mapa con la casa marcada, listo para
+  salir; si no, **Cargar ubicación GPS**. La ubicación es el punto exacto de la
+  obra, que sirve aunque la dirección escrita no alcance (una chacra, un
+  balneario, una ruta). Llega sola cuando el cliente manda su ubicación por el
+  WhatsApp de Voltia PM, o desde el bot de minutas. También se carga a mano: con
+  el lápiz se pega el link de Google Maps o las coordenadas. El link que sale de
+  **Compartir** en Google Maps es corto y no sirve: hay que abrirlo y copiar el
+  de la barra de arriba del navegador. Si llega una ubicación nueva, reemplaza a
+  la anterior. Al crear el proyecto, la ubicación pasa al proyecto.
 - **Los datos del lead:** nombre, mail, teléfono, dirección, kWp estimados,
   presupuesto, lo que paga de UTE por mes (en dólares), tipo de techo, **Tipo de
   cliente** (*Residencial* o *Empresa (B2B)*), **¿Cómo nos conoció?** con su
@@ -1449,6 +1461,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.25 | 19 de noviembre de 2026 | El lead guarda la ubicación GPS de la obra y la abre con un toque en Google Maps o en Waze. Llega sola cuando el cliente la manda por WhatsApp o cuando se manda en el bot de minutas durante la visita; también se pega a mano. Pasa al proyecto al crearlo. |
 | 1.24 | 19 de noviembre de 2026 | Un lead ganado se puede convertir en proyecto también desde el chat de Claude: pide la ciudad, el departamento y qué se le factura, muestra antes cómo va a quedar y lo crea cuando el asesor confirma. |
 | 1.23 | 19 de noviembre de 2026 | Se agrega «Las cotizaciones a medida»: cómo se cotiza a mano lo que no sale del cotizador solar (ampliaciones, cargadores de auto eléctrico y otros trabajos), para quién es, el cliente nuevo, los ítems y los artículos de venta, el PDF de una hoja, el número y el estado. |
 | 1.22 | 19 de noviembre de 2026 | Desde el chat de Claude conectado a Voltia PM se pueden cambiar los costos de una propuesta (paneles, estructuras, eléctrica, inversor, meter, costos fijos y variables, mano de obra), igual que con el ícono de calculadora, y pedirle que muestre el costeo. |

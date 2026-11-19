@@ -768,6 +768,13 @@ model Project {
   clientEmail                     String?
   clientPhone                     String?
   clientAddress                   String?
+  /// Ubicación GPS del domicilio de la obra (para abrir en Google Maps / Waze).
+  /// Se llena sola cuando el cliente manda su ubicación por WhatsApp, o por el
+  /// bot de minutas; se puede corregir a mano. Origen: WHATSAPP | TELEGRAM | MANUAL.
+  ubicacionLat                    Float?
+  ubicacionLng                    Float?
+  ubicacionEn                     DateTime?                      @db.Timestamptz(6)
+  ubicacionOrigen                 String?
   uteCodigoPS                     String?
   uteCodigoAS                     String?
   createdById                     String
@@ -1915,6 +1922,13 @@ model SalesLead {
   clientEmail             String?
   clientPhone             String?
   address                 String?
+  /// Ubicación GPS del domicilio de la obra (para abrir en Google Maps / Waze).
+  /// Se llena sola cuando el cliente manda su ubicación por WhatsApp, o por el
+  /// bot de minutas; se puede corregir a mano. Origen: WHATSAPP | TELEGRAM | MANUAL.
+  ubicacionLat            Float?
+  ubicacionLng            Float?
+  ubicacionEn             DateTime?               @db.Timestamptz(6)
+  ubicacionOrigen         String?
   stage                   SalesStage              @default(NUEVO_LEAD)
   // Residencial o empresa. Clasifica al cliente potencial y precarga el
   // cotizador correspondiente; NO restringe: desde cualquier lead se puede

@@ -7,6 +7,7 @@ import { EnlacesModulos } from "../layout/EnlacesModulos";
 import { CanAccess } from "../ui/CanAccess";
 import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 import { LiveStageCountdown } from "./LiveStageCountdown";
+import { UbicacionGps } from "../ubicacion/UbicacionGps";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   ACTIVE:      { bg: "var(--color-state-active-bg)", text: "var(--color-state-active-text)", label: "EN EJECUCIÓN" },
@@ -124,7 +125,7 @@ export function ProjectHeader({ project, onEdit, onDelete, onAmpliar }: ProjectH
           {project.capacityKwp} kWp · {project.locationCity},{" "}
           {project.locationProvince}
         </p>
-        {(project.clientEmail || project.clientPhone || project.clientAddress) && (
+        {(project.clientEmail || project.clientPhone || project.clientAddress || project.ubicacionLat != null || onEdit) && (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[12px] text-[var(--color-text-secondary)]">
             {project.clientEmail ? (
               <a
@@ -150,6 +151,15 @@ export function ProjectHeader({ project, onEdit, onDelete, onAmpliar }: ProjectH
                 <span>{project.clientAddress}</span>
               </span>
             ) : null}
+            <UbicacionGps
+              destino={{ projectId: project.id }}
+              lat={project.ubicacionLat}
+              lng={project.ubicacionLng}
+              en={project.ubicacionEn}
+              origen={project.ubicacionOrigen}
+              puedeEditar={!!onEdit}
+              queryKey={["project", project.id]}
+            />
           </div>
         )}
         {project.firstDateScheduledAt && (

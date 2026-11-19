@@ -138,6 +138,11 @@ export interface LeadDetail {
   clientEmail: string | null;
   clientPhone: string | null;
   address: string | null;
+  /** Ubicación GPS del domicilio (Maps / Waze). Origen: WHATSAPP | TELEGRAM | MANUAL. */
+  ubicacionLat?: number | null;
+  ubicacionLng?: number | null;
+  ubicacionEn?: string | null;
+  ubicacionOrigen?: string | null;
   stage: SalesStage;
   /** Residencial o empresa: clasifica y precarga el cotizador que corresponde. */
   tipoCliente: ProposalVariante;

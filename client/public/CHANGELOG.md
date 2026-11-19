@@ -35,6 +35,16 @@
 - **A pedido**, Claude también le manda la factura en PDF al cliente por WhatsApp. Se puede solo si el cliente escribió en las últimas 24 horas; si no, avisa.
 - Las notas de crédito se siguen haciendo desde la pantalla.
 
+#### Ubicación GPS del cliente
+
+- El lead y el proyecto ahora guardan la **ubicación GPS** del domicilio de la obra. Con un toque se abre en **Google Maps** o en **Waze**, lista para salir.
+- Se ve en el panel del lead (Ventas) y en la cabecera del proyecto, debajo de la dirección.
+- **Llega sola** cuando el cliente manda su ubicación por WhatsApp a una de las bandejas de Voltia PM.
+- También llega desde el **bot de minutas de Telegram**: mientras se arma la minuta se manda la ubicación del cliente (📎 → Ubicación) y se carga en el lead al subir la minuta con /ok.
+- Se puede cargar a mano: con el lápiz se pegan las coordenadas o el link de Google Maps. Los links cortos (los de "Compartir") no traen las coordenadas: en ese caso hay que abrir el link y copiar el de la barra del navegador.
+- Al convertir el lead en proyecto, la ubicación pasa al proyecto. Si el lead ya era proyecto, se carga en los dos.
+- Desde el chat de Claude se puede cargar o borrar la ubicación de un lead, y la ficha del lead y la del proyecto la muestran con los dos links.
+
 ## v15.1
 
 ### 18 de noviembre de 2026

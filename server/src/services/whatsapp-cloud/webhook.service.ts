@@ -5,10 +5,12 @@
  */
 
 import { alEntrarMensaje } from "./asistente.service.js";
+import { bandejaDeNumero, clienteDe } from "./bandejas.service.js";
 import { bajarArchivoDeFondo, mediaDe } from "./media.service.js";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
+import { coordenadasDeMensajeWhatsApp, guardarUbicacionLead, guardarUbicacionProyecto } from "../ubicacion.service.js";
 
 type MetaMensaje = {
   from: string;
@@ -23,6 +25,7 @@ type MetaMensaje = {
   image?: { caption?: string };
   document?: { caption?: string; filename?: string };
   video?: { caption?: string };
+  location?: { latitude?: number; longitude?: number; name?: string; address?: string };
 };
 
 type MetaEstado = {
@@ -79,6 +82,7 @@ export function textoDeMensaje(m: MetaMensaje): string | null {
     m.document?.caption ??
     m.document?.filename ??
     m.video?.caption ??
+    (m.location ? [m.location.name, m.location.address].filter(Boolean).join(" · ") || null : null) ??
     null
   );
 }
@@ -113,6 +117,12 @@ async function guardarMensaje(m: MetaMensaje, phoneNumberId: string, origen: "AP
     });
     // Foto, audio, video o documento: se baja ya (Meta lo guarda poco tiempo).
     if (mediaDe(m.type ?? "", m)) bajarArchivoDeFondo(creado.id);
+    // El cliente mandó su ubicación: queda en su lead o proyecto (Maps / Waze).
+    if (direccion === "ENTRANTE" && origen !== "HISTORIAL" && m.type === "location") {
+      void guardarUbicacionDelCliente(phoneNumberId, creado.telefono, m, creado.ocurridoEn).catch((err) =>
+        console.error("[whatsapp] no se pudo guardar la ubicación del cliente:", err instanceof Error ? err.message : err),
+      );
+    }
     // El asistente de Ventas: el speech a un cliente nuevo, o pasarle el chat al asesor.
     if (origen === "API") {
       void alEntrarMensaje(phoneNumberId, creado.telefono, creado.tipo).catch((err) =>
@@ -124,6 +134,21 @@ async function guardarMensaje(m: MetaMensaje, phoneNumberId: string, origen: "AP
     if (!esDuplicado(err)) throw err;
     return 0;
   }
+}
+
+/**
+ * Ubicación que manda el cliente: se guarda en el lead o proyecto de la
+ * conversación (el asociado a mano o el del teléfono). Si es un contacto suelto
+ * o un usuario de Voltia, no se guarda en ningún lado: queda en el chat.
+ */
+async function guardarUbicacionDelCliente(phoneNumberId: string, telefono: string, m: MetaMensaje, en: Date) {
+  const coords = coordenadasDeMensajeWhatsApp(m);
+  if (!coords) return;
+  const bandeja = await bandejaDeNumero(phoneNumberId);
+  const cliente = await clienteDe(bandeja, telefono);
+  const g = { coords, origen: "WHATSAPP" as const, userId: bandeja.responsable?.id ?? null, en };
+  if (cliente?.leadId) await guardarUbicacionLead(cliente.leadId, g);
+  else if (cliente?.projectId) await guardarUbicacionProyecto(cliente.projectId, g);
 }
 
 /** Historial que manda Meta al conectar un número en coexistencia, por tandas. */

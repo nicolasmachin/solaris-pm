@@ -70,6 +70,10 @@ pisa (sólo actúa sobre campos vacíos). Un lead **ya cerrado no se toca**: una
 minuta que llega tarde no lo devuelve a Visitado. Ambos pasos son no bloqueantes
 — si fallan, la minuta igual quedó subida y el bot lo reporta como advertencia.
 
+Si durante la minuta se mandó la ubicación del cliente, al publicar también la
+carga en el lead (`PUT /api/leads/:id/ubicacion`, ver *Ubicación GPS del lead y
+del proyecto* al final del capítulo), con el mismo criterio no bloqueante.
+
 La edición manual va por `PATCH /api/leads/:id` (no hay endpoint aparte de
 fechas) y acepta `null` para vaciar cualquiera de ellas. El chat usa el mismo
 servicio, `editarLead()`.
@@ -1339,3 +1343,101 @@ pide VENTAS:CREATE.
   persona queda vinculado a la empresa, y ese teléfono **no** se guarda en ella
   (queda solo en el lead).
 
+
+---
+
+# Ubicación GPS del lead y del proyecto
+
+## Para qué existe
+
+Para que quien va a la obra (visita, instalación, soporte) la abra con un toque
+en Google Maps o en Waze, sin depender de que la dirección escrita esté bien o de
+que el lugar tenga número (chacras, balnearios, rutas).
+
+## Cómo se usa
+
+- En el **panel del lead** (Ventas), arriba de los datos, y en la **cabecera del
+  proyecto**, debajo de la dirección, aparece el componente `UbicacionGps.tsx`:
+  con ubicación, dos botones (**Google Maps** y **Waze**) y un lápiz; sin
+  ubicación, **Cargar ubicación GPS**. El tooltip dice de dónde vino y cuándo.
+- Con el lápiz se pegan **coordenadas** (`-34.9, -56.1`) o un **link largo de
+  Google Maps**, y se guarda o se borra.
+- Llega sola por dos caminos:
+  - el cliente manda su **ubicación por WhatsApp** a una bandeja de Voltia PM;
+  - en el **bot de minutas** de Telegram se manda la ubicación (📎 → Ubicación)
+    mientras se arma la minuta, y va al lead al publicar con `/ok`.
+- Desde el chat de Claude, `editar_lead` con `ubicacion` (coordenadas, link o
+  `"borrar"`); `ficha_lead` y `ficha_proyecto` la muestran con los dos links.
+
+## Cómo funciona
+
+- **Datos**: cuatro columnas iguales en `sales_leads` y `projects`:
+  `ubicacionLat`, `ubicacionLng`, `ubicacionEn` (cuándo se cargó) y
+  `ubicacionOrigen` (`WHATSAPP`, `TELEGRAM` o `MANUAL`). Migración
+  `ubicacion_gps_lead_proyecto`.
+- **Servicio** `ubicacion.service.ts`:
+  - `parsearCoordenadas()` lee coordenadas sueltas y links de Google Maps
+    (`@lat,lng`, `?q=`, `query=`, `ll=`, `destination=`, `center=`,
+    `!3d…!4d…`) y de Waze (`ll=`). Redondea a 6 decimales y rechaza `0,0` y
+    valores fuera de rango.
+  - `linksMapa()` arma los dos links: Google Maps
+    (`/maps/search/?api=1&query=`) y Waze (`ul?ll=…&navigate=yes`).
+  - `guardarUbicacionLead()` guarda en el lead y, si el lead **ya se convirtió**
+    (`convertedToProjectId`), también en su proyecto: es el mismo domicilio.
+    `guardarUbicacionProyecto()` guarda solo en el proyecto. Ambas auditan
+    (`fieldChanged: "ubicacion"`) cuando hay usuario.
+- **Endpoints**: `PUT /api/leads/:id/ubicacion` y
+  `PUT /api/projects/:id/ubicacion`. Cuerpo `{ texto }` (lo que se pegó; `null`
+  borra) o `{ lat, lng }`, más `origen` opcional (`MANUAL` por defecto,
+  `TELEGRAM` lo manda el bot). Si no se encuentran coordenadas, 400
+  `UBICACION_INVALIDA` con un mensaje que explica lo de los links cortos. Los
+  `GET` del lead y del proyecto ya devuelven las columnas.
+- **Conversión**: `proyecto-alta.service.ts` copia las cuatro columnas del lead
+  al proyecto nuevo.
+- **WhatsApp**: en `webhook.service.ts`, un mensaje **entrante** de tipo
+  `location` (no los del historial de coexistencia) dispara
+  `guardarUbicacionDelCliente()`: resuelve el chat con `clienteDe()` (la misma
+  lógica que la bandeja, con la asociación a mano primero) y guarda en el lead
+  si lo hay, si no en el proyecto. El texto que se ve en la bandeja es el nombre
+  y la dirección del lugar si Meta los manda.
+- **Bot de minutas** (`minutas-bot`, repo aparte): guarda la última ubicación en
+  la minuta (`minutes.ubicacion_lat/lng` en su SQLite) y al publicar llama al
+  `PUT` del lead con `origen: "TELEGRAM"`.
+
+## Permisos
+
+- `PUT /api/leads/:id/ubicacion`: `VENTAS:EDIT` (el mismo que ya usa el bot para
+  mover la etapa).
+- `PUT /api/projects/:id/ubicacion`: edición de proyecto de cualquier pipeline
+  (`authorizeProjectEditAnyPipeline(EDIT)`). En la pantalla, el lápiz aparece a
+  quien puede editar la cabecera del proyecto o el lead.
+- `editar_lead` en el conector: `VENTAS:EDIT`. El webhook de WhatsApp no tiene
+  usuario.
+
+## Reglas y decisiones
+
+- **Una sola ubicación**: la última pisa a la anterior, venga de donde venga. No
+  hay historial más allá de la auditoría.
+- Lead convertido → la ubicación se carga **en los dos**. Desde el proyecto, en
+  cambio, solo en el proyecto (el lead ya cerró).
+- En el bot, la ubicación **no genera versión nueva ni entra al PDF**, igual que
+  los videos. Si falla al publicar, la minuta igual queda subida y se avisa como
+  advertencia.
+
+## Casos borde
+
+- **Los links cortos** (`maps.app.goo.gl`, los de "Compartir") **no traen las
+  coordenadas**: se rechazan con un mensaje. No se resuelve el redireccionamiento
+  del lado del servidor.
+- Si el cliente manda por WhatsApp la ubicación **de otro lugar** (la de un
+  comercio, la de su trabajo), igual se guarda y pisa la buena: no hay forma de
+  distinguirlo. Se corrige con el lápiz.
+- Desde una bandeja de **Dirección**, el chat se resuelve como en la bandeja: si
+  el teléfono tiene proyecto, gana el proyecto y la ubicación no llega al lead.
+- Un chat que solo es **contacto** del CRM (sin lead ni proyecto) o **usuario del
+  equipo** no guarda nada.
+- La auditoría del camino de WhatsApp se escribe solo si la bandeja tiene
+  **responsable**; sin responsable la ubicación se guarda igual, sin entrada de
+  auditoría.
+- El `PUT` del proyecto no frena si el proyecto está borrado (baja lógica): no
+  se ve en ningún lado, no hace daño.

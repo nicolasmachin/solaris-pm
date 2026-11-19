@@ -6,6 +6,7 @@
 // caracteres).
 
 import { diaUruguayIso } from "../../utils/uruguay.js";
+import { linksMapa } from "../../services/ubicacion.service.js";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -94,3 +95,11 @@ export function imagen(base64: string, mediaType: string) {
 export function contenido(bloques: Array<{ type: "text"; text: string } | ReturnType<typeof imagen>>) {
   return { content: bloques };
 }
+
+/** Ubicación GPS con los links para abrirla, o null si no hay. */
+export function gps(x: { ubicacionLat: number | null; ubicacionLng: number | null }): string | null {
+  if (x.ubicacionLat == null || x.ubicacionLng == null) return null;
+  const l = linksMapa(x.ubicacionLat, x.ubicacionLng);
+  return `${x.ubicacionLat}, ${x.ubicacionLng} · Google Maps: ${l.googleMaps} · Waze: ${l.waze}`;
+}
+

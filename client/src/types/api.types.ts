@@ -426,6 +426,11 @@ export interface Project {
   clientEmail: string | null;
   clientPhone: string | null;
   clientAddress: string | null;
+  /** Ubicación GPS del domicilio (Maps / Waze). Origen: WHATSAPP | TELEGRAM | MANUAL. */
+  ubicacionLat?: number | null;
+  ubicacionLng?: number | null;
+  ubicacionEn?: string | null;
+  ubicacionOrigen?: string | null;
   firstDateScheduledAt: string | null;
   // Datos generales del cliente (extraíbles con IA, ver ute-doc-extraction).
   // nombreCliente: nombre del cliente para docs UTE (separado del nombre

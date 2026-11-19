@@ -139,6 +139,13 @@ export const LATEST_RELEASE: Release = {
         "Si el cliente tiene mail, le llega el PDF solo; a pedido, Claude también se lo manda por WhatsApp (si el cliente escribió en las últimas 24 horas).",
       ],
     },
+    {
+      title: "Ubicación GPS del cliente",
+      items: [
+        "El lead y el proyecto guardan la ubicación GPS de la obra y la abren con un toque en Google Maps o en Waze.",
+        "Llega sola cuando el cliente la manda por WhatsApp o cuando se manda en el bot de minutas; también se puede pegar a mano (coordenadas o link de Google Maps).",
+      ],
+    },
   ],
 };
 

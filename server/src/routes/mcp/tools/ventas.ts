@@ -4,6 +4,7 @@
 // las reglas de negocio son las mismas se entre por el chat o por la pantalla.
 // Cada una audita con `source: "mcp"` para poder medir qué se hace por acá.
 
+import { guardarUbicacionLead, parsearCoordenadas } from "../../../services/ubicacion.service.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Action, Module, OrigenLead, ProposalVariante, SalesStage, TaskStatus } from "@prisma/client";
 import { z } from "zod";
@@ -24,7 +25,7 @@ import { listLeadProposals } from "../../../services/proposal/lead-proposals.ser
 import { getDraft } from "../../../services/proposal/draft.service.js";
 import { getVersionById } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
-import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, fechaLargaUruguay, pesos, porcentaje, texto, usd } from "../format.js";
+import { campos, ETAPA_LABEL, gps, fechaCorta, fechaLarga, fechaLargaUruguay, pesos, porcentaje, texto, usd } from "../format.js";
 import { diaManualUruguay } from "../../../utils/uruguay.js";
 import { buildDownloadUrl, nombrePdfPropuesta, nombrePdfPropuestaVieja } from "../descargas.routes.js";
 import { convertirLeadAProyecto, datosConversion, type Fuente } from "../../../services/proyecto-alta.service.js";
@@ -45,6 +46,7 @@ const ORIGEN_DESCRIPCION =
     .map(([k, v]) => `${k} = ${v}`)
     .join("; ") +
   ". Preguntarlo si no se sabe; no adivinarlo.";
+
 
 export function registerVentasTools(server: McpServer, user: McpUser) {
   // ── Lectura ──────────────────────────────────────────────────────────────
@@ -179,6 +181,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         ["Teléfono", lead.clientPhone ?? "—"],
         ["Email", lead.clientEmail ?? "—"],
         ["Dirección", lead.address ?? "—"],
+        ["Ubicación GPS", gps(lead) ?? "—"],
       ]);
 
       // El relevamiento vive repartido: el tipo de techo en el lead, y el resto
@@ -572,7 +575,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       title: "Editar cliente potencial",
       description:
         "Corrige los datos de contacto o de relevamiento de un cliente potencial, y " +
-        "cómo nos conoció (origen), y las fechas del proceso (alta, propuesta enviada, visita agendada, visita " +
+        "cómo nos conoció (origen), la ubicación GPS del domicilio, y las fechas del proceso (alta, propuesta enviada, visita agendada, visita " +
         "realizada, cierre). Las fechas se completan solas al avanzar el lead: " +
         "cambiarlas acá es para corregirlas o cargar una que faltó, y solo si la " +
         "persona lo pide. Solo cambia lo que se manda. No sirve para cambiar la etapa " +
@@ -582,6 +585,10 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         telefono: z.string().optional(),
         email: z.string().optional(),
         direccion: z.string().optional(),
+        ubicacion: z
+          .string()
+          .optional()
+          .describe("Ubicación GPS del domicilio: coordenadas (\"-34.9, -56.1\") o link largo de Google Maps, o \"borrar\". Si el lead ya es proyecto, se copia."),
         factura_ute_mensual_usd: z.number().positive().optional(),
         potencia_estimada_kwp: z.number().positive().optional(),
         presupuesto_estimado_usd: z.number().positive().optional(),
@@ -633,8 +640,30 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         ...fechasPedidas,
       };
 
-      if (Object.keys(data).length === 0) {
+      let coords: ReturnType<typeof parsearCoordenadas> = null;
+      if (args.ubicacion !== undefined && args.ubicacion !== "borrar") {
+        coords = parsearCoordenadas(args.ubicacion);
+        if (!coords) {
+          return texto(
+            "No encontré coordenadas en la ubicación. Pasame las coordenadas (-34.9, -56.1) o el link largo de Google Maps: los links cortos (maps.app.goo.gl) no las traen.",
+          );
+        }
+      }
+
+      if (Object.keys(data).length === 0 && args.ubicacion === undefined) {
         return texto("No me pasaste ningún dato para cambiar.");
+      }
+
+      if (args.ubicacion !== undefined) {
+        const r = await guardarUbicacionLead(args.lead_id, { coords, origen: "MANUAL", userId: user.id });
+        if (!r) return texto(`No encontré ningún cliente potencial con el id ${args.lead_id}.`);
+      }
+      if (Object.keys(data).length === 0) {
+        const l = await prisma.salesLead.findUnique({ where: { id: args.lead_id }, select: { clientName: true, ubicacionLat: true, ubicacionLng: true, convertedToProjectId: true } });
+        return texto(
+          coords ? `Guardé la ubicación GPS de ${l?.clientName}.` : `Borré la ubicación GPS de ${l?.clientName}.`,
+          campos([["Ubicación GPS", l ? gps(l) : null], ["También en el proyecto", l?.convertedToProjectId ? "sí" : null]]),
+        );
       }
 
       const lead = await editarLead({
@@ -650,6 +679,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
           ["Teléfono", lead.clientPhone],
           ["Email", lead.clientEmail],
           ["Dirección", lead.address],
+          ["Ubicación GPS", args.ubicacion !== undefined ? (coords ? `${coords.lat}, ${coords.lng}` : "borrada") : null],
           ["Factura UTE mensual", lead.uteBillMonthlyUsd ? usd(Number(lead.uteBillMonthlyUsd)) : null],
           ["Potencia estimada", lead.estimatedKwp ? `${lead.estimatedKwp} kWp` : null],
           ["Presupuesto estimado", lead.estimatedBudgetUsd ? usd(Number(lead.estimatedBudgetUsd)) : null],

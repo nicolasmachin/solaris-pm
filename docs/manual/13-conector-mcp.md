@@ -126,10 +126,10 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
 | `buscar_lead` | `VENTAS:VIEW` | Busca por nombre, teléfono, email, dirección o código. Excluye los cerrados salvo que se pidan. Devuelve hasta 15, con cómo nos conoció. |
-| `ficha_lead` | `VENTAS:VIEW` | Contacto, etapa, cómo nos conoció, **relevamiento técnico**, fechas, propuestas, pendientes y últimos 8 comentarios. Avisa si hay minuta cargada. |
+| `ficha_lead` | `VENTAS:VIEW` | Contacto, etapa, cómo nos conoció, **relevamiento técnico**, fechas, propuestas, pendientes y últimos 8 comentarios. Avisa si hay minuta cargada. Muestra la **ubicación GPS** con los links de Google Maps y Waze. |
 | `ver_propuesta` | `VENTAS:VIEW` | Números comerciales de una propuesta + enlace al PDF. |
 | `crear_lead` | `VENTAS:CREATE` | Alta. Se asigna al usuario que la crea. Acepta `origen` y `origen_detalle` (cómo nos conoció), opcionales acá; si no vienen, avisa que quedó sin cargar (cap. 02, Origen del lead). |
-| `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca, `origen` y `origen_detalle`, y las cinco fechas del proceso (alta, propuesta enviada, visita agendada, visita realizada, cierre) como día `AAAA-MM-DD` o `"borrar"`. Las fechas se guardan a las 00:00 de Uruguay, como en la app (cap. 02, Fechas del proceso). |
+| `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca, `origen` y `origen_detalle`, y las cinco fechas del proceso (alta, propuesta enviada, visita agendada, visita realizada, cierre) como día `AAAA-MM-DD` o `"borrar"`. Las fechas se guardan a las 00:00 de Uruguay, como en la app (cap. 02, Fechas del proceso). Con `ubicacion` (coordenadas, link largo de Google Maps o `"borrar"`) carga la ubicación GPS por `guardarUbicacionLead()`, con origen `MANUAL`; si el lead ya es proyecto, también en él (cap. 02, Ubicación GPS). |
 | `mover_etapa` | `VENTAS:EDIT` | Cambia la etapa del pipeline. |
 | `convertir_lead_en_proyecto` | `VENTAS:CREATE` | Convierte un lead ganado en proyecto, como «Crear proyecto desde lead». Pide `ciudad`, `departamento` y `facturacion` (`{normal}` o `{normal:false, monto_sin_iva_usd, motivo}`); potencia y monto salen de la última propuesta publicada (o del estimado del lead) salvo que se pasen. Sin `confirmar: true` devuelve una vista previa con el origen de cada dato y avisa si queda sin monto. Usa `convertirLeadAProyecto()` de `services/proyecto-alta.service.ts`, el mismo que `POST /leads/:id/convert`. |
 | `comentar_lead` | `VENTAS:COMMENT` | Deja un comentario en el historial. |
@@ -318,7 +318,7 @@ Es la única herramienta que responde sin que haya que nombrar un cliente. Con
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
 | `buscar_proyecto` | `OPERACIONES:VIEW` | Por nombre de cliente o código. **Excluye los importados por planilla** — esos van por `buscar_generador`. |
-| `ficha_proyecto` | `OPERACIONES:VIEW` | Estado, etapa actual con el semáforo de plazo, avance, atraso, potencia, fechas, cuadrilla y resumen del trámite UTE. |
+| `ficha_proyecto` | `OPERACIONES:VIEW` | Estado, etapa actual con el semáforo de plazo, avance, atraso, potencia, fechas, cuadrilla y resumen del trámite UTE. Muestra la **ubicación GPS** con los links de Google Maps y Waze. |
 | `detalle_etapas` | `OPERACIONES:VIEW` | Etapas y subetapas con responsable y estado. Con `solo_pendientes` muestra únicamente lo que falta. |
 | `tramite_ute` | `TRAMITES_UTE:VIEW` | Los once hitos con fecha y el reparto entre días nuestros y días esperando a UTE. |
 | `obra_y_materiales` | `OPERACIONES:VIEW` | Materiales con su estado de compra, fotos y videos. |

@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.15 · del 19/11/26
+**Voltia · Uruguay** · Versión 1.16 · del 19/11/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -316,7 +316,11 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 
 ### El proyecto, de arriba abajo
 
-**El encabezado.** El nombre del cliente, la potencia, la ubicación, el email, el teléfono, la dirección, la fecha tentativa de obra y en qué está el trámite de UTE. Al lado del nombre, el lápiz para **editar** los datos del proyecto. Botones:
+**El encabezado.** El nombre del cliente, la potencia, la ubicación, el email, el teléfono, la dirección, la fecha tentativa de obra y en qué está el trámite de UTE. Al lado del nombre, el lápiz para **editar** los datos del proyecto.
+
+Debajo de la dirección, la **ubicación GPS** de la obra: dos botones, **Google Maps** y **Waze**, que abren el mapa con la casa marcada, listo para salir. Es el punto exacto, y sirve aunque la dirección escrita no alcance (una chacra, un balneario, una ruta). Normalmente viene del lead: la carga Ventas en la visita o la manda el cliente por WhatsApp. Si falta, se toca **Cargar ubicación GPS** y se pega el link de Google Maps o las coordenadas (el link que sale de **Compartir** es corto y no sirve: hay que abrirlo y copiar el de la barra de arriba del navegador). Si el cliente manda su ubicación por el WhatsApp de Voltia PM, se carga sola y reemplaza a la anterior.
+
+Botones:
 
 - **Agendar instalación** (o **Ver en calendario** si ya está agendada).
 - **Ver ficha del cliente**: lleva a la ficha de Experiencia Solar.
@@ -1118,6 +1122,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.16 | 19 de noviembre de 2026 | El proyecto muestra la ubicación GPS de la obra, debajo de la dirección, y la abre con un toque en Google Maps o en Waze para ir a instalar o a soporte. Si falta, se carga a mano. |
 | 1.15 | 19 de noviembre de 2026 | Se corrige: el proyecto no se crea solo al ganar el lead, lo crea el asesor con «Crear proyecto desde lead». Desde el chat de Claude se puede crear un proyecto desde cero; antes avisa si ya hay un proyecto o un lead con ese nombre y lo crea cuando se confirma. |
 | 1.14 | 17 de noviembre de 2026 | Los tickets se ven en Voltia PM en Soporte → Tickets (antes estaban en Mis tareas). Las fallas del inversor y las plantas que no generan llegan a la mesa de Soporte analizadas con IA, como ayuda para preparar la visita. |
 | 1.13 | 15 de noviembre de 2026 | En el calendario se puede suspender una obra confirmada sin ponerle fecha nueva: pide el motivo, le avisa a Experiencia Solar y el cliente queda esperando la fecha nueva. |

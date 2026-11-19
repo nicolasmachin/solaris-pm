@@ -29,7 +29,7 @@ import { getStageLabel } from "../../../services/pipeline-definitions.js";
 import { serializeUteProcess, UTE_PROCESS_INCLUDE } from "../../../services/uteProcess.service.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { buildDownloadUrl } from "../descargas.routes.js";
-import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, texto, usd } from "../format.js";
+import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, texto, usd, gps } from "../format.js";
 import { crearProyectoDesdeCero } from "../../../services/proyecto-alta.service.js";
 import {
   describirFacturacion,
@@ -395,6 +395,7 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
         ["Atraso acumulado", atraso > 0 ? `${atraso} días` : null],
         ["Potencia", p.capacityKwp ? `${Number(p.capacityKwp)} kWp` : null],
         ["Ubicación", [p.locationCity, p.locationProvince].filter(Boolean).join(", ")],
+        ["Ubicación GPS", gps(p)],
         ["Vendedor", p.salesperson?.name],
         ["Presupuesto", p.budgetUsd ? usd(Number(p.budgetUsd)) : null],
       ]);

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { UbicacionGps } from "../components/ubicacion/UbicacionGps";
 import type { HTMLAttributes } from "react";
 import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import {
@@ -758,6 +759,18 @@ function LeadPanel({
           puedeEditar={canEditSales}
           queryKey={["lead-detail", lead.id]}
         />
+
+        <div className="mb-3 text-[var(--color-text-secondary)]">
+          <UbicacionGps
+            destino={{ leadId: lead.id }}
+            lat={lead.ubicacionLat}
+            lng={lead.ubicacionLng}
+            en={lead.ubicacionEn}
+            origen={lead.ubicacionOrigen}
+            puedeEditar={canEditSales}
+            queryKey={["lead-detail", lead.id]}
+          />
+        </div>
 
         <section className="mb-5 space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="grid gap-3">
