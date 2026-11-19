@@ -1,5 +1,15 @@
 # Novedades
 
+## v15.2
+
+### 19 de noviembre de 2026
+
+#### Propuestas desde el chat de Claude
+
+- Desde el chat de Claude conectado a Voltia PM ahora se pueden **cambiar los costos de una propuesta**, residencial o de empresa, igual que en el panel **Costeo** del cotizador: el costo por unidad y la cantidad de **paneles**, **estructuras**, **eléctrica**, **inversor** y **meter**, los **costos fijos**, los **costos variables** y la **mano de obra**.
+- El cambio vale solo para esa propuesta: no toca los valores por defecto ni otras propuestas. Se puede volver al valor original de un ítem o de todos de una vez.
+- Se le puede pedir que **muestre el costeo**: la tabla con cada ítem y, en los que se cambiaron a mano, cuánto valían originalmente. Sale sola cuando hay algún costo cambiado.
+
 ## v15.1
 
 ### 18 de noviembre de 2026

@@ -209,12 +209,38 @@ Los faltantes de un inversor puntual (`sistema.inversores.1.marca`) se traducen
 a un único "los inversores: marca y potencia de cada uno, y que los paneles
 asignados sumen los del sistema".
 
-**Comisiones.** `comision_vendedor_usd` y `comision_bbva_usd` (USD sin IVA)
-escriben los mismos ajustes que el costeo de la aplicación
-(`costos.comisionVentas` / `costos.comisionBbva`): `0` saca la comisión, `null`
-vuelve al cálculo normal. Mismo permiso que el resto de la herramienta
-(`VENTAS:EDIT`), igual que el costeo en la aplicación. Cuando hay alguna fijada,
-el bloque "Cargado en el borrador" la muestra como "(fijada a mano)".
+**Costeo y comisiones.** Lo mismo que el panel "Costeo" del cotizador, en
+residencial y en empresa. Todo escribe los ajustes del borrador (`costos`), así
+que lo que se pisa por el conector se ve pisado en la aplicación y al revés:
+
+- `costeo` es un objeto con `paneles_`, `estructura_`, `electrica_`,
+  `inversor_` y `meter_` `costo_unitario_usd` / `cantidad`, más
+  `costos_fijos_usd`, `costos_variables_usd` y `mano_de_obra_usd` (los tres en
+  total, no por unidad). Todo en USD sin IVA. El mapeo a las claves del
+  borrador está en `CAMPOS_COSTEO` (`propuesta.logic.ts`).
+- `comision_vendedor_usd` y `comision_bbva_usd` siguen afuera de `costeo`, como
+  estaban: `0` saca la comisión.
+- En cualquiera, `null` borra el ajuste y vuelve al valor de fábrica; si no
+  queda ningún ajuste, el borrador se queda sin `costos`
+  (`aplicarAjustesCosteo()`).
+- `restablecer_costeo: true` borra todos los ajustes, comisiones incluidas,
+  antes de aplicar lo que venga en la misma llamada. Es el "Volver todo a los
+  valores originales" del panel.
+- Con el borrador completo, la respuesta suma el bloque **"Costeo en USD sin
+  IVA"** (`computeDraftCosteo()`, el mismo cálculo que el panel): cada ítem con
+  cantidad × costo, el equipamiento, fijos, variables, mano de obra y
+  comisiones; en lo pisado dice cuánto valía de fábrica, salvo en las
+  comisiones, que solo dicen "fijada a mano" (dependen de los demás costos,
+  por lo mismo que en el panel su placeholder no es el de fábrica). Sale si se pide
+  (`ver_costeo`), si se tocó el costeo en esa llamada o si hay algún ajuste
+  cargado. Con el borrador incompleto no se puede calcular, y los ajustes se
+  ven solo en "Cargado en el borrador", como "(fijado a mano)".
+
+Mismo permiso que el resto de la herramienta y que el panel en la aplicación:
+`VENTAS:EDIT`. Eso significa que quien cotiza ve el costo real por el
+conector, igual que ya lo ve en el panel (decisión tomada al construir el
+costeo, no un descuido). Con inversores distintos, pisar el costo del inversor
+o de la eléctrica pone el mismo costo a todos, como en el panel.
 
 **La cotización del dólar no se expone.** Es el único parámetro que mueve el
 precio y que el asesor no debería tocar. El markup sí: es su holgura para

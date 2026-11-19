@@ -96,7 +96,7 @@ const RELEASE_14_5: Release = {
   ],
 };
 
-export const LATEST_RELEASE: Release = {
+const RELEASE_15_1: Release = {
   version: "15.1",
   date: "18 de noviembre de 2026",
   sections: [
@@ -107,6 +107,21 @@ export const LATEST_RELEASE: Release = {
         "En Comercial se siguen los aumentos de potencia, suministros nuevos, reducciones, provisorios y todo lo que se le pide a UTE Comercial. Un proyecto puede tener varios.",
         "Los que se mandan con el formulario de UTE desde Onboarding aparecen solos; los pedidos por otro lado se cargan con «Nuevo trámite comercial».",
         "Cada trámite tiene estado (a pedir, pedido, observado, resuelto, cancelado), número de caso, notas y cuántos días lleva con UTE.",
+      ],
+    },
+  ],
+};
+
+export const LATEST_RELEASE: Release = {
+  version: "15.2",
+  date: "19 de noviembre de 2026",
+  sections: [
+    {
+      title: "Propuestas desde el chat de Claude",
+      items: [
+        "Desde el chat de Claude se pueden cambiar los costos de una propuesta, residencial o de empresa, como en el panel Costeo: paneles, estructuras, eléctrica, inversor, meter, costos fijos y variables, y mano de obra.",
+        "El cambio vale solo para esa propuesta y se puede volver al valor original de un ítem o de todos.",
+        "Se le puede pedir que muestre el costeo, con lo que valía cada ítem cambiado a mano.",
       ],
     },
   ],
@@ -1339,6 +1354,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "15.1",
+    shortDate: "18 nov",
+    highlights: RELEASE_15_1.sections.map((sec) => sec.title),
+  },
   {
     version: "15.0",
     shortDate: "17 nov",

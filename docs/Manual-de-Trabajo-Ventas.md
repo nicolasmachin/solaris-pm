@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.21 · del 17/11/26
+**Voltia · Uruguay** · Versión 1.22 · del 19/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -1095,6 +1095,15 @@ que se cambia vale solo para esa cotización**, no toca las demás ni la
 configuración general, y se guarda solo. Un campo en blanco usa el valor de
 siempre.
 
+Lo mismo se puede hacer **desde el chat de Claude conectado a Voltia PM**, en la
+propuesta residencial y en la de empresa: se le dice qué costo cambiar («la
+estructura a 45 dólares por panel», «la mano de obra en 900», «el inversor
+volvelo al precio de siempre») y contesta con la tabla del costeo, donde cada
+línea cambiada dice cuánto valía antes. Lo que se cambia por el chat aparece
+cambiado en el ícono de calculadora, y al revés. Los costos se dicen **en
+dólares y sin IVA**, igual que en la pantalla. El costeo es del negocio: no se
+le muestra al cliente.
+
 Las comisiones se cambian sobre todo para **sacarlas**, poniéndolas en cero: la
 del vendedor, en una venta que no lleva asesor; la del BBVA, cuando el cliente
 no va a pagar con financiación del banco. El precio al cliente baja en lo mismo
@@ -1359,6 +1368,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.22 | 19 de noviembre de 2026 | Desde el chat de Claude conectado a Voltia PM se pueden cambiar los costos de una propuesta (paneles, estructuras, eléctrica, inversor, meter, costos fijos y variables, mano de obra), igual que con el ícono de calculadora, y pedirle que muestre el costeo. |
 | 1.21 | 17 de noviembre de 2026 | Las secciones de Ventas (Pipeline, Contactos, Empresas, WhatsApp e Instagram) pasan a un menú a la izquierda, igual al de Administración. |
 | 1.20 | 16 de noviembre de 2026 | Se agrega el asistente del primer mensaje del WhatsApp: le manda el speech al cliente nuevo en nombre del asesor, con ritmo de persona y de día; punto verde cuando lo mandó y etiqueta roja con el motivo cuando necesita al asesor. |
 | 1.19 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |

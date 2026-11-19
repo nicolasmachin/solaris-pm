@@ -4,7 +4,9 @@
 // y suma el desglose de la comisión del asesor, como el panel del cotizador.
 //
 // La cotización del dólar NO se expone: es el único parámetro que mueve el
-// precio y que el asesor no debería tocar. El markup sí, que es su holgura.
+// precio y que el asesor no debería tocar. El markup sí, que es su holgura, y
+// los costos de cada ítem (paneles, estructura, mano de obra…) igual que el
+// panel "Costeo" del cotizador, con el mismo permiso (VENTAS:EDIT).
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Action, Module, ProposalVariante } from "@prisma/client";
@@ -13,6 +15,7 @@ import { z } from "zod";
 import { prisma } from "../../../lib/prisma.js";
 import {
   computeDraftComision,
+  computeDraftCosteo,
   computeDraftResumenComercial,
   draftMissingFields,
   draftQualityIssues,
@@ -31,7 +34,16 @@ import { requirePermission, type McpUser } from "../context.js";
 import { buildDownloadUrl, nombrePdfPropuesta } from "../descargas.routes.js";
 import { hasPermission } from "../../../middleware/authorize.middleware.js";
 import { campos, pesos, porcentaje, texto, usd } from "../format.js";
-import { aplicarEmpresa, elegirVariante, vinoAlgoDeEmpresa } from "./propuesta.logic.js";
+import {
+  ajustesComoCampos,
+  aplicarAjustesCosteo,
+  aplicarEmpresa,
+  elegirVariante,
+  lineasCosteo,
+  vinoAlgoDeCosteo,
+  vinoAlgoDeEmpresa,
+  type AjustesCosteoPedido,
+} from "./propuesta.logic.js";
 
 const tipoSchema = z
   .enum(["residencial", "empresa"])
@@ -157,6 +169,9 @@ function bloqueComisionB2B(c: NonNullable<Awaited<ReturnType<typeof computeDraft
   );
 }
 
+// usd() acepta vacíos y puede devolver null; para el costeo siempre hay número.
+const usdTexto = (n: number) => usd(n) ?? "—";
+
 /**
  * Lo que ya está cargado en el borrador.
  *
@@ -212,15 +227,23 @@ function bloqueCargado(d: DraftDataPublish): string {
           : "—",
       ],
       ["Notas", d.notas || "—"],
-      ...(d.costos?.comisionVentas !== undefined
-        ? [["Comisión del asesor (fijada a mano)", usd(d.costos.comisionVentas)] as [string, string]]
-        : []),
-      ...(d.costos?.comisionBbva !== undefined
-        ? [["Comisión BBVA (fijada a mano)", usd(d.costos.comisionBbva)] as [string, string]]
-        : []),
+      ...ajustesComoCampos(d.costos, usdTexto),
     ])
   );
 }
+
+/**
+ * El costeo de la cotización, como el panel del cotizador. Lo ve quien cotiza
+ * (VENTAS:EDIT, el mismo permiso que el panel): costo real, no va al cliente.
+ */
+async function bloqueCosteo(leadId: string, variante: ProposalVariante): Promise<string> {
+  const { calc, fabrica, ajustes } = await computeDraftCosteo(leadId, variante);
+  return (
+    "COSTEO EN USD SIN IVA — no mostrar al cliente\n" + campos(lineasCosteo(calc, fabrica, ajustes, usdTexto))
+  );
+}
+
+const costoSchema = z.number().min(0).nullable().optional();
 
 export function registerPropuestaTools(server: McpServer, user: McpUser) {
   server.registerTool(
@@ -233,7 +256,10 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         "nada: devuelve el estado del borrador, qué hay cargado y qué falta. Con datos, los " +
         "guarda. El resto lo completa con los valores por defecto del cotizador y lo que ya " +
         "sabe del cliente. En empresa, para emitir hacen falta la razón social y el RUT; el " +
-        "contacto es opcional pero arma el saludo de la carta. No emite nada: para eso está " +
+        "contacto es opcional pero arma el saludo de la carta. Con `costeo` se pisan los " +
+        "costos de los ítems (paneles, estructura, eléctrica, inversor, meter, costos fijos y " +
+        "variables, mano de obra) solo para esta propuesta, como en el panel Costeo del " +
+        "cotizador; ver_costeo muestra la tabla. No emite nada: para eso está " +
         "publicar_propuesta.",
       inputSchema: {
         lead_id: z.string().min(1).describe("Identificador del cliente potencial"),
@@ -324,6 +350,44 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
               "(por ejemplo, el cliente no paga con el BBVA). null = volver al cálculo normal. " +
               "Solo si lo pide explícitamente.",
           ),
+        costeo: z
+          .object({
+            paneles_costo_unitario_usd: costoSchema,
+            paneles_cantidad: costoSchema,
+            estructura_costo_unitario_usd: costoSchema,
+            estructura_cantidad: costoSchema,
+            electrica_costo_unitario_usd: costoSchema,
+            electrica_cantidad: costoSchema,
+            inversor_costo_unitario_usd: costoSchema,
+            inversor_cantidad: costoSchema,
+            meter_costo_unitario_usd: costoSchema,
+            meter_cantidad: costoSchema,
+            costos_fijos_usd: costoSchema,
+            costos_variables_usd: costoSchema,
+            mano_de_obra_usd: costoSchema,
+          })
+          .strict()
+          .optional()
+          .describe(
+            "Costos de ESTA cotización, en USD sin IVA (los costos por unidad, los fijos, " +
+              "los variables y la mano de obra en total). No cambian los valores por defecto " +
+              "ni otras propuestas. null = volver al valor de fábrica de ese ítem. Mueven el " +
+              "precio: solo si lo pide explícitamente.",
+          ),
+        restablecer_costeo: z
+          .literal(true)
+          .optional()
+          .describe(
+            "Borra todos los costos fijados a mano (incluidas las comisiones) y vuelve a los " +
+              "valores de fábrica. Se aplica antes que costeo, si vienen los dos.",
+          ),
+        ver_costeo: z
+          .boolean()
+          .optional()
+          .describe(
+            "Muestra la tabla de costeo (costo real, no va al cliente). Sale sola si hay " +
+              "costos fijados a mano o si se cambió alguno.",
+          ),
       },
     },
     async (args) => {
@@ -393,20 +457,18 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         },
         ...(args.notas !== undefined && { notas: args.notas }),
       };
-      // Comisiones fijadas a mano: viven en los ajustes del costeo, igual que
-      // cuando se pisan en la aplicación. null borra el ajuste (vuelve al
-      // cálculo normal) y, si no queda ningún ajuste, se saca el objeto entero.
-      if (args.comision_vendedor_usd !== undefined || args.comision_bbva_usd !== undefined) {
-        const costos: NonNullable<DraftDataPublish["costos"]> = { ...(actual.costos ?? {}) };
-        for (const [clave, valor] of [
-          ["comisionVentas", args.comision_vendedor_usd],
-          ["comisionBbva", args.comision_bbva_usd],
-        ] as const) {
-          if (valor === undefined) continue;
-          if (valor === null) delete costos[clave];
-          else costos[clave] = valor;
-        }
-        if (Object.keys(costos).length > 0) data.costos = costos;
+      // Costos y comisiones fijados a mano: viven en los ajustes del costeo,
+      // igual que cuando se pisan en la aplicación. null borra el ajuste (vuelve
+      // al valor de fábrica) y, si no queda ninguno, se saca el objeto entero.
+      const pedidoCosteo: AjustesCosteoPedido = {
+        ...args.costeo,
+        comision_vendedor_usd: args.comision_vendedor_usd,
+        comision_bbva_usd: args.comision_bbva_usd,
+      };
+      const tocoCosteo = vinoAlgoDeCosteo(pedidoCosteo, args.restablecer_costeo);
+      if (tocoCosteo) {
+        const costos = aplicarAjustesCosteo(actual.costos, pedidoCosteo, args.restablecer_costeo);
+        if (costos) data.costos = costos;
         else delete data.costos;
       }
       // Inversores. Una lista de 2+ pasa a inversores distintos; una lista vacía
@@ -495,6 +557,7 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         bloqueCargado(data as DraftDataPublish),
         bloqueResumen(resumen, verInterno),
         ...(comision ? [bloqueComisionB2B(comision)] : []),
+        ...(args.ver_costeo || tocoCosteo || data.costos ? [await bloqueCosteo(lead.id, VARIANTE)] : []),
         "Si está bien, decime que la emita y genero el PDF.",
       );
     },

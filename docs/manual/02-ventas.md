@@ -645,6 +645,12 @@ original. Arriba hay un botón que devuelve todo de una.
 Todo lo demás se recalcula al instante, porque el cálculo lo hace el servidor y
 la consulta se refresca con cada autosave.
 
+**Desde el chat de Claude** se hace lo mismo con `preparar_propuesta`: se le
+dice qué costo cambiar ("la estructura a 45 por panel", "la mano de obra en
+900", "volvé el inversor al original") y devuelve la tabla del costeo con lo que
+valía cada línea pisada. Escribe los mismos ajustes, así que lo que se cambia
+por el chat aparece pisado en el panel y al revés. Detalle en el cap. 13.
+
 ## Cómo funciona
 
 Los ajustes viven en `data.costos` del borrador (`ProposalV2Draft`), no en
