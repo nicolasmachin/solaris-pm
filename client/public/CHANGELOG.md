@@ -4,11 +4,27 @@
 
 ### 19 de noviembre de 2026
 
+#### Cotizaciones a medida
+
+- En el menú de Ventas hay una sección nueva, **Cotizaciones**, para cotizar lo que no sale del cotizador solar: una **ampliación de paneles**, un **cargador de auto eléctrico** o cualquier trabajo que se arme a mano.
+- Cada cotización es **para alguien**: un lead, un contacto, una empresa o un proyecto. Si es para un proyecto, los datos del cliente salen del proyecto. Si el cliente todavía no está cargado, se marca **Cliente nuevo** y se escribe ahí mismo el nombre (lo único obligatorio), el teléfono y el mail: al guardar queda como contacto.
+- Los ítems se agregan, se quitan y se ordenan. Se pueden escribir a mano o elegir de la lista de **Artículos de venta**, y se pueden agrupar con títulos de sección.
+- Lleva alcance, forma de pago, plazo, qué incluye, qué no incluye y observaciones, con el IVA al 22 % (se puede cambiar).
+- Mientras se arma se ve **cómo va a salir el PDF**. El PDF busca entrar **en una sola hoja**.
+- Cada cotización tiene número (sigue después de la 2026-005), estado (borrador, enviada, aceptada o rechazada) y se puede **duplicar** para hacer otra parecida. Si está enviada y pasó la fecha de validez, aparece como **Vencida**.
+- En **Artículos de venta** se cargan los ítems que se cotizan seguido, con su unidad y su precio de venta.
+
 #### Propuestas desde el chat de Claude
 
 - Desde el chat de Claude conectado a Voltia PM ahora se pueden **cambiar los costos de una propuesta**, residencial o de empresa, igual que en el panel **Costeo** del cotizador: el costo por unidad y la cantidad de **paneles**, **estructuras**, **eléctrica**, **inversor** y **meter**, los **costos fijos**, los **costos variables** y la **mano de obra**.
 - El cambio vale solo para esa propuesta: no toca los valores por defecto ni otras propuestas. Se puede volver al valor original de un ítem o de todos de una vez.
 - Se le puede pedir que **muestre el costeo**: la tabla con cada ítem y, en los que se cambiaron a mano, cuánto valían originalmente. Sale sola cuando hay algún costo cambiado.
+
+#### Proyectos desde el chat de Claude
+
+- Desde el chat de Claude conectado a Voltia PM ahora se puede **convertir en proyecto un lead ganado**, igual que con **Crear proyecto desde lead**: pide la ciudad, el departamento y **qué se le factura**, y toma la potencia y el monto de la última propuesta publicada (se pueden corregir).
+- También se puede **crear un proyecto desde cero**, como con **Nuevo proyecto**. Antes de crearlo se fija si ya hay un proyecto o un lead con ese nombre y, si lo hay, avisa y no lo crea.
+- En los dos casos Claude primero muestra qué va a crear y de dónde sale cada dato, y lo crea solo cuando se le confirma.
 
 ## v15.1
 

@@ -27,6 +27,8 @@ import { requirePermission, type McpUser } from "../context.js";
 import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, fechaLargaUruguay, pesos, porcentaje, texto, usd } from "../format.js";
 import { diaManualUruguay } from "../../../utils/uruguay.js";
 import { buildDownloadUrl, nombrePdfPropuesta, nombrePdfPropuestaVieja } from "../descargas.routes.js";
+import { convertirLeadAProyecto, datosConversion, type Fuente } from "../../../services/proyecto-alta.service.js";
+import { describirFacturacion, FACTURACION_INPUT, FECHA, facturacionDesdeMcp } from "./alta-proyecto.logic.js";
 
 /** Marca de origen para la auditoría. */
 function auditMeta(tool: string) {
@@ -707,13 +709,136 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
 
       const aviso =
         etapa === "CERRADO_GANADO"
-          ? "\n\nOjo: el proyecto NO se crea solo. Para convertirlo hay que entrar a " +
-            "Voltia PM y completar ciudad, departamento y potencia."
+          ? "\n\nOjo: el proyecto NO se crea solo. Para convertirlo, usá " +
+            "convertir_lead_en_proyecto con la ciudad, el departamento y qué se le " +
+            "factura (confirmalo antes con el usuario)."
           : "";
 
       return texto(
         `${lead.clientName} pasó de "${ETAPA_LABEL[previousStage] ?? previousStage}" a ` +
           `"${ETAPA_LABEL[lead.stage] ?? lead.stage}".${aviso}`,
+      );
+    },
+  );
+
+  server.registerTool(
+    "convertir_lead_en_proyecto",
+    {
+      title: "Convertir un lead ganado en proyecto",
+      description:
+        "Crea el proyecto de un cliente potencial que ya está en CERRADO_GANADO, igual que el " +
+        "botón \"Convertir en proyecto\" de Voltia PM: arma las etapas de obra, el trámite UTE, " +
+        "un suministro por inversor si la propuesta tiene varios, y pasa al proyecto los adjuntos, " +
+        "fotos, videos, comentarios y la última propuesta publicada. No se puede deshacer desde el " +
+        "chat: sin `confirmar` solo devuelve la vista previa; pasá `confirmar: true` recién " +
+        "después de que el usuario la vio y dijo que sí. " +
+        "Potencia y monto salen de la última propuesta publicada si no se pasan; nombre, " +
+        "teléfono, email y dirección, del lead.",
+      inputSchema: {
+        lead_id: z.string().describe("id del lead (de buscar_lead o ficha_lead)"),
+        ciudad: z.string().min(1).describe("Ciudad o localidad de la obra"),
+        departamento: z.string().min(1).describe("Departamento de la obra (Montevideo, Canelones…)"),
+        facturacion: FACTURACION_INPUT,
+        potencia_kwp: z
+          .number()
+          .positive()
+          .optional()
+          .describe("Potencia del sistema. Si no se pasa, la de la última propuesta publicada."),
+        monto_usd: z
+          .number()
+          .nonnegative()
+          .optional()
+          .describe("Precio de venta con IVA. Si no se pasa, el de la última propuesta publicada."),
+        modalidad_pago: z
+          .enum(["DIRECTO_50_50", "FINANCIACION_BANCARIA"])
+          .optional()
+          .describe("Cómo paga. Con FINANCIACION_BANCARIA queda prevista la cuota única del banco."),
+        nombre: z.string().optional().describe("Solo si el proyecto tiene que ir a otro nombre que el lead"),
+        direccion: z.string().optional(),
+        email: z.string().email().optional(),
+        telefono: z.string().optional(),
+        fecha_inicio: FECHA.optional().describe("YYYY-MM-DD. Por defecto, hoy."),
+        fecha_fin_prevista: FECHA.optional().describe("YYYY-MM-DD. Por defecto, 90 días después del inicio."),
+        confirmar: z
+          .literal(true)
+          .optional()
+          .describe("Solo después de que el usuario vio la vista previa y aprobó. Sin esto no se crea nada."),
+      },
+    },
+    async (args) => {
+      await requirePermission(user, Module.VENTAS, Action.CREATE);
+
+      const facturacion = facturacionDesdeMcp(args.facturacion);
+      const body = {
+        clientName: args.nombre,
+        clientAddress: args.direccion,
+        clientEmail: args.email,
+        clientPhone: args.telefono,
+        capacityKwp: args.potencia_kwp,
+        budgetUsd: args.monto_usd,
+        locationCity: args.ciudad,
+        locationProvince: args.departamento,
+        startDate: args.fecha_inicio,
+        plannedEndDate: args.fecha_fin_prevista,
+        modalidadPago: args.modalidad_pago,
+        facturacion,
+      };
+      const usdTexto = (n: number) => usd(n) ?? "—";
+
+      if (!args.confirmar) {
+        const d = await datosConversion(args.lead_id, body);
+        const DE: Record<Fuente, string> = {
+          pedido: "",
+          propuesta: " (de la última propuesta publicada)",
+          estimado: " (estimado del lead: no hay propuesta publicada)",
+        };
+        return texto(
+          `Vista previa — todavía NO se creó nada. Así quedaría el proyecto de ${d.clientName}:`,
+          campos([
+            ["Potencia", d.capacityKwp > 0 ? `${d.capacityKwp} kWp${DE[d.fuenteKwp]}` : null],
+            [
+              "Monto con IVA",
+              d.budgetUsd > 0
+                ? `${usdTexto(d.budgetUsd)}${DE[d.fuenteMonto]}`
+                : "SIN MONTO: no hay propuesta publicada ni estimado; pasá monto_usd o queda en 0",
+            ],
+            ["Ubicación", `${d.locationCity}, ${d.locationProvince}`],
+            ["Dirección", d.clientAddress],
+            ["Teléfono", d.clientPhone],
+            ["Email", d.clientEmail],
+            ["Facturación", describirFacturacion(facturacion, usdTexto)],
+            ["Modalidad de pago", args.modalidad_pago ?? null],
+            ["Fecha de venta", d.lead.closedAt ? fechaCorta(d.lead.closedAt) : null],
+          ]),
+          d.missing.length > 0
+            ? `Falta: ${d.missing.join(", ")}. Así no se puede crear.`
+            : "Si el usuario está de acuerdo, volvé a llamar con los mismos datos y confirmar: true.",
+        );
+      }
+
+      const project = await convertirLeadAProyecto({
+        leadId: args.lead_id,
+        body,
+        userId: user.id,
+        auditMetadata: auditMeta("convertir_lead_en_proyecto"),
+      });
+
+      const sistemas = await prisma.solarSystem.count({ where: { projectId: project.id, deletedAt: null } });
+
+      return texto(
+        `Listo. ${project.clientName} ya es el proyecto ${project.code}.`,
+        campos([
+          ["id del proyecto", project.id],
+          ["Potencia", `${Number(project.capacityKwp)} kWp`],
+          ["Monto", project.budgetUsd != null ? usd(Number(project.budgetUsd)) : null],
+          ["Ubicación", `${project.locationCity}, ${project.locationProvince}`],
+          ["Facturación", describirFacturacion(facturacion, usdTexto)],
+          ["Modalidad de pago", project.modalidadPago],
+          ["Fecha de venta", project.saleDate ? fechaCorta(project.saleDate) : null],
+          ["Suministros", sistemas > 1 ? `${sistemas} (uno por inversor, cada uno con su trámite UTE)` : null],
+        ]),
+        "Se armaron las etapas de obra y el trámite UTE, y pasaron al proyecto los adjuntos, " +
+          "fotos, videos, comentarios y la propuesta del lead.",
       );
     },
   );

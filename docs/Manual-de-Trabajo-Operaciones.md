@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.14 · del 17/11/26
+**Voltia · Uruguay** · Versión 1.15 · del 19/11/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -310,7 +310,7 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 - **Las columnas:** cliente (con la marca *Ampliación* si cuelga de otra obra), ubicación, estado, etapa actual (*+N en paralelo* si corre otra etapa a la vez), **plazo de la etapa**, avance, inversor (con la fase: *MONO*, *TRI-230* o *TRI-400*), paneles, asesor y fecha de venta. Debajo de los paneles va **el techo y si van coplanares o inclinados** (por ejemplo, *Hormigón · inclinado*) y, si la obra tiene varios suministros, el total de paneles. Se ordena tocando el título de cada columna.
 - **El plazo de la etapa** es un semáforo: en verde *Faltan N días háb.*, en amarillo cuando faltan 2 días hábiles o menos, *Vence hoy*, y en rojo *Vencida · N días háb. de atraso*. Se cuenta en días hábiles desde que terminó la etapa anterior.
 - Desde cada fila se puede **ver**, **archivar** o **eliminar** el proyecto. Tocar la fila abre el proyecto. **Archivar** es para el cliente que no siguió con la obra: el proyecto sale de la lista, pero no se pierde, y se restaura desde *Archivados*. **Eliminar** lo borra de todas las vistas.
-- **Nuevo proyecto** crea uno a mano. Lo normal es que no haga falta: el proyecto se crea solo cuando el asesor marca el lead como ganado.
+- **Nuevo proyecto** crea uno a mano. Lo normal es que no haga falta: el proyecto lo crea el asesor cuando gana el lead, con **Crear proyecto desde lead**.
 
 ![La lista de proyectos: arriba el buscador y los filtros; en cada fila, el plazo de la etapa en semáforo.](captura:ops-lista-proyectos)
 
@@ -472,6 +472,7 @@ Además de las pantallas, el gerente de Operaciones puede consultar la obra desd
 - **El informe del capataz:** el informe completo de la visita técnica, las notas y lo que se dijo en los audios, y cómo está la subetapa del informe.
 - **Los datos técnicos de la obra:** paneles, inversor, red, techo y si los paneles van coplanares o inclinados, cada suministro con su cuenta de UTE y, para quien puede verlo en la pantalla, el presupuesto de mano de obra del instalador tercerizado.
 - **Cambiar el estado de una subetapa:** *"marcá Retiro de sobrantes de tal obra como completado"*. Claude primero muestra qué va a cambiar y qué dispara (por ejemplo, que es la última subetapa de la etapa y que al cerrarla se avisa al área siguiente), y **solo lo hace cuando se le confirma**. Sigue las mismas reglas que la pantalla. Se le puede agregar una nota, que queda como comentario en la subetapa. Los ítems del checklist no se tildan desde el chat.
+- **Crear un proyecto desde cero:** *"creá el proyecto de tal cliente, 5 kWp, en Pando, Canelones"*, como con **Nuevo proyecto**. Antes de crearlo, Claude se fija si ya hay un proyecto o un lead con ese nombre: si lo hay, avisa y no lo crea (si el cliente viene de Ventas, lo que corresponde es convertir su lead). Muestra cómo va a quedar y lo crea solo cuando se confirma. Si no se le dice qué se le factura, queda *a definir*.
 
 Lo que se cambia desde el chat queda registrado a nombre de quien lo pidió, igual que si lo hubiera hecho en la pantalla.
 
@@ -1117,6 +1118,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.15 | 19 de noviembre de 2026 | Se corrige: el proyecto no se crea solo al ganar el lead, lo crea el asesor con «Crear proyecto desde lead». Desde el chat de Claude se puede crear un proyecto desde cero; antes avisa si ya hay un proyecto o un lead con ese nombre y lo crea cuando se confirma. |
 | 1.14 | 17 de noviembre de 2026 | Los tickets se ven en Voltia PM en Soporte → Tickets (antes estaban en Mis tareas). Las fallas del inversor y las plantas que no generan llegan a la mesa de Soporte analizadas con IA, como ayuda para preparar la visita. |
 | 1.13 | 15 de noviembre de 2026 | En el calendario se puede suspender una obra confirmada sin ponerle fecha nueva: pide el motivo, le avisa a Experiencia Solar y el cliente queda esperando la fecha nueva. |
 | 1.12 | 12 de noviembre de 2026 | Se agrega el registro de problemas técnicos resueltos: Claude se fija ahí antes de diagnosticar y anota solo cada problema que se resuelve en la conversación. |

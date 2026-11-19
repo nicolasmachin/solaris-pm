@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.22 · del 19/11/26
+**Voltia · Uruguay** · Versión 1.24 · del 19/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -593,7 +593,8 @@ Todo el trabajo de Ventas se hace en **Voltia PM**, en dos lugares: en
 las propuestas, el cierre—; y en **Proyectos**, el onboarding, una vez que la
 venta se convirtió en proyecto. Dentro de **Ventas**, a la izquierda, hay un
 menú con las secciones, igual que en Administración: **Embudo** (el
-**Pipeline**, el tablero de leads), **Clientes** (**Contactos** y **Empresas**)
+**Pipeline**, el tablero de leads), **Clientes** (**Contactos** y **Empresas**),
+**Cotizaciones** (**A medida** y **Artículos de venta**)
 y **Conversaciones** (**WhatsApp** e **Instagram**). En el celular ese menú se
 abre con el botón de las tres rayitas, arriba a la izquierda. Acá van las
 pantallas en el orden en que el asesor las usa. *Qué* se hace y *por qué* está en el capítulo 2; acá, *dónde* se
@@ -1110,6 +1111,76 @@ no va a pagar con financiación del banco. El precio al cliente baja en lo mismo
 y la ganancia de Voltia no cambia. Si la venta se gana con la comisión del
 vendedor en cero, el asesor no cobra comisión por esa venta.
 
+### Las cotizaciones a medida
+
+**Qué son.** Una cotización armada a mano, renglón por renglón, para lo que no
+sale del cotizador solar: una **ampliación de paneles** a un cliente que ya
+tiene su sistema, un **cargador de auto eléctrico**, un trabajo eléctrico o
+cualquier otra cosa que Voltia venda. No reemplaza a la propuesta: una
+instalación solar nueva se sigue cotizando con el cotizador.
+
+**Dónde:** en el menú de Ventas, **Cotizaciones → A medida**. Ahí está la lista
+de todas, con su número, el cliente, qué se cotiza, a qué está vinculada, la
+fecha, el total y el estado. Arriba se filtra por estado y se busca por número o
+por nombre del cliente.
+
+**Cómo se arma.** Con **Nueva cotización** se abre una pantalla en dos partes: a
+la izquierda lo que se completa y a la derecha cómo va a salir el PDF, que se
+actualiza solo mientras se escribe.
+
+1. **Para quién es.** Es obligatorio elegir a alguien. Se busca por nombre entre
+   los leads, los contactos, las empresas y los proyectos. Si es para un
+   proyecto, los datos del cliente salen del proyecto. Si el cliente todavía no
+   está cargado en Voltia PM, no hace falta cargarlo antes: se toca **Cliente
+   nuevo** y se escribe ahí mismo el nombre (lo único obligatorio), el teléfono
+   y el mail. Al guardar, queda como contacto. Si el teléfono ya es de otro
+   contacto, Voltia PM no deja crearlo: hay que buscar ese contacto y elegirlo.
+2. **Los datos del cliente** que van en el PDF (nombre, dirección, ciudad,
+   teléfono y mail) vienen solos y se pueden corregir.
+3. **Fecha, validez, moneda, vendedor y forma de trabajo.** La validez viene a
+   30 días; el vendedor, el que la arma.
+4. **El alcance**: un título y un texto corto que dice qué se va a hacer.
+5. **Los ítems.** Cada renglón tiene descripción, detalle, cantidad, unidad y
+   precio unitario **sin IVA**. Se agregan con **+ Ítem** (a mano) o con **Desde artículos** para
+   elegir uno de la lista de artículos de venta, que viene con su precio. Se
+   pueden poner títulos con **+ Sección** para agrupar (por ejemplo, «Materiales» y
+   «Mano de obra»), y los renglones se suben, se bajan y se quitan. Si el
+   artículo está en otra moneda que la cotización, Voltia PM avisa pero no
+   convierte el precio: hay que corregirlo a mano.
+6. **El IVA** viene al 22 % y se puede cambiar.
+7. **Las condiciones**: forma de pago, plazo de entrega, qué incluye, qué no
+   incluye y observaciones. Conviene siempre completar qué no incluye: es lo que
+   evita discusiones después.
+
+Se guarda con **Crear cotización** (la primera vez) o **Guardar**. Recién ahí toma número.
+
+**El PDF.** Se baja con **Bajar PDF**, que se habilita cuando todo está guardado,
+para que lo que se manda sea igual a lo que quedó en Voltia PM. El PDF busca
+entrar **en una sola hoja**: si hay mucho texto, achica la letra un poco, y si
+igual no entra, sigue en una segunda hoja. En algunos celulares la vista de la
+derecha queda en blanco; el PDF se baja igual.
+
+**El número.** Cada cotización tiene un número del año y un correlativo (la
+primera hecha en Voltia PM es la 2026-006, porque las anteriores se hicieron en
+otro programa). Un número que se borró no se vuelve a usar.
+
+**El estado.** Abajo se marca en qué está: **borrador** (se está armando),
+**enviada** (ya la tiene el cliente), **aceptada** o **rechazada**. Hay que
+moverlo cuando pasa, porque es lo que se ve en la lista. Si una enviada pasó la
+fecha de validez, la lista la muestra como **Vencida**: es un aviso para
+volver a hablar con el cliente, no cambia nada solo.
+
+**Duplicar.** Para hacer una parecida (otro cliente con el mismo trabajo, o una
+versión con otro precio) se abre la que ya está y se toca **Duplicar**: queda
+una nueva, con otro número y en borrador, para cambiar lo que haga falta.
+
+**Los artículos de venta.** En **Cotizaciones → Artículos de venta** está la
+lista de lo que se cotiza seguido, con su nombre, detalle, unidad, precio de
+venta sin IVA y moneda. Cargarlos ahorra escribir siempre lo mismo y evita que
+cada asesor ponga un precio distinto. Un artículo que ya no se vende no se
+borra: se desactiva, y deja de aparecer para agregar. Cambiar el precio de un
+artículo no cambia las cotizaciones que ya lo usaron.
+
 ### Ganar la venta y crear el proyecto
 
 **Dónde:** en el panel del lead, **✓ Marcar como Ganado** (o en el Kanban,
@@ -1172,6 +1243,16 @@ ventanas seguidas:
 - pasa las fotos de la visita a la galería de obra y los videos a la sección
   Videos;
 - deja los comentarios del lead a la vista también en el proyecto.
+
+**También desde el chat de Claude.** Con el chat de Claude conectado a Voltia PM,
+el asesor puede pedirle que convierta en proyecto un lead ganado, por ejemplo
+*"convertí en proyecto el lead de tal cliente, es de Pando, Canelones, facturación
+normal"*. Claude pide lo mismo que la ventana: la ciudad, el departamento y qué
+se le factura. Antes de crear nada, muestra cómo va a quedar el proyecto y de
+dónde sale cada dato (la potencia y el monto, de la última propuesta publicada);
+lo crea recién cuando el asesor confirma. El proyecto queda igual que si se
+hubiera creado desde la pantalla. Marcar el lead como ganado desde el chat **no**
+crea el proyecto solo: Claude avisa que falta convertirlo.
 
 **Si se cerró la ventana sin crear el proyecto**, el panel del lead ganado
 muestra **Convertir a proyecto** para retomarlo. Ya creado, el panel dice
@@ -1368,6 +1449,8 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.24 | 19 de noviembre de 2026 | Un lead ganado se puede convertir en proyecto también desde el chat de Claude: pide la ciudad, el departamento y qué se le factura, muestra antes cómo va a quedar y lo crea cuando el asesor confirma. |
+| 1.23 | 19 de noviembre de 2026 | Se agrega «Las cotizaciones a medida»: cómo se cotiza a mano lo que no sale del cotizador solar (ampliaciones, cargadores de auto eléctrico y otros trabajos), para quién es, el cliente nuevo, los ítems y los artículos de venta, el PDF de una hoja, el número y el estado. |
 | 1.22 | 19 de noviembre de 2026 | Desde el chat de Claude conectado a Voltia PM se pueden cambiar los costos de una propuesta (paneles, estructuras, eléctrica, inversor, meter, costos fijos y variables, mano de obra), igual que con el ícono de calculadora, y pedirle que muestre el costeo. |
 | 1.21 | 17 de noviembre de 2026 | Las secciones de Ventas (Pipeline, Contactos, Empresas, WhatsApp e Instagram) pasan a un menú a la izquierda, igual al de Administración. |
 | 1.20 | 16 de noviembre de 2026 | Se agrega el asistente del primer mensaje del WhatsApp: le manda el speech al cliente nuevo en nombre del asesor, con ritmo de persona y de día; punto verde cuando lo mandó y etiqueta roja con el motivo cuando necesita al asesor. |

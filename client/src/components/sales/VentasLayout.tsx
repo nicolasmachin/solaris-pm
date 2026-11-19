@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Filter, Menu, MessagesSquare, Users, X, type LucideIcon } from "lucide-react";
+import { FileText, Filter, Menu, MessagesSquare, Users, X, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 // El marco de Ventas: el menú lateral con las secciones, igual al de
@@ -16,6 +16,14 @@ const GRUPOS: Grupo[] = [
     items: [
       { to: "/ventas/contactos", label: "Contactos" },
       { to: "/ventas/empresas", label: "Empresas" },
+    ],
+  },
+  {
+    label: "Cotizaciones",
+    icon: FileText,
+    items: [
+      { to: "/ventas/cotizaciones", label: "A medida" },
+      { to: "/ventas/articulos", label: "Artículos de venta" },
     ],
   },
   {

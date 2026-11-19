@@ -1,4 +1,4 @@
-import { VINCULO_SELECT, resolverVinculo } from "../services/crm/contactos.service.js";
+import { VINCULO_SELECT } from "../services/crm/contactos.service.js";
 import { getDatosTecnicosObra, montajeDePreIngenieria } from "../services/datos-tecnicos-obra.service.js";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -78,6 +78,7 @@ import { createAuditEntriesForChanges, createAuditEntry } from "../services/audi
 import { clearUmbralNotaBajaCache } from "../services/encuestas/encuestas.service.js";
 import { activarPorHecho, crearCheckReagenda } from "../services/clientes/recorrido.service.js";
 import { emitirHecho } from "../services/avisos/emitir.js";
+import { convertirLeadAProyecto, crearProyectoDesdeCero } from "../services/proyecto-alta.service.js";
 import { avisarFechaConfirmada } from "../services/avisos/cambios-de-fecha.js";
 import {
   completarPorEvidencia,
@@ -119,10 +120,6 @@ import {
   saveMaterialItemPhoto,
 } from "../services/material-photo.service.js";
 import {
-  copyLeadAttachmentsToProject,
-  moveLeadMediaToProject,
-} from "../services/sales/sales.service.js";
-import {
   buildLeadSearchFilter,
   crearLead,
   editarLead,
@@ -137,7 +134,6 @@ import { calcularVencimiento } from "../services/finance/cuentas-por-pagar.servi
 import { getPosicionFinanciera } from "../services/finance/posicion.service.js";
 import { CAMPOS_MOVIMIENTO, CAMPOS_PAGO, ENTIDADES_FINANZAS, registrarCambios } from "../services/finance/auditoria.service.js";
 import {
-  copyLatestProposalToProject,
   getLatestPublishedQuote,
   preciosPropuestaDeProyectos,
 } from "../services/proposal/latest-proposal.service.js";
@@ -146,7 +142,6 @@ import {
   calculateProjectProgress,
   calculateStageProgress,
   createInitialPipeline,
-  generateProjectCode,
   getCurrentStage,
   getDisplayStage,
   serializeFile,
@@ -178,7 +173,6 @@ import {
   SUMINISTRO_PRINCIPAL,
   UTE_PRINCIPAL,
   asegurarTramiteSuministro,
-  crearSuministrosDesdePropuesta,
   listSuministros,
   retirarTramiteSuministroSinUso,
   uteConfigKey,
@@ -1856,90 +1850,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.post("/projects", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request, reply) => {
     const user = ensureUser(request);
     const body = projectCreateSchema.parse(request.body);
-    const startDate = body.startDate ? parseDateOnly(body.startDate) : todayUtc();
-    // saleDate por defecto: hoy (fecha de creación del proyecto). Editable
-    // después desde el detalle del proyecto.
-    const saleDate = body.saleDate ? parseDateOnly(body.saleDate) : todayUtc();
-    // plannedEndDate es opcional. Para armar el pipeline inicial si no viene,
-    // asumimos 90 días desde el inicio como placeholder (no se muestra en UI).
-    const plannedEndDate = body.plannedEndDate
-      ? parseDateOnly(body.plannedEndDate)
-      : addDays(startDate, 90);
-
-    const code = await generateProjectCode();
-    // CRM: un proyecto cargado a mano (sin lead) también queda con su contacto.
-    const vinculo = await resolverVinculo(
-      { nombre: body.clientName, telefono: body.clientPhone, email: body.clientEmail },
-      user.id,
-    );
-
-    const project = await prisma.project.create({
-      data: {
-        code,
-        ...vinculo,
-        clientName: body.clientName,
-        capacityKwp: new Prisma.Decimal(body.capacityKwp),
-        locationCity: body.locationCity,
-        locationProvince: body.locationProvince,
-        status: ProjectStatus.ACTIVE,
-        startDate,
-        saleDate,
-        plannedEndDate: body.plannedEndDate ? plannedEndDate : null,
-        budgetUsd: body.budgetUsd != null ? new Prisma.Decimal(body.budgetUsd) : null,
-        executedUsd: new Prisma.Decimal(0),
-        estimatedMwhYear: body.estimatedMwhYear != null ? new Prisma.Decimal(body.estimatedMwhYear) : null,
-        co2TonsAvoided: body.estimatedMwhYear != null
-          ? new Prisma.Decimal((body.estimatedMwhYear * 0.5).toFixed(2))
-          : null,
-        modalidadPago: body.modalidadPago ?? null,
-        clientEmail: body.clientEmail || null,
-        clientPhone: body.clientPhone || null,
-        clientAddress: body.clientAddress || null,
-        salespersonId: body.salespersonId ?? null,
-        ...(body.facturacion
-          ? datosFacturacion(body.facturacion)
-          : { llevaFactura: body.llevaFactura ?? false, facturaNota: body.facturaNota || null }),
-        createdById: user.id,
-        ...(body.solarSystem
-          ? {
-              solarSystems: {
-                create: {
-                  order: body.solarSystem.order ?? 1,
-                  ...normalizeSolarSystemInput(body.solarSystem),
-                },
-              },
-            }
-          : {}),
+    const project = await crearProyectoDesdeCero({
+      body: {
+        ...body,
+        solarSystem: body.solarSystem
+          ? { ...normalizeSolarSystemInput(body.solarSystem), order: body.solarSystem.order ?? 1 }
+          : undefined,
       },
+      userId: user.id,
     });
-
-    await createInitialPipeline(project.id, startDate, plannedEndDate, body.modalidadPago ?? null);
-
-    // Aplicar reglas de deadline al pipeline recién creado (G.2). Es un proyecto
-    // nuevo, no tiene overrides manuales todavía, así que recalcula todo.
-    const deadlineResult = await applyDeadlineRulesToProject(project.id);
-    if (deadlineResult.updated > 0 || deadlineResult.cleared > 0) {
-      await createAuditEntry({
-        entityType: AuditEntityType.project,
-        entityId: project.id,
-        projectId: project.id,
-        userId: user.id,
-        action: AuditAction.updated,
-        description: `Deadlines calculados automáticamente (${deadlineResult.updated} subetapas con deadline)`,
-      });
-    }
-
-    const newUteProcess = await prisma.uteProcess.create({
-      data: {
-        projectId: project.id,
-        currentStage: UteStage.CONSULTA,
-        currentStatus: UteStatus.PENDIENTE,
-        createdById: user.id,
-      },
-    });
-
-    // Genera las 11 subetapas system bajo HABILITACION_UTE.
-    await regenerateUteSubstages(prisma, newUteProcess);
 
     const projectWithStages = await prisma.project.findUniqueOrThrow({
       where: { id: project.id },
@@ -1953,16 +1872,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
           orderBy: { order: "asc" },
         },
       },
-    });
-
-    await createAuditEntry({
-      entityType: AuditEntityType.project,
-      entityId: project.id,
-      projectId: project.id,
-      userId: user.id,
-      action: AuditAction.created,
-      description: `Creó proyecto '${project.clientName}' con código ${project.code}`,
-      metadata: { stageCount: 5 },
     });
 
     reply.code(201);
@@ -7717,267 +7626,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const body = leadConvertBodySchema.parse(request.body ?? undefined) ?? {};
 
-    const lead = await prisma.salesLead.findFirst({
-      where: { id, deletedAt: null },
-    });
-
-    if (!lead) {
-      throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
-    }
-
-    if (lead.stage !== SalesStage.CERRADO_GANADO) {
-      throw badRequest("LEAD_NOT_WIN", "El lead debe estar en CERRADO_GANADO para convertirse");
-    }
-
-    if (lead.convertedToProjectId) {
-      throw conflict("ALREADY_CONVERTED", "El lead ya fue convertido a proyecto");
-    }
-
-    // Merge: body tiene prioridad sobre lo del lead. Si después de mezclar
-    // todavía faltan los obligatorios, devolvemos un 400 con mensaje claro.
-    const clientName = body.clientName?.trim() || lead.clientName;
-    const clientAddress = body.clientAddress ?? lead.address ?? null;
-    const clientEmail = body.clientEmail ?? lead.clientEmail ?? null;
-    const clientPhone = body.clientPhone ?? lead.clientPhone ?? null;
-    // Cotización y potencia: prioridad body (lo que el usuario editó en el modal)
-    // > última propuesta publicada > estimado grueso del lead.
-    const quote = await getLatestPublishedQuote(lead.id);
-    const capacityKwpFinal =
-      body.capacityKwp ??
-      quote?.potenciaKwp ??
-      (lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) ?? 0 : 0);
-    const locationCity = body.locationCity?.trim() ?? "";
-    const locationProvince = body.locationProvince?.trim() ?? "";
-    const budgetUsdFinal =
-      body.budgetUsd ??
-      quote?.precioUsd ??
-      (lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) ?? 0 : 0);
-
-    const missing: string[] = [];
-    if (!clientName) missing.push("nombre del cliente");
-    if (!locationCity) missing.push("ciudad");
-    if (!locationProvince) missing.push("provincia");
-    if (!capacityKwpFinal || capacityKwpFinal <= 0) missing.push("potencia (kWp)");
-    if (!body.facturacion) missing.push("qué se le factura al cliente");
-    if (missing.length > 0) {
-      throw badRequest(
-        "MISSING_PROJECT_FIELDS",
-        `Faltan datos para crear el proyecto: ${missing.join(", ")}.`,
-      );
-    }
-
-    const startDate = body.startDate ? parseDateOnly(body.startDate) : todayUtc();
-    const plannedEndDate = body.plannedEndDate
-      ? parseDateOnly(body.plannedEndDate)
-      : (() => {
-          const d = new Date(startDate);
-          d.setUTCDate(d.getUTCDate() + 90);
-          return d;
-        })();
-    const estimatedMwhYear = capacityKwpFinal * 1.45;
-    const code = await generateProjectCode();
-
-    const project = await prisma.project.create({
-      data: {
-        code,
-        clientName,
-        capacityKwp: new Prisma.Decimal(capacityKwpFinal),
-        locationCity,
-        locationProvince,
-        clientAddress,
-        status: ProjectStatus.ACTIVE,
-        startDate,
-        // Fecha de venta = momento en que se cerró el lead como ganado (Tanda 3).
-        saleDate: lead.closedAt ?? null,
-        plannedEndDate,
-        budgetUsd: new Prisma.Decimal(budgetUsdFinal),
-        executedUsd: new Prisma.Decimal(0),
-        estimatedMwhYear: new Prisma.Decimal(estimatedMwhYear.toFixed(2)),
-        co2TonsAvoided: new Prisma.Decimal((estimatedMwhYear * 0.5).toFixed(2)),
-        clientEmail: (body.clientEmail ?? clientEmail ?? "") || "",
-        clientPhone: (body.clientPhone ?? clientPhone ?? "") || "",
-        modalidadPago: body.modalidadPago ?? null,
-        ...(body.facturacion ? datosFacturacion(body.facturacion) : {}),
-        salespersonId: lead.assignedToId ?? null,
-        // CRM: el proyecto es del mismo contacto y empresa que el lead.
-        contactoId: lead.contactoId ?? null,
-        empresaId: lead.empresaId ?? null,
-        createdById: user.id,
-      },
-    });
-
-    await createInitialPipeline(project.id, startDate, plannedEndDate, null);
-
-    const newUteProcessFromLead = await prisma.uteProcess.create({
-      data: {
-        projectId: project.id,
-        currentStage: UteStage.CONSULTA,
-        currentStatus: UteStatus.PENDIENTE,
-        createdById: user.id,
-      },
-    });
-
-    await regenerateUteSubstages(prisma, newUteProcessFromLead);
-
-    // Propuesta con más de un inversor: un sistema por inversor, cada uno su
-    // suministro con su trámite UTE. No falla la conversión si algo sale mal.
-    try {
-      const creados = await crearSuministrosDesdePropuesta(project.id, lead.id, user.id);
-      if (creados) {
-        await createAuditEntry({
-          entityType: AuditEntityType.project,
-          entityId: project.id,
-          projectId: project.id,
-          userId: user.id,
-          action: AuditAction.created,
-          description: `Creó un suministro por inversor desde la propuesta: ${creados}`,
-        });
-      }
-    } catch (err) {
-      request.log.error({ err, projectId: project.id }, "No se pudieron crear los suministros desde la propuesta");
-    }
-
-    await prisma.salesLead.update({
-      where: { id: lead.id },
-      data: {
-        convertedToProjectId: project.id,
-        convertedAt: new Date(),
-      },
-    });
-
-    await prisma.salesActivity.create({
-      data: {
-        leadId: lead.id,
-        userId: user.id,
-        fromStage: lead.stage,
-        toStage: lead.stage,
-        action: "lead_converted",
-        notes: `Lead convertido a proyecto ${code}`,
-      },
-    });
-
-    await createAuditEntry({
-      entityType: AuditEntityType.lead,
-      entityId: lead.id,
-      projectId: project.id,
+    const project = await convertirLeadAProyecto({
+      leadId: id,
+      body,
       userId: user.id,
-      action: AuditAction.lead_converted,
-      description: `Convirtió lead '${lead.clientName}' al proyecto ${code}`,
+      log: request.log,
     });
-
-    await createAuditEntry({
-      entityType: AuditEntityType.project,
-      entityId: project.id,
-      projectId: project.id,
-      userId: user.id,
-      action: AuditAction.created,
-      description: `Creó proyecto '${project.clientName}' desde lead ${lead.code}`,
-    });
-    emitirHecho({ disparador: "proyecto.creado", projectId: project.id });
-    // El usuario del portal se crea solo con la venta, si el cliente tiene mail:
-    // el aviso de acceso al portal lo necesita (y si no, lo crea al salir).
-    {
-      const { asegurarUsuarioPortal } = await import("../services/clientes/portal-user.service.js");
-      const r = await asegurarUsuarioPortal(project.id, user.id);
-      if (!r.ok) console.log(`[portal] ${project.code} sin usuario del portal: ${r.motivo}`);
-    }
-
-    // Copia de adjuntos del lead al proyecto. No falla la conversión si la
-    // copia falla parcialmente (preferimos tener el proyecto creado).
-    try {
-      const { copied } = await prisma.$transaction((tx) =>
-        copyLeadAttachmentsToProject(tx, lead.id, project.id, user.id),
-      );
-      if (copied > 0) {
-        await createAuditEntry({
-          entityType: AuditEntityType.file,
-          entityId: project.id,
-          projectId: project.id,
-          userId: user.id,
-          action: AuditAction.file_uploaded,
-          description: `Copió ${copied} adjunto${copied === 1 ? "" : "s"} del lead al proyecto`,
-        });
-      }
-    } catch (err) {
-      request.log.error({ err, leadId: lead.id, projectId: project.id }, "copy lead attachments failed");
-    }
-
-    // Fotos y videos de la visita de ventas: van aparte porque cada uno tiene
-    // que quedar donde el proyecto lo muestra (galería de obra / sección
-    // Videos), no sueltos entre los documentos. Mismo criterio que arriba: si
-    // falla, el proyecto ya está creado y eso es lo que importa.
-    try {
-      const { fotos, videos } = await prisma.$transaction((tx) =>
-        moveLeadMediaToProject(tx, lead.id, project.id, user.id),
-      );
-      if (fotos > 0 || videos > 0) {
-        const partes = [
-          fotos > 0 ? `${fotos} foto${fotos === 1 ? "" : "s"}` : null,
-          videos > 0 ? `${videos} video${videos === 1 ? "" : "s"}` : null,
-        ].filter(Boolean);
-        await createAuditEntry({
-          entityType: AuditEntityType.file,
-          entityId: project.id,
-          projectId: project.id,
-          userId: user.id,
-          action: AuditAction.file_uploaded,
-          description: `Pasó ${partes.join(" y ")} de la visita de ventas al proyecto`,
-        });
-      }
-    } catch (err) {
-      request.log.error({ err, leadId: lead.id, projectId: project.id }, "move lead media failed");
-    }
-
-    // El pago al instalador ya NO se crea al ganar: lo crea el calendario al
-    // agendar la obra con un equipo tercerizado (syncInstallerPaymentForProject).
-    // Crearlo acá dejaba "sin asignar" también las obras de equipo propio.
-
-    // Copia la propuesta comercial (última versión publicada) como adjunto del
-    // proyecto. La v2 guarda los PDF sueltos en disco (sin FileAttachment), por
-    // eso no la agarra copyLeadAttachmentsToProject. Best-effort igual que arriba.
-    try {
-      const { copied } = await copyLatestProposalToProject(lead.id, project.id, user.id);
-      if (copied > 0) {
-        await createAuditEntry({
-          entityType: AuditEntityType.file,
-          entityId: project.id,
-          projectId: project.id,
-          userId: user.id,
-          action: AuditAction.file_uploaded,
-          description: `Copió la propuesta comercial del lead al proyecto (${copied} PDF)`,
-        });
-      }
-    } catch (err) {
-      request.log.error({ err, leadId: lead.id, projectId: project.id }, "copy lead proposal failed");
-    }
-
-    // Vincula los comentarios del lead al proyecto (relink: preserva autor y
-    // fecha; el leadId se conserva, así quedan visibles en el lead y el proyecto).
-    try {
-      const { count } = await prisma.comment.updateMany({
-        where: { leadId: lead.id, projectId: null, deletedAt: null },
-        data: { projectId: project.id },
-      });
-      if (count > 0) {
-        await createAuditEntry({
-          entityType: AuditEntityType.project,
-          entityId: project.id,
-          projectId: project.id,
-          userId: user.id,
-          action: AuditAction.comment_added,
-          description: `Vinculó ${count} comentario${count === 1 ? "" : "s"} del lead al proyecto`,
-        });
-      }
-    } catch (err) {
-      request.log.error({ err, leadId: lead.id, projectId: project.id }, "relink lead comments failed");
-    }
-
-    // Ganado con financiación bancaria: la cuota única del banco queda prevista.
-    if (body.modalidadPago === "FINANCIACION_BANCARIA") {
-      await planFinanciacionBancaria(project.id, user.id).catch((err) =>
-        request.log.error({ err, projectId: project.id }, "plan financiación bancaria failed"),
-      );
-    }
 
     const projectWithStages = await prisma.project.findUniqueOrThrow({
       where: { id: project.id },

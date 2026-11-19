@@ -124,6 +124,14 @@ export const LATEST_RELEASE: Release = {
         "Se le puede pedir que muestre el costeo, con lo que valía cada ítem cambiado a mano.",
       ],
     },
+    {
+      title: "Proyectos desde el chat de Claude",
+      items: [
+        "Desde el chat de Claude se puede convertir en proyecto un lead ganado, con la ciudad, el departamento y qué se le factura.",
+        "También se puede crear un proyecto desde cero; si ya hay un proyecto o un lead con ese nombre, avisa y no lo crea.",
+        "Claude muestra antes qué va a crear y lo crea solo cuando se le confirma.",
+      ],
+    },
   ],
 };
 

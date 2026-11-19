@@ -165,6 +165,7 @@ enum AuditEntityType {
   marketing_automatizacion
   caso_tecnico
   ute_tramite_comercial
+  cotizacion
 }
 
 enum AuditAction {
@@ -726,6 +727,8 @@ model User {
   contactosCreados               Contacto[]                     @relation("ContactoCreadoPor")
   whatsappConversacionesInternas WhatsAppConversacion[]         @relation("WhatsAppConversacionUsuario")
   empresasCreadas                Empresa[]                      @relation("EmpresaCreadaPor")
+  cotizacionesCreadas            Cotizacion[]                   @relation("CotizacionCreadaPor")
+  cotizacionesVendidas           Cotizacion[]                   @relation("CotizacionVendedor")
 
   @@index([deletedAt])
   @@index([tenantId])
@@ -919,6 +922,7 @@ model Project {
   facturarSinIvaUsd               Decimal?                       @db.Decimal(14, 2)
   facturaEmitida                  Boolean                        @default(false)
   facturaEmitidaEn                DateTime?                      @db.Timestamptz(6)
+  cotizaciones                    Cotizacion[]
   deletedAt                       DateTime?                      @db.Timestamptz(6)
   createdAt                       DateTime                       @default(now()) @db.Timestamptz(6)
   updatedAt                       DateTime                       @updatedAt @db.Timestamptz(6)
@@ -1969,6 +1973,7 @@ model SalesLead {
   attachments             FileAttachment[]        @relation("LeadAttachments")
   whatsappConversaciones  WhatsAppConversacion[]  @relation("WhatsAppConversacionLead")
   videos                  ProjectVideo[]          @relation("SalesLeadVideos")
+  cotizaciones            Cotizacion[]
   deletedAt               DateTime?               @db.Timestamptz(6)
   createdAt               DateTime                @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime                @updatedAt @db.Timestamptz(6)
@@ -2667,8 +2672,8 @@ model UteTramiteComercial {
   detalle String?
   estado  UteTramiteComercialEstado @default(PEDIDO)
 
-  caseNumber  String?
-  notes       String?
+  caseNumber   String?
+  notes        String?
   solicitadoEl DateTime? @db.Date
   resueltoEl   DateTime? @db.Date
 
@@ -7102,6 +7107,7 @@ model Contacto {
   whatsappConversaciones WhatsAppConversacion[]
   createdById            String?
   createdBy              User?                  @relation("ContactoCreadoPor", fields: [createdById], references: [id], onDelete: SetNull)
+  cotizaciones           Cotizacion[]
   deletedAt              DateTime?              @db.Timestamptz(6)
   createdAt              DateTime               @default(now()) @db.Timestamptz(6)
   updatedAt              DateTime               @updatedAt @db.Timestamptz(6)
@@ -7127,6 +7133,7 @@ model Empresa {
   projects       Project[]
   createdById    String?
   createdBy      User?             @relation("EmpresaCreadaPor", fields: [createdById], references: [id], onDelete: SetNull)
+  cotizaciones   Cotizacion[]
   deletedAt      DateTime?         @db.Timestamptz(6)
   createdAt      DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt      DateTime          @updatedAt @db.Timestamptz(6)
@@ -7151,4 +7158,94 @@ model ContactoEmpresa {
   @@id([contactoId, empresaId])
   @@index([empresaId])
   @@map("contactos_empresas")
+}
+
+// ─── Cotizaciones a medida (Ventas) ─────────────────────────────────────────
+// Cotización armada a mano, fuera del cotizador solar: ampliaciones, cargadores
+// de auto eléctrico, gabinetes, cualquier cosa. Se cuelga de al menos uno de
+// lead / contacto / empresa / proyecto. Los datos del cliente se copian al
+// crearla (son lo que sale en el PDF) y se pueden corregir sin tocar la ficha.
+
+enum CotizacionEstado {
+  BORRADOR
+  ENVIADA
+  ACEPTADA
+  RECHAZADA
+}
+
+model Cotizacion {
+  id               String           @id @default(cuid())
+  /// "2026-006": año + correlativo del año.
+  numero           String           @unique
+  anio             Int
+  correlativo      Int
+  estado           CotizacionEstado @default(BORRADOR)
+  /// Para quién es. Al menos uno (lo valida el service).
+  leadId           String?
+  lead             SalesLead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  contactoId       String?
+  contacto         Contacto?        @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+  empresaId        String?
+  empresa          Empresa?         @relation(fields: [empresaId], references: [id], onDelete: SetNull)
+  projectId        String?
+  project          Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  clienteNombre    String
+  clienteDireccion String?
+  clienteCiudad    String?
+  clienteTelefono  String?
+  clienteEmail     String?
+  fecha            DateTime         @db.Date
+  validaHasta      DateTime         @db.Date
+  moneda           Moneda           @default(USD)
+  vendedorId       String?
+  vendedor         User?            @relation("CotizacionVendedor", fields: [vendedorId], references: [id], onDelete: SetNull)
+  /// "Servicios profesionales", "Suministro de materiales"…
+  formaTrabajo     String?
+  /// Bloque opcional antes del detalle ("Alcance de la ampliación").
+  alcanceTitulo    String?
+  alcanceTexto     String?
+  /// Renglones del detalle: ítems y títulos de sección (ver cotizaciones.schema.ts).
+  items            Json
+  ivaTasa          Decimal          @default(22) @db.Decimal(5, 2)
+  /// Calculados por el server al guardar (precios sin IVA).
+  subtotal         Decimal          @default(0) @db.Decimal(14, 2)
+  iva              Decimal          @default(0) @db.Decimal(14, 2)
+  total            Decimal          @default(0) @db.Decimal(14, 2)
+  condicionesPago  String?
+  plazoEntrega     String?
+  /// Listas de un renglón por línea.
+  incluye          String?
+  noIncluye        String?
+  observaciones    String?
+  createdById      String?
+  createdBy        User?            @relation("CotizacionCreadaPor", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt        DateTime?        @db.Timestamptz(6)
+  createdAt        DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@unique([anio, correlativo])
+  @@index([leadId])
+  @@index([contactoId])
+  @@index([empresaId])
+  @@index([projectId])
+  @@index([deletedAt])
+  @@map("cotizaciones")
+}
+
+/// Artículos de venta: lo que se ofrece en las cotizaciones a medida, con su
+/// precio de venta (sin IVA). Aparte del catálogo de materiales, que tiene
+/// precios de compra.
+model ArticuloVenta {
+  id        String   @id @default(cuid())
+  nombre    String
+  detalle   String?
+  unidad    String   @default("un")
+  precio    Decimal  @db.Decimal(14, 2)
+  moneda    Moneda   @default(USD)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([activo])
+  @@map("articulos_venta")
 }

@@ -1,5 +1,5 @@
 // Consulta de proyectos: obra, etapas, trámite UTE, materiales, documentos e
-// historial. Todo lectura, salvo comentar.
+// historial. Todo lectura, salvo comentar y crear un proyecto desde cero.
 //
 // Se lee de los modelos con los mismos servicios que usa la aplicación
 // (getCurrentStage, countdownForStage, serializeUteProcess…) y no de las rutas
@@ -29,7 +29,16 @@ import { getStageLabel } from "../../../services/pipeline-definitions.js";
 import { serializeUteProcess, UTE_PROCESS_INCLUDE } from "../../../services/uteProcess.service.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { buildDownloadUrl } from "../descargas.routes.js";
-import { campos, fechaCorta, fechaLarga, texto, usd } from "../format.js";
+import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, texto, usd } from "../format.js";
+import { crearProyectoDesdeCero } from "../../../services/proyecto-alta.service.js";
+import {
+  describirFacturacion,
+  FACTURACION_INPUT,
+  FECHA,
+  facturacionDesdeMcp,
+  mismoCliente,
+  normalizarNombre,
+} from "./alta-proyecto.logic.js";
 
 function auditMeta(tool: string) {
   return { source: "mcp", tool };
@@ -58,7 +67,187 @@ function semaforo(c: { status: string; remainingBusinessDays: number } | null): 
   return c.status === "warning" ? `${quedan} (al límite)` : quedan;
 }
 
+/**
+ * Proyectos y leads con un nombre parecido, para no duplicar un cliente al
+ * crear un proyecto a mano. Una línea legible por cada uno.
+ */
+async function buscarParecidos(nombre: string): Promise<string[]> {
+  const palabras = normalizarNombre(nombre).split(" ").filter((w) => w.length >= 3);
+  if (palabras.length === 0) return [];
+  // La palabra más larga es la más selectiva para traer candidatos; el filtro
+  // fino lo hace mismoCliente (ignora tildes y orden).
+  const clave = palabras.reduce((a, b) => (b.length > a.length ? b : a));
+  const [proyectos, leads] = await Promise.all([
+    prisma.project.findMany({
+      where: { deletedAt: null, clientName: { contains: clave, mode: "insensitive" } },
+      select: { code: true, clientName: true, status: true },
+      take: 50,
+    }),
+    prisma.salesLead.findMany({
+      where: { deletedAt: null, clientName: { contains: clave, mode: "insensitive" } },
+      select: { id: true, code: true, clientName: true, stage: true, convertedToProjectId: true },
+      take: 50,
+    }),
+  ]);
+  return [
+    ...proyectos
+      .filter((p) => mismoCliente(nombre, p.clientName))
+      .map((p) => `- Proyecto ${p.clientName} [${p.code}] · ${ESTADO_LABEL[p.status]}`),
+    ...leads
+      .filter((l) => !l.convertedToProjectId && mismoCliente(nombre, l.clientName))
+      .map((l) => `- Lead ${l.clientName} [${l.code}] (id: ${l.id}) · ${ETAPA_LABEL[l.stage] ?? l.stage}`),
+  ].slice(0, 10);
+}
+
 export function registerProyectosTools(server: McpServer, user: McpUser) {
+  // ── Alta ─────────────────────────────────────────────────────────────────
+
+  server.registerTool(
+    "crear_proyecto",
+    {
+      title: "Crear proyecto desde cero",
+      description:
+        "Crea un proyecto sin cliente potencial detrás, igual que \"Nuevo proyecto\" en Voltia PM: " +
+        "arma las etapas de obra y el trámite UTE. Si el cliente vino por Ventas y su lead está " +
+        "ganado, NO usar esta: usar convertir_lead_en_proyecto, que además pasa la propuesta, " +
+        "los adjuntos y los comentarios. Antes de crear busca proyectos y leads con un nombre " +
+        "parecido y, si hay, no crea nada y los lista. Sin `confirmar` solo devuelve la vista " +
+        "previa; pasá `confirmar: true` recién después de que el usuario la vio y dijo que sí.",
+      inputSchema: {
+        nombre_cliente: z.string().min(1),
+        potencia_kwp: z.number().positive(),
+        ciudad: z.string().min(1).describe("Ciudad o localidad de la obra"),
+        departamento: z.string().min(1).describe("Departamento de la obra (Montevideo, Canelones…)"),
+        facturacion: FACTURACION_INPUT.optional(),
+        monto_usd: z.number().positive().optional().describe("Precio de venta con IVA"),
+        telefono: z.string().optional(),
+        email: z.string().email().optional(),
+        direccion: z.string().optional(),
+        asesor: z
+          .string()
+          .optional()
+          .describe("Nombre o email del vendedor. Si no se pasa, queda sin vendedor."),
+        fecha_venta: FECHA.optional().describe("YYYY-MM-DD. Por defecto, hoy."),
+        fecha_inicio: FECHA.optional().describe("YYYY-MM-DD. Por defecto, hoy."),
+        fecha_fin_prevista: FECHA.optional().describe("YYYY-MM-DD. Opcional."),
+        modalidad_pago: z.enum(["DIRECTO_50_50", "FINANCIACION_BANCARIA"]).optional(),
+        no_es_duplicado: z
+          .literal(true)
+          .optional()
+          .describe("Pasar solo si ya se avisó de un parecido y el usuario confirmó que es otro cliente."),
+        confirmar: z
+          .literal(true)
+          .optional()
+          .describe("Solo después de que el usuario vio la vista previa y aprobó. Sin esto no se crea nada."),
+      },
+    },
+    async (args) => {
+      // Mismo permiso que el botón "Nuevo proyecto" de la pantalla.
+      await requirePermission(user, Module.OPERACIONES, Action.VIEW);
+
+      const facturacion = args.facturacion ? facturacionDesdeMcp(args.facturacion) : undefined;
+
+      let salespersonId: string | undefined;
+      let asesorNombre: string | null = null;
+      if (args.asesor) {
+        const q = args.asesor.trim();
+        const candidatos = await prisma.user.findMany({
+          where: {
+            deletedAt: null,
+            OR: [
+              { email: { equals: q, mode: "insensitive" } },
+              { name: { contains: q, mode: "insensitive" } },
+            ],
+          },
+          select: { id: true, name: true, email: true },
+          take: 5,
+        });
+        if (candidatos.length !== 1) {
+          return texto(
+            candidatos.length === 0
+              ? `No encontré ningún usuario "${q}" para poner de vendedor. No creé el proyecto.`
+              : `Hay más de un usuario que coincide con "${q}": ` +
+                  candidatos.map((c) => `${c.name} (${c.email})`).join(", ") +
+                  ". Pasame el email. No creé el proyecto.",
+          );
+        }
+        salespersonId = candidatos[0].id;
+        asesorNombre = candidatos[0].name;
+      }
+
+      if (!args.no_es_duplicado) {
+        const parecidos = await buscarParecidos(args.nombre_cliente);
+        if (parecidos.length > 0) {
+          return texto(
+            `No creé el proyecto: ya hay clientes con un nombre parecido a "${args.nombre_cliente}".`,
+            parecidos.join("\n"),
+            "Si es un lead ganado sin proyecto, conviene convertir_lead_en_proyecto. Si es otro " +
+              "cliente, confirmalo con el usuario y volvé a llamar con no_es_duplicado: true.",
+          );
+        }
+      }
+
+      const usdTexto = (n: number) => usd(n) ?? "—";
+      const resumen = (p: { monto: number | null; fechaVenta: string }) =>
+        campos([
+          ["Cliente", args.nombre_cliente.trim()],
+          ["Potencia", `${args.potencia_kwp} kWp`],
+          ["Monto", p.monto != null ? usd(p.monto) : null],
+          ["Ubicación", `${args.ciudad.trim()}, ${args.departamento.trim()}`],
+          ["Teléfono", args.telefono ?? null],
+          ["Email", args.email ?? null],
+          ["Vendedor", asesorNombre],
+          ["Fecha de venta", p.fechaVenta],
+          ["Modalidad de pago", args.modalidad_pago ?? null],
+          [
+            "Facturación",
+            facturacion ? describirFacturacion(facturacion, usdTexto) : "A definir (no lleva factura hasta que se cargue)",
+          ],
+        ]);
+
+      if (!args.confirmar) {
+        return texto(
+          "Vista previa — todavía NO se creó nada. Así quedaría el proyecto:",
+          resumen({ monto: args.monto_usd ?? null, fechaVenta: args.fecha_venta ?? "hoy" }),
+          "Si el usuario está de acuerdo, volvé a llamar con los mismos datos y confirmar: true.",
+        );
+      }
+
+      const project = await crearProyectoDesdeCero({
+        body: {
+          clientName: args.nombre_cliente.trim(),
+          capacityKwp: args.potencia_kwp,
+          locationCity: args.ciudad.trim(),
+          locationProvince: args.departamento.trim(),
+          // Mismo factor que el modal de "Nuevo proyecto".
+          estimatedMwhYear: Math.round(args.potencia_kwp * 1.478 * 100) / 100,
+          budgetUsd: args.monto_usd ?? null,
+          clientPhone: args.telefono ?? null,
+          clientEmail: args.email ?? null,
+          clientAddress: args.direccion ?? null,
+          salespersonId,
+          saleDate: args.fecha_venta,
+          startDate: args.fecha_inicio,
+          plannedEndDate: args.fecha_fin_prevista ?? null,
+          modalidadPago: args.modalidad_pago,
+          facturacion,
+        },
+        userId: user.id,
+        auditMetadata: auditMeta("crear_proyecto"),
+      });
+
+      return texto(
+        `Listo. Creé el proyecto ${project.code} de ${project.clientName} (id: ${project.id}).`,
+        resumen({
+          monto: project.budgetUsd != null ? Number(project.budgetUsd) : null,
+          fechaVenta: project.saleDate ? (fechaCorta(project.saleDate) ?? "—") : "—",
+        }),
+        "Se armaron las etapas de obra y el trámite UTE. Equipos, paneles e inversor se cargan " +
+          "después desde la ficha del proyecto en Voltia PM.",
+      );
+    },
+  );
+
   // ── Búsqueda y ficha ─────────────────────────────────────────────────────
 
   server.registerTool(

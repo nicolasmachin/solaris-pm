@@ -131,6 +131,7 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 | `crear_lead` | `VENTAS:CREATE` | Alta. Se asigna al usuario que la crea. Acepta `origen` y `origen_detalle` (cómo nos conoció), opcionales acá; si no vienen, avisa que quedó sin cargar (cap. 02, Origen del lead). |
 | `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca, `origen` y `origen_detalle`, y las cinco fechas del proceso (alta, propuesta enviada, visita agendada, visita realizada, cierre) como día `AAAA-MM-DD` o `"borrar"`. Las fechas se guardan a las 00:00 de Uruguay, como en la app (cap. 02, Fechas del proceso). |
 | `mover_etapa` | `VENTAS:EDIT` | Cambia la etapa del pipeline. |
+| `convertir_lead_en_proyecto` | `VENTAS:CREATE` | Convierte un lead ganado en proyecto, como «Crear proyecto desde lead». Pide `ciudad`, `departamento` y `facturacion` (`{normal}` o `{normal:false, monto_sin_iva_usd, motivo}`); potencia y monto salen de la última propuesta publicada (o del estimado del lead) salvo que se pasen. Sin `confirmar: true` devuelve una vista previa con el origen de cada dato y avisa si queda sin monto. Usa `convertirLeadAProyecto()` de `services/proyecto-alta.service.ts`, el mismo que `POST /leads/:id/convert`. |
 | `comentar_lead` | `VENTAS:COMMENT` | Deja un comentario en el historial. |
 
 ### Minutas y adjuntos del cliente potencial
@@ -325,6 +326,7 @@ Es la única herramienta que responde sin que haya que nombrar un cliente. Con
 | `historial_proyecto` | `OPERACIONES:VIEW` | El timeline unificado: etapas, comentarios, interacciones, traspasos, tickets y encuestas. Los comentarios salen **enteros** (`getClienteTimeline()` no los recorta; verificado el 21/10/2026): lo que limita es la cantidad de eventos, 20 por defecto y hasta 50 con `limite`. |
 | `pendientes_proyecto` | `OPERACIONES:VIEW` | Los pendientes de la obra **de todo el equipo**, no solo los propios. |
 | `comentar_proyecto` | `OPERACIONES:COMMENT` | Deja un comentario en el historial de la obra. |
+| `crear_proyecto` | `OPERACIONES:VIEW` | Proyecto desde cero, como «Nuevo proyecto» (mismo permiso que esa ruta). Obligatorios: nombre, kWp, ciudad y departamento; opcionales monto, contacto, `asesor` (nombre o mail, tiene que dar un único usuario), fechas, modalidad de pago y `facturacion` (si no viene, queda a definir). Antes busca proyectos y leads sin convertir con un nombre parecido (`mismoCliente()` de `alta-proyecto.logic.ts`: todas las palabras de 3+ letras del nombre más corto, sin tildes) y, si hay, no crea salvo `no_es_duplicado: true`. Sin `confirmar: true`, vista previa. Usa `crearProyectoDesdeCero()` de `proyecto-alta.service.ts`, el mismo que `POST /projects`. |
 | `responder_ticket` | `TICKETS:COMMENT` o `TICKETS:EDIT` | Comenta un ticket abierto. Interno por defecto; con `para_el_cliente` lo ve el cliente. Sin `confirmar`, solo vista previa. |
 
 Se leen los modelos con los mismos servicios que usa la aplicación
@@ -670,8 +672,12 @@ el servidor. Tampoco lee Word ni abre los ZIP de documentación de UTE.
 - **`editar_lead` no toca el nombre ni el asesor.** Renombrar por dictado es
   como se terminan duplicando clientes, y reasignar dueño merece la pantalla.
 - **`mover_etapa` a "cerrado ganado" no crea el proyecto**, y lo dice en la
-  respuesta: la conversión pide ciudad, departamento y potencia que el cliente
-  potencial no tiene.
+  respuesta: la conversión es un paso aparte (`convertir_lead_en_proyecto`)
+  porque pide ciudad, departamento y qué se le factura, que el lead no tiene y
+  hay que confirmar con el usuario.
+- **Las dos altas de proyecto no se ejecutan solas.** `convertir_lead_en_proyecto`
+  y `crear_proyecto` tienen `confirmar` literal `true`; sin él solo muestran la
+  vista previa. Las auditorías llevan `source: "mcp"` y el nombre de la tool.
 - **`ver_propuesta` no devuelve margen, costos ni comisiones.** Del snapshot se
   toman solo los campos comerciales, armados a mano.
 - **`crear_pendiente` no crea huérfanos.** Sin cliente ni proyecto, pide

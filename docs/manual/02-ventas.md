@@ -3,7 +3,7 @@
 > **Capítulo parcial.** Están escritas las secciones "Fechas del proceso",
 > "Origen del lead (¿Cómo nos conoció?)", "Cotizador de propuestas: precargas y saludo de la carta", "Varias
 > instalaciones en una misma propuesta", "Costeo a medida de una cotización",
-> "Cotizador B2B: propuestas a empresas", "Qué se le factura: se define al
+> "Cotizaciones a medida", "Cotizador B2B: propuestas a empresas", "Qué se le factura: se define al
 > crear el proyecto", "Comisión del asesor: cómo se registra al ganar",
 > "Leads sin tomar", "Instagram: contestar desde Ventas" y "Contactos y empresas (CRM)". El resto del módulo funciona en producción pero
 > todavía no está documentado.
@@ -730,6 +730,121 @@ no un descuido.
 
 ---
 
+# Cotizaciones a medida
+
+## Para qué existe
+
+Para cotizar lo que no sale del cotizador solar: ampliaciones de paneles,
+cargadores de auto eléctrico, trabajos eléctricos o cualquier cosa que se arme
+renglón por renglón. Antes se hacían en otro programa (las 2026-002, 004 y 005);
+el formato del PDF copia esas, en especial las de Rodrigo Álvarez y Rubén Penedo,
+con las secciones, la unidad y el Incluye / No incluye de la de Julio Ciambelli.
+
+## Cómo se usa
+
+- **Ventas → Cotizaciones → A medida** (`/ventas/cotizaciones`): lista con
+  filtro por estado y búsqueda (número, cliente, nombre del contacto, del lead o
+  del cliente del proyecto). La cotización se abre con `?id=<id>`, y
+  `?id=nueva` abre una en blanco.
+- El constructor es un `LargeModal` a dos columnas: el formulario a la
+  izquierda y la vista previa del PDF a la derecha, que se regenera un segundo
+  después del último cambio.
+- **Para quién**: un buscador único que trae leads, contactos, empresas y
+  proyectos, o el botón **Cliente nuevo** (nombre obligatorio, teléfono y mail).
+  Al elegir, se copian los datos del cliente al formulario, que se pueden
+  corregir a mano.
+- Fecha, validez (por defecto, 30 días), moneda (USD o UYU), vendedor (por
+  defecto, el usuario que la arma) y forma de trabajo.
+- **Ítems**: renglones de ítem (descripción, detalle, cantidad, unidad, precio
+  unitario) o de sección (un título que agrupa). Se suben, bajan y quitan.
+  **Desde artículos** agrega uno de la lista de artículos de venta; avisa si el
+  artículo está en otra moneda que la cotización (no convierte).
+- Totales con IVA editable (22 % por defecto), condiciones de pago, plazo,
+  incluye, no incluye y observaciones.
+- Barra de abajo: **Crear cotización / Guardar**, **Bajar PDF**, **Duplicar**, **Borrar** y
+  el estado (borrador, enviada, aceptada, rechazada).
+- **Ventas → Cotizaciones → Artículos de venta** (`/ventas/articulos`): la lista
+  de artículos con nombre, detalle, unidad, precio y moneda, en una ficha
+  lateral (`Sheet`).
+
+## Cómo funciona
+
+- Modelos `Cotizacion` (`cotizaciones`) y `ArticuloVenta` (`articulos_venta`),
+  enum `CotizacionEstado`. Validación en `services/cotizaciones/cotizaciones.schema.ts`
+  (`contenidoSchema`, `destinoSchema`, `renglonSchema`, `articuloBody`).
+- Lógica en `cotizaciones.service.ts`; rutas en `routes/cotizaciones.routes.ts`.
+- **Los ítems se guardan como JSON** en la cotización, no en una tabla aparte.
+  El artículo elegido deja su `articuloId` en el renglón, pero el texto y el
+  precio se copian: cambiar el artículo después no cambia cotizaciones hechas.
+- **Los datos del cliente se copian** a la cotización (nombre, dirección,
+  ciudad, teléfono, mail). Si se corrige el contacto o el proyecto, la
+  cotización no se entera.
+- **Cliente nuevo**: `crearCotizacion()` crea primero el contacto con
+  `crearContacto()` del CRM y después la cotización apuntando a él. Rige la
+  regla del CRM: un teléfono es de un solo contacto, así que si el teléfono ya
+  existe el alta falla y hay que elegir el contacto existente.
+- **Numeración**: `AAAA-NNN` por año, arrancando en 2026-006 (las 001 a 005 se
+  hicieron fuera de Voltia PM). El siguiente número cuenta también las
+  cotizaciones borradas (borrado lógico), así que un número borrado no se
+  reutiliza. Si dos se crean a la vez, el choque de número único se reintenta.
+- **El PDF** se arma con HTML (`template.ts`) y Puppeteer
+  (`renderHtmlToPdf`), en `pdf.ts` → `generarCotizacionPdf()`. Para que entre
+  en una hoja, el HTML mide el contenido y lo achica con `zoom` hasta un mínimo
+  de 0,8; si ni así entra, sigue en una segunda hoja. La vista previa
+  (`POST /cotizaciones/vista-previa`) usa el mismo armado con lo que está en
+  pantalla, sin guardar.
+- **Precios sin IVA**: el total es la suma de cantidad × precio unitario, más
+  el IVA a la tasa de la cotización.
+- **Duplicar** crea una cotización nueva (número nuevo, en borrador) con el
+  mismo contenido y destinatario.
+- Cada alta, edición, cambio de estado y borrado deja auditoría con el tipo
+  `cotizacion`.
+
+## Permisos
+
+Todo cuelga del módulo **VENTAS**:
+
+| Endpoint | Acción |
+|---|---|
+| `GET /api/cotizaciones`, `GET /api/cotizaciones/:id`, `GET /api/cotizaciones/destinatarios`, `GET /api/cotizaciones/:id/pdf`, `POST /api/cotizaciones/vista-previa` | VIEW |
+| `POST /api/cotizaciones`, `POST /api/cotizaciones/:id/duplicar` | CREATE |
+| `PUT /api/cotizaciones/:id`, `PATCH /api/cotizaciones/:id/estado` | EDIT |
+| `DELETE /api/cotizaciones/:id` | DELETE |
+| `GET /api/articulos-venta` | VIEW |
+| `POST /api/articulos-venta`, `PUT /api/articulos-venta/:id` | EDIT |
+
+Las dos pantallas están detrás de `PermissionRoute` VENTAS VIEW.
+
+## Reglas y decisiones
+
+- **Al menos un destinatario** (lead, contacto, empresa o proyecto) o un
+  cliente nuevo; si no, `SIN_DESTINATARIO`.
+- **No hay que crear el cliente antes**: el cliente nuevo se carga en el mismo
+  formulario, solo con el nombre obligatorio.
+- **Los artículos no se borran, se desactivan**: un artículo inactivo no
+  aparece para agregar, pero las cotizaciones que lo usaron quedan iguales.
+- **"Vencida" es solo visual**: la lista la muestra cuando la cotización está
+  enviada y pasó la fecha de validez. No cambia el estado guardado ni hay un
+  proceso que la marque.
+- **"Bajar PDF" exige guardar primero**: está deshabilitado con cambios sin
+  guardar, para que el PDF bajado sea igual a lo guardado. La vista previa sí
+  muestra lo no guardado.
+
+## Casos borde
+
+- **La vista previa depende del visor de PDF del navegador**: es un `iframe`
+  con el PDF. En un navegador sin visor (algunos celulares, Chrome sin
+  pantalla) queda en blanco aunque el PDF se haya generado bien; "Bajar PDF"
+  funciona igual.
+- **Artículo en otra moneda**: se agrega con su precio tal cual, solo se avisa.
+  Hay que corregir el precio a mano.
+- **Cotización muy larga**: si con zoom 0,8 no entra, el PDF sale en dos hojas.
+- **Cerrar el constructor con cambios sin guardar** pide confirmación.
+- **No está en el MCP**: desde el chat de Claude no se pueden ver ni armar estas
+  cotizaciones.
+
+---
+
 # Cotizador B2B: propuestas a empresas
 
 ## Para qué existe
@@ -908,7 +1023,11 @@ IVA y la copia para WhatsApp (ver capítulo 08).
 ### Cómo funciona
 
 `POST /leads/:id/convert` recibe `facturacion` y sin ella responde
-`MISSING_PROJECT_FIELDS` («qué se le factura al cliente»). Se guarda con
+`MISSING_PROJECT_FIELDS` («qué se le factura al cliente»).
+La lógica de la conversión vive en `services/proyecto-alta.service.ts` →
+`convertirLeadAProyecto()`, compartida con la tool del chat de Claude
+`convertir_lead_en_proyecto` (cap. 13), que pide lo mismo y muestra una vista
+previa antes de crear. Se guarda con
 `datosFacturacion()` de `services/finance/a-facturar.service.ts`; el detalle de
 los campos y de cómo lo usa Finanzas está en el capítulo 08, «Qué se le factura
 (definido al ganar el lead)».
