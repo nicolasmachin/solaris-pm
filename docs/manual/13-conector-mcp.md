@@ -425,7 +425,7 @@ de Experiencia del cliente).
 
 ### Finanzas
 
-Todas de lectura. Cada número sale del **mismo servicio que usa la pantalla**:
+Todas de lectura salvo las dos de facturación. Cada número sale del **mismo servicio que usa la pantalla**:
 si el chat y la aplicación dieran cifras distintas para la misma pregunta, el
 error estaría en el servicio y se vería en los dos lados.
 
@@ -436,6 +436,41 @@ error estaría en el servicio y se vería en los dos lados.
 | `cobros_pendientes` | ídem | Cuotas de los planes vencidas sin cobrar (con días de atraso) y las que vencen en un rango (por defecto, los próximos 30 días). Avisa cuánto deben las obras sin plan, que no aparecen como cuotas. |
 | `comisiones` | `COMISIONES:VIEW` | Comisiones pendientes (o pagadas, o todas) con vencimiento, más lo pendiente total y lo pagado en el año. Filtra por asesor y año de venta. |
 | `pagos_instaladores` | `PAGOS_INSTALADOR:VIEW` | Mano de obra tercerizada: total, pagado y saldo por obra e instalador, vencidos y trabajos sin instalador asignado. |
+| `facturar_proyecto` | `FINANZAS:EDIT` | **Escribe (documento fiscal).** Emite la factura del proyecto por Biller. Sin `confirmar` devuelve la vista previa con todos los datos y una `huella`; emite solo con `confirmar: true` + esa `huella`. Ver abajo. |
+| `enviar_factura_whatsapp` | `FINANZAS:VIEW` | **Escribe.** Manda el PDF de la factura vigente del proyecto por WhatsApp (a pedido). Vista previa sin `confirmar`. |
+
+**Facturar desde el chat** (`tools/facturacion.ts`, lógica pura en
+`tools/facturacion.logic.ts` con su test `npm run test:mcp-facturacion`). Usa
+el mismo servicio que la pantalla (`services/biller/cfe-emitidos.service.ts`):
+`armarBorradorFactura()` arma el borrador con lo que falta facturar,
+`aplicarCambios()` le pone lo dictado (un documento de 12 dígitos es RUT →
+e-Factura; si no, cédula → e-Ticket; con `fecha_vencimiento` pasa a crédito),
+`validarBorrador()` lo valida y `emitirCfe()` emite. Después `guardarPdf()`
+guarda el PDF oficial (si falla no rompe: lo reintenta la pantalla).
+
+- **La `huella`** son 8 caracteres del sha256 del borrador exacto que se
+  mostró (`huellaBorrador()`). Al confirmar se vuelve a armar el borrador; si la
+  huella no coincide (alguien tocó la ficha, cambió la fecha, otro cobro), no
+  emite y devuelve la vista previa nueva. Es la garantía de que lo emitido es lo
+  que la persona vio.
+- **Con RUT** trae la razón social de DGI (`datosRutDgi()`); con `tercero`,
+  también el domicilio fiscal.
+- **No emite si el proyecto ya tiene factura** (`facturaVigente`): las notas de
+  crédito quedan solo en la pantalla, a propósito (anular es más delicado).
+- **No emite con problemas**: además de los de `validarBorrador()`, exige
+  cédula/RUT y domicilio, y avisa si no hay monto o si el proyecto está
+  «A definir».
+- **El mail** lo manda Biller (`emailCliente` del borrador) y solo en el
+  ambiente productivo; en el de pruebas la vista previa dice que no se manda.
+  `sin_mail` lo saca.
+
+`enviar_factura_whatsapp` busca la factura vigente (ESPERANDO_DGI o ACEPTADO,
+sin referencia) y su PDF, elige la bandeja y el teléfono (por defecto el
+primero del proyecto) y antes de mandar mira `ventanaAbierta()`: la API de
+WhatsApp solo deja mandar un documento libre dentro de las 24 horas del último
+mensaje del cliente. Fuera de la ventana no manda y lo dice. Manda con
+`mandarArchivo()` de `bandejas.service.ts`, así que queda en el chat de la
+bandeja como cualquier envío.
 
 **Los períodos** se resuelven en `routes/mcp/periodo.ts` → `resolverPeriodo()`:
 `semana` (`en_curso` o `anterior`, de lunes a domingo), `mes` + `anio`,
@@ -675,6 +710,8 @@ el servidor. Tampoco lee Word ni abre los ZIP de documentación de UTE.
   respuesta: la conversión es un paso aparte (`convertir_lead_en_proyecto`)
   porque pide ciudad, departamento y qué se le factura, que el lead no tiene y
   hay que confirmar con el usuario.
+- **No hace notas de crédito.** `facturar_proyecto` emite solo la primera
+  factura; si ya hay una, manda a la pantalla.
 - **Las dos altas de proyecto no se ejecutan solas.** `convertir_lead_en_proyecto`
   y `crear_proyecto` tienen `confirmar` literal `true`; sin él solo muestran la
   vista previa. Las auditorías llevan `source: "mcp"` y el nombre de la tool.

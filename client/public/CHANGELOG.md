@@ -26,6 +26,15 @@
 - También se puede **crear un proyecto desde cero**, como con **Nuevo proyecto**. Antes de crearlo se fija si ya hay un proyecto o un lead con ese nombre y, si lo hay, avisa y no lo crea.
 - En los dos casos Claude primero muestra qué va a crear y de dónde sale cada dato, y lo crea solo cuando se le confirma.
 
+#### Facturación desde el chat de Claude
+
+- Desde el chat de Claude conectado a Voltia PM ahora se puede **emitir la factura de un proyecto**, igual que con **Emitir factura** en Finanzas → Facturación.
+- Antes de emitir, Claude muestra **todos los datos que van a salir en la factura**: tipo de comprobante, a nombre de quién, documento, domicilio, renglones, neto, IVA, total y a qué mail se manda. Si falta algo (la cédula, el domicilio, el monto) lo dice y no deja emitir. La factura sale solo cuando se le confirma.
+- Si entre que se mostraron los datos y la confirmación cambió algo, no emite y vuelve a mostrar los datos nuevos.
+- Si el cliente tiene mail, el sistema de facturación electrónica le manda el PDF solo.
+- **A pedido**, Claude también le manda la factura en PDF al cliente por WhatsApp. Se puede solo si el cliente escribió en las últimas 24 horas; si no, avisa.
+- Las notas de crédito se siguen haciendo desde la pantalla.
+
 ## v15.1
 
 ### 18 de noviembre de 2026

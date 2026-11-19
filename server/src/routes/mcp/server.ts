@@ -15,6 +15,7 @@ import { registerCasosTecnicosTools } from "./tools/casos-tecnicos.js";
 import { registerDiagnosticTools } from "./tools/diagnostico.js";
 import { registerDocumentosTools } from "./tools/documentos.js";
 import { registerExperienciaSolarTools } from "./tools/experiencia-solar.js";
+import { registerFacturacionTools } from "./tools/facturacion.js";
 import { registerFinanzasTools } from "./tools/finanzas.js";
 import { registerMarketingTools } from "./tools/marketing.js";
 import { registerMetricasTools } from "./tools/metricas.js";
@@ -97,6 +98,7 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerSoporteTools(server, user);
   registerCasosTecnicosTools(server, user);
   registerFinanzasTools(server, user);
+  registerFacturacionTools(server, user);
   registerMetricasTools(server, user);
   registerPesoObrasTools(server, user);
   registerMarketingTools(server, user);

@@ -1,6 +1,6 @@
 # Manual de trabajo de Administración y Finanzas
 
-**Voltia · Uruguay** · Versión 0.24 · del 12/11/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.25 · del 19/11/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -856,6 +856,28 @@ lado, se usa **«Marcar emitida»**, que registra la fecha y la saca de
 pendientes, y se adjunta el archivo desde la columna **Factura** (ícono de
 subir). Si se marcó por error, **«Revertir»**. Una factura emitida desde Voltia
 PM no se puede revertir así: se anula con una nota de crédito.
+
+**Emitir desde el chat de Claude.** La factura también se puede emitir
+pidiéndosela al chat de Claude conectado a Voltia PM (solo quien tiene permiso
+para emitir en Facturación). Arma el mismo borrador que la pantalla, con lo
+que falta facturar, y se le pueden dictar los cambios: la cédula o el RUT, el
+nombre, el domicilio, el monto sin IVA, el concepto, las fechas o el mail. Con
+un RUT trae la razón social de DGI.
+
+Antes de emitir, Claude **muestra todos los datos que van a salir**: el
+comprobante, a nombre de quién, el documento, el domicilio, los renglones, el
+neto, el IVA, el total y a qué mail se manda. Si falta algo lo dice y no deja
+emitir. **La factura sale solo cuando se le confirma**, y si entre que mostró
+los datos y la confirmación algo cambió en el proyecto, no emite: vuelve a
+mostrar los datos nuevos. Si el proyecto ya tiene una factura, no emite otra:
+la nota de crédito se sigue haciendo desde la pantalla.
+
+**Mandarle la factura al cliente.** Si el cliente tiene mail, el sistema de
+facturación electrónica le manda el PDF solo. **A pedido**, Claude también se lo
+manda por WhatsApp, desde la bandeja que corresponde, con un mensaje corto, y
+también muestra antes qué va a mandar y a quién. WhatsApp solo deja mandar un
+archivo si el cliente escribió en las últimas 24 horas; si no, Claude avisa y
+no lo manda.
 
 **Los cobros no emiten comprobantes.** Registrar un cobro sigue sin tocar la
 facturación electrónica. Si cada cobro tiene que llevar su recibo electrónico
@@ -1819,6 +1841,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.25 | 19 de noviembre de 2026 | La factura de un proyecto también se puede emitir desde el chat de Claude: muestra antes todos los datos y emite solo con la confirmación. A pedido, le manda el PDF al cliente por WhatsApp. |
 | 0.23 | 10 de noviembre de 2026 | En «¿Qué se le factura?», cuando se factura una parte, «Ver detalle» muestra la cuenta de la factura, el restante sin IVA, el total y el descuento de IVA, y se puede copiar para WhatsApp. El porcentaje y esa cuenta parten del precio de la propuesta. |
 | 0.22 | 29 de octubre de 2026 | El lector del banco empieza a leer las cuentas del BROU de lunes a viernes a las 8 y a las 18. El lector trae el asunto; sugerencias, IA y «Es este» para cada movimiento del banco; costos fijos: lista de lo que falta pagar en el mes con «Pagar»; Cobros: «A cobrar ahora», también en la lista de Cobros de Experiencia Solar. Con financiación bancaria, el cobro previsto es una sola cuota del banco. |
 | 0.21 | 27 de octubre de 2026 | La proforma de un proyecto con financiación puede ser la generada en Voltia PM o una subida, si se hizo por fuera. |

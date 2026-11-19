@@ -132,6 +132,13 @@ export const LATEST_RELEASE: Release = {
         "Claude muestra antes qué va a crear y lo crea solo cuando se le confirma.",
       ],
     },
+    {
+      title: "Facturación desde el chat de Claude",
+      items: [
+        "Desde el chat de Claude se puede emitir la factura de un proyecto: primero muestra todos los datos que van a salir y emite solo cuando se le confirma.",
+        "Si el cliente tiene mail, le llega el PDF solo; a pedido, Claude también se lo manda por WhatsApp (si el cliente escribió en las últimas 24 horas).",
+      ],
+    },
   ],
 };
 

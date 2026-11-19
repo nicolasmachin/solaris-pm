@@ -57,7 +57,8 @@
     "test:suministros": "node --import tsx --test src/services/suministros.service.test.ts src/services/ute-sync.suministros.test.ts",
     "test:mcp-obra": "node --import tsx --test src/routes/mcp/tools/obra.logic.test.ts",
     "test:mcp-propuesta": "node --import tsx --test src/routes/mcp/tools/propuesta.logic.test.ts",
-    "test:mcp-alta-proyecto": "node --import tsx --test src/routes/mcp/tools/alta-proyecto.logic.test.ts"
+    "test:mcp-alta-proyecto": "node --import tsx --test src/routes/mcp/tools/alta-proyecto.logic.test.ts",
+    "test:mcp-facturacion": "node --import tsx --test src/routes/mcp/tools/facturacion.logic.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

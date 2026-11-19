@@ -434,6 +434,10 @@ botón **Definir** en los proyectos viejos—, **Facturado**, **Falta facturar**
      fiscal y mail.
   2. **Confirmar**: muestra exactamente lo que se manda. Hay que tildar "Revisé
      los datos" para que se habilite **Emitir**.
+- **Desde el chat de Claude**: `facturar_proyecto` (FINANZAS:EDIT) emite la
+  misma factura con el mismo servicio, con vista previa y confirmación con
+  huella; `enviar_factura_whatsapp` manda el PDF por WhatsApp dentro de la
+  ventana de 24 h. Detalle en `13-conector-mcp.md`.
 - **Nota de crédito** (en una factura emitida por Biller): total (copia los
   renglones y anula la factura) o parcial (un renglón "Nota de crédito" por el
   monto sin IVA). El motivo es obligatorio.
