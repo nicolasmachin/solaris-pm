@@ -973,6 +973,15 @@ export const subirFacturaCliente = (projectId: string, file: File) => {
 export const urlFacturaCliente = (projectId: string, descargar = false) =>
   `/api/finance/facturacion/${projectId}/factura${descargar ? '?descargar=true' : ''}`;
 
+// Los PDF de facturación exigen el token: un <a href> directo no lo manda y el
+// server contesta "Token Bearer requerido". Se piden con apiClient como blob.
+export async function abrirPdfAutenticado(url: string) {
+  const r = await apiClient.get(url, { responseType: 'blob' });
+  const objectUrl = URL.createObjectURL(r.data as Blob);
+  window.open(objectUrl, '_blank', 'noopener');
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+}
+
 // ─── Cierre de mes ─────────────────────────────────────────────────────────
 
 export interface ItemControlCierre { clave: string; texto: string; ok: boolean; detalle?: string; manual?: boolean }

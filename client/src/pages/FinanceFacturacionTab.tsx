@@ -5,13 +5,26 @@ import { Download, Eye, RefreshCw, Search, Upload } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { ResponsiveTable, type Column } from '../components/ui/ResponsiveTable';
 import {
-  actualizarEstadoCfe, getFacturacion, patchFacturacion, subirFacturaCliente, urlFacturaCliente, urlPdfCfe,
+  abrirPdfAutenticado, actualizarEstadoCfe, getFacturacion, patchFacturacion, subirFacturaCliente, urlFacturaCliente, urlPdfCfe,
   type CfeEmitido, type EstadoCfe, type FacturacionRow,
 } from '../api/finance.api';
 import { EmitirCfeModal } from '../components/finance/EmitirCfeModal';
 import { draftAInput, draftDesde, FacturacionCampos, type FacturacionDraft } from '../components/finance/FacturacionCampos';
 import { usePermission } from '../hooks/usePermission';
+import { downloadAuthenticated } from '../hooks/useAuthBlobUrl';
 import { fmtCurrency, fmtDate } from '../lib/finance';
+
+function verPdf(url: string) {
+  abrirPdfAutenticado(url).catch(() => toast.error('No se pudo abrir el PDF'));
+}
+
+function bajarPdf(url: string, filename: string) {
+  downloadAuthenticated(url, filename).catch(() => toast.error('No se pudo descargar el PDF'));
+}
+
+function nombreCfe(c: CfeEmitido) {
+  return c.serie && c.numero != null ? `factura-${c.serie}${c.numero}.pdf` : 'factura.pdf';
+}
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
@@ -281,41 +294,41 @@ export function FinanceFacturacionTab() {
       render: (p: FacturacionRow) => (
         facturaBiller(p) ? (
           <div className="flex items-center justify-center gap-1">
-            <a
-              href={urlPdfCfe(facturaBiller(p)!.id)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => verPdf(urlPdfCfe(facturaBiller(p)!.id))}
               title="Ver el PDF de la factura"
               className="rounded p-1.5 text-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)]"
             >
               <Eye className="h-4 w-4" />
-            </a>
-            <a
-              href={urlPdfCfe(facturaBiller(p)!.id, true)}
+            </button>
+            <button
+              type="button"
+              onClick={() => bajarPdf(urlPdfCfe(facturaBiller(p)!.id, true), nombreCfe(facturaBiller(p)!))}
               title="Descargar"
               className="rounded p-1.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
             >
               <Download className="h-4 w-4" />
-            </a>
+            </button>
           </div>
         ) : p.factura ? (
           <div className="flex items-center justify-center gap-1">
-            <a
-              href={urlFacturaCliente(p.id)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => verPdf(urlFacturaCliente(p.id))}
               title={`Ver ${p.factura.filename}`}
               className="rounded p-1.5 text-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)]"
             >
               <Eye className="h-4 w-4" />
-            </a>
-            <a
-              href={urlFacturaCliente(p.id, true)}
+            </button>
+            <button
+              type="button"
+              onClick={() => bajarPdf(urlFacturaCliente(p.id, true), p.factura!.filename)}
               title="Descargar"
               className="rounded p-1.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
             >
               <Download className="h-4 w-4" />
-            </a>
+            </button>
           </div>
         ) : canEdit ? (
           <button

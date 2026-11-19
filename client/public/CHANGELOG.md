@@ -45,6 +45,10 @@
 - Al convertir el lead en proyecto, la ubicación pasa al proyecto. Si el lead ya era proyecto, se carga en los dos.
 - Desde el chat de Claude se puede cargar o borrar la ubicación de un lead, y la ficha del lead y la del proyecto la muestran con los dos links.
 
+#### Arreglos
+
+- En Finanzas → Facturación, los botones de ver y descargar la factura daban un error de "Token Bearer requerido" en lugar de abrir el PDF. Ahora abren y descargan bien, tanto la factura emitida por Biller como la que se adjuntó a mano.
+
 ## v15.1
 
 ### 18 de noviembre de 2026
