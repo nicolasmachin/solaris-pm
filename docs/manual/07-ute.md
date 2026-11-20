@@ -244,7 +244,9 @@ todos esos pedidos, con su estado y cuánto llevan.
   `projectId` o `contactoId`** (uno de los dos; ambos opcionales en el schema y
   la regla la hace cumplir la ruta: el POST rechaza ninguno y ambos),
   `suministro` (número, default 1), `tipo`, `detalle`, `estado`, `caseNumber`,
-  `notes`, `solicitadoEl`, `darEnviadoEl` y `resueltoEl` (solo día, `@db.Date`;
+  `notes`, `solicitadoEl`, `darEnviadoEl` (envío del DAR, el documento de
+  asunción de responsabilidad que firman la firma instaladora y el cliente;
+  con él UTE arma la orden de trabajo) y `resueltoEl` (solo día, `@db.Date`;
   `darEnviadoEl` se carga solo a mano, ningún estado lo completa y no cambia
   los días, que siguen contando desde el pedido), `emailLogId` y
   `fileAttachmentId` si vino del formulario, soft delete con `deletedAt`.

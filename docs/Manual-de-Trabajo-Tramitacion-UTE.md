@@ -158,7 +158,10 @@ dos se manejan igual.
 
 **Cómo se sigue.** Al hacer clic en un trámite se abre para cambiarle el estado,
 cargar el número de caso, poner la fecha en que se mandó el **DAR** o anotar lo
-que dijo UTE. Si se mandó desde Voltia PM,
+que dijo UTE. El **DAR** es el *documento de asunción de responsabilidad*: avisa
+a UTE que la instalación está hecha según el reglamento. Lo firman Voltia, como
+firma instaladora, y el cliente, y se manda a UTE. Recién cuando UTE lo ingresa
+se arma la orden de trabajo. Si se mandó desde Voltia PM,
 ahí mismo (y con los íconos de su fila) se bajan el **formulario que se mandó**
 y la **factura de UTE**. La lista muestra **cuántos
 días lleva** cada uno desde que se pidió. Por defecto se ven solo los que
