@@ -2,6 +2,12 @@
 
 ## v15.2
 
+### 20 de noviembre de 2026
+
+#### Arreglos
+
+- La **factura de UTE** y la **cédula** del cliente, cuando se suben en **Documentos del cliente** para que la IA lea los datos, ahora quedan en los **Documentos del proyecto** para descargarlas, con el rótulo *Factura UTE* o *Cédula*. Antes se guardaban pero no había dónde bajarlas. Las que ya estaban subidas también aparecen.
+
 ### 19 de noviembre de 2026
 
 #### Cotizaciones a medida
