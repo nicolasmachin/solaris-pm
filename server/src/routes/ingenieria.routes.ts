@@ -16,6 +16,7 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { notFound } from "../utils/errors.js";
 import { serializeDate, serializeDateOnly } from "../utils/serialization.js";
 import { etiquetaDocumentoComercial } from "../services/documentos-generados.service.js";
+import { etiquetaDocumentoCliente } from "../services/documentos-cliente.service.js";
 
 type EngineeringStageSlim = {
   id: string;
@@ -91,9 +92,15 @@ function countCompletedSubstages(substages: { status: string }[]) {
  * (ver tabla en `api.routes.ts /projects/:projectId/documents`). Mantener
  * sincronizado entre ambos endpoints.
  */
-function buildToolSourceLabel(toolSource: string | null, toolVersion: number | null): string | null {
-  // Contrato / proforma / Plan de Protección / contrato firmado.
-  const comercial = etiquetaDocumentoComercial(toolSource, toolVersion);
+function buildToolSourceLabel(
+  toolSource: string | null,
+  toolVersion: number | null,
+  suministro: number | null = null,
+): string | null {
+  // Contrato / proforma / Plan de Protección / contrato firmado, y cédula y
+  // factura UTE del cliente.
+  const comercial =
+    etiquetaDocumentoComercial(toolSource, toolVersion) ?? etiquetaDocumentoCliente(toolSource, suministro);
   if (comercial) return comercial;
   if (toolSource === "unifilar") {
     return toolVersion ? `Ingeniería · Unifilar v${toolVersion}` : "Ingeniería · Unifilar";
@@ -428,6 +435,7 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
           toolSource: true,
           toolVersion: true,
           toolEntityId: true,
+          suministro: true,
           createdAt: true,
         },
       });
@@ -441,7 +449,7 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
         toolSource: d.toolSource,
         toolVersion: d.toolVersion,
         toolEntityId: d.toolEntityId,
-        sourceLabel: buildToolSourceLabel(d.toolSource, d.toolVersion),
+        sourceLabel: buildToolSourceLabel(d.toolSource, d.toolVersion, d.suministro),
         createdAt: serializeDate(d.createdAt),
         downloadUrl: `/api/files/${d.id}/download`,
         previewUrl: `/api/files/${d.id}/preview`,

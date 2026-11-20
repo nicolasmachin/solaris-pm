@@ -367,6 +367,20 @@ de un suministro que no es el principal se guardan en
 proyecto. `useUteExtract(projectId, suministro)` manda los datos leídos a la
 config de ese suministro y no toca el proyecto.
 
+**Quedan en Documentos del proyecto.** Al subir la factura o la cédula (de
+cualquier suministro) se crea un `FileAttachment` con `toolSource`
+`factura-ute-cliente` o `cedula-cliente` y `suministro` (null = principal), que
+**apunta al mismo archivo** de `ute-docs/` (no lo copia): `url` es la misma ruta
+que `facturaUtePath` / `cedulaPath`. Lo maneja
+`documentos-cliente.service.ts` → `sincronizarDocumentoCliente()`: uno vigente
+por documento y suministro, volver a subir lo reemplaza y quitarlo lo retira
+(soft-delete). En la lista de Documentos se rotula "Factura UTE" / "Cédula"
+(con "· suministro N" si no es el principal), va con los comerciales y no se
+puede borrar desde ahí. Hasta el 20-nov-2026 no se creaba el adjunto y el
+archivo no se podía descargar; el script
+`prisma/scripts/backfill-documentos-cliente.ts` (`--apply`) carga los que ya
+estaban subidos, atribuidos a quien hizo la extracción según la auditoría.
+
 **La config de documentos UTE** (`GET/PUT/DELETE /projects/:projectId/ute-docs/config`)
 acepta `?suministro=N` (default 1). El DELETE ("Resetear") borra solo la del
 suministro pedido; la pantalla vuelve a guardar la cuenta y el titular de ese

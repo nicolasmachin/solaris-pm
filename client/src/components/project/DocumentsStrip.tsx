@@ -47,7 +47,16 @@ type OriginFilter = "todos" | "manual" | "ingenieria" | "comercial" | "lista_mat
 // Protección (generados por sus herramientas) y el contrato firmado (subido a
 // mano desde su bloque). Tienen toolSource, pero no son de Ingeniería: se
 // rotulan con el `sourceLabel` del servidor ("Contrato v2", "Proforma v1"…).
-const TOOL_SOURCES_COMERCIALES = new Set(["contrato", "proforma", "plan-granizo", "contrato-firmado"]);
+// También la cédula y la factura de UTE del cliente (subidas desde "Documentos
+// del cliente"): no son de Ingeniería y el servidor les pone su rótulo.
+const TOOL_SOURCES_COMERCIALES = new Set([
+  "contrato",
+  "proforma",
+  "plan-granizo",
+  "contrato-firmado",
+  "cedula-cliente",
+  "factura-ute-cliente",
+]);
 
 function esComercial(doc: ProjectDocument): boolean {
   return doc.toolSource != null && TOOL_SOURCES_COMERCIALES.has(doc.toolSource);

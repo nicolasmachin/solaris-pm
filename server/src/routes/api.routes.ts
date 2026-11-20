@@ -100,6 +100,7 @@ import { datosFacturacion, type Facturacion, facturacionSchema, montoAFacturar }
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
 import { UTE_DOC_KEYS, type UteDocKey } from "../services/ute-docs/coordinates.js";
 import { extractFromDocument } from "../services/ute-extract/index.js";
+import { etiquetaDocumentoCliente, sincronizarDocumentoClienteSeguro } from "../services/documentos-cliente.service.js";
 import {
   deleteStoredFile,
   getStoredFilePath,
@@ -4169,7 +4170,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // Documentos generados por herramientas del módulo Ingeniería (toolSource).
       // Tienen prioridad sobre el match por stage/substage para que el badge
       // "Ingeniería · Unifilar v3" se muestre coherente.
-      const etiquetaComercial = etiquetaDocumentoComercial(file.toolSource, file.toolVersion);
+      const etiquetaComercial =
+        etiquetaDocumentoComercial(file.toolSource, file.toolVersion) ??
+        etiquetaDocumentoCliente(file.toolSource, file.suministro);
       if (etiquetaComercial) {
         // Contrato / proforma / Plan de Protección (generados) y contrato firmado.
         source = "generated";
@@ -12364,6 +12367,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
           });
         }
 
+        // Que quede descargable en Documentos del proyecto.
+        await sincronizarDocumentoClienteSeguro(projectId, tipo, suministro, user.id, request.log);
+
         // Llamar a Claude para extraer.
         let extracted;
         try {
@@ -12455,6 +12461,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             data: { [pathField]: null },
           });
         }
+        await sincronizarDocumentoClienteSeguro(projectId, tipo, suministro, user.id, request.log);
         await createAuditEntry({
           entityType: AuditEntityType.project,
           entityId: projectId,
