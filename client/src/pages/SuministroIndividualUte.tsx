@@ -13,6 +13,14 @@ import type { EmailTemplate, EmailTemplateContext } from "../api/email.api";
 import { RecipientChips } from "../components/email/RecipientChips";
 import { bodyToHtml, renderTemplate } from "../components/email/renderMailBody";
 import { ACCEPT_FOTOS_Y_PDF } from "../utils/fileAccept";
+import type { UteExtractedData } from "../api/uteExtract.api";
+import {
+  enviarSuministroContacto,
+  extraerFacturaContacto,
+  getContextoSuministroContacto,
+  previewFormularioContacto,
+  type UteContacto,
+} from "../api/uteComercial.api";
 import {
   OPCIONES_UTE,
   SUMINISTRO_TEMPLATE_KEY,
@@ -94,6 +102,9 @@ function Texto({
 //
 // El borrador queda en ESA computadora y ESE navegador: desde otra máquina, el
 // formulario arranca con los datos del proyecto.
+//
+// La clave es el id del proyecto o, para un cliente sin proyecto,
+// `contacto:<id>`: los dos espacios de ids no se pisan.
 const BORRADOR_VERSION = 1;
 
 interface Borrador {
@@ -105,13 +116,13 @@ interface Borrador {
   subjectOverride: string | null;
 }
 
-function claveBorrador(projectId: string): string {
-  return `voltia:suministro-individual:${projectId}`;
+function claveBorrador(id: string): string {
+  return `voltia:suministro-individual:${id}`;
 }
 
-function leerBorrador(projectId: string): Borrador | null {
+function leerBorrador(id: string): Borrador | null {
   try {
-    const crudo = localStorage.getItem(claveBorrador(projectId));
+    const crudo = localStorage.getItem(claveBorrador(id));
     if (!crudo) return null;
     const b = JSON.parse(crudo) as Borrador;
     // Si cambió la forma del formulario, se descarta en vez de intentar
@@ -124,17 +135,17 @@ function leerBorrador(projectId: string): Borrador | null {
   }
 }
 
-function guardarBorrador(projectId: string, b: Borrador): void {
+function guardarBorrador(id: string, b: Borrador): void {
   try {
-    localStorage.setItem(claveBorrador(projectId), JSON.stringify(b));
+    localStorage.setItem(claveBorrador(id), JSON.stringify(b));
   } catch {
     // Guardar es una comodidad: si el navegador no deja, se sigue igual.
   }
 }
 
-function borrarBorrador(projectId: string): void {
+function borrarBorrador(id: string): void {
   try {
-    localStorage.removeItem(claveBorrador(projectId));
+    localStorage.removeItem(claveBorrador(id));
   } catch {
     /* nada que hacer */
   }
@@ -156,8 +167,61 @@ function fusionar(
   };
 }
 
+function sinTildes(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+}
+
+/** Valor de una lista cerrada de UTE que coincide con lo leído, o null. */
+function deLaLista(lista: readonly string[], leido: string | null | undefined): string | null {
+  const buscado = sinTildes(leido ?? "");
+  if (!buscado) return null;
+  return lista.find((o) => sinTildes(o) === buscado) ?? null;
+}
+
+// Cliente sin proyecto: lo que la IA leyó de la factura vuelve directo al
+// formulario (no hay proyecto donde guardarlo). La factura manda en los datos
+// del suministro; los del cliente solo completan lo que está vacío, porque los
+// del contacto los cargó una persona.
+function aplicarFactura(c: EmailTemplateContext, d: Partial<UteExtractedData>): EmailTemplateContext {
+  const t = (x: string | null | undefined) => (x ?? "").trim();
+  const cuenta = t(d.cuenta_ute) || c.suministro.cuenta;
+  const obsPorDefecto =
+    !c.tecnica.observaciones.trim() || c.tecnica.observaciones.startsWith("El número de cuenta del cliente es");
+  return {
+    ...c,
+    cliente: {
+      ...c.cliente,
+      nombre: c.cliente.nombre.trim() || t(d.nombre_cliente),
+      ci: c.cliente.ci.trim() || t(d.ci_cliente),
+      email: c.cliente.email.trim() || t(d.mail_cliente),
+      telefono: c.cliente.telefono.trim() || t(d.telefono_cliente),
+    },
+    suministro: {
+      ...c.suministro,
+      cuenta,
+      calle: t(d.calle) || c.suministro.calle,
+      numero: t(d.num_calle) || c.suministro.numero,
+      localidad: t(d.ciudad) || c.suministro.localidad,
+      departamento: deLaLista(OPCIONES_UTE.departamento, d.depto) ?? c.suministro.departamento,
+    },
+    tecnica: {
+      ...c.tecnica,
+      tarifa: deLaLista(OPCIONES_UTE.tarifa, d.tarifa_ute) ?? c.tecnica.tarifa,
+      potenciaContratada: t(d.pot_contratada) || c.tecnica.potenciaContratada,
+      observaciones:
+        obsPorDefecto && cuenta ? `El número de cuenta del cliente es ${cuenta}` : c.tecnica.observaciones,
+    },
+  };
+}
+
 export default function SuministroIndividualUte() {
-  const { projectId = "" } = useParams();
+  // Dos entradas: desde un proyecto (`/proyecto/:projectId/...`) o desde
+  // Trámites UTE → Comercial para un cliente sin proyecto
+  // (`/tramites-ute/contacto/:contactoId/...`). El formulario es el mismo; cambia
+  // de dónde salen los datos y a dónde va el envío.
+  const { projectId = "", contactoId = "" } = useParams();
+  const esContacto = !!contactoId;
+  const claveId = esContacto ? `contacto:${contactoId}` : projectId;
   const navigate = useNavigate();
   const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
@@ -187,6 +251,26 @@ export default function SuministroIndividualUte() {
   const [enviando, setEnviando] = useState(false);
   const [bajando, setBajando] = useState(false);
   const [recuperado, setRecuperado] = useState(false);
+  const [contacto, setContacto] = useState<UteContacto | null>(null);
+  const [factura, setFactura] = useState<{ id: string; filename: string } | null>(null);
+  const [leyendoFactura, setLeyendoFactura] = useState(false);
+
+  // Trae el contexto fresco: del proyecto (vía la plantilla) o del contacto.
+  function cargarContexto(onOk: (context: EmailTemplateContext) => void) {
+    if (esContacto) {
+      getContextoSuministroContacto(contactoId)
+        .then((r) => {
+          setContacto(r.contacto);
+          onOk(r.context);
+        })
+        .catch(() => toast.error("No se pudieron cargar los datos del cliente"));
+      return;
+    }
+    prepare.mutate(
+      { templateKey: SUMINISTRO_TEMPLATE_KEY, projectId },
+      { onSuccess: (res) => onOk(res.context) },
+    );
+  }
 
   // El contexto que llega del servidor mezcla vocabularios: `pasaLinea` viene
   // con el default de la consulta de microgenerador ("No corresponde"), que NO
@@ -205,7 +289,7 @@ export default function SuministroIndividualUte() {
   // tras leer la factura de UTE, gana el dato nuevo: reaplicar el borrador
   // pisaría justamente lo que la IA acaba de extraer.
   function seed(context: EmailTemplateContext, aplicarBorrador = false) {
-    const borrador = aplicarBorrador ? leerBorrador(projectId) : null;
+    const borrador = aplicarBorrador ? leerBorrador(claveId) : null;
     const base = borrador ? fusionar(context, borrador.ctx) : context;
     setCtx(normalizar(base));
 
@@ -226,42 +310,32 @@ export default function SuministroIndividualUte() {
     setSubjectOverride(null);
   }
 
-  // Descarta lo escrito y vuelve a los datos del proyecto.
+  // Descarta lo escrito y vuelve a los datos del proyecto (o del cliente).
   function descartarBorrador() {
-    borrarBorrador(projectId);
+    borrarBorrador(claveId);
     setRecuperado(false);
     setReady(false);
-    prepare.mutate(
-      { templateKey: SUMINISTRO_TEMPLATE_KEY, projectId },
-      {
-        onSuccess: (res) => {
-          seed(res.context);
-          setReady(true);
-          toast.success("Se volvió a los datos del proyecto");
-        },
-      },
-    );
+    cargarContexto((context) => {
+      seed(context);
+      setReady(true);
+      toast.success(esContacto ? "Se volvió a los datos del cliente" : "Se volvió a los datos del proyecto");
+    });
   }
 
   useEffect(() => {
-    if (!projectId || !template || ready) return;
-    prepare.mutate(
-      { templateKey: SUMINISTRO_TEMPLATE_KEY, projectId },
-      {
-        onSuccess: (res) => {
-          seed(res.context, true);
-          setReady(true);
-        },
-      },
-    );
+    if (!claveId || !template || ready) return;
+    cargarContexto((context) => {
+      seed(context, true);
+      setReady(true);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, template]);
+  }, [claveId, template]);
 
   // Autoguardado: cada cambio se persiste en el navegador. Es un objeto chico y
   // localStorage es sincrónico y rápido, así que no hace falta debounce.
   useEffect(() => {
     if (!ready || !ctx) return;
-    guardarBorrador(projectId, {
+    guardarBorrador(claveId, {
       v: BORRADOR_VERSION,
       ctx,
       to,
@@ -269,13 +343,14 @@ export default function SuministroIndividualUte() {
       bcc,
       subjectOverride,
     });
-  }, [ready, ctx, to, cc, bcc, subjectOverride, projectId]);
+  }, [ready, ctx, to, cc, bcc, subjectOverride, claveId]);
 
   // Tras confirmar la factura UTE (que completa cuenta, tarifa y potencia),
   // se vuelve a preparar para refrescar el formulario con los datos nuevos.
+  // Solo con proyecto: para un contacto la factura se aplica directo.
   const prevConfirming = useRef(false);
   useEffect(() => {
-    if (prevConfirming.current && !extractor.isConfirming && !extractor.modalOpen) {
+    if (!esContacto && prevConfirming.current && !extractor.isConfirming && !extractor.modalOpen) {
       prepare.mutate(
         { templateKey: SUMINISTRO_TEMPLATE_KEY, projectId },
         { onSuccess: (res) => seed(res.context) },
@@ -332,11 +407,32 @@ export default function SuministroIndividualUte() {
     setSubjectOverride(null);
   }
 
+  async function leerFacturaContacto(file: File) {
+    setLeyendoFactura(true);
+    try {
+      const r = await extraerFacturaContacto(contactoId, file);
+      setFactura({ id: r.facturaAttachmentId, filename: r.filename });
+      setCtx((c) => (c ? aplicarFactura(c, r.extraido) : c));
+      toast.success("Se completaron los datos de la factura. Revisalos antes de enviar.");
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo leer la factura");
+    } finally {
+      setLeyendoFactura(false);
+    }
+  }
+
   function onPickFactura(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) extractor.uploadAndExtract(file, "factura_ute");
+    if (file) {
+      if (esContacto) void leerFacturaContacto(file);
+      else extractor.uploadAndExtract(file, "factura_ute");
+    }
     if (fileRef.current) fileRef.current.value = "";
   }
+
+  const leyendo = esContacto ? leyendoFactura : extractor.isExtracting;
+  const hayFactura = esContacto ? !!factura : !!project?.facturaUtePath;
 
   const subject = ctx ? (subjectOverride ?? renderTemplate(template?.subjectTemplate ?? "", ctx)) : "";
   const bodyText = ctx ? renderTemplate(template?.bodyTemplate ?? "", ctx) : "";
@@ -346,7 +442,9 @@ export default function SuministroIndividualUte() {
     if (!ctx) return;
     setBajando(true);
     try {
-      const { blob, filename } = await previewFormularioSuministro(projectId, ctx);
+      const { blob, filename } = esContacto
+        ? await previewFormularioContacto(contactoId, ctx)
+        : await previewFormularioSuministro(projectId, ctx);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -372,15 +470,20 @@ export default function SuministroIndividualUte() {
     }
     setEnviando(true);
     try {
-      await enviarSuministroIndividual(projectId, {
+      const cuerpo = {
         to: to.join(", "),
         cc: cc.join(", "),
         bcc: bcc.join(", "),
         subject,
         body: bodyText,
         context: ctx,
-      });
-      borrarBorrador(projectId);
+      };
+      if (esContacto) {
+        await enviarSuministroContacto(contactoId, { ...cuerpo, facturaAttachmentId: factura?.id });
+      } else {
+        await enviarSuministroIndividual(projectId, cuerpo);
+      }
+      borrarBorrador(claveId);
       // El envío deja registrado el trámite en Trámites UTE → Comercial.
       qc.invalidateQueries({ queryKey: ["suministro-individual-estado", projectId] });
       qc.invalidateQueries({ queryKey: ["ute-comerciales"] });
@@ -422,9 +525,14 @@ export default function SuministroIndividualUte() {
         <ArrowLeft className="h-3.5 w-3.5" /> Volver
       </button>
       <h1 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
-        {project?.clientName ?? ctx.cliente.nombre} ·{" "}
+        {(esContacto ? contacto?.nombre : project?.clientName) ?? ctx.cliente.nombre} ·{" "}
         {ctx.tecnica.esAumento ? "Aumento de potencia contratada" : "Solicitud de suministro"}
       </h1>
+      {esContacto && (
+        <p className="mb-3 text-xs text-[var(--color-text-muted)]">
+          Cliente sin proyecto: el trámite queda en Trámites UTE → Comercial, en el bloque “Sin proyecto”.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)]">
         {/* ─── Formulario ─── */}
@@ -474,18 +582,22 @@ export default function SuministroIndividualUte() {
                 Cargar factura UTE
               </p>
               <p className="text-[11px] leading-snug text-[var(--color-text-secondary)]">
-                {project?.facturaUtePath
-                  ? "Ya hay una factura cargada y sus datos ya están abajo. Subí otra para reemplazar."
-                  : "La IA lee la factura y completa cuenta, tarifa y potencia contratada."}
+                {esContacto
+                  ? factura
+                    ? `Se leyó «${factura.filename}» y sus datos ya están abajo. Subí otra para reemplazar.`
+                    : "La IA lee la factura y completa cuenta, tarifa, potencia contratada y dirección. Se guarda junto al trámite al enviarlo."
+                  : project?.facturaUtePath
+                    ? "Ya hay una factura cargada y sus datos ya están abajo. Subí otra para reemplazar."
+                    : "La IA lee la factura y completa cuenta, tarifa y potencia contratada."}
               </p>
             </div>
             <button
               onClick={() => fileRef.current?.click()}
-              disabled={extractor.isExtracting}
+              disabled={leyendo}
               className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
             >
               <Upload className="h-3.5 w-3.5" />{" "}
-              {extractor.isExtracting ? "Leyendo…" : project?.facturaUtePath ? "Reemplazar" : "Cargar factura"}
+              {leyendo ? "Leyendo…" : hayFactura ? "Reemplazar" : "Cargar factura"}
             </button>
             <input
               ref={fileRef}
@@ -747,7 +859,9 @@ export default function SuministroIndividualUte() {
                       )}
                     </>
                   ) : (
-                    "No hay potencia contratada cargada en el proyecto."
+                    esContacto
+                      ? "No hay potencia contratada cargada (la trae la factura)."
+                      : "No hay potencia contratada cargada en el proyecto."
                   )}{" "}
                   UTE solo acepta los escalones de la lista ({ctx.tecnica.fases || "según las fases"}).
                 </p>

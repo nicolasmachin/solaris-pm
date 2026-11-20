@@ -4,6 +4,18 @@
 
 ### 20 de noviembre de 2026
 
+#### Trámites UTE
+
+- En **Trámites UTE → Comercial** hay un botón nuevo, **Pedir trámite a UTE**, para mandar el pedido de aumento de potencia o de suministro nuevo sin pasar por Onboarding. Primero pregunta **para quién**: un **proyecto** (se busca escribiendo y lleva al formulario de siempre) o un **cliente sin proyecto**.
+- **Clientes sin proyecto**: se busca el contacto o se lo da de alta en el momento con **Cliente nuevo** (nombre, teléfono, email y cédula o RUT). El formulario arranca con sus datos, se le puede subir la **factura de UTE** para que la IA complete el resto, y se revisa y se manda igual que con un proyecto.
+- La lista de Comercial ahora se divide en dos bloques, **Con proyecto** y **Sin proyecto**. El estado, el número de caso y las notas se editan igual en los dos.
+- Desde la fila de cada trámite se pueden **bajar el formulario enviado y la factura de UTE**; también desde la ficha del trámite.
+- **Nuevo trámite comercial** (para cargar uno pedido por fuera) ahora busca el proyecto escribiendo, en vez de una lista larga, y acepta también un cliente sin proyecto.
+
+#### Buscador de proyectos
+
+- Al crear un **trámite de habilitación UTE** y al **agendar una instalación** en el Calendario, el proyecto ahora se elige **escribiendo** el nombre del cliente o el código, en vez de buscarlo a ojo en una lista larga.
+
 #### Arreglos
 
 - La **factura de UTE** y la **cédula** del cliente, cuando se suben en **Documentos del cliente** para que la IA lea los datos, ahora quedan en los **Documentos del proyecto** para descargarlas, con el rótulo *Factura UTE* o *Cédula*. Antes se guardaban pero no había dónde bajarlas. Las que ya estaban subidas también aparecen.

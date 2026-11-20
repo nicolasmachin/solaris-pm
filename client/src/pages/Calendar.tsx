@@ -56,6 +56,7 @@ import { useFiltrosCalendario } from "../components/calendario/useFiltrosCalenda
 import { getProjects } from "../api/projects.api";
 import { createTeam } from "../api/teams.api";
 import { Button } from "../components/ui/Button";
+import { ProjectPicker } from "../components/finance/ProjectPicker";
 
 type CalendarView = "month" | "year";
 
@@ -3222,19 +3223,13 @@ function NewScheduleModal({
           <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
             Proyecto
           </label>
-          <select
+          <ProjectPicker
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-            required
-          >
-            <option value="">Seleccionar proyecto…</option>
-            {availableProjects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.code} — {p.clientName} ({p.capacityKwp} kWp)
-              </option>
-            ))}
-          </select>
+            onChange={setProjectId}
+            projects={availableProjects}
+            loading={projectsQuery.isLoading}
+            emptyLabel="Seleccionar proyecto…"
+          />
           {availableProjects.length === 0 && !projectsQuery.isLoading && (
             <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
               No hay proyectos disponibles para agendar. Todos los proyectos activos ya tienen instalación agendada.

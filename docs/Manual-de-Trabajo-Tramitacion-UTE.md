@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.8 · del 18/11/26 · *en armado*
+**Voltia · Uruguay** · Versión 0.9 · del 20/11/26 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -119,26 +119,57 @@ sección en violeta al lado de **Habilitación**. Cada uno tiene su estado:
 - **Resuelto**: UTE lo hizo.
 - **Cancelado**: al final no hizo falta.
 
+**No hace falta que haya un proyecto.** A veces el pedido es para alguien que
+todavía no compró, o para un trámite suelto de un cliente. En ese caso el
+trámite se hace a nombre del **cliente sin proyecto**: una persona o empresa que
+está en la lista de contactos de Voltia PM (si no está, se la da de alta en el
+momento, con nombre, teléfono, email y cédula o RUT).
+
+**Cómo se pide a UTE desde Voltia PM.** En **Trámites UTE → Comercial**, el
+botón **Pedir trámite a UTE** pregunta primero **para quién**:
+
+- **Proyecto**: se busca escribiendo el nombre del cliente o el código del
+  proyecto, y lleva al formulario del proyecto. Es el mismo formulario que se
+  abre desde el proyecto, en la subetapa **Consulta inicial UTE** de Onboarding,
+  con el botón **Solicitar aumento de potencia u otro trámite comercial**.
+- **Cliente sin proyecto**: se busca el contacto por nombre, teléfono o
+  documento, o se toca **Cliente nuevo**. El formulario arranca con los datos
+  del cliente; si se le sube la **factura de UTE**, Voltia PM la lee y completa
+  la cuenta, la dirección, la tarifa y la potencia contratada. Se revisa, se ve
+  cómo queda el formulario de UTE y se manda igual que con un proyecto.
+
+El mail sale desde la casilla de quien lo manda, con el formulario adjunto (la
+factura no va adjunta).
+
 **Cómo entra un trámite a la lista:**
 
-- Si se manda el **formulario de UTE desde Voltia PM** (en el proyecto, subetapa
-  **Consulta inicial UTE** de Onboarding, botón **Solicitar aumento de potencia
-  u otro trámite comercial**), aparece solo, como pedido y con la potencia que se
-  pidió. Si después se vuelve a mandar el mismo trámite, por ejemplo porque UTE
-  lo observó, se actualiza el que ya estaba: no se duplica.
+- Si se manda el **formulario de UTE desde Voltia PM** (por cualquiera de los
+  dos caminos), aparece solo, como pedido y con la potencia que se pidió. Si
+  después se vuelve a mandar el mismo trámite, por ejemplo porque UTE lo
+  observó, se actualiza el que ya estaba: no se duplica.
 - Si se pidió **por otro lado** (en la oficina, por teléfono, por un mail
-  propio), se carga a mano con **Nuevo trámite comercial**: proyecto, tipo,
-  estado, fecha de pedido, número de caso y notas. Para un trámite de tipo
-  **Otro** hay que escribir qué es.
+  propio), se carga a mano con **Nuevo trámite comercial**: para quién (un
+  proyecto, buscándolo, o un cliente sin proyecto), tipo, estado, fecha de
+  pedido, número de caso y notas. Para un trámite de tipo **Otro** hay que
+  escribir qué es.
+
+La lista está partida en dos bloques: **Con proyecto** y **Sin proyecto**. Los
+dos se manejan igual.
 
 **Cómo se sigue.** Al hacer clic en un trámite se abre para cambiarle el estado,
-cargar el número de caso o anotar lo que dijo UTE. La lista muestra **cuántos
+cargar el número de caso o anotar lo que dijo UTE. Si se mandó desde Voltia PM,
+ahí mismo (y con los íconos de su fila) se bajan el **formulario que se mandó**
+y la **factura de UTE**. La lista muestra **cuántos
 días lleva** cada uno desde que se pidió. Por defecto se ven solo los que
 siguen abiertos; los resueltos y cancelados se ven eligiéndolos en el filtro
 **Estado**. Al marcarlo resuelto, si no se cargó la fecha, queda la del día.
 
 En la ficha del proyecto, la subetapa **Consulta inicial UTE** muestra los
 trámites comerciales que tiene ese proyecto y en qué estado está cada uno.
+
+**Si el cliente sin proyecto después compra**, el trámite no se pasa solo al
+proyecto nuevo: queda en el bloque **Sin proyecto**, y sus archivos se bajan
+desde el trámite, no desde los documentos del proyecto.
 
 ## 7 · Cuando falta documentación
 
@@ -201,6 +232,7 @@ se reescribe: lo que tiene que quedar con fecha y autor va como comentario.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.9 | 20 de noviembre de 2026 | Los trámites con UTE Comercial se pueden pedir desde la sección Comercial con el botón «Pedir trámite a UTE», para un proyecto o para un cliente sin proyecto (un contacto, que se puede dar de alta en el momento). La lista se divide en «Con proyecto» y «Sin proyecto», y desde cada trámite se bajan el formulario enviado y la factura de UTE. |
 | 0.8 | 18 de noviembre de 2026 | Se agrega el capítulo de los trámites con UTE Comercial (aumentos de potencia, servicios nuevos, provisorios): qué son, sus estados y cómo se siguen en la sección Comercial de Trámites UTE. |
 | 0.7 | 12 de octubre de 2026 | En el detalle de cada trámite se agrega el bloque Comentarios y archivos: Tramitación comenta y sube los papeles desde el trámite, sin ir a la pantalla del proyecto, y todo aparece en la ficha del cliente. |
 | 0.6 | 11 de octubre de 2026 | La consulta inicial la presenta el asesor apenas se cobra la seña, y el seguimiento lo hace Tramitación UTE desde ahí. |

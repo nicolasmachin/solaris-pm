@@ -42,11 +42,18 @@ mayoría de los proyectos), sino un botón dentro de la subetapa que ya existe.
 El mismo formulario sirve para pedir un **suministro nuevo**; cambia el tipo de
 trámite y el asunto del correo, no el resto.
 
+Se llega por **dos caminos**: desde el proyecto (subetapa de Onboarding, abajo)
+o desde **Trámites UTE → Comercial → "Pedir trámite a UTE"**, que además sirve
+para un **cliente sin proyecto** (ver "Trámites de clientes sin proyecto" en la
+sección siguiente).
+
 ## Cómo se usa
 
 1. En la ficha del proyecto, abrir la subetapa **"Consulta inicial UTE"** de
    Onboarding. Debajo del botón de consulta aparece **"Solicitar aumento de
-   potencia u otro trámite comercial"**.
+   potencia u otro trámite comercial"**. (O desde Trámites UTE → Comercial →
+   **"Pedir trámite a UTE"** → Proyecto, buscando el proyecto: lleva a la misma
+   pantalla.)
 2. La pantalla llega con todo precargado desde el proyecto: dirección, datos del
    cliente, cuenta, tarifa, tensión y fases. **Todos los campos son editables**,
    salvo los datos de la firma instaladora y del técnico instalador, que son
@@ -164,7 +171,9 @@ los clientes del portal.
   ejemplo "BT1", que viene de la factura). En ese caso se muestra igual como
   opción, pero conviene elegir la equivalente de la lista antes de enviar.
 - **El borrador vive en el navegador** (`localStorage`, clave
-  `voltia:suministro-individual:<projectId>`), no en el servidor: queda en esa
+  `voltia:suministro-individual:<projectId>`, o
+  `voltia:suministro-individual:contacto:<contactoId>` para un cliente sin
+  proyecto), no en el servidor: queda en esa
   computadora y ese navegador. Desde otra máquina el formulario arranca con los
   datos del proyecto. En modo incógnito o con el almacenamiento bloqueado no se
   guarda nada y la pantalla funciona igual.
@@ -207,17 +216,32 @@ todos esos pedidos, con su estado y cuánto llevan.
   y cancelados se ven eligiéndolos en el filtro Estado. Hay buscador por
   cliente o código.
 - Clic en una fila abre el trámite para editarlo o borrarlo.
+- La lista se parte en dos bloques: **Con proyecto** y **Sin proyecto** (el
+  cliente es un contacto del CRM; se muestra su nombre, documento y teléfono).
+  El buscador busca por nombre del cliente, código del proyecto o documento del
+  contacto. Editar estado, número de caso, notas y fechas funciona igual en los
+  dos bloques.
+- **Pedir trámite a UTE** (botón principal) pregunta **para quién**: un
+  **Proyecto** (buscador de proyectos; lleva al formulario del proyecto) o un
+  **Cliente sin proyecto** (buscar un contacto del CRM o **Cliente nuevo**:
+  nombre, teléfono, email, cédula o RUT; queda creado como contacto). Ver
+  "Trámites de clientes sin proyecto".
 - **Nuevo trámite comercial** carga uno pedido por fuera de Voltia PM (por
-  teléfono, en la oficina de UTE, por mail propio). El modal ofrece el enlace al
-  formulario de UTE por si todavía no se pidió.
-- Los que se mandan con el formulario desde Onboarding (sección anterior)
-  aparecen solos; se marcan con un ícono de planilla.
+  teléfono, en la oficina de UTE, por mail propio). También pregunta para
+  quién (proyecto con buscador, o contacto con búsqueda/alta). El modal ofrece
+  el enlace al formulario de UTE por si todavía no se pidió.
+- Los que se mandan con el formulario (desde Onboarding o desde "Pedir trámite
+  a UTE") aparecen solos. Los íconos de la columna Trámite bajan el
+  **formulario enviado** (planilla) y la **factura de UTE** (documento); también
+  se bajan desde el modal del trámite, en "Archivos".
 - En la subetapa **Consulta inicial UTE** se listan los trámites del proyecto
   con su estado; clic lleva a la sección Comercial.
 
 ## Cómo funciona
 
-- Modelo `UteTramiteComercial` (tabla `ute_tramites_comerciales`): proyecto,
+- Modelo `UteTramiteComercial` (tabla `ute_tramites_comerciales`): **o
+  `projectId` o `contactoId`** (uno de los dos; ambos opcionales en el schema y
+  la regla la hace cumplir la ruta: el POST rechaza ninguno y ambos),
   `suministro` (número, default 1), `tipo`, `detalle`, `estado`, `caseNumber`,
   `notes`, `solicitadoEl` y `resueltoEl` (solo día, `@db.Date`), `emailLogId` y
   `fileAttachmentId` si vino del formulario, soft delete con `deletedAt`.
@@ -234,12 +258,17 @@ todos esos pedidos, con su estado y cuánto llevan.
   traduce el texto del formulario al tipo (`TIPO_DESDE_FORMULARIO`; un texto
   desconocido entra como `OTRO` con el texto tal cual) y arma el detalle con las
   potencias ("de 7 kW a 11,5 kW"). Si ya hay uno **abierto del mismo tipo y
-  suministro**, lo actualiza (vuelve a `PEDIDO`, cambia el mail y el detalle,
+  suministro** (del mismo proyecto o, sin proyecto, del mismo contacto), lo
+  actualiza (vuelve a `PEDIDO`, cambia el mail y el detalle,
   conserva la fecha del primer pedido) en vez de abrir otro.
 - **Endpoints** en `routes/ute-comercial.routes.ts`: `GET`, `POST`,
   `PATCH /:id` y `DELETE /:id` sobre `/api/ute-tramites-comerciales` (el GET
-  acepta `?projectId=`). La respuesta suma `dias`: del pedido a la resolución,
-  o a hoy si sigue abierto; sin fecha de pedido, `null`.
+  acepta `?projectId=`; sin filtro trae los de proyectos no borrados y los sin
+  proyecto). La respuesta suma `dias` (del pedido a la resolución, o a hoy si
+  sigue abierto; sin fecha de pedido, `null`), el `contacto` y `archivos`
+  (formulario y factura del trámite, armado por `archivosDe()`).
+  `GET /:id/archivos/:attachmentId` baja uno de esos archivos (verifica que sea
+  del trámite).
 - **Las fechas siguen al estado** si no se cargan a mano: crear o pasar a un
   estado que no sea "a pedir" sin fecha de pedido la pone en hoy; pasar a
   resuelto pone la de resolución en hoy; reabrir un resuelto la borra. "Hoy" es
@@ -251,6 +280,46 @@ todos esos pedidos, con su estado y cuánto llevan.
   `aumentoPotenciaSentAt`, con la potencia solicitada en el detalle. Se asumió
   que todos eran aumentos porque los asuntos de los mails enviados lo eran.
 
+## Trámites de clientes sin proyecto
+
+Hay pedidos a UTE Comercial para gente que **no tiene proyecto** en Voltia PM:
+alguien que todavía no compró y necesita el aumento antes, o un trámite suelto.
+Antes no había cómo mandarlos desde Voltia PM. Ahora el cliente es un
+**contacto del CRM** (`Contacto`) y el trámite se cuelga de él.
+
+- **Pantalla**: la misma `SuministroIndividualUte.tsx`, en la ruta
+  `/tramites-ute/contacto/:contactoId/suministro-individual` (permiso de ruta:
+  Trámites UTE, ver). Detecta el modo por el parámetro (`contactoId` en vez de
+  `projectId`) y cambia de dónde lee y a dónde manda.
+- **Contexto** (`GET .../contactos/:contactoId/suministro-individual/contexto`):
+  `emptyContext()` con el cliente del contacto (nombre, documento, teléfono
+  pasado a formato local, email) y la firma del usuario. Se toma como **RUT**
+  si el documento tiene 12 dígitos o el nombre parece de empresa
+  (`esNombreDeEmpresa()`); en ese caso destino "Comercial." y actividad
+  "General". El resto del formulario arranca vacío o con los valores por
+  defecto (trámite "Aumento").
+- **Factura de UTE** (`POST .../contactos/:contactoId/ute-extract`): la IA la
+  lee con el mismo extractor (`factura_ute`) y lo leído **vuelve a la pantalla**
+  (`aplicarFactura()` en la página): cuenta, calle, número, localidad,
+  departamento, tarifa y potencia contratada se toman de la factura; nombre,
+  documento, email y teléfono solo completan lo vacío. **No se guarda nada en
+  el contacto.** El archivo sí se guarda como `FileAttachment` sin proyecto
+  (`toolSource: "ute-comercial-factura"`, `toolEntityId` = el contacto mientras
+  está pendiente); al enviar pasa a `toolEntityId` = el trámite. Subir otra
+  reemplaza la pendiente.
+- **Vista previa y envío** (`POST .../suministro-individual/preview.xlsx` y
+  `.../enviar`, bajo `/api/ute-tramites-comerciales/contactos/:contactoId`):
+  igual que con proyecto, con `sendTemplatedEmail()` **sin `projectId`** (así
+  no se toca ningún `UteDocumentConfig`). Después del mail:
+  `registrarTramiteEnviado({ contactoId, ... })`, el Excel se guarda como
+  `FileAttachment` sin proyecto en la carpeta `ute-comercial/<contactoId>`
+  (`toolSource: "ute-suministro-individual"`, `toolEntityId` = trámite) y queda
+  en `fileAttachmentId` del trámite; un reenvío del mismo trámite reemplaza el
+  Excel y la factura anteriores. Auditoría con tipo `ute_tramite_comercial`.
+- **Buscar y crear el contacto** tienen endpoints propios de UTE
+  (`GET` y `POST /api/ute-tramites-comerciales/contactos`): el alta usa
+  `crearContacto()` del CRM, con su control de teléfono repetido.
+
 ## Permisos
 
 Módulo **Trámites UTE**: ver para la lista, crear para el alta manual, editar
@@ -259,6 +328,13 @@ permisos: la hace el envío del formulario, que pide Onboarding *o* Trámites UT
 editar (sección anterior). Un asesor (`ASESOR_COMERCIAL`, que solo ve Trámites
 UTE) puede originar un trámite con el formulario y verlo en la sección, pero no
 cambiarle el estado.
+
+Para un cliente sin proyecto: el botón **Pedir trámite a UTE** se ve con
+Onboarding *o* Trámites UTE editar; buscar contactos y ver contexto/vista previa
+piden Onboarding *o* Trámites UTE ver; **crear el contacto**, leer la factura y
+enviar piden Onboarding *o* Trámites UTE editar. Son endpoints de UTE a
+propósito: no hace falta permiso del CRM de Ventas para buscar o dar de alta
+al cliente. Bajar los archivos del trámite pide Trámites UTE ver.
 
 ## Casos borde
 
@@ -270,6 +346,17 @@ cambiarle el estado.
   busca uno abierto del tipo nuevo: el viejo no se reutiliza.
 - **Borrar un trámite no borra la copia del formulario** de los documentos del
   proyecto.
+- **Sin proyecto, los archivos no aparecen en ningún "Documentos"**: solo se
+  bajan desde el trámite. Si el cliente después compra y se crea el proyecto,
+  el trámite **no se pasa solo** al proyecto: queda en "Sin proyecto".
+- **La factura sin enviar queda guardada** (pendiente, atada al contacto) si se
+  sube y no se manda el formulario. No se limpia sola.
+- **La factura no viaja adjunta al mail**, igual que con proyecto: solo va el
+  formulario.
+- **Si se borra el contacto**, el trámite queda (la relación es `SetNull`) y se
+  lista como "(contacto borrado)".
+- **El borrador con contacto** usa su propia clave en el navegador, así que no
+  se mezcla con el de un proyecto.
 
 ---
 

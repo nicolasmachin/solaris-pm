@@ -34,6 +34,7 @@ import { getProjects, patchProject } from "../api/projects.api";
 import type { ProjectListItem } from "../types/api.types";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
+import { ProjectPicker } from "../components/finance/ProjectPicker";
 import { DropdownFilter } from "../components/ui/DropdownFilter";
 import { useAuthStore } from "../store/auth.store";
 import { usePermission } from "../hooks/usePermission";
@@ -1292,27 +1293,23 @@ function NewUteModal({
           </button>
         </div>
 
-        <label className="block">
+        <div className="block">
           <span className="text-xs text-[var(--color-text-secondary)]">Proyecto</span>
-          <select
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            required
-            className="mt-1 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-          >
-            <option value="">{loadingProjects ? "Cargando…" : "Elegí un proyecto"}</option>
-            {availableProjects.map((p: ProjectListItem) => (
-              <option key={p.id} value={p.id}>
-                [{p.code}] {p.clientName}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <ProjectPicker
+              value={projectId}
+              onChange={setProjectId}
+              projects={availableProjects}
+              loading={loadingProjects}
+              emptyLabel="Elegí un proyecto"
+            />
+          </div>
           {!loadingProjects && availableProjects.length === 0 ? (
             <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
               Todos los proyectos activos ya tienen un trámite UTE.
             </p>
           ) : null}
-        </label>
+        </div>
 
         <label className="mt-3 block">
           <span className="text-xs text-[var(--color-text-secondary)]">Número de caso (opcional)</span>

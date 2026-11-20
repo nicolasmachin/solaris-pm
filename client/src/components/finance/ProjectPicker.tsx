@@ -16,6 +16,9 @@ type Props = {
   emptyLabel?: string;
   /** Incluir generadores livianos (Experiencia Solar / CSV) en la lista. */
   includeLivianos?: boolean;
+  /** Lista ya filtrada por quien lo usa. Si viene, no se carga la propia. */
+  projects?: ProjectListItem[];
+  loading?: boolean;
 };
 
 export function ProjectPicker({
@@ -24,11 +27,16 @@ export function ProjectPicker({
   placeholder = "Buscar proyecto por cliente o código…",
   emptyLabel = "Sin proyecto",
   includeLivianos = false,
+  projects: projectsProp,
+  loading = false,
 }: Props) {
-  const { data: projects = [] } = useQuery({
+  const { data: projectsQuery = [], isLoading } = useQuery({
     queryKey: ["projects-list-finance", { includeLivianos }],
     queryFn: () => getProjects(includeLivianos ? { includeLivianos: true } : undefined),
+    enabled: !projectsProp,
   });
+  const projects = projectsProp ?? projectsQuery;
+  const cargando = projectsProp ? loading : isLoading;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -82,7 +90,7 @@ export function ProjectPicker({
               {selected.code} · {selected.clientName}
             </span>
           ) : (
-            <span className="text-[var(--color-text-muted)]">{emptyLabel}</span>
+            <span className="text-[var(--color-text-muted)]">{cargando ? "Cargando…" : emptyLabel}</span>
           )}
         </span>
         <div className="flex items-center gap-1 shrink-0">

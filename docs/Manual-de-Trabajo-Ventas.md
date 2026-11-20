@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.25 · del 19/11/26
+**Voltia · Uruguay** · Versión 1.26 · del 20/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -1374,6 +1374,12 @@ suministro; la casilla **Consulta enviada** de la lista se tilda a mano.
 Debajo está también **⚡ Solicitar aumento de potencia**: un trámite aparte y
 opcional, para los suministros que necesitan más potencia contratada.
 
+El mismo pedido se puede hacer desde **Trámites UTE → Comercial**, con el botón
+**Pedir trámite a UTE**, también para un **cliente que todavía no tiene
+proyecto** (por ejemplo, alguien que necesita el aumento antes de comprar): se
+lo busca entre los contactos o se lo da de alta en el momento, se le sube la
+factura de UTE para que Voltia PM complete los datos, y se manda igual.
+
 ![La pantalla de la consulta a UTE, con la factura cargada, los datos completos y el mail como va a salir.](captura:ventas-consulta-ute)
 
 ### El bloque Contrato firmado
@@ -1461,6 +1467,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.26 | 20 de noviembre de 2026 | El pedido de aumento de potencia u otro trámite a UTE Comercial se puede hacer también desde Trámites UTE, incluso para un cliente que todavía no tiene proyecto. |
 | 1.25 | 19 de noviembre de 2026 | El lead guarda la ubicación GPS de la obra y la abre con un toque en Google Maps o en Waze. Llega sola cuando el cliente la manda por WhatsApp o cuando se manda en el bot de minutas durante la visita; también se pega a mano. Pasa al proyecto al crearlo. |
 | 1.24 | 19 de noviembre de 2026 | Un lead ganado se puede convertir en proyecto también desde el chat de Claude: pide la ciudad, el departamento y qué se le factura, muestra antes cómo va a quedar y lo crea cuando el asesor confirma. |
 | 1.23 | 19 de noviembre de 2026 | Se agrega «Las cotizaciones a medida»: cómo se cotiza a mano lo que no sale del cotizador solar (ampliaciones, cargadores de auto eléctrico y otros trabajos), para quién es, el cliente nuevo, los ítems y los artículos de venta, el PDF de una hoja, el número y el estado. |

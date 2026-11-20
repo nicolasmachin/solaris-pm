@@ -2673,9 +2673,13 @@ enum UteTramiteComercialEstado {
 }
 
 model UteTramiteComercial {
-  id        String  @id @default(cuid())
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  // Cada trámite es de un proyecto o, si el cliente no tiene obra con Voltia,
+  // de un contacto del CRM. Uno de los dos siempre (lo valida el server).
+  projectId  String?
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contactoId String?
+  contacto   Contacto? @relation(fields: [contactoId], references: [id], onDelete: SetNull)
 
   // Suministro (cuenta UTE) al que corresponde; 1 = el principal.
   suministro Int @default(1)
@@ -2702,6 +2706,7 @@ model UteTramiteComercial {
   deletedAt   DateTime? @db.Timestamptz(6)
 
   @@index([projectId])
+  @@index([contactoId])
   @@index([estado])
   @@index([deletedAt])
   @@map("ute_tramites_comerciales")
@@ -7122,6 +7127,7 @@ model Contacto {
   createdById            String?
   createdBy              User?                  @relation("ContactoCreadoPor", fields: [createdById], references: [id], onDelete: SetNull)
   cotizaciones           Cotizacion[]
+  tramitesComercialesUte UteTramiteComercial[]
   deletedAt              DateTime?              @db.Timestamptz(6)
   createdAt              DateTime               @default(now()) @db.Timestamptz(6)
   updatedAt              DateTime               @updatedAt @db.Timestamptz(6)

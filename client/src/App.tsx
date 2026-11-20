@@ -658,6 +658,15 @@ export function App() {
             </PermissionRoute>
           }
         />
+        {/* Mismo formulario para un cliente SIN proyecto (Trámites UTE → Comercial). */}
+        <Route
+          path="/tramites-ute/contacto/:contactoId/suministro-individual"
+          element={
+            <PermissionRoute module="TRAMITES_UTE" action="VIEW">
+              <SuministroIndividualUte />
+            </PermissionRoute>
+          }
+        />
         <Route
           path="/tramites-ute"
           element={

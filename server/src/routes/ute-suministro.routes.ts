@@ -1,8 +1,11 @@
 // Solicitud de suministro individual / aumento de potencia contratada a UTE.
 //
 // Es un trámite OPCIONAL que se dispara desde la subetapa "Consulta inicial
-// UTE" de Onboarding: se manda un mail a UTE con el formulario oficial (un
-// libro Excel) completado y adjunto.
+// UTE" de Onboarding o desde Trámites UTE → Comercial ("Pedir trámite a UTE"):
+// se manda un mail a UTE con el formulario oficial (un libro Excel) completado
+// y adjunto. Para un cliente SIN proyecto el mismo formulario va por
+// `ute-comercial.routes.ts` (rutas /ute-tramites-comerciales/contactos/...),
+// que reutiliza los esquemas y permisos exportados de acá.
 //
 // Los datos NO se leen de la base en el momento del envío: vienen en el pedido,
 // porque el asesor los revisa y corrige en la pantalla antes de mandar. Eso
@@ -30,17 +33,17 @@ import {
 import { contentDisposition } from "../utils/content-disposition.js";
 import { notFound, unauthorized } from "../utils/errors.js";
 
-const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-const TOOL_SOURCE = "ute-suministro-individual";
+export const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export const TOOL_SOURCE = "ute-suministro-individual";
 
 // Los dos roles que hacen este trámite tienen permisos complementarios:
 // ASESOR_COMERCIAL edita Onboarding pero solo mira Trámites UTE, y el rol
 // TRAMITACION_UTE es al revés. Pedir un solo módulo dejaría a uno afuera.
-const puedeVer = authorizeAny([
+export const puedeVer = authorizeAny([
   { module: Module.ONBOARDING, action: Action.VIEW },
   { module: Module.TRAMITES_UTE, action: Action.VIEW },
 ]);
-const puedeEnviar = authorizeAny([
+export const puedeEnviar = authorizeAny([
   { module: Module.ONBOARDING, action: Action.EDIT },
   { module: Module.TRAMITES_UTE, action: Action.EDIT },
 ]);
@@ -54,7 +57,7 @@ function ensureUser(request: FastifyRequest) {
 // para que un campo renombrado en el cliente falle acá y no salga un formulario
 // con un dato en blanco sin que nadie se entere.
 const textos = z.string();
-const contextSchema = z
+export const contextSchema = z
   .object({
     cliente: z
       .object({
@@ -121,7 +124,7 @@ const contextSchema = z
 
 const paramsSchema = z.object({ projectId: z.string().min(1) });
 
-const enviarSchema = z
+export const enviarSchema = z
   .object({
     to: z.string().trim().min(1),
     cc: z.string().trim().optional(),

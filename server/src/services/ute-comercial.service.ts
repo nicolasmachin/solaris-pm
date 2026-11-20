@@ -62,13 +62,17 @@ function kw(v: string): string {
 /**
  * Deja registrado el trámite que se acaba de mandar con el formulario.
  *
- * Si el proyecto ya tiene uno abierto del mismo tipo y suministro, es un
+ * Es de un proyecto o, si el cliente no tiene obra con Voltia, de un contacto
+ * del CRM (uno de los dos, nunca ninguno).
+ *
+ * Si el proyecto (o el contacto) ya tiene uno abierto del mismo tipo y suministro, es un
  * reenvío (se corrigió un dato, UTE lo observó): se actualiza ese en vez de
  * abrir otro. La fecha de pedido no se pisa —el primer pedido es el que
  * cuenta para saber cuánto lleva—, salvo que estuviera "a pedir".
  */
 export async function registrarTramiteEnviado(input: {
-  projectId: string;
+  projectId?: string | null;
+  contactoId?: string | null;
   suministro?: number;
   tramiteFormulario: string;
   potenciaContratada: string;
@@ -76,6 +80,11 @@ export async function registrarTramiteEnviado(input: {
   emailLogId: string;
   userId: string;
 }) {
+  const projectId = input.projectId || null;
+  const contactoId = projectId ? null : input.contactoId || null;
+  if (!projectId && !contactoId) {
+    throw new Error("registrarTramiteEnviado: hace falta un proyecto o un contacto");
+  }
   const tipo = TIPO_DESDE_FORMULARIO[input.tramiteFormulario.trim()] ?? UteTramiteComercialTipo.OTRO;
   const suministro = input.suministro ?? 1;
   const solicitada = kw(input.potenciaSolicitada);
@@ -89,7 +98,7 @@ export async function registrarTramiteEnviado(input: {
 
   const abierto = await prisma.uteTramiteComercial.findFirst({
     where: {
-      projectId: input.projectId,
+      ...(projectId ? { projectId } : { contactoId, projectId: null }),
       suministro,
       tipo,
       deletedAt: null,
@@ -113,7 +122,8 @@ export async function registrarTramiteEnviado(input: {
 
   const tramite = await prisma.uteTramiteComercial.create({
     data: {
-      projectId: input.projectId,
+      projectId,
+      contactoId,
       suministro,
       tipo,
       detalle,
