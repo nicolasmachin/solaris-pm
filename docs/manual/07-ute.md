@@ -226,7 +226,7 @@ todos esos pedidos, con su estado y cuánto llevan.
   **Cliente sin proyecto** (buscar un contacto del CRM o **Cliente nuevo**:
   nombre, teléfono, email, cédula o RUT; queda creado como contacto). Ver
   "Trámites de clientes sin proyecto".
-- **Nuevo trámite comercial** carga uno pedido por fuera de Voltia PM (por
+- **Anotar trámite ya pedido** carga uno pedido por fuera de Voltia PM (por
   teléfono, en la oficina de UTE, por mail propio). También pregunta para
   quién (proyecto con buscador, o contacto con búsqueda/alta). El modal ofrece
   el enlace al formulario de UTE por si todavía no se pidió.

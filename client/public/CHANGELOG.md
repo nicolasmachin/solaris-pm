@@ -10,7 +10,7 @@
 - **Clientes sin proyecto**: se busca el contacto o se lo da de alta en el momento con **Cliente nuevo** (nombre, teléfono, email y cédula o RUT). El formulario arranca con sus datos, se le puede subir la **factura de UTE** para que la IA complete el resto, y se revisa y se manda igual que con un proyecto.
 - La lista de Comercial ahora se divide en dos bloques, **Con proyecto** y **Sin proyecto**. El estado, el número de caso y las notas se editan igual en los dos.
 - Desde la fila de cada trámite se pueden **bajar el formulario enviado y la factura de UTE**; también desde la ficha del trámite.
-- **Nuevo trámite comercial** (para cargar uno pedido por fuera) ahora busca el proyecto escribiendo, en vez de una lista larga, y acepta también un cliente sin proyecto.
+- El botón para cargar un trámite pedido por fuera (en la oficina, por teléfono) ahora se llama **Anotar trámite ya pedido**, para no confundirlo con **Pedir trámite a UTE**. Busca el proyecto escribiendo, en vez de una lista larga, y acepta también un cliente sin proyecto.
 
 #### Buscador de proyectos
 

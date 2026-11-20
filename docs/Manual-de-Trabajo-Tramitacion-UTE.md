@@ -148,7 +148,7 @@ factura no va adjunta).
   después se vuelve a mandar el mismo trámite, por ejemplo porque UTE lo
   observó, se actualiza el que ya estaba: no se duplica.
 - Si se pidió **por otro lado** (en la oficina, por teléfono, por un mail
-  propio), se carga a mano con **Nuevo trámite comercial**: para quién (un
+  propio), se carga a mano con **Anotar trámite ya pedido**: para quién (un
   proyecto, buscándolo, o un cliente sin proyecto), tipo, estado, fecha de
   pedido, número de caso y notas. Para un trámite de tipo **Otro** hay que
   escribir qué es.

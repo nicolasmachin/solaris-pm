@@ -504,7 +504,7 @@ export function UteComercialSection() {
         {canCreate && (
           <Button size="sm" variant="secondary" onClick={() => setEditando("nuevo")}>
             <Plus size={14} />
-            Nuevo trámite comercial
+            Anotar trámite ya pedido
           </Button>
         )}
         {canPedir && (
@@ -671,7 +671,7 @@ export function TramiteComercialModal({
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h3 className="font-display text-lg font-bold text-[var(--color-text-primary)]">
-              {tramite ? "Trámite con UTE Comercial" : "Nuevo trámite con UTE Comercial"}
+              {tramite ? "Trámite con UTE Comercial" : "Anotar trámite ya pedido a UTE"}
             </h3>
             {proyectoNombre ? (
               <button
