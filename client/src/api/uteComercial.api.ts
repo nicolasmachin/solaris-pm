@@ -100,6 +100,7 @@ export type UteTramiteComercial = {
   caseNumber: string | null;
   notes: string | null;
   solicitadoEl: string | null;
+  darEnviadoEl: string | null;
   resueltoEl: string | null;
   emailLogId: string | null;
   fileAttachmentId: string | null;
@@ -129,6 +130,7 @@ export type UteComercialInput = {
 };
 
 export type UteComercialPatch = Partial<Omit<UteComercialInput, "projectId" | "contactoId">> & {
+  darEnviadoEl?: string | null;
   resueltoEl?: string | null;
 };
 

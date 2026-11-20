@@ -11,6 +11,7 @@
 - La lista de Comercial ahora se divide en dos bloques, **Con proyecto** y **Sin proyecto**. El estado, el número de caso y las notas se editan igual en los dos.
 - Desde la fila de cada trámite se pueden **bajar el formulario enviado y la factura de UTE**; también desde la ficha del trámite.
 - El botón para cargar un trámite pedido por fuera (en la oficina, por teléfono) ahora se llama **Anotar trámite ya pedido**, para no confundirlo con **Pedir trámite a UTE**. Busca el proyecto escribiendo, en vez de una lista larga, y acepta también un cliente sin proyecto.
+- Cada trámite comercial tiene ahora una fecha más, **DAR enviado**, entre **Pedido** y **Resuelto**: se ve como columna en la lista y se carga al abrir el trámite. Los días se siguen contando desde el pedido.
 
 #### Buscador de proyectos
 

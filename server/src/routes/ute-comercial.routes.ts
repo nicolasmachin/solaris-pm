@@ -106,6 +106,7 @@ const patchSchema = z
     caseNumber: textoOpcional,
     notes: textoOpcional,
     solicitadoEl: dia.nullable().optional(),
+    darEnviadoEl: dia.nullable().optional(),
     resueltoEl: dia.nullable().optional(),
   })
   .strict();
@@ -211,6 +212,7 @@ const LABELS: Record<string, string> = {
   caseNumber: "número de caso",
   notes: "notas",
   solicitadoEl: "fecha de pedido",
+  darEnviadoEl: "fecha de envío del DAR",
   resueltoEl: "fecha de resolución",
 };
 

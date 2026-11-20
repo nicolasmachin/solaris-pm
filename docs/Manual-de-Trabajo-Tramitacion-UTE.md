@@ -157,12 +157,15 @@ La lista está partida en dos bloques: **Con proyecto** y **Sin proyecto**. Los
 dos se manejan igual.
 
 **Cómo se sigue.** Al hacer clic en un trámite se abre para cambiarle el estado,
-cargar el número de caso o anotar lo que dijo UTE. Si se mandó desde Voltia PM,
+cargar el número de caso, poner la fecha en que se mandó el **DAR** o anotar lo
+que dijo UTE. Si se mandó desde Voltia PM,
 ahí mismo (y con los íconos de su fila) se bajan el **formulario que se mandó**
 y la **factura de UTE**. La lista muestra **cuántos
 días lleva** cada uno desde que se pidió. Por defecto se ven solo los que
 siguen abiertos; los resueltos y cancelados se ven eligiéndolos en el filtro
-**Estado**. Al marcarlo resuelto, si no se cargó la fecha, queda la del día.
+**Estado**. Cada trámite tiene tres fechas: **pedido**, **DAR enviado** y
+**resuelto**. La del DAR se carga a mano; los días se siguen contando desde el
+pedido. Al marcarlo resuelto, si no se cargó la fecha, queda la del día.
 
 En la ficha del proyecto, la subetapa **Consulta inicial UTE** muestra los
 trámites comerciales que tiene ese proyecto y en qué estado está cada uno.
@@ -232,7 +235,7 @@ se reescribe: lo que tiene que quedar con fecha y autor va como comentario.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 20 de noviembre de 2026 | Los trámites con UTE Comercial se pueden pedir desde la sección Comercial con el botón «Pedir trámite a UTE», para un proyecto o para un cliente sin proyecto (un contacto, que se puede dar de alta en el momento). La lista se divide en «Con proyecto» y «Sin proyecto», y desde cada trámite se bajan el formulario enviado y la factura de UTE. |
+| 0.9 | 20 de noviembre de 2026 | Los trámites con UTE Comercial se pueden pedir desde la sección Comercial con el botón «Pedir trámite a UTE», para un proyecto o para un cliente sin proyecto (un contacto, que se puede dar de alta en el momento). La lista se divide en «Con proyecto» y «Sin proyecto», y desde cada trámite se bajan el formulario enviado y la factura de UTE. Cada trámite suma la fecha en que se mandó el DAR, entre la del pedido y la de resolución. |
 | 0.8 | 18 de noviembre de 2026 | Se agrega el capítulo de los trámites con UTE Comercial (aumentos de potencia, servicios nuevos, provisorios): qué son, sus estados y cómo se siguen en la sección Comercial de Trámites UTE. |
 | 0.7 | 12 de octubre de 2026 | En el detalle de cada trámite se agrega el bloque Comentarios y archivos: Tramitación comenta y sube los papeles desde el trámite, sin ir a la pantalla del proyecto, y todo aparece en la ficha del cliente. |
 | 0.6 | 11 de octubre de 2026 | La consulta inicial la presenta el asesor apenas se cobra la seña, y el seguimiento lo hace Tramitación UTE desde ahí. |

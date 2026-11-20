@@ -211,7 +211,8 @@ todos esos pedidos, con su estado y cuánto llevan.
   La sección va en la URL (`/tramites-ute?seccion=comercial`) para poder
   linkearla.
 - La tabla muestra cliente (con el suministro si no es el 1), tipo, detalle,
-  estado, fecha de pedido, de resolución, días, número de caso y notas. Por
+  estado, fecha de pedido, de envío del DAR, de resolución, días, número de
+  caso y notas. Por
   defecto se ven solo los abiertos (a pedir, pedido, observado); los resueltos
   y cancelados se ven eligiéndolos en el filtro Estado. Hay buscador por
   cliente o código.
@@ -243,7 +244,9 @@ todos esos pedidos, con su estado y cuánto llevan.
   `projectId` o `contactoId`** (uno de los dos; ambos opcionales en el schema y
   la regla la hace cumplir la ruta: el POST rechaza ninguno y ambos),
   `suministro` (número, default 1), `tipo`, `detalle`, `estado`, `caseNumber`,
-  `notes`, `solicitadoEl` y `resueltoEl` (solo día, `@db.Date`), `emailLogId` y
+  `notes`, `solicitadoEl`, `darEnviadoEl` y `resueltoEl` (solo día, `@db.Date`;
+  `darEnviadoEl` se carga solo a mano, ningún estado lo completa y no cambia
+  los días, que siguen contando desde el pedido), `emailLogId` y
   `fileAttachmentId` si vino del formulario, soft delete con `deletedAt`.
 - **Tipos** (`UteTramiteComercialTipo`): los siete del campo "Trámite" del
   formulario de UTE (nuevo servicio, aumento, reducción, rehabilitación,

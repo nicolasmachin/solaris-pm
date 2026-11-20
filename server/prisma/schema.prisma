@@ -2693,6 +2693,8 @@ model UteTramiteComercial {
   caseNumber   String?
   notes        String?
   solicitadoEl DateTime? @db.Date
+  // Cuándo se mandó el DAR a UTE (lo carga Tramitación a mano).
+  darEnviadoEl DateTime? @db.Date
   resueltoEl   DateTime? @db.Date
 
   // Si nació del envío del formulario desde Voltia PM: el mail y la copia del

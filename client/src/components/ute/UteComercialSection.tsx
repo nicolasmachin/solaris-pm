@@ -388,6 +388,7 @@ function TablaTramites({
               <th className="px-3 py-2">Detalle</th>
               <th className="px-3 py-2">Estado</th>
               <th className="px-3 py-2">Pedido</th>
+              <th className="px-3 py-2">DAR enviado</th>
               <th className="px-3 py-2">Resuelto</th>
               <th className="px-3 py-2 text-right">Días</th>
               <th className="px-3 py-2">Nº caso</th>
@@ -423,6 +424,7 @@ function TablaTramites({
                   <EstadoBadge estado={t.estado} />
                 </td>
                 <td className="px-3 py-2 text-[var(--color-text-secondary)]">{fmtDia(t.solicitadoEl)}</td>
+                <td className="px-3 py-2 text-[var(--color-text-secondary)]">{fmtDia(t.darEnviadoEl)}</td>
                 <td className="px-3 py-2 text-[var(--color-text-secondary)]">{fmtDia(t.resueltoEl)}</td>
                 <td className="px-3 py-2 text-right font-mono text-[var(--color-text-secondary)]">{t.dias ?? "—"}</td>
                 <td className="px-3 py-2 font-mono text-[var(--color-text-secondary)]">{t.caseNumber ?? "—"}</td>
@@ -584,6 +586,7 @@ export function TramiteComercialModal({
   const [caseNumber, setCaseNumber] = useState(tramite?.caseNumber ?? "");
   const [notes, setNotes] = useState(tramite?.notes ?? "");
   const [solicitadoEl, setSolicitadoEl] = useState(tramite?.solicitadoEl?.slice(0, 10) ?? "");
+  const [darEnviadoEl, setDarEnviadoEl] = useState(tramite?.darEnviadoEl?.slice(0, 10) ?? "");
   const [resueltoEl, setResueltoEl] = useState(tramite?.resueltoEl?.slice(0, 10) ?? "");
 
   const eligiendo = !tramite && !projectIdFijo;
@@ -624,6 +627,7 @@ export function TramiteComercialModal({
       if ((notes.trim() || null) !== tramite.notes) patch.notes = notes.trim() || null;
       if ((solicitadoEl || null) !== (tramite.solicitadoEl?.slice(0, 10) ?? null))
         patch.solicitadoEl = solicitadoEl || null;
+      if ((darEnviadoEl || null) !== (tramite.darEnviadoEl?.slice(0, 10) ?? null)) patch.darEnviadoEl = darEnviadoEl || null;
       if ((resueltoEl || null) !== (tramite.resueltoEl?.slice(0, 10) ?? null)) patch.resueltoEl = resueltoEl || null;
       if (Object.keys(patch).length === 0) return tramite;
       return patchTramiteComercial(tramite.id, patch);
@@ -786,7 +790,7 @@ export function TramiteComercialModal({
           />
         </label>
 
-        <div className="mt-3 grid grid-cols-3 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <label className="block">
             <span className="text-xs text-[var(--color-text-secondary)]">Pedido el</span>
             <input
@@ -797,6 +801,18 @@ export function TramiteComercialModal({
               className={inputCls}
             />
           </label>
+          {tramite && (
+            <label className="block">
+              <span className="text-xs text-[var(--color-text-secondary)]">DAR enviado el</span>
+              <input
+                type="date"
+                value={darEnviadoEl}
+                onChange={(e) => setDarEnviadoEl(e.target.value)}
+                disabled={!canEdit}
+                className={inputCls}
+              />
+            </label>
+          )}
           {tramite ? (
             <label className="block">
               <span className="text-xs text-[var(--color-text-secondary)]">Resuelto el</span>
