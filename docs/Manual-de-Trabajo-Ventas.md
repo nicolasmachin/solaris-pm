@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.26 · del 20/11/26
+**Voltia · Uruguay** · Versión 1.27 · del 21/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -899,8 +899,13 @@ WhatsApp del asesor como cualquier otro mensaje.
 
 **El asistente del primer mensaje.** Cuando le escribe por primera vez alguien
 nuevo (sin conversación, ni lead, ni proyecto), un asistente con inteligencia
-artificial le contesta **el speech en nombre del asesor**, adaptado a lo que
-preguntó: espera unos minutos y lo manda en varios mensajes, con 20 a 40 segundos
+artificial le contesta **el speech en nombre del asesor**: si preguntó algo
+concreto, primero le contesta eso, pero el speech va **siempre completo**, con el
+precio estimado incluido, aunque el cliente solo diga «quiero cotizar». El precio
+es lo que filtra: el cliente tiene que saber cuánto sale más o menos antes de
+mandar la factura. Las palabras cambian de un chat a otro; el contenido no. El
+asistente nunca le ofrece hablar con otro asesor ni le pasa otro número. Si no
+logra armar el speech completo, no manda nada y le pasa el chat al asesor. Espera unos minutos y lo manda en varios mensajes, con 20 a 40 segundos
 entre uno y otro, como una persona. De noche (de 21 a 8) espera a las 8 de la
 mañana. Si el asesor contesta antes, el asistente no hace nada; si escribe
 mientras el asistente está mandando, se corta. En el chat, los mensajes del
@@ -918,6 +923,14 @@ El asistente se prende o se apaga por número en Administración → WhatsApp. *
 prueba** decide qué contestaría pero no manda nada: lo que habría mandado se ve
 arriba del chat. Sus reglas se editan en Marketing → Automatizaciones («Speech
 inicial del WhatsApp de Ventas»).
+
+**El saludo automático del celular, apagado.** WhatsApp Business permite poner un
+«mensaje de bienvenida» que sale solo cuando alguien escribe. En el número de un
+asesor con el asistente prendido **tiene que estar apagado**: Voltia PM toma
+cualquier mensaje que sale del celular como que el asesor ya contestó, y entonces
+el asistente se calla y el cliente se queda solo con el saludo, sin el speech.
+Se apaga en WhatsApp Business → Herramientas para la empresa → Mensaje de
+bienvenida.
 
 **Fotos, audios, videos y documentos.** Se ven dentro del chat como en
 WhatsApp: la foto se abre en grande con un clic, el audio se escucha ahí y abajo
@@ -1467,6 +1480,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.27 | 21 de noviembre de 2026 | El asistente del primer mensaje manda siempre el speech completo, con el precio estimado, y nunca ofrece hablar con otro asesor. Se explica por qué el mensaje de bienvenida automático de WhatsApp Business tiene que estar apagado en el celular del asesor. |
 | 1.26 | 20 de noviembre de 2026 | El pedido de aumento de potencia u otro trámite a UTE Comercial se puede hacer también desde Trámites UTE, incluso para un cliente que todavía no tiene proyecto. |
 | 1.25 | 19 de noviembre de 2026 | El lead guarda la ubicación GPS de la obra y la abre con un toque en Google Maps o en Waze. Llega sola cuando el cliente la manda por WhatsApp o cuando se manda en el bot de minutas durante la visita; también se pega a mano. Pasa al proyecto al crearlo. |
 | 1.24 | 19 de noviembre de 2026 | Un lead ganado se puede convertir en proyecto también desde el chat de Claude: pide la ciudad, el departamento y qué se le factura, muestra antes cómo va a quedar y lo crea cuando el asesor confirma. |

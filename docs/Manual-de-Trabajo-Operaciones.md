@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.16 · del 19/11/26
+**Voltia · Uruguay** · Versión 1.17 · del 21/11/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -26,7 +26,7 @@
 | Ingeniería | Diseña la instalación, en la oficina | Le entrega la pre-ingeniería para validar y, después de la validación, la lista de materiales definitiva |
 | Experiencia Solar | Es el referente del cliente desde que termina el onboarding | **Es quien le habla al cliente** de fechas y de cómo sigue todo. Operaciones no le comunica la fecha al cliente |
 | Tramitación UTE | Hace el trámite para que UTE habilite la instalación | Necesita los documentos firmados, las fotos y los videos de los ensayos que deja la obra |
-| Finanzas | Cobra, paga y controla | Aprueba las compras fuera de la lista de materiales que pasan los topes del gerente de Operaciones |
+| Finanzas | Cobra, paga y controla | Aprueba las compras fuera de la lista de materiales que pasan los topes del gerente de Operaciones. Además, el gerente de Operaciones le carga las horas extra y las faltas de su gente antes del día 10 del mes siguiente. Se pagan a mes vencido |
 
 ## 1 · Qué hace Operaciones y dónde termina su trabajo
 
@@ -1122,6 +1122,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.17 | 21 de noviembre de 2026 | Las horas extra y las faltas de la gente de Operaciones se pagan a mes vencido. El gerente de Operaciones se las carga a Finanzas antes del día 10 del mes siguiente. |
 | 1.16 | 19 de noviembre de 2026 | El proyecto muestra la ubicación GPS de la obra, debajo de la dirección, y la abre con un toque en Google Maps o en Waze para ir a instalar o a soporte. Si falta, se carga a mano. |
 | 1.15 | 19 de noviembre de 2026 | Se corrige: el proyecto no se crea solo al ganar el lead, lo crea el asesor con «Crear proyecto desde lead». Desde el chat de Claude se puede crear un proyecto desde cero; antes avisa si ya hay un proyecto o un lead con ese nombre y lo crea cuando se confirma. |
 | 1.14 | 17 de noviembre de 2026 | Los tickets se ven en Voltia PM en Soporte → Tickets (antes estaban en Mis tareas). Las fallas del inversor y las plantas que no generan llegan a la mesa de Soporte analizadas con IA, como ayuda para preparar la visita. |

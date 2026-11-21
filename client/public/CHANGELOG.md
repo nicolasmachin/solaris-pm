@@ -1,5 +1,15 @@
 # Novedades
 
+## v15.3
+
+### 21 de noviembre de 2026
+
+#### Arreglos
+
+- El asistente que contesta el primer mensaje en el WhatsApp de Ventas ahora manda **siempre el speech completo**, con el **precio estimado** ("para una casa normal, desde 8.500 dólares"), también cuando el cliente escribe solo "quiero cotizar". Antes, a veces le pedía la factura sin decirle cuánto sale más o menos.
+- El asistente ya **no le ofrece al cliente hablar con otro asesor** ni le pasa otro número: quien lo atiende es el dueño de ese WhatsApp.
+- Si el asistente no logra armar el speech completo, no manda nada y le pasa el chat al asesor con un aviso.
+
 ## v15.2
 
 ### 20 de noviembre de 2026

@@ -422,7 +422,16 @@ asistente de Instagram (modelo `INSTAGRAM_MODELO`, función de IA
 - **El job** (`revisarAsistente()`, cada 10 s, arrancado en `index.ts`): toma lo
   vencido una sola vez. `contestar()`: si una persona ya escribió (saliente con
   `origen` ≠ ASISTENTE), pasa a HUMANO; si no, Claude devuelve `{mensajes,
-  derivar, motivo}`. `derivar` → `pasarAlAsesor()`; sin mensajes → HUMANO; en
+  derivar, motivo}`. **Control del speech** (`problemaDelSpeech()`, desde el
+  21-nov-2026): si no deriva y trae mensajes, tienen que incluir el precio
+  (8.500) y la palabra «factura», y no pueden nombrar a `derivarA`, a
+  `derivarWhatsapp` ni ningún celular uruguayo. Si falla, se le pide una vez más
+  diciéndole qué faltó; si vuelve a fallar, no se manda nada y pasa al asesor
+  («El asistente no armó el speech completo»). **Los datos comunes** («_datos»,
+  compartidos con Instagram) pasan por `datosParaWhatsApp()`, que saca el ítem
+  con `{DERIVAR_A}`/`{DERIVAR_WHATSAPP}`: en Instagram se ofrece escribirle al
+  asesor por WhatsApp; en el WhatsApp del asesor eso lo mandaba a hablar con
+  otro asesor. `derivar` → `pasarAlAsesor()`; sin mensajes → HUMANO; en
   PRUEBA → SOMBRA con `asistenteSombra`; si no, ENVIANDO con
   `asistentePendientes` y `mandarSiguiente()` de a uno (`enviarTexto()` con
   `origen: "ASISTENTE"`, sin `enviadoPor`), 20–40 s entre uno y otro. Si escribe
@@ -443,6 +452,12 @@ asistente de Instagram (modelo `INSTAGRAM_MODELO`, función de IA
   del responsable: «asesora comercial» / «quedo atenta», «asesor comercial» /
   «quedo atento», o, sin señal, «del equipo comercial» / «quedo a las órdenes».
   Si un nombre sale mal, se agrega a `FEMENINOS` o `MASCULINOS` de ese archivo.
+- **El mensaje de bienvenida de WhatsApp Business corta el asistente**: sale
+  del celular, llega como eco (`origen = CELULAR`) y `contestoUnaPersona()` lo
+  toma como respuesta del asesor → HUMANO, y el cliente queda solo con el
+  saludo. Visto en producción el 21-nov-2026 en el número de July; se resolvió
+  apagando la bienvenida en el celular, no por código. Si vuelve a pasar, mirar
+  primero eso.
 - **Supuesto sin verificar**: que un mensaje que el cliente manda justo mientras
   el asistente manda el speech se tome como respuesta (lo pasa al asesor, que es
   lo seguro).

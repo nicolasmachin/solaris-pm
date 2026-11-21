@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.35 — 21 de noviembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.36 — 21 de noviembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -1179,6 +1179,15 @@ contesta un asistente con inteligencia artificial, que le manda **el speech de
 Ventas en nombre del asesor**, adaptado a lo que preguntó. Rige desde el 16 de
 noviembre de 2026. Las reglas:
 
+- **El speech va siempre completo, con el precio estimado** (desde el 21 de
+  noviembre de 2026): aunque el cliente solo diga «quiero cotizar», se le cuenta
+  todo, incluido cuánto sale más o menos una instalación para una casa normal.
+  Las palabras pueden cambiar; el contenido no. El precio es el filtro: si se le
+  pide la factura sin decirle el precio, se arma una propuesta para alguien que
+  al ver el número dice que es caro, y se pierde ese trabajo.
+- **Nunca deriva a otro asesor:** quien atiende es el dueño de ese WhatsApp; el
+  asistente no le ofrece al cliente hablar con otra persona ni le pasa otro número.
+
 - **Como una persona:** espera unos minutos antes de contestar, y manda el speech
   en varios mensajes con 20 a 40 segundos entre uno y otro.
 - **De noche no contesta:** lo que entra entre las 21 y las 8 se contesta a las 8
@@ -1228,6 +1237,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.36 | 21 de noviembre de 2026 | En el asistente del primer mensaje de WhatsApp: el speech va siempre completo con el precio estimado, porque es lo que filtra antes de cotizar, y nunca deriva a otro asesor. |
 | 0.35 | 21 de noviembre de 2026 | Se registran tres decisiones: el área pasa a llamarse Administración y Finanzas, con la contadora de la empresa como responsable y todos los objetivos financieros a su cargo; el reclamo de las cuotas vencidas ya lo hace Finanzas; y las horas extra y las faltas se pagan a mes vencido, cargadas por cada gerente antes del día 10. Donde decía «el contador», ahora dice «la contadora». |
 | 0.34 | 16 de noviembre de 2026 | Se registra que el primer mensaje de un cliente nuevo por WhatsApp lo contesta un asistente con el speech, en nombre del asesor: con ritmo de persona, de día, solo el primer contacto y sin negar lo que es. |
 | 0.33 | 15 de noviembre de 2026 | Se registran las reglas de los avisos automáticos de WhatsApp: ninguno antes de la bienvenida, la persona va primero donde puede avisar, repartidos en el tiempo, con tono de persona y con video aparte. |

@@ -96,6 +96,21 @@ const RELEASE_14_5: Release = {
   ],
 };
 
+export const LATEST_RELEASE: Release = {
+  version: "15.3",
+  date: "21 de noviembre de 2026",
+  sections: [
+    {
+      title: "Arreglos",
+      items: [
+        "El asistente que contesta el primer mensaje en el WhatsApp de Ventas ahora manda siempre el speech completo, con el precio estimado (para una casa normal, desde 8.500 dólares), también cuando el cliente escribe solo «quiero cotizar».",
+        "El asistente ya no le ofrece al cliente hablar con otro asesor ni le pasa otro número.",
+        "Si el asistente no logra armar el speech completo, no manda nada y le pasa el chat al asesor con un aviso.",
+      ],
+    },
+  ],
+};
+
 const RELEASE_15_1: Release = {
   version: "15.1",
   date: "18 de noviembre de 2026",
@@ -112,7 +127,7 @@ const RELEASE_15_1: Release = {
   ],
 };
 
-export const LATEST_RELEASE: Release = {
+const RELEASE_15_2: Release = {
   version: "15.2",
   date: "19 de noviembre de 2026",
   sections: [
@@ -1376,6 +1391,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "15.2",
+    shortDate: "20 nov",
+    highlights: RELEASE_15_2.sections.map((sec) => sec.title),
+  },
   {
     version: "15.1",
     shortDate: "18 nov",
