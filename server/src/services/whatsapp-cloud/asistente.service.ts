@@ -29,6 +29,7 @@ import { AuditAction, AuditEntityType, NotificationType, OrigenLead, Prisma } fr
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
 import { completar, deTipo, textoComun } from "../instagram-marketing/automatizaciones.js";
+import { asistenteConfig } from "../instagram-marketing/config.js";
 import { pedirJson } from "../instagram-marketing/claude.js";
 import { createNotification } from "../notification.service.js";
 import { crearLead } from "../sales/leads.service.js";
@@ -52,6 +53,34 @@ const ESQUEMA = {
   required: ["mensajes", "derivar", "motivo"],
   additionalProperties: false,
 };
+
+/**
+ * Los "Datos de Voltia" son comunes con Instagram, donde se ofrece escribirle a
+ * {DERIVAR_A}. En el WhatsApp del asesor no: es él quien atiende, y mandarlo a
+ * hablar con otro asesor no tiene sentido (caso del 21-nov-2026).
+ */
+export function datosParaWhatsApp(datos: string): string {
+  return datos
+    .split(/\n(?=- )/)
+    .filter((item) => !item.includes("{DERIVAR_A}") && !item.includes("{DERIVAR_WHATSAPP}"))
+    .join("\n");
+}
+
+/**
+ * Qué le falta al speech para poder salir: el precio estimado es lo que filtra
+ * a los clientes antes de cotizar, así que sin él no se manda. Tampoco se manda
+ * si ofrece otro contacto. Devuelve el problema, o null si está bien.
+ */
+export function problemaDelSpeech(mensajes: string[], otroContacto: string[]): string | null {
+  const texto = mensajes.join("\n");
+  if (!/8[.,]?500/.test(texto)) return "falta el precio estimado (desde 8.500 dólares)";
+  if (!/factura/i.test(texto)) return "falta pedirle la factura de UTE";
+  const normal = (s: string) => s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase();
+  const otro = otroContacto.map((c) => c.trim()).filter(Boolean).find((c) => normal(texto).includes(normal(c)));
+  if (otro) return `le ofrece otro contacto (${otro})`;
+  if (/\b0?9\d[\s.-]?\d{3}[\s.-]?\d{3}\b/.test(texto)) return "le pasa un número de teléfono";
+  return null;
+}
 
 const azar = (min: number, max: number) => min + Math.random() * (max - min);
 
@@ -170,7 +199,7 @@ async function armarRespuesta(phoneNumberId: string, telefono: string, asesor: s
   const conv = await prisma.whatsAppConversacion.findUnique({ where: DONDE(phoneNumberId, telefono), select: { id: true, nombrePerfil: true } });
   // "asesora" o "asesor" según el nombre; si no hay señal, una forma neutra.
   const genero = generoDe(asesor);
-  const instrucciones = completar(auto.flujo.replace("{DATOS}", completar(await textoComun("_datos"))))
+  const instrucciones = completar(auto.flujo.replace("{DATOS}", datosParaWhatsApp(await textoComun("_datos"))))
     .replaceAll("{ASESOR_CARGO}", genero === "f" ? "asesora comercial" : genero === "m" ? "asesor comercial" : "del equipo comercial")
     .replaceAll("{ATENTO}", genero === "f" ? "atenta" : genero === "m" ? "atento" : "a las órdenes")
     .replaceAll("{ASESOR}", asesor);
@@ -179,20 +208,34 @@ async function armarRespuesta(phoneNumberId: string, telefono: string, asesor: s
     `Hoy: ${ahora.toLocaleString("es-UY", { timeZone: "America/Montevideo", weekday: "long", hour: "2-digit", minute: "2-digit" })}.`,
     conv?.nombrePerfil ? `Nombre que tiene en WhatsApp: ${conv.nombrePerfil}.` : "No se sabe su nombre.",
   ].join("\n");
-  const r = await pedirJson<Salida>({
-    feature: "whatsapp_asistente",
-    instrucciones,
-    contexto,
-    mensajes: [{ role: "user", content: `Esta conversación:\n${await conversacionParaClaude(phoneNumberId, telefono)}` }],
-    esquema: ESQUEMA,
-    maxTokens: 2000,
-    entityId: conv?.id,
-  });
-  if (!r.resultado) {
-    console.error("[whatsapp] el asistente no pudo armar la respuesta:", r.problema);
-    return null;
+  const pedido = `Esta conversación:\n${await conversacionParaClaude(phoneNumberId, telefono)}`;
+  const config = asistenteConfig();
+  const otroContacto = [config.derivarA, config.derivarWhatsapp];
+  // Si el speech sale incompleto, se le pide una vez más diciendo qué le faltó;
+  // si vuelve a fallar, no se manda nada y el chat pasa al asesor.
+  let aviso = "";
+  for (let intento = 0; intento < 2; intento++) {
+    const r = await pedirJson<Salida>({
+      feature: "whatsapp_asistente",
+      instrucciones,
+      contexto,
+      mensajes: [{ role: "user", content: pedido + aviso }],
+      esquema: ESQUEMA,
+      maxTokens: 2000,
+      entityId: conv?.id,
+    });
+    if (!r.resultado) {
+      console.error("[whatsapp] el asistente no pudo armar la respuesta:", r.problema);
+      return null;
+    }
+    const salida = { ...r.resultado, mensajes: r.resultado.mensajes.map((m) => m.trim()).filter(Boolean).slice(0, MAXIMO_MENSAJES) };
+    if (salida.derivar || salida.mensajes.length === 0) return salida;
+    const problema = problemaDelSpeech(salida.mensajes, otroContacto);
+    if (!problema) return salida;
+    console.warn(`[whatsapp] speech rechazado (${problema}), intento ${intento + 1}`);
+    aviso = `\n\nTu respuesta anterior no sirve: ${problema}. Mandá el speech completo, con todo lo de "Lo que no puede faltar", y sin ofrecer otro contacto.`;
   }
-  return { ...r.resultado, mensajes: r.resultado.mensajes.map((m) => m.trim()).filter(Boolean).slice(0, MAXIMO_MENSAJES) };
+  return { mensajes: [], derivar: true, motivo: "El asistente no armó el speech completo: contestale vos" };
 }
 
 /** El chat pasa al asesor: punto rojo, notificación y, si mandó la factura, el lead. */

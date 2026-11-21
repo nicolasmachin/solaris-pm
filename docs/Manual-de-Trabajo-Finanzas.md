@@ -24,7 +24,8 @@
 | **Gerencia** | 1, 2, 4, 6 | Todo |
 | **Experiencia Solar** | 2, 4 (cobros), 5.3 (Cobros que gestiona Experiencia Solar), 5.19 (Plan granizo) | 5.2 |
 | **Ventas (asesores comerciales)** | 2, 4 («Ningún proyecto avanza sin saber cómo y cuándo paga el cliente»), 5.17 (Comisiones) | 5.2 |
-| **Operaciones y Logística** | 2, 4 («Las aprobaciones de gastos no frenan una obra»), 5.7 (Pagos a instaladores) | 5.5 y 5.6 |
+| **Operaciones y Logística** | 2, 4 («Las aprobaciones de gastos no frenan una obra» y «Las horas extra y las faltas se pagan a mes vencido»), 5.7 (Pagos a instaladores) | 5.5 y 5.6 |
+| **Cada gerente de área** | 4 («Las horas extra y las faltas se pagan a mes vencido») | 5.21 (Recursos Humanos) |
 | **Quien usa una tarjeta de Voltia** | 4 («Lo personal no es gasto de Voltia»), 5.10 (Tarjetas) | — |
 
 ## Qué es y qué no es este documento
@@ -115,9 +116,8 @@ con el **balance**.
 | **Proveedores** (por la facturación electrónica) | Las **facturas** que le emiten a Voltia | Finanzas → Facturas |
 | **Proveedores** (una vez por mes) | El **estado de cuenta**, que Finanzas le pide | Se sube en la ficha del proveedor (Finanzas → Proveedores) |
 | **Experiencia Solar** | Los cobros que registra o marca pagados en su propia pestaña, y las anualidades del **Plan de Protección contra Granizo** | Finanzas → Cobros y Movimientos (es la misma información) |
-| **Cada gerente de área** | Las **novedades del personal**: altas, bajas y aumentos del mes, y las **faltas** del mes anterior, que se pagan a mes vencido, **antes del día 10**. Cada empleado se las pasa a su gerente, y el gerente a Finanzas | Fuera de Voltia PM: no hay pantalla para esto |
+| **Cada gerente de área** | Las **horas extra** y las **faltas** de su gente, cargadas **antes del día 10** del mes siguiente; se pagan a mes vencido. También le avisa a Finanzas las **altas, bajas y aumentos** | Recursos Humanos → Novedades. Las altas, bajas y aumentos los registra Finanzas en el legajo de cada persona |
 | **Cada empleado** | Sus **pedidos de licencia**, que administración aprueba o rechaza, y los documentos que carga en su legajo (carné de salud, cursos, constancias), que administración revisa | Recursos Humanos (menú del usuario) |
-| **Operaciones** (para el sueldo) | Las **horas extra** de la cuadrilla del mes anterior, anotadas, **antes del día 10**; se pagan a mes vencido | Fuera de Voltia PM |
 | **Quien usa una tarjeta de Voltia** | Qué gasto hizo, si fue de Voltia o personal y, si es personal con una tarjeta de la empresa, quién lo autorizó | Finanzas → Tarjetas |
 
 ### Qué entrega
@@ -214,10 +214,10 @@ En los primeros días del mes se deja en orden el mes que terminó y se lo
 1. **Liquidar y pagar los sueldos**, dentro de los primeros 5 días hábiles del
    mes, y entregar cada recibo. Las **horas extra y las faltas se liquidan a mes
    vencido**: las de octubre van en el sueldo que se paga a principios de
-   diciembre. Cada gerente las pasa **antes del día 10** del mes siguiente (las
-   de octubre, antes del 10 de noviembre), y del 10 a fin de mes la contadora
-   arma las liquidaciones del sueldo que se paga a principios del mes que viene.
-   Así nadie corre el día del cierre. *A confirmar con la contadora.* Con los
+   diciembre. Cada gerente las carga en Voltia PM **antes del día 10** del mes
+   siguiente (las de octubre, antes del 10 de noviembre), y del 10 a fin de mes la contadora
+   arma las liquidaciones del sueldo que se paga a principios del mes que viene,
+   con el resumen de **Novedades** (5.21). Así nadie corre el día del cierre. *A confirmar con la contadora.* Con los
    sueldos pagos, se **suben los recibos** en Recursos Humanos (5.21).
 2. **Pagar los aportes a BPS y los impuestos a DGI**, en la fecha que fija cada
    organismo.
@@ -418,9 +418,13 @@ de control se puede cerrar igual, pero escribiendo por qué.
 ### Las horas extra y las faltas se pagan a mes vencido
 
 Las de un mes se pagan con el sueldo del mes subsiguiente: las de octubre, a
-principios de diciembre. Cada gerente las pasa **antes del día 10**, y del 10 a
-fin de mes la contadora arma las liquidaciones. **Un dato que llega después del
-10 pasa al mes siguiente.** *A confirmar con la contadora.*
+principios de diciembre. Cada gerente las carga en Voltia PM **antes del día
+10**; ese día lo del mes anterior **se cierra solo** y queda fijo, y del 10 a fin
+de mes la contadora arma las liquidaciones. **Lo que se carga después del 10
+pasa al mes siguiente.** *A confirmar con la contadora.*
+
+Cada persona ve sus horas extra y sus faltas en Mi legajo, para que no haya
+sorpresas en el recibo.
 
 ### Ningún proyecto avanza sin saber cómo y cuándo paga el cliente
 
@@ -1696,12 +1700,13 @@ documentos, sus licencias y sus recibos de sueldo. Hay dos miradas:
   lo que solo ve la empresa (contrato, categoría, sueldo y notas internas). Lo
   ven solo la Dirección y Finanzas.
 
-Recursos Humanos tiene cuatro pestañas:
+Recursos Humanos tiene cinco pestañas:
 
 | Pestaña | Para qué |
 |---|---|
 | **Personas** | La lista del equipo, con lo que le falta o le vence a cada uno. Desde ahí se abre el legajo de cada persona |
 | **Vencimientos** | Los documentos vencidos, los que vencen en 30 días o menos y los que faltan |
+| **Novedades** | Las horas extra y las faltas de cada persona, por mes. Las carga cada gerente, solo de su gente; Finanzas ve el resumen de todos, listo para liquidar, y lo baja en planilla |
 | **Licencias** | Los pedidos sin responder, quién está de licencia o sale en los próximos 30 días, y el saldo de días de cada uno |
 | **Cargar recibos** | Los recibos de sueldo del mes, todos juntos |
 
@@ -1747,10 +1752,27 @@ quien entrega, con la persona delante. Queda una constancia en PDF en sus
 documentos. Una entrega firmada no se edita: si hubo un error, se anula y se
 registra otra.
 
-**Lo que no está en Voltia PM.** Las faltas, las horas extra, las altas, las
-bajas y los aumentos no tienen pantalla: los gerentes se los pasan a Finanzas
-por fuera (ver 2). La liquidación del sueldo tampoco se hace en Voltia PM; lo
-que entra es el recibo ya hecho.
+**Las horas extra y las faltas (Novedades).** Cada gerente entra a Recursos
+Humanos y ve solo la pestaña **Novedades**, con la gente de su área (la que
+tiene el rol de su área: el gerente de Operaciones ve la cuadrilla; el de
+Ventas, a los asesores). Ahí carga:
+
+- cada **hora extra**: la fecha, de qué hora a qué hora, si fue en día hábil,
+  de descanso o feriado, en qué obra y quién la aprobó;
+- cada **falta**: la fecha, si fue con aviso o sin aviso, y una nota.
+
+Se carga **antes del día 10** del mes siguiente. Ese día, lo del mes anterior se
+**cierra solo** y queda fijo; lo que se carga después pasa a la liquidación del
+mes siguiente (ver 4, «Las horas extra y las faltas se pagan a mes vencido»).
+Finanzas ve el **resumen** de todos por persona y por mes, y lo baja en planilla
+para liquidar. Cada persona ve las suyas en Mi legajo.
+
+**Las altas, las bajas y los aumentos.** Los avisa el gerente del área y
+Finanzas los registra en el legajo de la persona: la fecha de ingreso, la de
+egreso y el sueldo.
+
+**Lo que no se hace en Voltia PM.** La liquidación del sueldo: lo que entra es
+el recibo ya hecho.
 
 ## 6 · Cuando algo sale mal
 
@@ -1766,6 +1788,18 @@ cliente. No se inventan fechas.
 Se mira primero si el pago entró y no se registró (en **Banco** o en **Por
 conciliar**). Si no entró, se le pregunta al asesor si hubo algún cambio
 acordado. Si no lo hubo, Finanzas le reclama el pago al cliente.
+
+### Una hora extra o una falta se cargó después del día 10
+
+No se reabre el mes: pasa a la liquidación del mes siguiente, y la persona la ve
+en Mi legajo con el mes en que se le va a pagar.
+
+### Un empleado dice que su recibo está mal
+
+Finanzas mira primero en **Novedades** lo que cargó su gerente. Si la
+diferencia está en lo que pasó (faltó o no faltó, hizo o no hizo esas horas),
+se lo pregunta al **gerente**. Si está en la cuenta del sueldo, **se corrige en
+el sueldo del mes siguiente**, y se le explica a la persona qué se corrigió.
 
 ### Una obra muestra «hay cobro sin factura»
 
@@ -1885,6 +1919,7 @@ una vez por mes.
 | **Administración y Finanzas** | El área de este manual, que en el texto se nombra **Finanzas** a secas. La responsable es la contadora de la empresa; otras personas del área hacen parte de las tareas administrativas. No confundir con **Administración** de Voltia PM, el menú de configuración del sistema. |
 | **UTE** | La empresa estatal de electricidad. Tiene que aprobar y **habilitar** la instalación para que el cliente pueda encenderla. |
 | **DGI** | La Dirección General Impositiva. Registra todas las facturas electrónicas. |
+| **BPS** | Banco de Previsión Social: el organismo al que se le pagan los aportes de los sueldos. |
 | **CFE** | Comprobante fiscal electrónico: la factura electrónica (o nota de crédito, o nota de débito). |
 | **A facturar** | Lo que hay que facturarle a un cliente: todo el presupuesto («facturación normal») u otro monto que dejó definido el asesor al vender, con su motivo. Puede ser menos que lo que paga el cliente. |
 | **Facturación electrónica** | El servicio por el que Voltia emite y recibe los CFE. Voltia PM emite por ahí las facturas a los clientes, y de ahí llegan solas las facturas de los proveedores. |
@@ -1923,11 +1958,17 @@ una vez por mes.
 | **Rendir la tarjeta** | Dejar dicho, cada mes, quién hizo cada gasto de la tarjeta y si fue de Voltia o personal, y que el pago la deje en cero. |
 | **Cuenta del socio** | Lo que el socio le debe a Voltia por gastos personales que Voltia pagó. No es sueldo ni gasto de la empresa; la contadora la cancela con sueldo formal, utilidades o devolución. |
 | **Adelanto a descontar** | Un gasto personal autorizado de un empleado, hecho con una tarjeta de la empresa, que se le descuenta del sueldo. |
+| **Legajo** | La ficha de cada persona del equipo en Voltia PM: sus datos, documentos, licencias, recibos, horas extra y faltas. |
+| **Novedades** | Las horas extra y las faltas de cada persona, que carga su gerente para liquidar el sueldo. |
+| **Mes vencido** | Se paga con el sueldo del mes subsiguiente: lo de octubre, a principios de diciembre. |
+| **Liquidar el sueldo** | Calcular cuánto cobra cada persona en el mes, con sus horas extra, faltas y descuentos, y armar su recibo. |
+| **Aguinaldo** | Un sueldo extra por año, que se paga en dos cuotas: junio y diciembre. |
 | **Cierre de mes** | Dejar fijo un mes ya revisado: después de cerrarlo, nada con fecha de ese mes se carga, se edita ni se borra, salvo que se reabra con motivo. |
 | **Archivo para la contadora** | La planilla de Excel de cada mes con las compras (neto e IVA), las ventas, los ajustes y los movimientos. |
 | **Neto e IVA** | El neto es el precio sin impuestos; el IVA, el impuesto que se le suma. El total de una factura es neto más IVA. |
 | **Flujo de fondos** | La proyección de cuánta plata va a haber, con lo que se espera cobrar y pagar. |
 | **Estado de resultados** | Cuánto se ganó o perdió en un período, con lo efectivamente cobrado y pagado (de caja). |
+| **Balance** | El informe de cada año con lo que Voltia tiene, lo que debe y cuánto ganó. Lo arma la contadora. |
 | **De caja** | Que cuenta solo lo que ya se cobró o se pagó, no lo que se debe. |
 | **Comisión** | Lo que cobra el asesor por cada venta que cierra. |
 | **Instalador tercerizado** | Un equipo de obra que no es de Voltia y cobra por obra. |
@@ -1941,7 +1982,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.26 | 21 de noviembre de 2026 | Finanzas recibe de cada gerente de área las novedades del personal del mes y de Operaciones las horas extra de la cuadrilla; entrega el sueldo y su recibo dentro de los primeros 5 días hábiles del mes, los impuestos y aportes a DGI y BPS, y a Gerencia el balance y los análisis que pida. A cada empleado le responde lo administrativo de su sueldo (cuánto se le pagó de horas extra o licencia, cuánto le queda); lo que faltó o las horas que hizo se le preguntan a su gerente. Se suma lo que se hace cada año: el balance y el aguinaldo. Nuevo lineamiento: las horas extra y las faltas se pagan a mes vencido, y un dato que llega después del día 10 pasa al mes siguiente. Nueva sección 5.21, Recursos Humanos: los recibos de sueldo, las licencias, los documentos del legajo, los vencimientos y las entregas de materiales. El trabajo con un proyecto termina con su resultado calculado. Los sueldos se liquidan y pagan dentro de los primeros 5 días hábiles del mes, con las horas extra y las faltas a mes vencido, que cada gerente pasa antes del día 10 (a confirmar con la contadora), y se pagan los aportes a BPS y los impuestos a DGI. |
+| 0.26 | 21 de noviembre de 2026 | Finanzas recibe de cada gerente de área las novedades del personal del mes y de Operaciones las horas extra de la cuadrilla; entrega el sueldo y su recibo dentro de los primeros 5 días hábiles del mes, los impuestos y aportes a DGI y BPS, y a Gerencia el balance y los análisis que pida. A cada empleado le responde lo administrativo de su sueldo (cuánto se le pagó de horas extra o licencia, cuánto le queda); lo que faltó o las horas que hizo se le preguntan a su gerente. Cada gerente carga las horas extra y las faltas de su gente en Recursos Humanos → Novedades, antes del día 10; ese día se cierra solo el mes anterior, y cada persona ve las suyas en Mi legajo. Se suma lo que se hace cada año: el balance y el aguinaldo. Nuevo lineamiento: las horas extra y las faltas se pagan a mes vencido, y un dato que llega después del día 10 pasa al mes siguiente. Nueva sección 5.21, Recursos Humanos: los recibos de sueldo, las licencias, los documentos del legajo, los vencimientos y las entregas de materiales. El trabajo con un proyecto termina con su resultado calculado. Los sueldos se liquidan y pagan dentro de los primeros 5 días hábiles del mes, con las horas extra y las faltas a mes vencido, que cada gerente pasa antes del día 10 (a confirmar con la contadora), y se pagan los aportes a BPS y los impuestos a DGI. Dos casos nuevos en «Cuando algo sale mal»: una hora extra o una falta cargada después del día 10, y un recibo de sueldo mal liquidado, que se corrige en el sueldo del mes siguiente. Palabras nuevas en el glosario: BPS, legajo, novedades, mes vencido, liquidar el sueldo, aguinaldo y balance. |
 | 0.25 | 19 de noviembre de 2026 | La factura de un proyecto también se puede emitir desde el chat de Claude: muestra antes todos los datos y emite solo con la confirmación. A pedido, le manda el PDF al cliente por WhatsApp. |
 | 0.24 | 12 de noviembre de 2026 | El área pasa a llamarse Administración y Finanzas y su responsable es la contadora de la empresa; otras personas del área hacen parte de las tareas administrativas. El área abarca todos los objetivos financieros de Voltia: rentabilidad de la empresa y de cada producto, análisis, estado de resultados, flujo de fondos, balance, contabilidad, facturar, cobrar, pagar (proveedores, instaladores, comisiones y sueldos), impuestos y aportes. Su trabajo se ordena en tareas fijas (de cada día, semana, mes y año) y tareas variables (las de cada proyecto). El reclamo de las cuotas vencidas lo hace Finanzas. |
 | 0.23 | 10 de noviembre de 2026 | En «¿Qué se le factura?», cuando se factura una parte, «Ver detalle» muestra la cuenta de la factura, el restante sin IVA, el total y el descuento de IVA, y se puede copiar para WhatsApp. El porcentaje y esa cuenta parten del precio de la propuesta. |
