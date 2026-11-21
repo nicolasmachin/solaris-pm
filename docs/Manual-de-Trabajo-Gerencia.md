@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.34 — 16 de noviembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.35 — 21 de noviembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -505,20 +505,64 @@ decidido ese mismo día: que las compras no pasaban por ninguna aprobación.
 
 **A qué manuales afecta.** A los de Operaciones (con Logística) y Finanzas.
 
-### El reclamo de los pagos atrasados pasa a Administración
+### Administración y Finanzas: un área, con la contadora como responsable
 
-**Qué se decidió.** Hoy el reclamo al cliente por una cuota atrasada lo hace
-Experiencia Solar. Va a pasar al **área de Administración** (la contadora)
-cuando esa área se haga cargo de Finanzas en Voltia PM.
+**Qué se decidió.** El área se llama **Administración y Finanzas** (en los
+manuales, **Finanzas** a secas) y su responsable es la **contadora de la
+empresa**, que ahora es interna. No hay contador externo. Parte de las tareas
+administrativas las hacen otras personas del área. Del área dependen **todos los
+objetivos financieros de Voltia**: la rentabilidad de la empresa y de cada
+producto, los análisis, el estado de resultados, el flujo de fondos, el balance,
+la contabilidad, facturar, cobrar, pagar (proveedores, instaladores, comisiones
+y sueldos) y los impuestos y aportes a DGI y BPS.
+
+**Por qué.** Antes la contadora era externa y Finanzas era una pestaña de
+Voltia PM que llevaban otros. Con todo en una sola área y una responsable, lo
+que entra, lo que sale y lo que se declara lo mira la misma persona, y hay a
+quién preguntarle por cualquier número de la empresa.
+
+**Desde cuándo rige.** Desde el 12 de noviembre de 2026.
+
+**A qué manuales afecta.** A todos: el área se nombra así en el PGT y en cada
+manual, y el de Finanzas pasa a ser el **Manual de trabajo de Administración y
+Finanzas**.
+
+### El reclamo de los pagos atrasados lo hace Finanzas
+
+**Qué se decidió.** El reclamo al cliente por una cuota vencida lo hace
+**Finanzas**. Antes lo hacía Experiencia Solar.
 
 **Por qué.** El que lleva los cobros es el que tiene que reclamar lo que no
 entró, y Experiencia Solar queda para el vínculo con el cliente.
 
-**Desde cuándo rige.** Decidido el 10 de octubre de 2026; el cambio se aplica
-cuando Administración tome el módulo. Hasta entonces, sigue Experiencia Solar.
+**Desde cuándo rige.** Decidido el 10 de octubre de 2026, para cuando
+Administración y Finanzas tomara los cobros; rige desde el 12 de noviembre de
+2026.
 
 **A qué manuales afecta.** Al PGT y a los manuales de Finanzas y de Experiencia
 Solar.
+
+### Las horas extra y las faltas se pagan a mes vencido, y cada gerente las carga antes del día 10
+
+**Qué se decidió.** El sueldo se paga dentro de los primeros 5 días hábiles del
+mes. Las horas extra y las faltas se pagan **a mes vencido**: las de octubre,
+con el sueldo de principios de diciembre. Cada gerente carga las de su gente en
+Voltia PM (Recursos Humanos → Novedades) **antes del día 10** del mes siguiente;
+ese día el mes anterior se cierra solo, y lo que se carga después pasa al mes
+siguiente. Del 10 a fin de mes la contadora arma las liquidaciones. Un recibo
+mal liquidado se corrige en el sueldo del mes siguiente.
+
+**Por qué.** Con las horas y las faltas del mismo mes, los gerentes las pasaban
+apurados el 1 y el 2 para que se pudiera liquidar antes del quinto día hábil, y
+eso termina en errores. A mes vencido, cada uno tiene un plazo claro y nadie
+corre.
+
+**Desde cuándo rige.** Decidido el 21 de noviembre de 2026. *A confirmar con la
+contadora* (que la forma de pago y su declaración a BPS sean correctas). La
+pantalla Novedades está por hacerse.
+
+**A qué manuales afecta.** Al de Finanzas, al de Operaciones, al Reglamento
+interno y a los de cada área con gente a cargo.
 
 ### Los videos para el cliente quedan en su portal
 
@@ -643,7 +687,7 @@ comprobante y los dos quedan registrados ante DGI. Revisar antes cuesta un
 minuto; corregir después cuesta dos comprobantes y una explicación al cliente.
 
 **Qué queda abierto.** Si cada cobro tiene que llevar su recibo electrónico, o
-alcanza con registrar el pago, se define con el contador. Hasta entonces las
+alcanza con registrar el pago, se define con la contadora. Hasta entonces las
 facturas salen de contado y los cobros no emiten comprobantes.
 
 **Desde cuándo rige.** La confirmación previa, desde el 30 de septiembre de 2026;
@@ -876,9 +920,8 @@ factura recibida entraba a la deuda sin que una persona la revisara.
   plata**: no sale de ninguna cuenta, no es gasto y no aparece en el estado de
   resultados.
 - **Las deudas viejas de la empresa unipersonal con Tiempo al Tiempo se registran
-  como compra de la SAS** (la empresa Voltia). Lo decidió la Dirección sabiendo que el
-  contador marcó un **riesgo fiscal**: queda anotado para revisarlo con la
-  contadora.
+  como compra de la SAS** (la empresa Voltia). Lo decidió la Dirección sabiendo que la
+  contadora marcó un **riesgo fiscal**: queda anotado para revisarlo con ella.
 
 **Por qué.** Lo cargado antes de ordenar las cuentas tenía facturas sin cargar,
 pagos sin aplicar y deudas anotadas dos veces. Arreglarlo renglón por renglón no
@@ -900,11 +943,10 @@ que se puede comparar con el banco.
   la cancela con sueldo formal, con utilidades o con la devolución de la plata.
 - **Un gasto personal de un empleado con una tarjeta de la empresa**, si fue
   **autorizado**, se le **descuenta del sueldo**: queda como un adelanto, con el
-  nombre de quien lo autorizó. Lo marca descontado el encargado de Finanzas (la
-  contadora), que es quien liquida los sueldos.
+  nombre de quien lo autorizó. Lo marca descontado quien liquida los sueldos.
 - Ni lo uno ni lo otro entra al estado de resultados.
 
-**Por qué.** Lo recomendó el contador y la Dirección lo aceptó: cargar lo
+**Por qué.** Lo recomendó la contadora y la Dirección lo aceptó: cargar lo
 personal como sueldo o como gasto de la empresa ensucia el resultado. Con la cuenta del socio, lo personal queda a la vista y se cancela
 de la forma que la contadora considere correcta. Con los empleados, lo que se
 autoriza se devuelve, y queda escrito quién lo autorizó.
@@ -1186,6 +1228,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.35 | 21 de noviembre de 2026 | Se registran tres decisiones: el área pasa a llamarse Administración y Finanzas, con la contadora de la empresa como responsable y todos los objetivos financieros a su cargo; el reclamo de las cuotas vencidas ya lo hace Finanzas; y las horas extra y las faltas se pagan a mes vencido, cargadas por cada gerente antes del día 10. Donde decía «el contador», ahora dice «la contadora». |
 | 0.34 | 16 de noviembre de 2026 | Se registra que el primer mensaje de un cliente nuevo por WhatsApp lo contesta un asistente con el speech, en nombre del asesor: con ritmo de persona, de día, solo el primer contacto y sin negar lo que es. |
 | 0.33 | 15 de noviembre de 2026 | Se registran las reglas de los avisos automáticos de WhatsApp: ninguno antes de la bienvenida, la persona va primero donde puede avisar, repartidos en el tiempo, con tono de persona y con video aparte. |
 | 0.32 | 15 de noviembre de 2026 | Cada número de WhatsApp lo ve y lo usa solo su responsable: el general, el responsable de Experiencia Solar (ya no cualquiera del área), y el de cada asesor, él solo (tampoco la gerencia comercial). La Dirección puede ver y usar cualquiera. |
