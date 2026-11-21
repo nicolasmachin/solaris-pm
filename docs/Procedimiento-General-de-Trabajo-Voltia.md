@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Versión 1.5 — 10 de noviembre de 2026
+**Voltia · Uruguay** · Versión 1.6 — 21 de noviembre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -422,15 +422,17 @@ de 24 a 48 horas después de la habilitación, junto con la capacitación.
 Todo el detalle está en el Manual de trabajo de Experiencia Solar (Manual de
 Posventa).
 
-### Finanzas
+### Administración y Finanzas
 
 **Qué hace.** Cobra a los clientes según el plan de pagos que dejó armado Ventas,
-cada cuota cuando llega su momento de la obra, paga a los proveedores, a los instaladores y las comisiones, emite las facturas
-por lo que dejó definido Ventas y lleva los resultados de la empresa. Si una cuota vence sin pagarse, el
-reclamo al cliente lo hace Experiencia Solar, que es quien habla con él; está
-decidido que pase al área de Administración cuando esa área tome Finanzas. Su
-trabajo con un proyecto termina cuando está cobrado entero y sus gastos, pagados. El detalle está en el Manual de
-trabajo de Finanzas, que está en armado.
+cada cuota cuando llega su momento de la obra, y reclama las que vencen sin
+pagarse. Paga a los proveedores, a los instaladores, las comisiones y los
+sueldos. Emite las facturas por lo que dejó definido Ventas y lleva los
+resultados de la empresa. Cada gerente de área le pasa las horas extra y las
+faltas de su gente antes de una fecha fija del mes siguiente, y se pagan a mes
+vencido. Su trabajo con un proyecto termina cuando está cobrado entero,
+facturado y con sus gastos pagados. El detalle está en el Manual de trabajo de
+Administración y Finanzas.
 
 ### Gerencia
 
@@ -648,6 +650,7 @@ cambia es cómo se trabaja, no se busca a quién culpar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.6 | 21 de noviembre de 2026 | El área pasa a llamarse Administración y Finanzas. Reclama ella las cuotas vencidas (antes lo hacía Experiencia Solar) y paga los sueldos. Cada gerente de área le pasa las horas extra y las faltas de su gente antes de una fecha fija del mes siguiente, y se pagan a mes vencido. |
 | 1.5 | 10 de noviembre de 2026 | El aviso de obra terminada le llega solo también a Tramitación UTE, que con eso arranca el trámite. |
 | 1.4 | 28 de octubre de 2026 | En el glosario: al cliente se le dice "reclamo" y no "ticket", y el portal muestra primero su planta. La aplicación del inversor queda como herramienta del equipo técnico: al cliente ya no se le da, porque lo que mostraba está en el portal. |
 | 1.3 | 22 de octubre de 2026 | Las cuotas del plan de pagos se cobran cuando llega cada momento de la obra, no en una fecha fijada de antemano. Al crear el proyecto, Ventas deja dicho qué se le factura al cliente, y Finanzas factura eso. |

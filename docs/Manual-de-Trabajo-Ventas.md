@@ -40,7 +40,7 @@ algo sale mal. Al final, el registro de cambios del manual.
 | Operaciones | Valida el proyecto, compra y hace la obra | Confirma la fecha de obra. Ventas solo da una estimación por quincena |
 | Tramitación UTE | Hace el trámite para que UTE habilite la instalación | Sigue la consulta inicial que manda el asesor |
 | Experiencia Solar | Acompaña al cliente desde que termina el onboarding | Recibe al cliente con la presentación del asesor; desde ahí es su contacto para todo |
-| Finanzas | Cobra, paga y controla | Cobra según la modalidad de pago que dejó definida el asesor |
+| Finanzas | Cobra, paga y controla | Cobra según la modalidad de pago que dejó definida el asesor. También le paga al asesor su comisión, que queda fija al ganar la venta. El gerente de Ventas le carga las horas extra y las faltas de su gente antes del día 10 del mes siguiente. Se pagan a mes vencido |
 
 ## 1 · Qué hace y dónde termina su trabajo
 
@@ -1480,7 +1480,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 1.27 | 21 de noviembre de 2026 | El asistente del primer mensaje manda siempre el speech completo, con el precio estimado, y nunca ofrece hablar con otro asesor. Se explica por qué el mensaje de bienvenida automático de WhatsApp Business tiene que estar apagado en el celular del asesor. |
+| 1.27 | 21 de noviembre de 2026 | El asistente del primer mensaje manda siempre el speech completo, con el precio estimado, y nunca ofrece hablar con otro asesor. Se explica por qué el mensaje de bienvenida automático de WhatsApp Business tiene que estar apagado en el celular del asesor. Finanzas le paga al asesor su comisión, que queda fija al ganar la venta. Las horas extra y las faltas de la gente de Ventas se pagan a mes vencido. El gerente de Ventas se las carga a Finanzas antes del día 10 del mes siguiente. |
 | 1.26 | 20 de noviembre de 2026 | El pedido de aumento de potencia u otro trámite a UTE Comercial se puede hacer también desde Trámites UTE, incluso para un cliente que todavía no tiene proyecto. |
 | 1.25 | 19 de noviembre de 2026 | El lead guarda la ubicación GPS de la obra y la abre con un toque en Google Maps o en Waze. Llega sola cuando el cliente la manda por WhatsApp o cuando se manda en el bot de minutas durante la visita; también se pega a mano. Pasa al proyecto al crearlo. |
 | 1.24 | 19 de noviembre de 2026 | Un lead ganado se puede convertir en proyecto también desde el chat de Claude: pide la ciudad, el departamento y qué se le factura, muestra antes cómo va a quedar y lo crea cuando el asesor confirma. |

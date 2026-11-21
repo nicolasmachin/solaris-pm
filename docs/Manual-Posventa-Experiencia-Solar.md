@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.50 · del 17/11/26
+**Voltia · Uruguay** · Versión 1.51 · del 21/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1946,7 +1946,7 @@ partes:
 - **Cuando el cliente paga**, Experiencia Solar lo marca en la pestaña **Cobros** con **Marcar pagado**, confirmando **la fecha en que entró la plata y el monto** que pagó (Voltia PM propone la fecha de hoy y el monto previsto; se corrigen si fue otro día u otro monto). Nadie lo revisa después: lo que se carga ahí es lo que queda.
 - **Las cuotas del plan no tienen fecha**: cada una se cobra en un momento de la obra. En la pestaña **Cobros**, en lugar de la fecha dice el momento («Previo a la obra», «Obra finalizada», «Habilitación finalizada»), y la etiqueta dice si ya está **Lista para cobrar** (llegó su momento), **Vencida** (pasaron 10 días sin cobrarla) o **Prevista** (todavía no). La cuota del 50 % queda lista 10 días antes del primer día de obra; la del 30 %, cuando se da por terminada la obra; la del 20 %, cuando se finaliza la habilitación de UTE: el mismo momento en que llega el aviso de que el cliente puede encender. Al cliente, entonces, se le dice **cuándo** paga por lo que pasa en su obra, no por una fecha. El resumen de pagos que se copia para WhatsApp también pone el momento en lugar de la fecha.
 - **A quién cobrarle hoy**: en Experiencia Solar → **Cobros** (la lista de todos los clientes), arriba aparece un aviso verde con cuántos clientes están listos para cobrar una cuota y cuántos la tienen vencida, con el botón **Ver solo esos**. La columna **A cobrar ahora** dice cuánto hay que cobrarle a cada uno en este momento y qué cuotas son; abajo de la lista, el total listo para cobrar y cuánto de eso ya venció. La lista arranca mostrando solo los clientes a los que les falta cobrar algo; para ver también los que ya pagaron todo, se elige **Todos, también los completos**.
-- **Si una cuota vence y el cliente no pagó**, el reclamo lo hace Experiencia Solar, que es quien habla con él. Está decidido que esto pase al área de Administración (la contadora) cuando esa área se haga cargo de Finanzas en Voltia PM.
+- **Si una cuota vence y el cliente no pagó**, el reclamo lo hace Finanzas, no Experiencia Solar. Si el cliente le pregunta a Experiencia Solar por un pago atrasado, se le contesta lo que dice la pestaña **Cobros** y se le avisa a Finanzas.
 
 **Cuándo escalar:** cualquier duda de montos, al asesor comercial.
 
@@ -2192,6 +2192,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.51 | 21 de noviembre de 2026 | El reclamo de las cuotas vencidas lo hace Finanzas, no Experiencia Solar. Si el cliente pregunta por un pago atrasado, se le contesta lo que dice la pestaña Cobros y se le avisa a Finanzas. |
 | 1.50 | 17 de noviembre de 2026 | Los tickets pasan de Mis tareas a Soporte → Tickets. En Soporte → Evolución se ven, día por día, los tickets abiertos y las plantas con problema por tipo. Nueva columna «Se arreglaron solas» en la mesa de Soporte, con el botón Visto. Las fallas del inversor y las plantas que no generan llegan a la mesa de Soporte ya analizadas con IA. |
 | 1.49 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |
 | 1.48 | 16 de noviembre de 2026 | En el WhatsApp: el chat se reconoce por el contacto (la persona con su teléfono) y, por él, su cliente; los números del equipo de Voltia aparecen con nombre y rol y no cuentan como sin contestar; el número que no es de nadie muestra el nombre que la persona tiene en WhatsApp. Al asociar un chat se busca entre clientes, contactos y equipo, y se puede crear el contacto desde el chat. |
