@@ -1,6 +1,6 @@
 # Manual de trabajo de Administración y Finanzas
 
-**Voltia · Uruguay** · Versión 0.26 · del 21/11/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.27 · del 21/11/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -562,6 +562,8 @@ eso lo que se cambia en una pantalla se ve en las otras.
 
 Es la primera pantalla de Finanzas y tiene cuatro partes, de arriba abajo.
 
+![El Inicio de Finanzas: arriba, Para hacer hoy; debajo, la posición (lo que hay, lo que nos deben y lo que debemos) y lo que falta conciliar.](captura:fin-inicio)
+
 **Para hacer hoy.** La lista de todo lo que falta en Finanzas, junta: facturas
 de proveedores por revisar, deudas que vencen o ya vencieron, lo del banco sin
 cargar, cobros atrasados, clientes listos para cobrar una cuota, obras que cobraron y no se facturaron, gastos de
@@ -654,6 +656,8 @@ el presupuesto, lo cobrado y lo pendiente.
 - En la lista, esos clientes llevan junto al estado la etiqueta **«Listo para
   cobrar»** (verde) o **«Cuota vencida»** (roja), y van primero.
 
+![La lista de Cobros: los totales arriba, el aviso de los clientes listos para cobrar y una fila por proyecto.](captura:fin-cobros)
+
 **Comentarios y archivos del cobro.** Al pie del detalle de cada cliente está
 el bloque **Comentarios y archivos**: ahí Finanzas anota lo que se acordó con el
 cliente sobre los pagos y sube los comprobantes, sin ir a la pantalla del
@@ -668,6 +672,8 @@ una etiqueta: **LISTA PARA COBRAR** (ya llegó su momento), **VENCIDA** (pasaron
 10 días) o **PREVISTO** (todavía no). Los totales cuentan solo lo
 efectivamente cobrado: lo previsto no infla el «Cobrado». El detalle tiene dos
 pestañas, **Cobros** y **Estado de cuenta**. Desde el detalle se puede:
+
+![El detalle de un cliente en Cobros: lo presupuestado, lo cobrado y lo pendiente, y cada cuota del plan de pagos.](captura:fin-cobro-detalle)
 
 - **«Registrar cobro»**, eligiendo **Cobrado** (ya entró la plata; pide la
   cuenta donde entró, obligatoria) o **Previsto** (pide la fecha en que se
@@ -757,6 +763,8 @@ monto, eliminarlo y **«Copiar resumen (WhatsApp)»**, que copia el mismo mensaj
 *Resumen de pagos* de 5.2. Desde su pestaña **no se crea ni se edita el plan de
 pagos**: eso se hace en el onboarding (o Finanzas, desde Cobros).
 
+![La pestaña Cobros de Experiencia Solar, dentro de su módulo.](captura:fin-es-cobros)
+
 Dos diferencias con Finanzas que Finanzas tiene que conocer:
 
 - **No elige cuenta**: los cobros que registra o marca pagados Experiencia Solar
@@ -798,6 +806,8 @@ Facturación (el lápiz junto al monto).
 
 En **Finanzas → Facturación** están los proyectos que llevan factura, con
 **Pendientes**, **Emitidas** y **Todas**. Cada fila muestra por separado:
+
+![Facturación al cliente: lo pendiente de emitir, lo emitido y, por proyecto, cuánto se factura y el estado de cada factura.](captura:fin-facturacion)
 
 - **Presupuesto (con IVA)**: lo que paga el cliente en total.
 - **A facturar (con IVA)**: lo que hay que facturarle; abajo, el mismo monto sin
@@ -919,6 +929,8 @@ está pendiente de definir por la contadora.
 
 Se entra desde **Finanzas → Facturas**. Tiene dos partes: arriba, las facturas
 **por revisar**; abajo, el **registro** de todas.
+
+![Facturas de proveedores: arriba, las que están por revisar, cada una con lo que hay que hacer; abajo, el registro de todas.](captura:fin-facturas-proveedores)
 
 **Cómo llegan.** Voltia PM consulta la facturación electrónica **cada media
 hora, todos los días**; el botón **«Buscar facturas nuevas»** consulta en el
@@ -1049,6 +1061,8 @@ aplicaron a ninguna factura) y cuánto del límite de crédito está usado. Toca
 un proveedor se ven sus facturas, cada una con su vencimiento y cuántos días le
 faltan.
 
+![Proveedores: lo que se debe en total, lo vencido y lo que vence, y una fila por proveedor.](captura:fin-proveedores)
+
 **El listado de proveedores**, más abajo, muestra cada proveedor con su saldo.
 Desde ahí se da de alta uno nuevo y se carga una factura con **«Nueva factura a
 pagar»** (el mismo formulario de 5.5).
@@ -1070,6 +1084,8 @@ cuenta»**, **«Ajustar»**, **«Editar»** (los datos del proveedor) y **«Nuev
 gasto»**, que es solo para una compra de contado (ver el lineamiento «Una factura
 se carga por un solo lugar; a un proveedor se le paga por un solo camino»).
 Cada factura se puede **editar** o **eliminar** desde la ficha.
+
+![La ficha de un proveedor: el total adeudado, el saldo a favor y el saldo neto, las pestañas y sus facturas.](captura:fin-proveedor-detalle)
 
 **Registrar un pago.** Es **el único camino** para pagarle a un proveedor. Se
 piden la fecha, el monto y la moneda **de la deuda**, la **cuenta de donde sale
@@ -1183,6 +1199,8 @@ Se entra desde **Finanzas → Instaladores**. Muestra cada trabajo con el
 instalador, la fecha de la obra, el monto, lo pagado, el saldo y el estado
 (**pendiente**, **parcial** o **pagado**).
 
+![Pagos a instaladores: los totales del año y cada trabajo con su instalador, lo pagado y el saldo.](captura:fin-instaladores)
+
 **El pago lo genera el calendario.** La primera vez que Operaciones agenda una
 obra con un equipo **tercerizado**, el pago aparece solo, a nombre de la persona
 que cobra por ese equipo (se configura una vez, en Admin → Equipos). El monto es
@@ -1253,6 +1271,8 @@ servicios). Se configuran una vez en **Finanzas → Costos fijos**, con
 en los impares) o **anual** (en un mes elegido)—, el **día del mes de pago** y un
 **monto de referencia** con su moneda. Los carga Finanzas (y también un administrador).
 
+![Costos fijos: los que falta pagar en el mes, con su vencimiento, el monto propuesto y el botón «Pagar».](captura:fin-costos-fijos)
+
 **No generan movimientos solos.** Cada costo fijo figura en **Pendientes** (en el
 Inicio) desde que empieza el mes que le toca, y el **Flujo de fondos** los
 proyecta para los próximos 3 meses. Sale de Pendientes cuando:
@@ -1273,6 +1293,8 @@ Se entra desde **Finanzas → Banco**. Es el registro de **todo lo que Voltia PM
 leyó del banco**, cada movimiento con su **pareja** en Voltia PM (el movimiento o
 el pago cargado que le corresponde). La regla es simple: **cada movimiento del
 banco tiene que tener su movimiento cargado**.
+
+![Banco: el saldo que leyó el lector en cada cuenta y cada movimiento del banco con su estado; cuando no tiene pareja, lo que cree la IA que es.](captura:fin-banco)
 
 Los movimientos del banco los trae el **lector del banco**, un programa que lee
 los movimientos de cada cuenta en el home banking. Por ahora lee las dos cuentas
@@ -1357,6 +1379,8 @@ Voltia»).
 una tarjeta de la empresa, todavía no descontados. Cuando se descuentan del
 sueldo, quien liquida los sueldos toca **«Descontado»**.
 
+![Tarjetas: quién usa la tarjeta, lo de Voltia, lo personal y lo que hay que descontar, y cada gasto del mes.](captura:fin-tarjetas)
+
 ### 5.11 · Movimientos
 
 **La pestaña Movimientos muestra solo lo que ya pasó**: la plata que ya entró o
@@ -1364,6 +1388,8 @@ ya salió, más los pagos a proveedores. Lo que todavía se espera (cobros
 previstos, facturas a pagar, comisiones sin pagar) no está acá: está en
 **Pendientes**, en el Inicio (5.1). Arriba se ven el **saldo actual en pesos** y
 el **saldo actual en dólares**.
+
+![Movimientos: los saldos de hoy, los filtros y cada movimiento con su categoría, su cuenta y si tiene factura.](captura:fin-movimientos)
 
 **Si cada gasto tiene factura.** La columna **Factura** dice, para cada gasto:
 **Electrónica** (vinculada a la factura que trajo la facturación electrónica,
@@ -1442,6 +1468,8 @@ tarjetas), una tarjeta por cuenta con su saldo. Las cuentas se dan de alta en
 **Administración → Cuentas**. Las transferencias entre cuentas se hacen desde
 Movimientos (5.11).
 
+![Cuentas: los totales y una tarjeta por cuenta, con su saldo y cuándo se concilió por última vez.](captura:fin-cuentas)
+
 **Conciliar una cuenta** es comparar el saldo que muestra Voltia PM con el real
 del banco. Se hace **una vez por mes**. Se carga el **saldo real** que da el home
 banking y **su fecha**. Si hay diferencia, el **motivo es obligatorio**: no se
@@ -1469,6 +1497,8 @@ día: el saldo de hoy más lo que se espera cobrar y menos lo que hay que pagar.
 Proyecta **solo tres cosas**: los cobros pendientes de los clientes (las cuotas
 del plan de pagos y las anualidades del plan granizo), la deuda con proveedores
 y los costos fijos de cada mes.
+
+![Flujo de fondos: el saldo de hoy, lo que se espera que entre y salga, el gráfico de los últimos y los próximos meses y la lista de lo que viene.](captura:fin-flujo)
 
 - Las cuotas que se cobran en un momento de la obra van en la fecha en que se
   espera cobrarlas: si ya están listas o vencidas, **hoy**; si no, una fecha
@@ -1503,6 +1533,8 @@ Se entra desde **Finanzas → Resultados**. Responde **«¿cuánto ganamos o per
 en tal período?»** con la plata que efectivamente entró y salió. Se elige **mes,
 trimestre o año**. Todo se muestra **en dólares**.
 
+![El estado de resultados de un mes: los ingresos, los egresos por categoría y el resultado.](captura:fin-resultados)
+
 - Cuenta solo lo **pagado**, con la fecha en que se pagó.
 - Los pagos a proveedores cuentan **por la fecha y el monto de cada pago**: si
   se paga una parte de una factura grande, esa parte cae en el mes en que salió
@@ -1527,6 +1559,8 @@ Se entra desde **Finanzas → Cierre**. **Cerrar un mes lo deja fijo**: nada con
 fecha de ese mes se puede cargar, editar ni borrar, y sus números no se mueven
 más. Arriba dice hasta qué día está cerrado. Por defecto se abre en el mes
 anterior; se puede elegir otro mes y año.
+
+![Cierre de mes: la lista de control del mes, el botón para cerrarlo y el historial de cierres.](captura:fin-cierre)
 
 **La lista de control.** Antes de cerrar se revisa. Cinco puntos los calcula
 Voltia PM solo (con una marca verde si están bien, o el detalle de lo que falta):
@@ -1580,6 +1614,8 @@ cómo se aplicaron, ajustes, proveedores, cuentas, comisiones, pagos a
 instaladores, facturas recibidas, lo confirmado contra el banco y las
 conciliaciones.
 
+![Historial: quién cargó, cambió o borró cada cosa, y cuándo.](captura:fin-historial)
+
 Cada renglón dice **cuándo**, **quién**, **qué** (alta, cambio, baja o cambio de
 estado) y el detalle. Cuando es un cambio, muestra **el valor de antes y el de
 después**: si alguien corrigió el monto de una factura de 1.220 a 1.250, queda
@@ -1616,6 +1652,8 @@ ve solo las suyas; la gerencia comercial, Administración y Finanzas ven las de
 todos y filtran por asesor. Muestra el saldo a cobrar, lo cobrado en el año, la
 cantidad de ventas, un gráfico por mes y la tabla con filtros (todas,
 pendientes, pagas).
+
+![Comisiones: el saldo a cobrar de los asesores, la evolución por mes y cada comisión con su estado.](captura:fin-comisiones)
 
 **Cómo se paga.** Desde **Pendientes**, en el Inicio de Finanzas: la comisión
 aparece como **Pendiente manual**, con vencimiento el día 1 del mes siguiente a
@@ -1664,6 +1702,8 @@ granizo. A Finanzas le toca:
 - Los cobros del plan **no aparecen en Cobros** de la obra ni cuentan para su
   saldo.
 
+![El Plan granizo, en Experiencia Solar: los planes vigentes, lo cobrado y lo que falta cobrar, y cada cliente con su próximo cobro.](captura:fin-plan-granizo)
+
 ### 5.20 · Los indicadores del reporte semanal
 
 Todos los lunes a las 00:01 sale un correo, a una casilla fija, con los
@@ -1695,6 +1735,8 @@ documentos, sus licencias y sus recibos de sueldo. Hay dos miradas:
   lo que solo ve la empresa (contrato, categoría, sueldo y notas internas). Lo
   ven solo la Dirección y Finanzas.
 
+![Mi legajo, como lo ve cada persona: lo que le falta cargar, sus recibos, sus licencias y sus documentos.](captura:rrhh-mi-legajo)
+
 Recursos Humanos tiene cinco pestañas:
 
 | Pestaña | Para qué |
@@ -1705,12 +1747,18 @@ Recursos Humanos tiene cinco pestañas:
 | **Licencias** | Los pedidos sin responder, quién está de licencia o sale en los próximos 30 días, y el saldo de días de cada uno |
 | **Cargar recibos** | Los recibos de sueldo del mes, todos juntos |
 
+![Recursos Humanos, pestaña Personas: cada persona con su vínculo, su cargo y lo que le falta.](captura:rrhh-personas)
+
+![El legajo de una persona, como lo ve Finanzas: sus documentos para validar y sus licencias, con los días generados por año.](captura:rrhh-legajo)
+
 **Los recibos de sueldo.** Una vez por mes, con los sueldos pagos, Finanzas
 entra a **Cargar recibos**, elige el **mes que liquida** y sube todos los PDF
 juntos. A cada archivo se le asigna la persona; si el nombre del archivo la
 menciona, ya viene elegida. Un archivo sin persona no se sube hasta que se
 elija. A cada uno le llega un aviso de que tiene su recibo en Mi legajo. Los
 recibos los sube siempre administración, nunca la persona.
+
+![Cargar recibos: se elige el mes que liquida y se suben todos juntos.](captura:rrhh-recibos)
 
 **Las licencias.** Solo para el personal en relación de dependencia; los
 instaladores tercerizados no tienen licencia en Voltia PM.
@@ -1730,6 +1778,8 @@ instaladores tercerizados no tienen licencia en Voltia PM.
   aprobada. Una licencia se puede corregir o anular; anulada, deja de contar en
   el saldo.
 
+![La pestaña Licencias: los pedidos sin responder, quién está de licencia o sale pronto y el saldo de cada uno.](captura:rrhh-licencias)
+
 **Los documentos que carga cada persona.** Carné de salud, licencia de conducir,
 cédula, cursos, constancias. Entran **pendientes** y Finanzas recibe un aviso.
 En el legajo de la persona, cada uno se **valida** o se **rechaza**; al
@@ -1739,6 +1789,8 @@ le manda a la persona para que sepa qué volver a subir.
 **Los vencimientos.** Todos los días a las 7, Voltia PM avisa a la persona y a
 Finanzas cuando un documento entra en los 30 días antes de vencer y cuando
 vence. A quien tiene cargada la fecha de egreso no se le avisa.
+
+![La pestaña Vencimientos: los documentos vencidos, los que vencen pronto y los que faltan.](captura:rrhh-vencimientos)
 
 **Las entregas de materiales.** La ropa de trabajo, los equipos de protección y
 las herramientas que se le dan a alguien se registran en su legajo. La persona
@@ -1977,6 +2029,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.27 | 21 de noviembre de 2026 | Se agregan las capturas de pantalla de Voltia PM en el capítulo 5: cada pantalla de Finanzas, las pestañas Cobros y Plan granizo de Experiencia Solar, y Recursos Humanos (Personas, un legajo, Licencias, Vencimientos, Cargar recibos y Mi legajo). |
 | 0.26 | 21 de noviembre de 2026 | Finanzas recibe de cada gerente de área las novedades del personal del mes y de Operaciones las horas extra de la cuadrilla; entrega el sueldo y su recibo dentro de los primeros 5 días hábiles del mes, los impuestos y aportes a DGI y BPS, y a Gerencia el balance y los análisis que pida. A cada empleado le responde lo administrativo de su sueldo (cuánto se le pagó de horas extra o licencia, cuánto le queda); lo que faltó o las horas que hizo se le preguntan a su gerente. Cada gerente carga las horas extra y las faltas de su gente en Recursos Humanos → Novedades, antes del día 10; ese día se cierra solo el mes anterior, y cada persona ve las suyas en Mi legajo. Se suma lo que se hace cada año: el balance y el aguinaldo. Nuevo lineamiento: las horas extra y las faltas se pagan a mes vencido, y un dato que llega después del día 10 pasa al mes siguiente. Nueva sección 5.21, Recursos Humanos: los recibos de sueldo, las licencias, los documentos del legajo, los vencimientos y las entregas de materiales. El trabajo con un proyecto termina con su resultado calculado. Los sueldos se liquidan y pagan dentro de los primeros 5 días hábiles del mes, con las horas extra y las faltas a mes vencido, que cada gerente pasa antes del día 10 (a confirmar con la contadora), y se pagan los aportes a BPS y los impuestos a DGI. Dos casos nuevos en «Cuando algo sale mal»: una hora extra o una falta cargada después del día 10, y un recibo de sueldo mal liquidado, que se corrige en el sueldo del mes siguiente. Palabras nuevas en el glosario: BPS, legajo, novedades, mes vencido, liquidar el sueldo, aguinaldo y balance. «Quién lo lee» pasa a ser el área y la Dirección: lo que las demás áreas necesitan de Finanzas está en su propio manual. |
 | 0.25 | 19 de noviembre de 2026 | La factura de un proyecto también se puede emitir desde el chat de Claude: muestra antes todos los datos y emite solo con la confirmación. A pedido, le manda el PDF al cliente por WhatsApp. |
 | 0.24 | 12 de noviembre de 2026 | El área pasa a llamarse Administración y Finanzas y su responsable es la contadora de la empresa; otras personas del área hacen parte de las tareas administrativas. El área abarca todos los objetivos financieros de Voltia: rentabilidad de la empresa y de cada producto, análisis, estado de resultados, flujo de fondos, balance, contabilidad, facturar, cobrar, pagar (proveedores, instaladores, comisiones y sueldos), impuestos y aportes. Su trabajo se ordena en tareas fijas (de cada día, semana, mes y año) y tareas variables (las de cada proyecto). El reclamo de las cuotas vencidas lo hace Finanzas. |

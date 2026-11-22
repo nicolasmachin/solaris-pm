@@ -2963,14 +2963,16 @@ VISUALES = {
 
 # Las capturas de Voltia PM de cada manual: nombre que usa el .md → id del asset.
 CAPTURAS = {}
-for _f in ("capturas-operaciones.json", "capturas-ventas.json", "capturas-tercerizado.json", "capturas-reglamento.json"):
+for _f in ("capturas-operaciones.json", "capturas-ventas.json", "capturas-tercerizado.json", "capturas-reglamento.json",
+           "capturas-finanzas.json"):
     if os.path.exists(os.path.join(AQUI, _f)):
         CAPTURAS.update(json.load(open(os.path.join(AQUI, _f))))
 
 
 # Las capturas chicas (un recuadro, una tarjeta) se muestran a su tamaño de
 # pantalla y no estiradas al ancho de la hoja: ancho máximo en px.
-ANCHO_CAPTURA = {"ventas-tarjeta-lead": 290, "ventas-presentacion-es": 470, "ventas-lista-propuestas": 470}
+ANCHO_CAPTURA = {"ventas-tarjeta-lead": 290, "ventas-presentacion-es": 470, "ventas-lista-propuestas": 470,
+                 "fin-resultados": 560, "rrhh-recibos": 560}
 
 
 def captura(nombre, epigrafe):
