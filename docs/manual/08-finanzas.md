@@ -411,7 +411,11 @@ viven en Voltia PM.
 ### Cómo se usa
 
 **Dónde:** Finanzas → Ventas → Facturación. Lista los proyectos que **llevan
-factura** (se decide al crear el proyecto, ver «Qué se le factura» abajo).
+factura** (se decide al crear el proyecto, ver «Qué se le factura» abajo) y,
+desde el 23-nov-2026, **todos los vendidos desde esa fecha** aunque no la
+lleven: se pueden facturar igual. Dentro de Pendientes y de Emitidas, primero
+los que llevan factura; los otros muestran «Sin pedido de factura» bajo el
+nombre.
 
 Columnas: cliente, vendedor con la fecha de venta debajo, **Presupuesto (con
 IVA)** —lo que paga el cliente—, **A facturar (con IVA)** —con el monto sin IVA y
@@ -662,7 +666,14 @@ no se toca, no se manda) y en Facturación con el lápiz o **Definir**.
   el total y el descuento de IVA que muestra no corresponden.
 - «Falta facturar» compara con lo facturado por Biller; las facturas marcadas a
   mano no tienen monto y no descuentan.
-- Un proyecto con monto 0 no lleva factura y no aparece en Facturación.
+- Un proyecto con monto 0 no lleva factura. Si se vendió antes del 23-nov-2026
+  no aparece en Facturación; si se vendió desde esa fecha aparece igual, al
+  final, con «Sin pedido de factura». El filtro es `enListaFacturacion` en
+  `api.routes.ts` (`llevaFactura`, o `saleDate` desde el 23-nov, o sin
+  `saleDate` y creado desde esa fecha); el mismo filtro deja marcar «emitida»
+  en `PATCH /finance/facturacion/:projectId` a un proyecto sin la marca. Los
+  avisos de «Para hacer hoy» y el cierre de mes siguen contando solo los que
+  llevan factura.
 
 ### Cobrado vs facturado
 

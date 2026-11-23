@@ -115,7 +115,12 @@ async function transcribir(mensajeId: string, absoluto: string) {
   if (!isWhisperEnabled()) return;
   try {
     const r = await transcribeAudio(absoluto, { entityId: mensajeId }, "whatsapp_audio");
-    await prisma.whatsAppMensaje.update({ where: { id: mensajeId }, data: { transcripcion: r.text.trim() || null } });
+    const m = await prisma.whatsAppMensaje.update({ where: { id: mensajeId }, data: { transcripcion: r.text.trim() || null } });
+    // Lo que dice el audio entra a la conversación del día en la ficha.
+    if (m.origen !== "HISTORIAL") {
+      const { registrarConversacionDelDia } = await import("./bandejas.service.js");
+      await registrarConversacionDelDia(m.phoneNumberId, m.telefono, m.ocurridoEn);
+    }
   } catch (err) {
     console.error("[whatsapp] no se pudo transcribir el audio", mensajeId, err instanceof Error ? err.message : err);
   }

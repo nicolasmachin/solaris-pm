@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.27 · del 21/11/26
+**Voltia · Uruguay** · Versión 1.28 · del 23/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -882,10 +882,12 @@ doble tilde verde de arriba del chat se apaga el aviso de sin contestar, hasta
 que vuelva a escribir. Lo que el asesor contesta desde el celular también cuenta
 como respuesta.
 
-**Queda en el historial.** El primer mensaje del día que se le manda a un lead
-desde Voltia PM queda en su **Historial de actividad** como «WhatsApp desde
-Voltia PM», con el texto. Así se ve que se lo contactó sin que el historial se
-llene con cada renglón de la conversación.
+**Queda en el historial.** Cada día que hay conversación por WhatsApp con un
+lead, queda **una sola entrada** en su **Historial de actividad**, «Conversación
+por WhatsApp», con todo lo que se habló ese día: lo que escribió el cliente y lo
+que le contestó el asesor, desde Voltia PM o desde el celular. Se va completando
+sola a medida que llegan mensajes. Así se ve que se lo contactó y qué se habló,
+sin que el historial tenga una entrada por cada renglón.
 
 **Nadie más la ve.** Ni los otros asesores ni la gerencia comercial ven las
 conversaciones de un asesor. La única excepción es la Dirección: puede elegir,
@@ -1245,7 +1247,9 @@ ventanas seguidas:
      de la propuesta** (por ejemplo, 50): al llenar uno, los otros dos se
      completan solos. El porcentaje es sobre el precio de la propuesta que ganó;
      si no hay propuesta, sobre el presupuesto. Si no lleva factura, el monto es
-     cero.
+     cero. Aun así, el proyecto le aparece a Finanzas en su lista de
+     facturación, después de los que sí la llevan, porque se puede facturar
+     igual.
    - Cuando se factura una parte y el resto se cobra **sin IVA**, debajo
      aparece **«Ver detalle»** con la cuenta completa: la parte que va con
      factura y su IVA, lo que queda como **restante** (sin IVA), el **total**
@@ -1480,6 +1484,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.28 | 23 de noviembre de 2026 | Un proyecto vendido sin factura le aparece igual a Finanzas en su lista de facturación, después de los que sí la llevan, porque se puede facturar igual. La conversación de cada día por WhatsApp con un lead queda sola en su historial, en una sola entrada, también lo que el asesor contesta desde el celular. |
 | 1.27 | 21 de noviembre de 2026 | El asistente del primer mensaje manda siempre el speech completo, con el precio estimado, y nunca ofrece hablar con otro asesor. Se explica por qué el mensaje de bienvenida automático de WhatsApp Business tiene que estar apagado en el celular del asesor. Finanzas le paga al asesor su comisión, que queda fija al ganar la venta. Las horas extra y las faltas de la gente de Ventas se pagan a mes vencido. El gerente de Ventas se las carga a Finanzas antes del día 10 del mes siguiente. |
 | 1.26 | 20 de noviembre de 2026 | El pedido de aumento de potencia u otro trámite a UTE Comercial se puede hacer también desde Trámites UTE, incluso para un cliente que todavía no tiene proyecto. |
 | 1.25 | 19 de noviembre de 2026 | El lead guarda la ubicación GPS de la obra y la abre con un toque en Google Maps o en Waze. Llega sola cuando el cliente la manda por WhatsApp o cuando se manda en el bot de minutas durante la visita; también se pega a mano. Pasa al proyecto al crearlo. |

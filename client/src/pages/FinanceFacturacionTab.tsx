@@ -177,6 +177,11 @@ export function FinanceFacturacionTab() {
           <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
             {p.code} · {p.status}
           </div>
+          {!p.llevaFactura && (
+            <div className="text-[10px] text-[var(--color-text-muted)] italic" title="Al venderse no se marcó que requiere factura; se puede facturar igual">
+              Sin pedido de factura
+            </div>
+          )}
         </>
       ),
     },

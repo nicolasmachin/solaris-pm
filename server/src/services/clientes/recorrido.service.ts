@@ -12,6 +12,7 @@ import { prisma } from "../../lib/prisma.js";
 import { addBusinessDays } from "../../utils/business-days.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
+import { marcarSugerencia, sugerenciaVisible } from "./sugerir-pasos-whatsapp.service.js";
 import {
   CHECKS_POR_RECORRIDO,
   CODIGO_AVISO_HABILITACION,
@@ -40,6 +41,8 @@ export type CheckSerializado = {
   esDinamico: boolean;
   /** Uno de los tres avisos que el cliente sí o sí tiene que recibir. */
   clave: boolean;
+  /** La IA cree que una conversación de WhatsApp lo cumplió; falta que alguien confirme. */
+  sugerencia: { motivo: string; at: string } | null;
 };
 
 function defDe(recorrido: string, codigo: string) {
@@ -65,6 +68,7 @@ function serializar(c: RecorridoCheck & { completadoPor?: { name: string } | nul
     nota: c.nota,
     esDinamico: c.esDinamico,
     clave: defDe(c.recorrido, c.codigo)?.clave ?? false,
+    sugerencia: sugerenciaVisible(c),
   };
 }
 
@@ -315,4 +319,46 @@ export async function completarCheck(params: {
   });
 
   return serializar(updated);
+}
+
+/**
+ * Responde la sugerencia de la IA. Confirmar cierra el paso como "contacto" (lo
+ * resolvió la conversación) con quien confirma como responsable; descartar la
+ * apaga y el paso sigue pendiente.
+ */
+export async function responderSugerencia(params: {
+  checkId: string;
+  userId: string;
+  aceptar: boolean;
+}): Promise<CheckSerializado> {
+  const check = await prisma.recorridoCheck.findUnique({ where: { id: params.checkId } });
+  if (!check) throw notFound("CHECK_NOT_FOUND", "El check no existe.");
+  if (!sugerenciaVisible(check)) throw badRequest("SIN_SUGERENCIA", "Ese paso no tiene una sugerencia pendiente.");
+
+  await marcarSugerencia(check.id, params.aceptar ? "aceptada" : "descartada");
+  if (!params.aceptar) {
+    const fila = await prisma.recorridoCheck.findUniqueOrThrow({
+      where: { id: check.id },
+      include: { completadoPor: { select: { name: true } } },
+    });
+    return serializar(fila);
+  }
+
+  // Mismo camino que tildarlo a mano (bienvenida, Regla de Oro, auditoría); solo
+  // cambia de dónde salió.
+  await completarCheck({ checkId: check.id, userId: params.userId, completado: true });
+  const fila = await prisma.recorridoCheck.update({
+    where: { id: check.id },
+    data: { cierreFuente: "contacto" },
+    include: { completadoPor: { select: { name: true } } },
+  });
+  await createAuditEntry({
+    entityType: AuditEntityType.project,
+    entityId: check.projectId,
+    projectId: check.projectId,
+    userId: params.userId,
+    action: AuditAction.updated,
+    description: `Confirmó que la conversación de WhatsApp cumplió el paso "${check.titulo}"`,
+  });
+  return serializar(fila);
 }

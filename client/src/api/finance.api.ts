@@ -819,6 +819,8 @@ export interface FacturacionRow {
   code: string;
   clientName: string;
   status: string;
+  /** Marcado "lleva factura" al ganar: va primero. Las ventas sin la marca también se listan. */
+  llevaFactura: boolean;
   budgetUsd: number | null;
   precioPropuestaUsd: number | null;
   saleDate: string | null;

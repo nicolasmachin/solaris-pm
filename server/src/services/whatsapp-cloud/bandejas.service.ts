@@ -38,6 +38,7 @@ import {
   normalizarTelefono,
 } from "./api.service.js";
 import { faltantesParaEnviar, whatsappConfig } from "./config.js";
+import { programarSugerenciaPasos } from "../clientes/sugerir-pasos-whatsapp.service.js";
 
 const VENTANA_MS = 24 * 60 * 60 * 1000;
 
@@ -595,9 +596,8 @@ export type MandarBody =
   | { tipo: "texto"; telefono: string; texto: string };
 
 /**
- * Manda desde la bandeja y, si la conversación es de un cliente, deja el contacto
- * en su historial: uno por día (el primer mensaje), para que cuente como
- * contacto sin llenar el historial con cada renglón del chat.
+ * Manda desde la bandeja y, si la conversación es de un cliente, actualiza la
+ * conversación del día en su ficha (ver `registrarConversacionDelDia`).
  */
 export async function mandar(bandeja: Bandeja, body: MandarBody, userId: string) {
   const cuenta = exigirCuenta(bandeja);
@@ -612,17 +612,7 @@ export async function mandar(bandeja: Bandeja, body: MandarBody, userId: string)
           userId,
           cuenta,
         });
-  const cliente = await clienteDe(bandeja, body.telefono);
-  const texto = mensaje.texto ?? `Plantilla ${mensaje.plantilla ?? ""}`;
-  if (cliente?.leadId) {
-    await registrarContactoDelDiaLead(cliente.leadId, texto, userId).catch((err) =>
-      console.error("[whatsapp] no se pudo registrar el contacto en la actividad del lead:", err),
-    );
-  } else if (cliente?.projectId) {
-    await registrarContactoDelDia(cliente.projectId, texto, userId).catch(
-      (err) => console.error("[whatsapp] no se pudo registrar el contacto en el historial:", err),
-    );
-  }
+  await registrarConversacionDelDia(mensaje.phoneNumberId, mensaje.telefono, mensaje.ocurridoEn);
   return mensaje;
 }
 
@@ -663,52 +653,196 @@ export async function mandarArchivo(
     await fsp.rm(absoluto, { force: true }).catch(() => undefined);
     throw err;
   });
-  const cliente = await clienteDe(bandeja, params.telefono);
-  const texto = params.caption?.trim() || { image: "Foto", audio: "Audio", video: "Video", document: a.nombre }[tipo];
-  if (cliente?.leadId) await registrarContactoDelDiaLead(cliente.leadId, texto, userId).catch(() => undefined);
-  else if (cliente?.projectId) await registrarContactoDelDia(cliente.projectId, texto, userId).catch(() => undefined);
+  await registrarConversacionDelDia(mensaje.phoneNumberId, mensaje.telefono, mensaje.ocurridoEn);
   return mensaje;
 }
 
-const PREFIJO_CONTACTO = "WhatsApp desde Voltia PM:";
+// ─── La conversación del día en la ficha ─────────────────────────────────────
 
-/** Inicio del día de hoy en Uruguay (UTC-3, sin horario de verano). */
-function inicioDelDiaUruguay(ahora = new Date()): Date {
-  const uy = new Date(ahora.getTime() - 3 * 60 * 60 * 1000);
+/**
+ * Cada día que hay WhatsApp con un cliente queda UNA entrada en su ficha (la
+ * bitácora de Experiencia Solar, o la actividad del lead en Ventas) con la
+ * conversación de ese día: lo que dijo el cliente y lo que le dijimos, se haya
+ * escrito desde Voltia PM o desde el celular. Se rearma entera con cada mensaje
+ * nuevo, así queda en orden aunque los avisos de Meta lleguen desordenados.
+ *
+ * Antes solo se registraba lo que salía desde la bandeja: lo que se contestaba
+ * desde el celular no dejaba rastro y el cliente figuraba "sin contacto".
+ * El historial traído al conectar el número no se registra (llenaría la ficha
+ * de días viejos), ni los números de Dirección (no son bandejas del equipo).
+ */
+const CABECERA_CONVERSACION = "Conversación por WhatsApp con +";
+const ACCION_CONVERSACION_LEAD = "Conversación por WhatsApp";
+/** Las interacciones se editan con un tope de 2000 caracteres: la entrada no lo pasa. */
+const MAX_CONVERSACION = 2000;
+const MAX_RENGLON = 300;
+
+/** Inicio del día en Uruguay (UTC-3, sin horario de verano) de un momento dado. */
+function inicioDelDiaUruguay(en: Date): Date {
+  const uy = new Date(en.getTime() - 3 * 60 * 60 * 1000);
   return new Date(Date.UTC(uy.getUTCFullYear(), uy.getUTCMonth(), uy.getUTCDate(), 3));
 }
 
-async function registrarContactoDelDia(projectId: string, texto: string, userId: string) {
-  const yaHoy = await prisma.clientInteraction.findFirst({
-    where: {
-      projectId,
-      channel: InteractionChannel.WHATSAPP,
-      direction: InteractionDirection.SALIENTE,
-      content: { startsWith: PREFIJO_CONTACTO },
-      createdAt: { gte: inicioDelDiaUruguay() },
+function horaUruguay(en: Date): string {
+  const uy = new Date(en.getTime() - 3 * 60 * 60 * 1000);
+  return `${String(uy.getUTCHours()).padStart(2, "0")}:${String(uy.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+/** Lo que dice un mensaje, en una línea: audios con su transcripción, archivos por su tipo. */
+function textoDeRenglon(m: { tipo: string; texto: string | null; plantilla: string | null; transcripcion: string | null }): string {
+  const t = m.texto?.trim();
+  if (m.tipo === "template") return `[Plantilla ${m.plantilla ?? ""}]${t ? ` ${t}` : ""}`.trim();
+  if (m.tipo === "audio" || m.tipo === "voice") return m.transcripcion ? `[Audio] ${m.transcripcion.trim()}` : "[Audio]";
+  const etiqueta: Record<string, string> = {
+    image: "[Foto]",
+    video: "[Video]",
+    document: "[Documento]",
+    sticker: "[Sticker]",
+    location: "[Ubicación]",
+  };
+  const e = etiqueta[m.tipo];
+  if (e) return t ? `${e} ${t}` : e;
+  return t || `[${m.tipo}]`;
+}
+
+/** Arma el texto: cabecera + un renglón por mensaje. Si no entra, quedan los últimos. */
+export function armarConversacion(
+  telefono: string,
+  mensajes: { direccion: string; ocurridoEn: Date; quien: string; texto: string }[],
+): string {
+  const cabecera = `${CABECERA_CONVERSACION}${telefono}`;
+  const renglones = mensajes.map((m) => {
+    const t = m.texto.replace(/\s+/g, " ").trim();
+    const corto = t.length > MAX_RENGLON ? `${t.slice(0, MAX_RENGLON - 1)}…` : t;
+    return `${horaUruguay(m.ocurridoEn)} ${m.quien}: ${corto}`;
+  });
+  let desde = 0;
+  const largo = () => cabecera.length + 60 + renglones.slice(desde).reduce((s, r) => s + r.length + 1, 0);
+  while (desde < renglones.length - 1 && largo() > MAX_CONVERSACION) desde++;
+  const antes = desde > 0 ? [`(${desde} mensaje${desde === 1 ? "" : "s"} antes: completos en el chat)`] : [];
+  return [cabecera, ...antes, ...renglones.slice(desde)].join("\n").slice(0, MAX_CONVERSACION);
+}
+
+// Dos mensajes del mismo chat que llegan juntos no tienen que crear dos entradas.
+const enCurso = new Map<string, Promise<void>>();
+
+/** Para llamar después de guardar cualquier mensaje (entrante, de la bandeja o del celular). */
+export function registrarConversacionDelDia(phoneNumberId: string, telefono: string, en: Date): Promise<void> {
+  const clave = `${phoneNumberId}:${telefono}:${inicioDelDiaUruguay(en).toISOString()}`;
+  const previa = enCurso.get(clave) ?? Promise.resolve();
+  const esta = previa
+    .catch(() => undefined)
+    .then(() => rearmarConversacion(phoneNumberId, telefono, en))
+    .catch((err) =>
+      console.error("[whatsapp] no se pudo registrar la conversación en la ficha:", err instanceof Error ? err.message : err),
+    );
+  enCurso.set(clave, esta);
+  void esta.finally(() => {
+    if (enCurso.get(clave) === esta) enCurso.delete(clave);
+  });
+  return esta;
+}
+
+async function rearmarConversacion(phoneNumberId: string, telefono: string, en: Date) {
+  const bandeja = await bandejaDeNumero(phoneNumberId).catch(() => null);
+  if (!bandeja || (bandeja.area !== "EXPERIENCIA_SOLAR" && bandeja.area !== "VENTAS")) return;
+  const cliente = await clienteDe(bandeja, telefono);
+  if (!cliente || cliente.interno) return;
+  const projectId = bandeja.area === "EXPERIENCIA_SOLAR" ? cliente.projectId : undefined;
+  const leadId = bandeja.area === "VENTAS" ? cliente.leadId : undefined;
+  if (!projectId && !leadId) return;
+
+  const desde = inicioDelDiaUruguay(en);
+  const hasta = new Date(desde.getTime() + 24 * 60 * 60 * 1000);
+  const mensajes = await prisma.whatsAppMensaje.findMany({
+    where: { phoneNumberId, telefono, ocurridoEn: { gte: desde, lt: hasta }, origen: { not: "HISTORIAL" } },
+    orderBy: { ocurridoEn: "asc" },
+    select: {
+      direccion: true,
+      ocurridoEn: true,
+      tipo: true,
+      texto: true,
+      plantilla: true,
+      transcripcion: true,
+      enviadoPor: { select: { id: true, name: true } },
     },
+  });
+  if (mensajes.length === 0) return;
+
+  const nuestro = (m: (typeof mensajes)[number]) =>
+    m.enviadoPor?.name ?? bandeja.responsable?.nombre ?? "Voltia";
+  const contenido = armarConversacion(
+    telefono,
+    mensajes.map((m) => ({
+      direccion: m.direccion,
+      ocurridoEn: m.ocurridoEn,
+      quien: m.direccion === "SALIENTE" ? nuestro(m) : "Cliente",
+      texto: textoDeRenglon(m),
+    })),
+  );
+  const cabecera = `${CABECERA_CONVERSACION}${telefono}`;
+  const ultimo = mensajes[mensajes.length - 1].ocurridoEn;
+  // Autor: quien atiende el número; si nadie, el último que escribió desde Voltia PM.
+  const autorId =
+    bandeja.responsable?.id ??
+    [...mensajes].reverse().find((m) => m.enviadoPor)?.enviadoPor?.id ??
+    (await usuarioSistemaWhatsApp());
+  if (!autorId) return;
+
+  if (projectId) {
+    const hubo = mensajes.some((m) => m.direccion === "SALIENTE");
+    const direction = hubo ? InteractionDirection.SALIENTE : InteractionDirection.ENTRANTE;
+    const existente = await prisma.clientInteraction.findFirst({
+      where: { projectId, channel: InteractionChannel.WHATSAPP, content: { startsWith: cabecera }, createdAt: { gte: desde, lt: hasta } },
+      select: { id: true, deletedAt: true },
+    });
+    // Si alguien la borró a mano, no se vuelve a crear ese día.
+    if (existente?.deletedAt) return;
+    const interaccionId = existente
+      ? (
+          await prisma.clientInteraction.update({
+            where: { id: existente.id },
+            data: { content: contenido, direction, createdAt: ultimo },
+            select: { id: true },
+          })
+        ).id
+      : (
+          await prisma.clientInteraction.create({
+            data: { projectId, channel: InteractionChannel.WHATSAPP, direction, content: contenido, authorId: autorId, createdAt: ultimo },
+            select: { id: true },
+          })
+        ).id;
+    // Si Voltia escribió, la IA mira (unos minutos después) si la conversación
+    // cumple algún paso del recorrido. Solo sugiere: no tilda nada.
+    if (hubo) programarSugerenciaPasos(projectId, interaccionId);
+    return;
+  }
+
+  const existente = await prisma.salesActivity.findFirst({
+    where: { leadId: leadId!, action: ACCION_CONVERSACION_LEAD, notes: { startsWith: cabecera }, createdAt: { gte: desde, lt: hasta } },
     select: { id: true },
   });
-  if (yaHoy) return;
-  const { createInteraction } = await import("../clientes/index.js");
-  await createInteraction(projectId, InteractionChannel.WHATSAPP, `${PREFIJO_CONTACTO}\n${texto}`, userId, {
-    direction: InteractionDirection.SALIENTE,
-  });
+  if (existente) {
+    await prisma.salesActivity.update({ where: { id: existente.id }, data: { notes: contenido, createdAt: ultimo } });
+  } else {
+    await prisma.salesActivity.create({
+      data: { leadId: leadId!, userId: autorId, action: ACCION_CONVERSACION_LEAD, notes: contenido, createdAt: ultimo },
+    });
+  }
 }
 
-/** En Ventas el contacto queda en la actividad del lead, también uno por día. */
-const ACCION_WHATSAPP_LEAD = "WhatsApp desde Voltia PM";
-
-async function registrarContactoDelDiaLead(leadId: string, texto: string, userId: string) {
-  const yaHoy = await prisma.salesActivity.findFirst({
-    where: { leadId, action: ACCION_WHATSAPP_LEAD, createdAt: { gte: inicioDelDiaUruguay() } },
+let sistemaWhatsAppId: string | null | undefined;
+async function usuarioSistemaWhatsApp(): Promise<string | null> {
+  if (sistemaWhatsAppId !== undefined) return sistemaWhatsAppId;
+  const u = await prisma.user.findFirst({
+    where: { deletedAt: null, role: { name: "ADMIN" } },
+    orderBy: { createdAt: "asc" },
     select: { id: true },
   });
-  if (yaHoy) return;
-  await prisma.salesActivity.create({
-    data: { leadId, userId, action: ACCION_WHATSAPP_LEAD, notes: texto.slice(0, 2000) },
-  });
+  sistemaWhatsAppId = u?.id ?? null;
+  return sistemaWhatsAppId;
 }
+
 
 export async function plantillasDe(bandeja: Bandeja) {
   return listarPlantillas(exigirCuenta(bandeja));

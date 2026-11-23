@@ -11523,13 +11523,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // una por proyecto: si se sube otra, reemplaza a la anterior.
     const FACTURA_CLIENTE_SOURCE = "factura-cliente";
 
+    // Desde el 23-nov-2026 la lista muestra todas las ventas, lleven o no la
+    // marca "lleva factura": se pueden facturar igual. Las marcadas van primero.
+    // Las anteriores siguen apareciendo solo si están marcadas.
+    const FACTURACION_TODAS_DESDE = new Date("2026-11-23T00:00:00-03:00");
+    const enListaFacturacion: Prisma.ProjectWhereInput = {
+      OR: [
+        { llevaFactura: true },
+        { saleDate: { gte: new Date("2026-11-23") } },
+        { saleDate: null, createdAt: { gte: FACTURACION_TODAS_DESDE } },
+      ],
+    };
+
     app.get("/finance/facturacion", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const query = z.object({
         estado: z.enum(["pendiente", "emitida", "todas"]).optional().default("pendiente"),
         clientName: z.string().optional(),
       }).parse(request.query);
 
-      const where: Prisma.ProjectWhereInput = { llevaFactura: true, deletedAt: null };
+      const where: Prisma.ProjectWhereInput = { ...enListaFacturacion, deletedAt: null };
       if (query.estado === "pendiente") where.facturaEmitida = false;
       if (query.estado === "emitida") where.facturaEmitida = true;
       if (query.clientName && query.clientName.trim().length > 0) {
@@ -11539,7 +11551,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const projects = await prisma.project.findMany({
         where,
         select: {
-          id: true, code: true, clientName: true, status: true, budgetUsd: true,
+          id: true, code: true, clientName: true, status: true, budgetUsd: true, llevaFactura: true,
           saleDate: true, facturaEmitida: true, facturaEmitidaEn: true, facturaNota: true,
           facturacionNormal: true, facturarSinIvaUsd: true,
           salesperson: { select: { id: true, name: true } },
@@ -11553,8 +11565,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
           // Comprobantes emitidos por Biller (factura y notas de crédito).
           cfesEmitidos: { orderBy: { createdAt: "asc" } },
         },
-        // Pendientes primero, luego por fecha de venta más reciente.
-        orderBy: [{ facturaEmitida: "asc" }, { saleDate: "desc" }, { createdAt: "desc" }],
+        // Pendientes primero; dentro de cada grupo, las que llevan factura primero;
+        // luego por fecha de venta más reciente.
+        orderBy: [{ facturaEmitida: "asc" }, { llevaFactura: "desc" }, { saleDate: "desc" }, { createdAt: "desc" }],
       });
 
       // Cobrado (USD) por obra, para avisar si se cobró más de lo facturado:
@@ -11587,6 +11600,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         code: p.code,
         clientName: p.clientName,
         status: p.status,
+        llevaFactura: p.llevaFactura,
         budgetUsd: p.budgetUsd != null ? Number(p.budgetUsd) : null,
         precioPropuestaUsd: preciosPropuesta.get(p.id) ?? null,
         saleDate: p.saleDate ? serializeDateOnly(p.saleDate) : null,
@@ -11740,7 +11754,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         return serializeProject(updated);
       }
       if (!project.llevaFactura) {
-        throw new AppError(400, "PROJECT_SIN_FACTURA", "El proyecto no está marcado como que lleva factura");
+        const enLista = await prisma.project.count({ where: { id: projectId, ...enListaFacturacion } });
+        if (!enLista) {
+          throw new AppError(400, "PROJECT_SIN_FACTURA", "El proyecto no está marcado como que lleva factura");
+        }
       }
 
       // Lo emitido por Biller no se revierte a mano: se corrige con nota de crédito.

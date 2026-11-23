@@ -394,6 +394,8 @@ export interface RecorridoCheck {
   esDinamico: boolean;
   /** Uno de los tres avisos que el cliente sí o sí tiene que recibir. */
   clave: boolean;
+  /** La IA cree que una conversación de WhatsApp lo cumplió; falta confirmarlo. */
+  sugerencia: { motivo: string; at: string } | null;
 }
 
 export async function getChecks(projectId: string): Promise<RecorridoCheck[]> {
@@ -428,6 +430,12 @@ export async function getClienteUte(projectId: string): Promise<ClienteUte> {
 
 export async function patchCheck(checkId: string, completado: boolean): Promise<RecorridoCheck> {
   const { data } = await apiClient.patch<RecorridoCheck>(`/api/clientes/checks/${checkId}`, { completado });
+  return data;
+}
+
+/** Confirma (cierra el paso) o descarta la sugerencia de la IA. */
+export async function responderSugerencia(checkId: string, aceptar: boolean): Promise<RecorridoCheck> {
+  const { data } = await apiClient.post<RecorridoCheck>(`/api/clientes/checks/${checkId}/sugerencia`, { aceptar });
   return data;
 }
 

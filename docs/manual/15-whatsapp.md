@@ -236,14 +236,50 @@ prefijo `/api` y sin login:
 - **Sin contestar**: el último mensaje de la conversación es del cliente y es
   posterior a `resueltoHasta` (*No hace falta contestar*). Un mensaje escrito
   desde el celular (eco de coexistencia) cuenta como respuesta.
-- **Contacto en el historial**: el primer mensaje del día que se le manda a un
-  cliente desde la bandeja crea una interacción `WHATSAPP` saliente ("WhatsApp
-  desde Voltia PM: …") en su historial (`registrarContactoDelDia()`), para que
-  cuente como contacto en la cadencia sin llenar el historial con cada renglón.
-  Sin motivo: no cierra pasos del recorrido. Lo escrito desde el celular y lo que
-  escribe el cliente **no** pasan al historial. En Ventas es lo mismo con una
-  `SalesActivity` del lead (acción "WhatsApp desde Voltia PM", el texto en las
-  notas; `registrarContactoDelDiaLead()`).
+- **Conversación del día en el historial** (`registrarConversacionDelDia()`, en
+  `bandejas.service.ts`): cada mensaje guardado (entrante del webhook, eco del
+  celular, o mandado desde la bandeja, y también cuando termina la transcripción
+  de un audio) rearma **una sola entrada por día uruguayo, por cliente y por
+  teléfono** con todos los mensajes de ese día (los de origen `HISTORIAL`
+  quedan afuera). Solo para números de uso `EXPERIENCIA_SOLAR` (→
+  `ClientInteraction` `WHATSAPP` del proyecto) y `VENTAS` (→ `SalesActivity`
+  del lead, acción "Conversación por WhatsApp"); los de `DIRECCION` no se
+  registran, ni los chats internos con gente de Voltia. El texto arranca con
+  "Conversación por WhatsApp con +598…" (esa cabecera es la que se busca para
+  actualizar) y sigue un renglón por mensaje: hora, "Cliente" o el nombre de
+  quien escribió (el que mandó desde Voltia PM o, si fue desde el celular, el
+  responsable del número), y el texto; audios con su transcripción, fotos y
+  documentos indicados. Tope 2000 caracteres (el de edición de interacciones): si
+  no entra, quedan los últimos renglones con "(N mensajes antes…)". Dirección
+  `SALIENTE` si escribimos algo ese día, `ENTRANTE` si solo escribió el cliente
+  (las dos cuentan para la cadencia, como cualquier interacción). `createdAt` =
+  hora del último mensaje, para que suba en Novedades. Autor: el responsable del
+  número; si no tiene, el último que escribió desde Voltia PM; si nadie, el
+  primer ADMIN. Si alguien la borra a mano, ese día no se recrea. Si se la edita
+  a mano, el próximo mensaje la pisa. Una cola en memoria por chat y día evita
+  duplicados cuando llegan dos mensajes juntos (con un solo proceso de server).
+  No cierra pasos del recorrido: si escribimos algo ese día, programa la
+  **sugerencia de pasos** (abajo). Las entradas viejas "WhatsApp desde Voltia PM:"
+  (antes del 23-nov-2026) quedaron como estaban.
+- **Sugerencia de pasos del recorrido** (`sugerir-pasos-whatsapp.service.ts`,
+  solo proyectos de Experiencia Solar): `programarSugerenciaPasos()` espera 10
+  minutos desde el último mensaje del día (`RECORRIDO_IA_DEMORA_MS`; cada mensaje
+  reinicia la espera; es un `setTimeout` en memoria: si el server se reinicia,
+  esa revisión se pierde) y llama a `sugerirPasos()`, que le pasa a Claude
+  (`RECORRIDO_IA_MODEL`, default Sonnet 4.5; gasto en `ai_usage` como
+  `whatsapp_recorrido`) la conversación y los pasos pendientes **que ya
+  corren** (con plazo, o de reagenda). El prompt pide marcar solo lo que Voltia
+  dijo o mandó y que esté claro; ante la duda, nada. La respuesta (Zod) queda en
+  `RecorridoCheck.sugerenciaIa` = `{ motivo, interaccionId, at }`. **No cierra
+  nada.** La ficha la muestra en el paso ("Parece hecho por WhatsApp") y
+  `POST /clientes/checks/:checkId/sugerencia { aceptar }` (EXPERIENCIA_CLIENTES
+  EDIT) → `responderSugerencia()`: confirmar cierra el paso por el mismo camino
+  que tildarlo a mano (`completarCheck()`, con sus efectos de bienvenida y Regla
+  de Oro) y deja `cierreFuente = "contacto"`; descartar marca `descartada` y el
+  paso sigue pendiente. La IA no vuelve a sugerir un paso con sugerencia sin
+  responder, ni uno descartado para la misma conversación; otro día, sí. Se
+  conserva la sugerencia respondida (`aceptada`/`descartada`) para medir cuánto
+  acierta.
 - `whatsappDeProyecto()` / `whatsappDeLead()`: lo que muestran la ficha y el
   panel del lead (comparten `resumenDeConversaciones()`). Usan los teléfonos
   cargados (salvo los asociados a mano a otro) más los asociados a mano a este.

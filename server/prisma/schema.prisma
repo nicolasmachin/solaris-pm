@@ -1138,6 +1138,11 @@ model RecorridoCheck {
   /// true = generado por un hecho repetible; false = del catálogo fijo.
   esDinamico Boolean @default(false)
 
+  /// Sugerencia de la IA: la conversación de WhatsApp del día parece cumplir
+  /// este paso. { motivo, interaccionId, at, descartada? }. Nunca lo cierra
+  /// sola: Experiencia Solar confirma o descarta.
+  sugerenciaIa Json?
+
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 

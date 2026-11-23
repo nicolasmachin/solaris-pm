@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 
 import type { ClienteRecorrido, RecorridoCheck } from "../../../api/clientes.api";
 
@@ -76,6 +76,9 @@ function Bloque({
   const hechos = checks.filter((c) => c.completado).length;
   const pct = checks.length ? Math.round((hechos / checks.length) * 100) : 0;
   const vencidos = checks.filter((c) => c.vencido).length;
+  // Pasos que la IA cree hechos por WhatsApp: se avisan en el bloque porque la
+  // sugerencia puede caer en una etapa que no es la que está abierta.
+  const sugeridos = checks.filter((c) => !c.completado && c.sugerencia).length;
   // Se muestran los pendientes primero: es lo que hay para hacer.
   const visibles = [...checks].sort((a, b) => Number(a.completado) - Number(b.completado)).slice(0, 3);
   const extra = checks.length - visibles.length;
@@ -109,6 +112,15 @@ function Bloque({
             <span className="text-[var(--color-pipe-active-title)]">▶ En curso {pct}%</span>
           ) : (
             <span className="font-medium text-[var(--color-text-primary)]">◌ Sin empezar 0%</span>
+          )}
+          {sugeridos > 0 && (
+            <span
+              className="inline-flex items-center gap-0.5 text-[var(--color-accent)]"
+              title={`${sugeridos} paso${sugeridos === 1 ? "" : "s"} para confirmar: parece${sugeridos === 1 ? "" : "n"} hecho${sugeridos === 1 ? "" : "s"} por WhatsApp`}
+            >
+              <Sparkles className="h-3 w-3" />
+              {sugeridos}
+            </span>
           )}
           <span className="ml-auto font-normal text-[var(--color-text-muted)]">
             {hechos}/{checks.length}

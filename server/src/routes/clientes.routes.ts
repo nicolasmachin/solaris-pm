@@ -36,7 +36,7 @@ import {
 import { updateProjectClientFields } from "../services/project-fields.service.js";
 import { confirmImport, previewImport } from "../services/clientes/import.service.js";
 import { createPortalUserForProject, resetPortalUserPassword } from "../services/clientes/portal-user.service.js";
-import { completarCheck, listarChecks } from "../services/clientes/recorrido.service.js";
+import { completarCheck, listarChecks, responderSugerencia } from "../services/clientes/recorrido.service.js";
 import { buildUteTimeline } from "../services/ute-timeline.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
@@ -187,6 +187,18 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const { checkId } = z.object({ checkId: z.string() }).parse(request.params);
       const { completado } = z.object({ completado: z.boolean() }).parse(request.body);
       return completarCheck({ checkId, userId: user.id, completado });
+    },
+  );
+
+  // La IA sugirió que una conversación de WhatsApp cumplió el paso: confirmar o descartar.
+  app.post(
+    "/clientes/checks/:checkId/sugerencia",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { checkId } = z.object({ checkId: z.string() }).parse(request.params);
+      const { aceptar } = z.object({ aceptar: z.boolean() }).parse(request.body);
+      return responderSugerencia({ checkId, userId: user.id, aceptar });
     },
   );
 

@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.36 — 21 de noviembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.37 — 23 de noviembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -717,6 +717,11 @@ no coincidían y había que preguntar. Quien sabe lo acordado es quien vendió.
 tenían una nota de facturación quedan «a definir» hasta que Finanzas cargue el
 monto; los que no tenían nota se toman como facturación normal.
 
+Desde el **23 de noviembre de 2026**, una venta en la que el asesor no marcó
+factura **se puede facturar igual**: Finanzas la ve en su lista de facturación,
+después de las que sí la piden. Lo que marcó el asesor ordena la prioridad, no
+cierra la puerta.
+
 **A qué manuales afecta.** A los de Ventas (lo carga al crear el proyecto) y
 Finanzas (factura con eso), y al PGT (es parte de lo que Ventas le pasa a
 Finanzas).
@@ -1237,6 +1242,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.37 | 23 de noviembre de 2026 | Una venta sin factura marcada se puede facturar igual: Finanzas la ve en su lista, después de las que sí la piden. |
 | 0.36 | 21 de noviembre de 2026 | En el asistente del primer mensaje de WhatsApp: el speech va siempre completo con el precio estimado, porque es lo que filtra antes de cotizar, y nunca deriva a otro asesor. |
 | 0.35 | 21 de noviembre de 2026 | Se registran tres decisiones: el área pasa a llamarse Administración y Finanzas, con la contadora de la empresa como responsable y todos los objetivos financieros a su cargo; el reclamo de las cuotas vencidas ya lo hace Finanzas; y las horas extra y las faltas se pagan a mes vencido, cargadas por cada gerente antes del día 10. Donde decía «el contador», ahora dice «la contadora». |
 | 0.34 | 16 de noviembre de 2026 | Se registra que el primer mensaje de un cliente nuevo por WhatsApp lo contesta un asistente con el speech, en nombre del asesor: con ritmo de persona, de día, solo el primer contacto y sin negar lo que es. |

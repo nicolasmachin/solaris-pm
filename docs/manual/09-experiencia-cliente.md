@@ -469,6 +469,11 @@ se sacó entera antes de llegar a producción: queda en el historial de git.
   auditoría ("Se completó solo el paso…") y en `RecorridoCheck.cierreFuente`
   (`manual` / `contacto` / `hecho`; null en los cerrados antes del 17-oct-2026),
   que es la base para medir cuánto se cierra solo y cuánto a mano.
+- **La IA sugiere, no cierra**: si la conversación de WhatsApp del día parece
+  cumplir un paso pendiente, el paso muestra "Parece hecho por WhatsApp" con
+  Confirmar / No es, y el bloque de la etapa en el pipeline muestra cuántos hay
+  para confirmar. Confirmar lo cierra con fuente `contacto`. Detalle en el
+  capítulo 15 (WhatsApp), "Sugerencia de pasos del recorrido".
 - **Vencido solo aplica a lo pendiente**: uno completado tarde no es un pendiente,
   es historia.
 - **No hay check de "contacto semanal"**: el cumplimiento se calcula desde las

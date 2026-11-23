@@ -15,6 +15,11 @@ import { useDeleteInteraction, useEditInteraction } from "../hooks/useClienteInt
 
 const MAX = 2000;
 
+/** Más de 6 renglones: se muestra recortado con "Ver todo". */
+function esLargo(texto: string): boolean {
+  return texto.split("\n").length > 6 || texto.length > 600;
+}
+
 function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
@@ -137,6 +142,8 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
   const [draft, setDraft] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [archivo, setArchivo] = useState<ProjectDocument | null>(null);
+  // Las conversaciones de WhatsApp del día pueden ser largas: van recortadas.
+  const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
 
   function guardar(id: string) {
     const texto = draft.trim();
@@ -220,7 +227,31 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
                   </div>
                 </div>
               ) : (
-                <p className="whitespace-pre-wrap break-words text-sm text-[var(--color-text-primary)]">{it.text}</p>
+                <>
+                  <p
+                    className={`whitespace-pre-wrap break-words text-sm text-[var(--color-text-primary)] ${
+                      esLargo(it.text) && !abiertos.has(it.id) ? "line-clamp-6" : ""
+                    }`}
+                  >
+                    {it.text}
+                  </p>
+                  {esLargo(it.text) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAbiertos((prev) => {
+                          const n = new Set(prev);
+                          if (n.has(it.id)) n.delete(it.id);
+                          else n.add(it.id);
+                          return n;
+                        })
+                      }
+                      className="mt-0.5 text-[12px] text-[var(--color-accent)] hover:underline"
+                    >
+                      {abiertos.has(it.id) ? "Ver menos" : "Ver todo"}
+                    </button>
+                  )}
+                </>
               )}
               {typeof it.meta?.fileId === "string" && (
                 <button

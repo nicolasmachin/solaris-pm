@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Check, MessageSquare, Send, UserPlus } from "lucide-react";
+import { AlertTriangle, Check, MessageSquare, Send, Sparkles, UserPlus, X } from "lucide-react";
 
 import {
   patchCheck,
+  responderSugerencia,
   type ClienteFicha,
   type ClienteRecorrido,
   type RecorridoCheck,
@@ -24,10 +25,11 @@ function fmt(iso: string | null): string {
   return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit" });
 }
 
-function Fila({ c, canEdit, onToggle, onVerMensaje, accion, pending }: {
+function Fila({ c, canEdit, onToggle, onSugerencia, onVerMensaje, accion, pending }: {
   c: RecorridoCheck;
   canEdit: boolean;
   onToggle: () => void;
+  onSugerencia: (aceptar: boolean) => void;
   /** null = este paso no tiene mensaje modelo. */
   onVerMensaje: (() => void) | null;
   /** Acción propia del paso: hoy, crear o reenviar el acceso al portal. */
@@ -79,6 +81,37 @@ function Fila({ c, canEdit, onToggle, onVerMensaje, accion, pending }: {
           <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
             {c.completadoPor} · {fmt(c.completadoEn)}
           </p>
+        )}
+        {/* La IA leyó la conversación de WhatsApp y cree que este paso se hizo.
+            No lo tilda: lo confirma una persona. */}
+        {!c.completado && c.sugerencia && (
+          <div className="mt-1.5 rounded-md border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/[0.06] px-2 py-1.5">
+            <p className="text-[11px] text-[var(--color-text-secondary)]">
+              <Sparkles className="mr-1 inline h-3 w-3 text-[var(--color-accent)]" />
+              <span className="font-medium text-[var(--color-text-primary)]">Parece hecho por WhatsApp:</span>{" "}
+              {c.sugerencia.motivo}
+            </p>
+            {canEdit && (
+              <div className="mt-1 flex gap-1.5">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => onSugerencia(true)}
+                  className="inline-flex items-center gap-1 rounded border border-[var(--color-accent)] px-1.5 py-0.5 text-[11px] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 disabled:opacity-50"
+                >
+                  <Check className="h-3 w-3" /> Confirmar
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => onSugerencia(false)}
+                  className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+                >
+                  <X className="h-3 w-3" /> No es
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -176,6 +209,17 @@ export function RecorridoChecks({
     onError: () => toast.error("No se pudo actualizar el paso"),
   });
 
+  const sugerencia = useMutation({
+    mutationFn: ({ id, aceptar }: { id: string; aceptar: boolean }) => responderSugerencia(id, aceptar),
+    onSuccess: (_d, { aceptar }) => {
+      qc.invalidateQueries({ queryKey: ["cliente-checks", projectId] });
+      qc.invalidateQueries({ queryKey: ["recorrido"] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      if (aceptar) toast.success("Paso completado");
+    },
+    onError: () => toast.error("No se pudo responder la sugerencia"),
+  });
+
   const bloque = BLOQUES.find((b) => b.codigo === recorrido);
   const delBloque = checks.filter((c) => c.recorrido === recorrido);
   const hechos = delBloque.filter((c) => c.completado).length;
@@ -246,8 +290,9 @@ export function RecorridoChecks({
                 key={c.id}
                 c={c}
                 canEdit={canEdit}
-                pending={toggle.isPending}
+                pending={toggle.isPending || sugerencia.isPending}
                 onToggle={() => toggle.mutate({ id: c.id, completado: !c.completado })}
+                onSugerencia={(aceptar) => sugerencia.mutate({ id: c.id, aceptar })}
                 onVerMensaje={plantilla ? () => setPlantillaAbierta({ id: plantilla.id }) : null}
                 accion={
                   c.codigo === CHECK_PORTAL && canCreate

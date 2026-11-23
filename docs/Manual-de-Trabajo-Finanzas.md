@@ -1,6 +1,6 @@
 # Manual de trabajo de Administración y Finanzas
 
-**Voltia · Uruguay** · Versión 0.27 · del 21/11/26 · *borrador en revisión*
+**Voltia · Uruguay** · Versión 0.28 · del 23/11/26 · *borrador en revisión*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Finanzas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio,
@@ -804,8 +804,12 @@ proyecto sin contestarlo:
 Lo mismo se corrige desde la ficha del proyecto o desde la lista de
 Facturación (el lápiz junto al monto).
 
-En **Finanzas → Facturación** están los proyectos que llevan factura, con
-**Pendientes**, **Emitidas** y **Todas**. Cada fila muestra por separado:
+En **Finanzas → Facturación** están los proyectos que llevan factura y, además,
+**todos los que se vendieron desde el 23 de noviembre de 2026**, aunque el
+asesor no haya marcado que requieren factura: se pueden facturar igual. Los que
+la requieren van **primero**; los otros dicen **«Sin pedido de factura»** debajo
+del nombre. Hay tres vistas: **Pendientes**, **Emitidas** y **Todas**. Cada fila
+muestra por separado:
 
 ![Facturación al cliente: lo pendiente de emitir, lo emitido y, por proyecto, cuánto se factura y el estado de cada factura.](captura:fin-facturacion)
 
@@ -2029,6 +2033,7 @@ una vez por mes.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.28 | 23 de noviembre de 2026 | En Facturación aparecen también los proyectos vendidos desde el 23 de noviembre de 2026 que no tienen marcado que requieren factura, porque se pueden facturar igual. Van después de los que sí la requieren y dicen «Sin pedido de factura». |
 | 0.27 | 21 de noviembre de 2026 | Se agregan las capturas de pantalla de Voltia PM en el capítulo 5: cada pantalla de Finanzas, las pestañas Cobros y Plan granizo de Experiencia Solar, y Recursos Humanos (Personas, un legajo, Licencias, Vencimientos, Cargar recibos y Mi legajo). |
 | 0.26 | 21 de noviembre de 2026 | Finanzas recibe de cada gerente de área las novedades del personal del mes y de Operaciones las horas extra de la cuadrilla; entrega el sueldo y su recibo dentro de los primeros 5 días hábiles del mes, los impuestos y aportes a DGI y BPS, y a Gerencia el balance y los análisis que pida. A cada empleado le responde lo administrativo de su sueldo (cuánto se le pagó de horas extra o licencia, cuánto le queda); lo que faltó o las horas que hizo se le preguntan a su gerente. Cada gerente carga las horas extra y las faltas de su gente en Recursos Humanos → Novedades, antes del día 10; ese día se cierra solo el mes anterior, y cada persona ve las suyas en Mi legajo. Se suma lo que se hace cada año: el balance y el aguinaldo. Nuevo lineamiento: las horas extra y las faltas se pagan a mes vencido, y un dato que llega después del día 10 pasa al mes siguiente. Nueva sección 5.21, Recursos Humanos: los recibos de sueldo, las licencias, los documentos del legajo, los vencimientos y las entregas de materiales. El trabajo con un proyecto termina con su resultado calculado. Los sueldos se liquidan y pagan dentro de los primeros 5 días hábiles del mes, con las horas extra y las faltas a mes vencido, que cada gerente pasa antes del día 10 (a confirmar con la contadora), y se pagan los aportes a BPS y los impuestos a DGI. Dos casos nuevos en «Cuando algo sale mal»: una hora extra o una falta cargada después del día 10, y un recibo de sueldo mal liquidado, que se corrige en el sueldo del mes siguiente. Palabras nuevas en el glosario: BPS, legajo, novedades, mes vencido, liquidar el sueldo, aguinaldo y balance. «Quién lo lee» pasa a ser el área y la Dirección: lo que las demás áreas necesitan de Finanzas está en su propio manual. |
 | 0.25 | 19 de noviembre de 2026 | La factura de un proyecto también se puede emitir desde el chat de Claude: muestra antes todos los datos y emite solo con la confirmación. A pedido, le manda el PDF al cliente por WhatsApp. |

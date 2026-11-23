@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.51 · del 21/11/26
+**Voltia · Uruguay** · Versión 1.52 · del 23/11/26
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1240,12 +1240,25 @@ contestar** saca la marca roja. Vuelve a aparecer si el cliente escribe de nuevo
   aparece la marca **WhatsApp sin contestar**. Se contesta en el día, igual que un
   reclamo.
 
-**Lo que queda en el historial.** El primer mensaje del día que se le manda al
-cliente desde Voltia PM queda en su historial como contacto, así que cuenta para
-la cadencia. Lo que se le escribe desde el celular **no** queda en el historial:
-si fue un contacto importante, se registra a mano. Mandar un mensaje desde la
-bandeja no deja hecho ningún paso del recorrido; para eso siguen los mensajes
-modelo.
+**Lo que queda en el historial.** Cada día que hay conversación por WhatsApp con
+un cliente, queda **una sola entrada** en sus Novedades con todo lo que se habló
+ese día: lo que escribió el cliente y lo que se le contestó, desde Voltia PM o
+**desde el celular**. La entrada se va completando sola a medida que llegan
+mensajes; los audios aparecen con lo que dicen, y las fotos y los documentos,
+indicados. Cuenta como contacto para la cadencia, así que ya no hace falta
+registrar a mano lo que se habló por WhatsApp. Lo que se habló por teléfono o en
+persona sí se sigue registrando a mano.
+
+**Los pasos que se cumplieron por WhatsApp.** Mandar un mensaje no tilda ningún
+paso solo. Pero unos minutos después de la conversación, Voltia PM la lee con
+inteligencia artificial y, si parece cumplir un paso pendiente (por ejemplo, se le
+mandó al cliente el material de capacitación), el paso muestra **"Parece hecho
+por WhatsApp"** con lo que se le dijo. Experiencia Solar lo lee y toca
+**Confirmar**, que deja el paso hecho, o **No es**, que lo deja pendiente. El
+cuadro de cada etapa, arriba, muestra cuántos pasos hay para confirmar, porque
+la sugerencia puede caer en una etapa que no es la que está abierta. Es una
+ayuda para no olvidarse de tildar, no un reemplazo de leer: un paso dado por
+hecho sin haberse hecho apaga el aviso y nadie lo vuelve a mirar.
 
 Aparte, el **Plan de Protección contra Granizo** tiene sus ocho mensajes, que se
 abren desde el plan y no desde una etapa (cap. 12.1): plan activo · aviso de
@@ -2192,6 +2205,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.52 | 23 de noviembre de 2026 | La conversación de cada día por WhatsApp con un cliente queda sola en sus Novedades, en una sola entrada: lo que escribió el cliente y lo que se le contestó, también desde el celular. Ya no hace falta registrarla a mano. Si la conversación parece cumplir un paso del recorrido, Voltia PM lo sugiere y Experiencia Solar lo confirma. |
 | 1.51 | 21 de noviembre de 2026 | El reclamo de las cuotas vencidas lo hace Finanzas, no Experiencia Solar. Si el cliente pregunta por un pago atrasado, se le contesta lo que dice la pestaña Cobros y se le avisa a Finanzas. |
 | 1.50 | 17 de noviembre de 2026 | Los tickets pasan de Mis tareas a Soporte → Tickets. En Soporte → Evolución se ven, día por día, los tickets abiertos y las plantas con problema por tipo. Nueva columna «Se arreglaron solas» en la mesa de Soporte, con el botón Visto. Las fallas del inversor y las plantas que no generan llegan a la mesa de Soporte ya analizadas con IA. |
 | 1.49 | 16 de noviembre de 2026 | En el WhatsApp se ven y se mandan fotos, audios (con lo que dicen, escrito), videos y documentos, y se graban notas de voz. Se explica el mensaje que no llega a Voltia PM y hay que leer en el celular. |

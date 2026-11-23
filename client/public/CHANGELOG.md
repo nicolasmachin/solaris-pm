@@ -2,6 +2,21 @@
 
 ## v15.3
 
+### 23 de noviembre de 2026
+
+#### Finanzas
+
+- En **Finanzas → Facturación** aparecen ahora **todos los proyectos que se vendan desde hoy**, aunque al venderlos no se haya marcado que requieren factura: se los puede facturar igual. Los que sí lo tienen marcado van **primero**, y los otros llevan debajo del nombre la leyenda **«Sin pedido de factura»**.
+- Los proyectos vendidos antes de hoy siguen apareciendo solo si tienen marcado que llevan factura.
+
+#### WhatsApp en la ficha del cliente
+
+- Cada día que hay conversación por WhatsApp con un cliente queda **una sola entrada en sus Novedades** con todo lo que se habló ese día: lo que escribió el cliente y lo que le contestamos, **también lo que se contesta desde el celular**. Antes solo quedaba registrado lo que se mandaba desde Voltia PM, y si se contestaba desde el teléfono el cliente figuraba como "sin contacto".
+- La entrada se va completando sola a medida que llegan mensajes en el día. Los audios aparecen con lo que dicen, y las fotos y documentos, indicados.
+- Lo mismo en **Ventas**: la conversación del día con el lead queda en su actividad.
+- Las conversaciones largas se ven recortadas, con **Ver todo** para abrirlas enteras.
+- Cuando la conversación del día parece cumplir un paso del recorrido (por ejemplo, se le mandó al cliente el material de capacitación), el paso muestra **"Parece hecho por WhatsApp"** con lo que se le dijo, y se confirma con **Confirmar** o se descarta con **No es**. Nunca se tilda solo. El bloque de la etapa muestra cuántos hay para confirmar.
+
 ### 21 de noviembre de 2026
 
 #### Arreglos

@@ -5,7 +5,7 @@
  */
 
 import { alEntrarMensaje } from "./asistente.service.js";
-import { bandejaDeNumero, clienteDe } from "./bandejas.service.js";
+import { bandejaDeNumero, clienteDe, registrarConversacionDelDia } from "./bandejas.service.js";
 import { bajarArchivoDeFondo, mediaDe } from "./media.service.js";
 import { Prisma } from "@prisma/client";
 
@@ -123,6 +123,8 @@ async function guardarMensaje(m: MetaMensaje, phoneNumberId: string, origen: "AP
         console.error("[whatsapp] no se pudo guardar la ubicación del cliente:", err instanceof Error ? err.message : err),
       );
     }
+    // La conversación del día en la ficha del cliente (no el historial viejo).
+    if (origen !== "HISTORIAL") void registrarConversacionDelDia(phoneNumberId, creado.telefono, creado.ocurridoEn);
     // El asistente de Ventas: el speech a un cliente nuevo, o pasarle el chat al asesor.
     if (origen === "API") {
       void alEntrarMensaje(phoneNumberId, creado.telefono, creado.tipo).catch((err) =>
