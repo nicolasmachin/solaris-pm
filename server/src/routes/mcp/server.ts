@@ -71,7 +71,17 @@ Reglas de uso:
   o de planta, buscar_casos_tecnicos con la marca, el modelo o el código de
   error. Cuando en la conversación un problema técnico queda RESUELTO (se sabe
   qué lo arregló), registrar_caso_tecnico sin esperar a que lo pidan y avisar
-  en una línea; si después se corrige algo, corregir_caso_tecnico.`;
+  en una línea; si después se corrige algo, corregir_caso_tecnico.
+- Historial técnico por cliente: en Google Drive, en la carpeta del cliente
+  (unidad compartida → PROYECTOS → <año> → "Apellido, Nombre"), hay un archivo
+  "Historial técnico.md" con la ficha rápida de la planta, los pendientes
+  abiertos y cada problema, análisis o informe ya trabajado (el más nuevo
+  arriba). ANTES de trabajar cualquier problema o consulta de un cliente
+  (planta, UTE, obra, reclamo), leerlo si hay acceso a Drive, sin esperar a que
+  lo pidan: evita repetir análisis y proponer lo que ya se descartó. Al cerrar
+  el tema, agregarle una entrada (fecha, qué se
+  consultó, qué se concluyó separando dato ✅ de deducción ⚠️, enlace al
+  informe) y actualizar los pendientes. Si el cliente no lo tiene, crearlo.`;
 }
 
 export function buildMcpServer(user: McpUser): McpServer {

@@ -398,6 +398,23 @@ hay registro.
 > cada vez que se cerraba algo se actualizaban el CHANGELOG y el manual técnico,
 > y estos no. De ahí que estén acá.
 
+## Historial técnico por cliente (Google Drive) — OBLIGATORIO
+
+Cada cliente instalado tiene en su carpeta de Drive (unidad compartida →
+`PROYECTOS` → `<año>` → `Apellido, Nombre`) un archivo **`Historial técnico.md`**:
+ficha rápida de la planta, pendientes abiertos y una entrada por cada análisis o
+informe hecho, la más nueva arriba, separando dato ✅ de deducción ⚠️.
+
+- Vale para **cualquier problema o consulta de un cliente** (planta, UTE, obra,
+  reclamo), sin que Nicolás tenga que pedirlo en cada sesión.
+- **Antes** de trabajarlo, leerlo.
+- **Al cerrar** el tema (análisis, informe, diagnóstico), agregar la entrada y actualizar los
+  pendientes. Si el cliente no lo tiene, crearlo (`text/markdown`, sin convertir
+  a Google Doc). Ejemplo: el de Alvaro Garcia (creado el 23-nov-2026).
+- La misma regla está en las instrucciones del servidor MCP
+  (`server/src/routes/mcp/server.ts` → `instructions()`), para las
+  conversaciones que entran por el conector.
+
 ## Roadmap de infraestructura (en curso)
 
 - [x] Fase 1: Dockerizar desarrollo local.
