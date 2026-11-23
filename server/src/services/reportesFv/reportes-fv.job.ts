@@ -19,7 +19,7 @@ import { ReporteFvIngestaModo } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { sendEmail } from "../email.service.js";
-import { listarConfigsEfectivas } from "./config.service.js";
+import { listarConfigsEfectivas, upsertConfig } from "./config.service.js";
 import { generarEmision } from "./emision.service.js";
 import { enviarPendientes } from "./pendientes.service.js";
 import { ingerirPeriodoSincrono } from "./growatt/ingesta.service.js";
@@ -96,6 +96,38 @@ export interface ResumenEmision {
   esperandoDatos: number;
   bloqueados: number;
   errores: number;
+  /**
+   * Con nombre y motivo: el aviso al equipo tiene que decir A QUIÉN no le va a
+   * llegar el reporte. Con solo los números ("3 con la configuración
+   * incompleta") nadie actuaba y hubo clientes meses sin reporte.
+   */
+  quedanAfuera: Array<{ cliente: string; motivo: string }>;
+  /** Generadores habilitados por UTE que este proceso dio de alta solo. */
+  altasAutomaticas: string[];
+}
+
+/**
+ * Da de alta en reportes a toda obra que UTE ya habilitó y no tiene config.
+ * El alta a mano era un paso que se olvidaba y el cliente quedaba afuera sin
+ * que nadie se enterara (Rodolfo Sosa, Busquets: meses sin reporte). Lo que no
+ * se sabe se estima (potencia contratada, reparto por franja) y el reporte lo
+ * aclara; los destinatarios salen del mail del proyecto.
+ */
+export async function darDeAltaHabilitados(userId: string): Promise<string[]> {
+  const sinAlta = await prisma.project.findMany({
+    where: { deletedAt: null, actualUteEnd: { not: null }, reporteFvConfig: null },
+    select: { id: true, clientName: true, huaweiPlant: { select: { id: true } } },
+  });
+  const altas: string[] = [];
+  for (const p of sinAlta) {
+    try {
+      await upsertConfig(p.id, { origenDatos: p.huaweiPlant ? "HUAWEI" : "GROWATT" }, userId);
+      altas.push(p.clientName);
+    } catch (err) {
+      console.error(`[reportes-fv] no se pudo dar de alta ${p.clientName}:`, err);
+    }
+  }
+  return altas;
 }
 
 export async function ejecutarEmisionMensual(
@@ -120,17 +152,31 @@ export async function ejecutarEmisionMensual(
     esperandoDatos: 0,
     bloqueados: 0,
     errores: 0,
+    quedanAfuera: [],
+    altasAutomaticas: [],
   };
   if (!userId) return resumen;
 
-  let configs = await listarConfigsEfectivas({ soloHabilitados: true });
+  // Solo la corrida mensual completa (no los reintentos puntuales por proyecto).
+  if (!opts.projectIds) resumen.altasAutomaticas = await darDeAltaHabilitados(userId);
+
+  let configs = await listarConfigsEfectivas({ soloHabilitados: !!opts.projectIds });
   if (opts.projectIds) configs = configs.filter((c) => opts.projectIds!.includes(c.projectId));
   const fecha = periodoADate(periodo);
+  const afuera = (cliente: string, motivo: string) => resumen.quedanAfuera.push({ cliente, motivo });
 
   for (const config of configs) {
+    // Apagado a mano: no se emite, pero se nombra en el aviso para que apagar
+    // un reporte nunca sea invisible.
+    if (!config.habilitado) {
+      afuera(config.clientName, "tiene el reporte apagado");
+      continue;
+    }
+
     // Bloqueos de cálculo → no se puede emitir.
     if (config.bloqueosCalculo.length > 0) {
       resumen.bloqueados++;
+      afuera(config.clientName, config.bloqueosCalculo.join("; "));
       continue;
     }
 
@@ -141,6 +187,16 @@ export async function ejecutarEmisionMensual(
     });
     if (!lectura || lectura.generacionKwh == null || lectura.consumoKwh == null || lectura.exportacionKwh == null) {
       resumen.esperandoDatos++;
+      afuera(config.clientName, "faltan los datos del mes");
+      continue;
+    }
+
+    // Exportar más de lo que se generó es imposible: medidor al revés o mal
+    // conectado. Con el envío automático, ese reporte le llegaría al cliente
+    // con un ahorro disparatado.
+    if (Number(lectura.exportacionKwh) > Number(lectura.generacionKwh)) {
+      resumen.bloqueados++;
+      afuera(config.clientName, "figura exportando más de lo que generó: revisar el medidor y corregir la lectura");
       continue;
     }
 
@@ -168,26 +224,36 @@ export async function ejecutarEmisionMensual(
 
 async function notificarResumen(r: ResumenEmision): Promise<void> {
   // Sólo se avisa si hubo algo que emitir o algo pendiente que revisar.
-  if (r.generados === 0 && r.esperandoDatos === 0 && r.bloqueados === 0) return;
+  if (r.generados === 0 && r.quedanAfuera.length === 0 && r.altasAutomaticas.length === 0) return;
 
   const destinatarios = await destinatariosEquipo();
   if (destinatarios.length === 0) return;
 
   const mes = mesEs(r.periodo);
   const html =
-    `<p>Los reportes fotovoltaicos de <strong>${mes}</strong> están listos para revisar y enviar.</p>` +
+    `<p>Resumen de los reportes fotovoltaicos de <strong>${mes}</strong>.</p>` +
     `<ul>` +
     `<li><strong>${r.generados}</strong> reportes generados${r.yaEmitidos ? ` (+${r.yaEmitidos} ya estaban)` : ""}</li>` +
     (r.esperandoDatos ? `<li><strong>${r.esperandoDatos}</strong> esperando carga de datos del mes</li>` : "") +
     (r.bloqueados ? `<li><strong>${r.bloqueados}</strong> con la configuración incompleta</li>` : "") +
     (r.errores ? `<li><strong>${r.errores}</strong> con error al generar</li>` : "") +
     `</ul>` +
-    `<p>Entrá al panel de Reportes FV en Experiencia Solar para revisarlos y enviarlos.</p>`;
+    (r.quedanAfuera.length
+      ? `<p><strong>A estos clientes NO les va a llegar el reporte de ${mes}:</strong></p>` +
+        `<ul>${r.quedanAfuera.map((a) => `<li>${a.cliente}: ${a.motivo}</li>`).join("")}</ul>`
+      : "") +
+    (r.altasAutomaticas.length
+      ? `<p>Se dieron de alta solos en reportes (UTE ya los habilitó): ${r.altasAutomaticas.join(", ")}. ` +
+        `Revisá en el panel la potencia contratada y el reparto por franja: mientras no se carguen, se estiman.</p>`
+      : "") +
+    `<p>Los listos salen solos a las 10 de la mañana. Lo que quedó afuera se arregla desde Reportes FV en Experiencia Solar.</p>`;
 
   // internal: el guardrail valida que todos sean usuarios de Voltia (lo son).
   await sendEmail({
     to: destinatarios,
-    subject: `Reportes fotovoltaicos de ${mes} listos para enviar`,
+    subject: r.quedanAfuera.length
+      ? `Reportes fotovoltaicos de ${mes}: ${r.quedanAfuera.length} clientes sin reporte`
+      : `Reportes fotovoltaicos de ${mes} listos`,
     html,
     type: "internal",
   }).catch((err) => console.error("[reportes-fv] no se pudo notificar el resumen:", err));

@@ -38,6 +38,14 @@ const dec = (v: Prisma.Decimal | null | undefined): number | null => (v == null 
  */
 export const POTENCIA_CONTRATADA_DEFAULT = 5.0;
 
+/**
+ * Reparto por franja que se usa si el generador no tiene ninguno cargado. Es el
+ * que tienen 46 de los 60 generadores con reparto (prod, 23-nov-2026). Antes un
+ * alta sin reparto quedaba bloqueada en silencio y el cliente nunca recibía
+ * reporte: así pasaron meses sin reporte a una decena de clientes nuevos.
+ */
+export const REPARTO_FRANJAS_DEFAULT = { punta: 0.15, llano: 0.75, valle: 0.1 } as const;
+
 export interface ConfigEfectiva extends ConfigSerie {
   projectId: string;
   clientName: string;
@@ -155,10 +163,15 @@ export function resolverConfigEfectiva(
     );
   }
 
-  const pctPunta = Number(config.pctPunta);
-  const pctLlano = Number(config.pctLlano);
-  const pctValle = Number(config.pctValle);
-  if (Math.abs(pctPunta + pctLlano + pctValle - 1) > 0.001) {
+  let pctPunta = Number(config.pctPunta);
+  let pctLlano = Number(config.pctLlano);
+  let pctValle = Number(config.pctValle);
+  // Sin reparto cargado (todo en 0) se usa el habitual. Un reparto cargado que
+  // no suma 100% sí bloquea: es un error de carga, no un dato que falta.
+  if (pctPunta + pctLlano + pctValle === 0) {
+    ({ punta: pctPunta, llano: pctLlano, valle: pctValle } = REPARTO_FRANJAS_DEFAULT);
+    advertencias.push("sin reparto por franja horaria: se usa el habitual (15% punta, 75% llano, 10% valle)");
+  } else if (Math.abs(pctPunta + pctLlano + pctValle - 1) > 0.001) {
     bloqueosCalculo.push("el reparto por franja horaria no suma 100%");
   }
 
