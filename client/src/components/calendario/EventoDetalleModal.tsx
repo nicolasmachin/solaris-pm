@@ -30,7 +30,7 @@ interface Props {
   onClose: () => void;
 }
 
-const TIPOS: TipoEventoAgenda[] = ["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO"];
+const TIPOS: TipoEventoAgenda[] = ["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO", "CARGADOR_EV"];
 
 /** Día ya guardado (trae `id`) o recién agregado en pantalla (todavía sin `id`). */
 interface DiaEditable {

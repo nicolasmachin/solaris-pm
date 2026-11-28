@@ -4,7 +4,7 @@ import { apiClient } from "./axios";
 // `calendar.api.ts` (InstallationSchedule) — son dos cosas distintas que
 // comparten pantalla.
 
-export type TipoEventoAgenda = "MANTENIMIENTO" | "SOPORTE" | "VISITA_TECNICA" | "OTRO";
+export type TipoEventoAgenda = "MANTENIMIENTO" | "SOPORTE" | "VISITA_TECNICA" | "OTRO" | "CARGADOR_EV";
 
 /** Incluye OBRA para los filtros de la pantalla, que sí la contemplan. */
 export type TipoCalendario = "OBRA" | TipoEventoAgenda;
@@ -47,6 +47,8 @@ export const TIPO_CALENDARIO_META: Record<
   // Comodín. El rosa es el único tono que no se confunde con los otros cuatro ni
   // con el gris de "completado" en una barra de 3 px.
   OTRO: { label: "Otros", corto: "Otro", color: "#D9568C", icono: "📌" },
+  // Instalaciones de cargadores de autos eléctricos (agenda pública /agendar-cargador).
+  CARGADOR_EV: { label: "Cargadores eléctricos", corto: "Cargador", color: "#12B5CB", icono: "🔌" },
 };
 
 export const TIPOS_CALENDARIO: TipoCalendario[] = [
@@ -55,6 +57,7 @@ export const TIPOS_CALENDARIO: TipoCalendario[] = [
   "SOPORTE",
   "VISITA_TECNICA",
   "OTRO",
+  "CARGADOR_EV",
 ];
 
 export async function getAgendaEventos(params: {

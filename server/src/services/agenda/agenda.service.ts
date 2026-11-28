@@ -27,6 +27,7 @@ export const TIPO_EVENTO_LABEL: Record<TipoEventoAgenda, string> = {
   SOPORTE: "Soporte / Reclamo",
   VISITA_TECNICA: "Visita técnica",
   OTRO: "Otro",
+  CARGADOR_EV: "Cargador eléctrico",
 };
 
 const INCLUDE = {

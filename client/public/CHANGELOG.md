@@ -1,5 +1,17 @@
 # Novedades
 
+## v15.4
+
+### 27 de noviembre de 2026
+
+#### Agenda de cargadores de autos eléctricos
+
+- Hay una **página pública para agendar la instalación del cargador** del auto eléctrico, sin llamar ni escribir: el cliente elige el día y el horario (**mañana** o **tarde**), deja sus datos y le llega un mail con la reserva. Se le puede pasar el enlace por WhatsApp o desde la web de Voltia.
+- En **Montevideo y la zona metropolitana** el cliente reserva directo. Si está **más lejos**, o ya no quedan lugares, deja su pedido y se le confirma la fecha después.
+- Por ahora se ofrecen **sábados y domingos**, con un lugar por la mañana y uno por la tarde. Los días que el equipo ya tiene una obra agendada **no se ofrecen**.
+- Cada reserva aparece sola en el **Calendario**, con el tipo nuevo **«Cargadores eléctricos»** (🔌), y crea el **lead en Ventas** con todo lo que contó el cliente.
+- En **Calendario → 🔌 Cargadores** se ven todas las reservas y los pedidos a confirmar, se puede **cancelar** una (libera el lugar), y se configura qué días y horarios se ofrecen, con cuántos días de anticipación, qué equipo instala, qué localidades entran en la zona y a qué mails avisar de cada reserva nueva.
+
 ## v15.3
 
 ### 23 de noviembre de 2026

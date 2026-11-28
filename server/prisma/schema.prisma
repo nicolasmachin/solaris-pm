@@ -556,6 +556,10 @@ enum SettingKey {
   // JSON: ["OBRA","MANTENIMIENTO","SOPORTE","VISITA_TECNICA"]. Sin valor
   // guardado se muestran todos.
   CALENDARIO_FILTROS
+  // Agenda pública de cargadores (JSON): días de la semana, franjas, cupo,
+  // anticipación, horizonte, equipo y localidades de la zona metropolitana.
+  // Sin valor guardado rigen los valores por defecto del servicio.
+  AGENDA_CARGADORES
 }
 
 enum SalesStage {
@@ -2447,6 +2451,9 @@ enum TipoEventoAgenda {
   // reunión en obra, una capacitación). Por eso el título es obligatorio en este
   // tipo: "Otro" solo no le dice nada a quien mira el calendario.
   OTRO
+  // Instalación de un cargador de auto eléctrico. Los crea sola la agenda
+  // pública de cargadores (ReservaCargador); también se pueden cargar a mano.
+  CARGADOR_EV
 }
 
 model AgendaEvento {
@@ -2505,6 +2512,59 @@ model AgendaEventoDia {
   @@unique([eventoId, fecha])
   @@index([fecha])
   @@map("agenda_evento_dias")
+}
+
+// ─── Agenda pública de cargadores de autos eléctricos ───────────────────────
+// Lo que deja el cliente desde la página pública /agendar-cargador. En la zona
+// metropolitana elige día y franja (RESERVADA, con su evento en el calendario);
+// fuera de ella deja sus datos para que se le confirme disponibilidad
+// (A_CONFIRMAR, sin evento). Cada reserva crea además un lead en Ventas.
+enum FranjaCargador {
+  MANANA
+  TARDE
+}
+
+enum EstadoReservaCargador {
+  RESERVADA
+  A_CONFIRMAR
+  CANCELADA
+}
+
+model ReservaCargador {
+  id     String                @id @default(cuid())
+  estado EstadoReservaCargador
+
+  nombre       String
+  celular      String
+  email        String
+  direccion    String
+  departamento String
+  localidad    String
+  enZona       Boolean
+
+  // Solo en las RESERVADA. Las A_CONFIRMAR no tienen día todavía.
+  fecha  DateTime?       @db.Date
+  franja FranjaCargador?
+
+  tieneCargador  Boolean
+  modeloCargador String?
+  modeloAuto     String?
+  notas          String?
+
+  // Ids sueltos, sin relación: la reserva es el registro de lo que pidió el
+  // cliente y no se quiere que borrar el lead o el evento la arrastre.
+  leadId         String?
+  agendaEventoId String?
+
+  ip String?
+
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  canceladaEn DateTime? @db.Timestamptz(6)
+
+  @@index([fecha, franja])
+  @@index([estado])
+  @@map("reservas_cargador")
 }
 
 enum TeamType {

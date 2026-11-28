@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 1.17 · del 21/11/26
+**Voltia · Uruguay** · Versión 1.18 · del 27/11/26
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -200,6 +200,18 @@ Si todo sigue el procedimiento, el gerente de Operaciones no tiene que inventar 
 - **La cuadrilla propia:** un capataz y su equipo de operarios. Si el trabajo lo pide, el gerente de Operaciones puede sumar gente.
 - **Las cuadrillas tercerizadas:** empresas instaladoras que trabajan para Voltia, cada una en su zona.
 - **Los mantenimientos y las visitas de soporte** van a tener una persona de Operaciones dedicada a eso. Muchas visitas de soporte van a nacer de la **mesa de Soporte** de Voltia PM, que detecta en el día las plantas que no generan, no comunican o generan menos de lo normal, y dice qué vio el inversor (sin red, sin tensión de paneles, el código de falla). Antes de salir conviene leer el caso: a veces es la llave y la sube el cliente. Las fallas del inversor y las plantas que no generan traen además un **análisis con IA** (qué pasa, la causa probable y qué hacer: con qué instrumento o repuesto ir, o si es un reclamo de garantía al fabricante); es una ayuda para preparar la visita, no reemplaza mirar la planta. Los tickets también están en Voltia PM, en **Soporte → Tickets**. Mientras una planta tiene obra agendada en el calendario (la suya o una ampliación), la mesa no la marca como problema: por eso **la obra tiene que estar agendada**, también las ampliaciones.
+
+### Los cargadores de autos eléctricos
+
+Voltia también instala **cargadores de autos eléctricos** en la casa del cliente. Por ahora es una **prueba**: los instala **la misma cuadrilla de las obras solares, los fines de semana**, para no sacarle días a las obras. Si la demanda crece, se va a armar otra forma de trabajar.
+
+El cliente **elige él mismo el día**, desde una página de Voltia en internet, sin llamar. Lo que reserva aparece solo en el calendario de Voltia PM, con un enchufe (🔌). El gerente de Operaciones:
+
+- **Mira los cargadores del fin de semana** cuando coordina la semana con los capataces, igual que las obras.
+- **No agenda una obra solar encima de un cargador ya reservado.** Voltia PM deja de ofrecerle ese día a los clientes nuevos, pero no avisa si el cargador ya estaba reservado: hay que mirar el calendario antes de agendar.
+- **Si un cargador no se puede hacer el día reservado,** se avisa al cliente ese mismo día (regla 7 del PGT), se le ofrece otro y se cancela la reserva en Voltia PM para liberar el lugar.
+
+Los pedidos de clientes **lejos de Montevideo** no traen día: el cliente deja sus datos y se le confirma la fecha después. Esos los coordina el asesor que toma el lead, con el gerente de Operaciones.
 
 ### Cuadrilla propia o tercerizada
 
@@ -425,6 +437,23 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - **Suspender obra (sin fecha nueva):** para una obra con la fecha confirmada que se tiene que frenar **sin saber todavía cuándo se hace**. Pide el motivo, le saca la fecha y la obra queda sin agendar. A Experiencia Solar le llega el aviso con el motivo, igual que en una reprogramación, y el cliente queda **esperando fecha nueva**: cuando se vuelve a agendar y se confirma, Voltia PM sabe que es la fecha nueva de una obra suspendida. Si ya se sabe la fecha nueva, no se suspende: se usa **Reprogramar**. **Eliminar asignación** es para una obra agendada por error, no para suspenderla.
 
 ![Una obra abierta en el calendario: confirmada o no, el equipo, los tramos y el botón Reprogramar.](captura:ops-calendario-detalle)
+
+### La agenda de cargadores
+
+Se entra desde el **Calendario**, con el botón **🔌 Cargadores**. Tiene dos partes:
+
+- **Reservas:** todas las que dejaron los clientes, con su estado. **Reservada** quiere decir que el cliente eligió día y horario, y ya recibió el mail diciendo que lo esperamos. **A confirmar** quiere decir que está lejos o que no quedaban lugares, así que hay que coordinarle la fecha. De cada una se ve el cliente, el celular, la dirección, si ya tiene el cargador y qué auto tiene. El enlace lleva a su lead en Ventas. **Cancelar** saca la reserva del calendario y libera el lugar. Voltia PM no le avisa al cliente que se canceló: se le avisa por WhatsApp. Con **Ver canceladas** se ven también las anuladas.
+- **Configuración:** lo que la página le ofrece al cliente. Sirve para elegir:
+  - qué días de la semana se ofrecen (hoy, sábado y domingo);
+  - el horario de la mañana y de la tarde, y cuántos cargadores entran en cada uno (con 0, ese horario no se ofrece);
+  - con cuántos días de anticipación mínima se puede reservar, y hasta cuántos días adelante;
+  - qué equipo instala;
+  - qué localidades se consideran zona metropolitana;
+  - a qué mails llega el aviso de cada reserva nueva.
+
+  Con **Tomar reservas** apagado, la página le dice al cliente que por ahora no se toman reservas. Solo el gerente de Operaciones cambia la configuración.
+
+Los días en que el equipo ya tiene una obra o cualquier otro evento agendado no se le ofrecen al cliente.
 
 ### Las fotos de obra
 
@@ -1122,6 +1151,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.18 | 27 de noviembre de 2026 | Se agregan los cargadores de autos eléctricos: una prueba con la misma cuadrilla solar los fines de semana. El cliente reserva el día desde una página de Voltia y aparece solo en el calendario. Se explica qué mira el gerente de Operaciones y cómo se usa la agenda de cargadores. |
 | 1.17 | 21 de noviembre de 2026 | Las horas extra y las faltas de la gente de Operaciones se pagan a mes vencido. El gerente de Operaciones se las carga a Finanzas antes del día 10 del mes siguiente. |
 | 1.16 | 19 de noviembre de 2026 | El proyecto muestra la ubicación GPS de la obra, debajo de la dirección, y la abre con un toque en Google Maps o en Waze para ir a instalar o a soporte. Si falta, se carga a mano. |
 | 1.15 | 19 de noviembre de 2026 | Se corrige: el proyecto no se crea solo al ganar el lead, lo crea el asesor con «Crear proyecto desde lead». Desde el chat de Claude se puede crear un proyecto desde cero; antes avisa si ya hay un proyecto o un lead con ese nombre y lo crea cuando se confirma. |

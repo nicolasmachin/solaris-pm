@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 1.28 · del 23/11/26
+**Voltia · Uruguay** · Versión 1.29 · del 27/11/26
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -571,6 +571,17 @@ la comisión base (4 % del precio sin IVA), el asesor se lleva el **30 % de lo q
 consiga de markup por encima del 20 %**. Así, en una venta a una empresa, negociar
 un mejor precio también le conviene al asesor. El markup de las empresas arranca
 en 20 %.
+
+### Los cargadores de autos eléctricos
+
+Voltia también instala **cargadores de autos eléctricos**. Por ahora es una prueba: los instala la misma cuadrilla de las obras solares, los fines de semana.
+
+El cliente **agenda solo la instalación** desde una página de Voltia en internet: elige el día y el horario (mañana o tarde) y deja sus datos. A quien pregunte por un cargador se le puede mandar ese enlace por WhatsApp; el gerente de Operaciones lo tiene en Voltia PM (Calendario → 🔌 Cargadores).
+
+Cada pedido **entra solo como lead en Ventas**, sin vendedor asignado, con todo lo que contó el cliente: la dirección, el día que reservó, si ya tiene el cargador y cuál, qué auto tiene y cómo nos conoció. Lo toma el primer asesor que lo agarra, igual que los demás leads que entran sin vendedor.
+
+- **Si el cliente reservó día**, la instalación ya está en el calendario y el cliente ya recibió un mail que lo confirma. El asesor no tiene que agendarla: se ocupa de lo comercial. Si el cliente **no tiene el cargador**, le arma una **cotización a medida** con el cargador y la instalación. Si **ya lo tiene**, cotiza solo la instalación.
+- **Si el pedido dice «sin fecha»**, el cliente está lejos de Montevideo o no quedaban lugares. El asesor le escribe, coordina la fecha con el gerente de Operaciones y se la confirma al cliente.
 
 ## 3 · Lineamientos
 
@@ -1484,6 +1495,7 @@ la Dirección, para resolverlo con el cliente y para que no se repita.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.29 | 27 de noviembre de 2026 | Se agregan los cargadores de autos eléctricos: el cliente agenda solo la instalación desde una página de Voltia, y el pedido entra como lead sin vendedor. Se explica qué hace el asesor cuando el cliente reservó día y cuando el pedido llega sin fecha. |
 | 1.28 | 23 de noviembre de 2026 | Un proyecto vendido sin factura le aparece igual a Finanzas en su lista de facturación, después de los que sí la llevan, porque se puede facturar igual. La conversación de cada día por WhatsApp con un lead queda sola en su historial, en una sola entrada, también lo que el asesor contesta desde el celular. |
 | 1.27 | 21 de noviembre de 2026 | El asistente del primer mensaje manda siempre el speech completo, con el precio estimado, y nunca ofrece hablar con otro asesor. Se explica por qué el mensaje de bienvenida automático de WhatsApp Business tiene que estar apagado en el celular del asesor. Finanzas le paga al asesor su comisión, que queda fija al ganar la venta. Las horas extra y las faltas de la gente de Ventas se pagan a mes vencido. El gerente de Ventas se las carga a Finanzas antes del día 10 del mes siguiente. |
 | 1.26 | 20 de noviembre de 2026 | El pedido de aumento de potencia u otro trámite a UTE Comercial se puede hacer también desde Trámites UTE, incluso para un cliente que todavía no tiene proyecto. |

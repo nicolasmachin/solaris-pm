@@ -26,7 +26,7 @@ interface Props {
   onClose: () => void;
 }
 
-const TIPOS: TipoEventoAgenda[] = ["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO"];
+const TIPOS: TipoEventoAgenda[] = ["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO", "CARGADOR_EV"];
 
 /**
  * Alta de un evento de agenda.

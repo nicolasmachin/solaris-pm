@@ -97,9 +97,38 @@ const RELEASE_14_5: Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "15.3",
-  date: "21 de noviembre de 2026",
+  version: "15.4",
+  date: "27 de noviembre de 2026",
   sections: [
+    {
+      title: "Agenda de cargadores de autos eléctricos",
+      items: [
+        "Hay una página pública para que el cliente agende la instalación de su cargador: elige el día y el horario (mañana o tarde) y deja sus datos, sin llamar.",
+        "En Montevideo y la zona metropolitana reserva directo; si está más lejos, deja su pedido y se le confirma la fecha después.",
+        "Cada reserva aparece sola en el Calendario (tipo «Cargadores eléctricos») y crea el lead en Ventas.",
+        "En Calendario → 🔌 Cargadores se ven las reservas, se cancelan, y se configura qué días y horarios se ofrecen, la zona y a quién avisar.",
+        "Los días que el equipo ya tiene una obra no se ofrecen.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_15_3: Release = {
+  version: "15.3",
+  date: "23 de noviembre de 2026",
+  sections: [
+    {
+      title: "Finanzas",
+      items: [
+        "En Finanzas → Facturación aparecen todos los proyectos vendidos desde el 23 de noviembre, aunque no se haya marcado que requieren factura.",
+      ],
+    },
+    {
+      title: "WhatsApp en la ficha del cliente",
+      items: [
+        "Cada día con conversación por WhatsApp queda una sola entrada en las Novedades del cliente, también lo que se contesta desde el celular.",
+      ],
+    },
     {
       title: "Arreglos",
       items: [
@@ -1391,6 +1420,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "15.3",
+    shortDate: "23 nov",
+    highlights: RELEASE_15_3.sections.map((sec) => sec.title),
+  },
   {
     version: "15.2",
     shortDate: "20 nov",

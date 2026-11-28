@@ -26,9 +26,10 @@ const DEBOUNCE_MS = 800;
  * tiene forma de saber que existe. Al subir la versión se listan acá los tipos
  * que se agregaron, y las preferencias viejas los adoptan.
  */
-const VERSION_FILTROS = 2;
+const VERSION_FILTROS = 3;
 const TIPOS_AGREGADOS_POR_VERSION: Record<number, TipoCalendario[]> = {
   2: ["OTRO"],
+  3: ["CARGADOR_EV"],
 };
 
 interface UserSetting {

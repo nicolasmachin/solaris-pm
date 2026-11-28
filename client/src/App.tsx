@@ -93,6 +93,10 @@ const InformesPage = lazy(() => import("./pages/InformesPage"));
 const ConsultaUte = lazy(() => import("./pages/ConsultaUte"));
 const SuministroIndividualUte = lazy(() => import("./pages/SuministroIndividualUte"));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
+const CalendarioCargadores = lazy(() =>
+  import("./pages/CalendarioCargadores").then((module) => ({ default: module.CalendarioCargadores })),
+);
+const AgendarCargador = lazy(() => import("./pages/AgendarCargador").then((module) => ({ default: module.AgendarCargador })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
 const MisTareasLayout = lazy(() => import("./pages/MisTareasLayout").then((module) => ({ default: module.MisTareasLayout })));
 const TramitesUte = lazy(() => import("./pages/TramitesUte").then((module) => ({ default: module.TramitesUte })));
@@ -254,6 +258,7 @@ export function App() {
       <Routes>
       {/* Public */}
       <Route path="/login" element={<Login />} />
+      <Route path="/agendar-cargador" element={<AgendarCargador />} />
 
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -736,6 +741,14 @@ export function App() {
           element={
             <PermissionRoute module="OPERACIONES" action="VIEW">
               <Calendar />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/calendario/cargadores"
+          element={
+            <PermissionRoute module="OPERACIONES" action="VIEW">
+              <CalendarioCargadores />
             </PermissionRoute>
           }
         />

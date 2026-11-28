@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.37 — 23 de noviembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.38 — 27 de noviembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -1213,6 +1213,28 @@ en el momento en que se le está por vender.
 
 **A qué manuales afecta:** Ventas (el WhatsApp de Ventas).
 
+### Los cargadores de autos eléctricos: una prueba con la cuadrilla solar, los fines de semana
+
+**Qué se decidió.** Voltia instala cargadores de autos eléctricos en la casa del
+cliente como **prueba**, con **la misma cuadrilla de las obras solares, los
+fines de semana**. El cliente agenda solo la instalación desde una página de
+Voltia, sin llamar:
+
+- En **Montevideo y la zona metropolitana** elige el día y el horario, y queda
+  reservado.
+- **Más lejos**, deja su pedido y se le confirma la fecha después.
+
+Los días en que la cuadrilla ya tiene obra no se ofrecen. Rige desde el 27 de
+noviembre de 2026.
+
+**Por qué.** Sirve para ver si hay demanda sin sumar gente ni sacarle días a las
+obras solares. Si la prueba escala, se amplía (otra cuadrilla, días de semana).
+Que el cliente agende solo sigue la regla de no exigir llamadas, y le ahorra al
+asesor coordinar una agenda que Voltia PM ya conoce.
+
+**A qué manuales afecta:** Operaciones (la cuadrilla y el calendario) y Ventas
+(los pedidos entran como leads).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -1242,6 +1264,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.38 | 27 de noviembre de 2026 | Se registra la prueba de los cargadores de autos eléctricos: la misma cuadrilla solar los fines de semana, y el cliente agenda solo desde una página de Voltia (reserva directa en la zona metropolitana; más lejos, a confirmar). |
 | 0.37 | 23 de noviembre de 2026 | Una venta sin factura marcada se puede facturar igual: Finanzas la ve en su lista, después de las que sí la piden. |
 | 0.36 | 21 de noviembre de 2026 | En el asistente del primer mensaje de WhatsApp: el speech va siempre completo con el precio estimado, porque es lo que filtra antes de cotizar, y nunca deriva a otro asesor. |
 | 0.35 | 21 de noviembre de 2026 | Se registran tres decisiones: el área pasa a llamarse Administración y Finanzas, con la contadora de la empresa como responsable y todos los objetivos financieros a su cargo; el reclamo de las cuotas vencidas ya lo hace Finanzas; y las horas extra y las faltas se pagan a mes vencido, cargadas por cada gerente antes del día 10. Donde decía «el contador», ahora dice «la contadora». |

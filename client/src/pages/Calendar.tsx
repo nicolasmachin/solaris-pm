@@ -1152,6 +1152,13 @@ export function Calendar() {
                 + Agendar otra cosa
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => navigate("/calendario/cargadores")}
+              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+            >
+              🔌 Cargadores
+            </button>
           </div>
         </div>
 
@@ -1200,7 +1207,7 @@ export function Calendar() {
           </span>
           {view === "month" && (
             <span className="inline-flex items-center gap-2">
-              {(["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO"] as const).map((t) => (
+              {(["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO", "CARGADOR_EV"] as const).map((t) => (
                 <span key={t} className="inline-flex items-center gap-1">
                   <span
                     className="h-2.5 w-[3px] rounded-sm"

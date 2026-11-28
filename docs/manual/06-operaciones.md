@@ -225,6 +225,126 @@ Desarrollado pero **no exigido** ("lo que se viene"). En la pestaña
   las devoluciones. Si los vales se empiezan a usar en serio, hay que restar
   los INGRESO con referencia `VALE_DEVOLUCION`.
 
+## Agenda de cargadores de autos eléctricos (27-nov-2026)
+
+### Para qué existe
+
+El cliente agenda solo la instalación del cargador de su auto eléctrico, sin
+llamar, como en Calendly. Es un **piloto**: lo instala la **misma cuadrilla
+solar los fines de semana**, y si escala se amplía. En la zona metropolitana el
+cliente elige día y franja. Más lejos, deja el pedido y se le confirma la fecha.
+
+### Cómo se usa
+
+- **Página pública** `/agendar-cargador` (`pages/AgendarCargador.tsx`), sin login.
+  El cliente indica el departamento y el barrio o la localidad. Elige el día y la
+  franja (mañana o tarde) y deja sus datos: nombre, celular, mail, dirección, si
+  ya tiene el cargador y cuál, el auto, notas y cómo nos conoció.
+- **Gestión interna** en **Calendario → 🔌 Cargadores** (`/calendario/cargadores`,
+  `pages/CalendarioCargadores.tsx`). Tiene dos partes:
+  - La **lista de reservas**: activas por defecto, con un tilde para ver las
+    canceladas. Cada una tiene un enlace a su lead y el botón **Cancelar**.
+  - La **configuración** de lo que se ofrece.
+- La web de Voltia (WordPress) todavía **no enlaza** a la página: queda pendiente
+  armar esa landing.
+
+### Cómo funciona
+
+- **Modelo** `ReservaCargador` (`reservas_cargador`), con estado `RESERVADA` /
+  `A_CONFIRMAR` / `CANCELADA`.
+  - `fecha` y `franja` van solo en las reservadas.
+  - `leadId` y `agendaEventoId` son ids sueltos, sin relación Prisma.
+  - Se guarda la IP de quien reservó.
+- **Configuración**: `Setting` `AGENDA_CARGADORES`, leída con `leerConfig()`, que
+  completa con `CONFIG_DEFAULT` lo que falte. Campos:
+  - si está activa;
+  - días de la semana;
+  - horario y cupo de cada franja (cupo 0 = la franja no se ofrece);
+  - anticipación mínima y horizonte, en días;
+  - equipo (`teamId`);
+  - departamentos enteros en zona y localidades sueltas en zona;
+  - mails a los que se avisa.
+- **Configuración por defecto**:
+  - sábado y domingo, 9 a 13 h y 14 a 18 h, un lugar en cada franja;
+  - 3 días de anticipación y 45 de horizonte;
+  - en zona entran Montevideo entero y las localidades de Canelones y San José
+    del área metropolitana;
+  - sin equipo fijo.
+- **Zona** (`estaEnZona()`): compara sin tildes ni mayúsculas. Montevideo entra
+  entero. Fuera de los departamentos enteros, solo entran las localidades de la
+  lista.
+- **Días libres** (`calcularDisponibilidad()`):
+  1. Toma los días configurados entre hoy + anticipación y hoy + horizonte, con
+     la fecha de Uruguay.
+  2. Saca los días en que el equipo ya tiene un tramo de obra
+     (`InstallationSegment`) o cualquier otro evento de agenda que no sea de
+     cargador (`diasOcupadosPorEquipo()`). **Sin equipo configurado, bloquea el
+     día si cualquier equipo tiene algo.**
+  3. A cada franja le descuenta las reservas `RESERVADA`.
+- **Reserva** (`crearReserva()`):
+  - **En zona, con día y franja**: abre una transacción con
+    `pg_advisory_xact_lock` por fecha, recalcula la disponibilidad y graba. Si
+    la franja ya no está libre, devuelve 409 `FRANJA_OCUPADA` y la página
+    vuelve a cargar los días.
+  - **En los demás casos** queda `A_CONFIRMAR`: fuera de zona, o en zona pero
+    sin lugares libres.
+  - Después de grabar:
+    1. Crea el **lead** con `crearLead()`, firmado por el primer ADMIN (el
+       mismo criterio que los avisos automáticos). Va con origen `OTRO` y el
+       detalle "Agenda web de cargadores", salvo que el cliente haya elegido
+       otro origen, y con los datos de la reserva en las notas.
+    2. Si hay día, crea el **evento** `CARGADOR_EV` en el calendario, con el
+       equipo configurado.
+    3. Manda el **mail al cliente** (`client_facing`) y el **aviso interno** a
+       los mails configurados.
+  - Si falla alguno de esos tres pasos, la reserva **igual queda grabada** y el
+    error solo va al log.
+- **Cancelar** (`cancelarReserva()`) borra el evento del calendario, lo que
+  libera el lugar. Marca la reserva `CANCELADA` y deja una entrada de auditoría
+  en el lead. **El lead no se toca**.
+- **Calendario**: el tipo `CARGADOR_EV` ("Cargadores eléctricos", 🔌, celeste
+  `#12B5CB`) se suma a los filtros con `VERSION_FILTROS = 3`. Así aparece
+  prendido también para quien ya tenía filtros guardados.
+
+### Permisos
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /api/publico/cargadores/config` | público |
+| `GET /api/publico/cargadores/disponibilidad` | público |
+| `POST /api/publico/cargadores/reservas` | público, con límite por IP (10 cada 10 minutos, `cargadores:<ip>`) y campo trampa `web` para bots |
+| `GET /api/cargadores/config`, `GET /api/cargadores/reservas` | OPERACIONES · VIEW |
+| `PUT /api/cargadores/config`, `POST /api/cargadores/reservas/:id/cancelar` | OPERACIONES · EDIT |
+
+La pantalla interna pide OPERACIONES · VIEW, igual que el Calendario. Sin EDIT,
+la configuración se ve en solo lectura y no aparece el botón Cancelar.
+
+### Reglas y decisiones
+
+- **Las rutas públicas nunca devuelven datos de otras reservas.** Solo devuelven
+  los días con lugar y cuántos quedan por franja.
+- **La IP sale de `X-Forwarded-For`**, que pone Caddy. Sin eso, todas las
+  reservas compartirían la IP del proxy y el límite frenaría a todo el mundo.
+- **El campo trampa contesta "OK"** sin grabar nada, para no darle pistas al bot.
+- **Al bloquear un día, los otros cargadores no cuentan.** Los cargadores
+  consumen cupo de su franja, pero un evento de cargador no bloquea el día
+  entero. Cualquier otro evento o tramo de obra sí lo bloquea.
+- **La reserva no se confirma a mano.** `RESERVADA` ya es un compromiso con el
+  cliente: le llega el mail diciendo que lo esperamos ese día.
+
+### Casos borde
+
+- Si se agenda una obra solar sobre un día que ya tiene cargadores reservados,
+  **nadie avisa**. Ese día deja de ofrecerse, pero la reserva hecha sigue en
+  pie. Hay que mirar el calendario.
+- Si se baja el cupo o se saca un día, las reservas que ya existen no se tocan.
+- Las reservas `A_CONFIRMAR` no tienen un botón para pasarlas a reservadas. Se
+  coordinan con el cliente desde el lead y, si se agendan, se cargan a mano como
+  evento del calendario.
+- En desarrollo no salen mails, salvo que esté `DEV_EMAIL_REDIRECT_TO`.
+- Si no hay ningún usuario ADMIN, la reserva queda sin lead y sin evento (solo
+  log).
+
 ## Qué tiene que cubrir este capítulo
 
 - Fotos de obra y el checklist de 23 fotos obligatorias
